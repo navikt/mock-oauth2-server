@@ -1,3 +1,6 @@
+package no.nav.security.mock
+
+import OAuth2TokenIssuer
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import no.nav.security.mock.callback.MockOAuth2Callback

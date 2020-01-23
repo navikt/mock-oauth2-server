@@ -1,6 +1,5 @@
 package no.nav.security.mock
 
-import MockOAuth2Server
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.SignedJWT
