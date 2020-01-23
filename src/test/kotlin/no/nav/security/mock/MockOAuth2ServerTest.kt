@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import no.nav.security.mock.callback.DefaultJwtCallback
 import no.nav.security.mock.oauth2.OAuth2TokenResponse
 import okhttp3.Credentials
 import okhttp3.FormBody
@@ -18,14 +19,14 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.net.URLEncoder
 
+// TODO add more tests for exception handling
 class MockOAuth2ServerTest {
     private val client: OkHttpClient = OkHttpClient()
         .newBuilder()
         .followRedirects(false)
         .build()
-
-    private lateinit var triggerAuthCodeFlowUrl: HttpUrl
 
     private lateinit var server: MockOAuth2Server
 
@@ -33,18 +34,6 @@ class MockOAuth2ServerTest {
     fun before() {
         server = MockOAuth2Server()
         server.start()
-        triggerAuthCodeFlowUrl = server.authorizationEndpointUrl("default").newBuilder()
-            .addEncodedQueryParameter("client_id", "client1")
-            .addEncodedQueryParameter("response_type", "code")
-            .addEncodedQueryParameter("redirect_uri", "http://myapp/callback")
-            .addEncodedQueryParameter("response_mode", "query")
-            .addEncodedQueryParameter(
-                "scope",
-                "openid%20offline_access%20https%3A%2F%2Fgraph.microsoft.com%2Fuser.read"
-            )
-            .addEncodedQueryParameter("state", "1234")
-            .addEncodedQueryParameter("nonce", "5678")
-            .build()
     }
 
     @AfterEach
@@ -53,9 +42,10 @@ class MockOAuth2ServerTest {
     }
 
     @Test
-    fun wellKnownUrl() {
+    fun wellKnownUrlForMultipleIssuersShouldExistEvenThoughNotRegistered() {
         assertWellKnownResponseForIssuer("default")
-        assertWellKnownResponseForIssuer("foobar")
+        assertWellKnownResponseForIssuer("foo")
+        assertWellKnownResponseForIssuer("bar")
     }
 
     private fun assertWellKnownResponseForIssuer(issuerId: String): String? {
@@ -73,9 +63,15 @@ class MockOAuth2ServerTest {
     }
 
     @Test
-    fun authorize() {
+    fun triggerAuthorizationCodeFlowWithDefaultIssuer() {
+        val authorizationCodeFlowUrl = authorizationCodeFlowUrl(
+            "default",
+            "client1",
+            "http://myapp/callback",
+            "openid scope1"
+        )
         val request: Request = Request.Builder()
-            .url(triggerAuthCodeFlowUrl)
+            .url(authorizationCodeFlowUrl)
             .get()
             .build()
 
@@ -83,56 +79,121 @@ class MockOAuth2ServerTest {
         assertThat(response.code).isEqualTo(302)
         val httpUrl: HttpUrl = checkNotNull(response.headers["location"]?.toHttpUrlOrNull())
         assertThat(httpUrl.queryParameter("state")).isEqualTo(
-            triggerAuthCodeFlowUrl.queryParameter("state")
+            authorizationCodeFlowUrl.queryParameter("state")
         )
         assertThat(httpUrl.queryParameter("code")).isNotBlank()
         assertThat(httpUrl.newBuilder().query(null).build()).isEqualTo(
-            triggerAuthCodeFlowUrl.queryParameter("redirect_uri")?.toHttpUrlOrNull()
+            authorizationCodeFlowUrl.queryParameter("redirect_uri")?.toHttpUrlOrNull()
         )
     }
 
     @Test
     @Throws(IOException::class)
-    fun tokenWithCode() {
-        val authorizationCode = server.issueAuthorizationCodeForTest(
-            AuthenticationRequest.parse(triggerAuthCodeFlowUrl.toUri())
-        )
-        val redirectUri = triggerAuthCodeFlowUrl.queryParameter("redirect_uri").toString()
-        val formBody: RequestBody = FormBody.Builder()
-            .add("scope", "scope1")
-            .add("code", authorizationCode.value)
-            .add("redirect_uri", redirectUri)
-            .add("grant_type", "authorization_code")
-            .build()
-        val request: Request = Request.Builder()
-            .url(server.tokenEndpointUrl("default"))
-            .addHeader(
-                "Authorization", Credentials.basic(
-                    triggerAuthCodeFlowUrl.queryParameter("client_id")!!.toString(), "test"
-                )
+    fun tokenWithCodeFromDefaultIssuerShouldReturnTokensWithDefaultClaims() {
+        val response: Response = client.newCall(
+            tokenRequest(
+                "default",
+                "client1",
+                "https://myapp/callback",
+                "openid scope1"
             )
-            .post(formBody)
-            .build()
-        val response: Response = client.newCall(request).execute()
+        ).execute()
+
         assertThat(response.code).isEqualTo(200)
         val tokenResponse: OAuth2TokenResponse = jacksonObjectMapper().readValue(checkNotNull(response.body?.string()))
         assertThat(tokenResponse.accessToken).isNotNull()
         assertThat(tokenResponse.idToken).isNotNull()
         assertThat(tokenResponse.expiresIn).isGreaterThan(0)
-        assertThat(tokenResponse.scope).isEqualTo("scope1")
+        assertThat(tokenResponse.scope).contains("openid scope1")
         assertThat(tokenResponse.tokenType).isEqualTo("Bearer")
-        assertThat(SignedJWT.parse(tokenResponse.idToken).jwtClaimsSet.audience.first()).isEqualTo("client1")
+        val idToken: SignedJWT = SignedJWT.parse(tokenResponse.idToken)
+        assertThat(idToken.jwtClaimsSet.audience.first()).isEqualTo("client1")
+        val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
+        assertThat(accessToken.jwtClaimsSet.audience).containsExactly("todo")
+
     }
 
     @Test
-    fun noIssuerIdInUrl() {
+    @Throws(IOException::class)
+    fun tokenWithCodeFromCustomIssuerShouldReturnTokensWithClaimsFromEnqueuedCallback() {
+        server.enqueueCallback(
+            DefaultJwtCallback(
+                issuerId = "custom",
+                subject = "yolo"
+            )
+        )
+        val response: Response = client.newCall(
+            tokenRequest(
+                "custom",
+                "client1",
+                "https://myapp/callback",
+                "openid scope1"
+            )
+        ).execute()
+
+        assertThat(response.code).isEqualTo(200)
+        val tokenResponse: OAuth2TokenResponse = jacksonObjectMapper().readValue(checkNotNull(response.body?.string()))
+        assertThat(tokenResponse.accessToken).isNotNull()
+        assertThat(tokenResponse.idToken).isNotNull()
+        assertThat(tokenResponse.expiresIn).isGreaterThan(0)
+        assertThat(tokenResponse.scope).contains("openid scope1")
+        assertThat(tokenResponse.tokenType).isEqualTo("Bearer")
+        val idToken: SignedJWT = SignedJWT.parse(tokenResponse.idToken)
+        assertThat(idToken.jwtClaimsSet.audience.first()).isEqualTo("client1")
+        val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
+        assertThat(accessToken.jwtClaimsSet.audience).containsExactly("todo")
+        assertThat(accessToken.jwtClaimsSet.subject).isEqualTo("yolo")
+        assertThat(accessToken.jwtClaimsSet.issuer).endsWith("custom")
+    }
+
+
+    @Test
+    fun noIssuerIdInUrlShouldReturn404() {
         val request: Request = Request.Builder()
-            .url(server.baseUrl())
+            .url(server.baseUrl().newBuilder().addPathSegments("/.well-known/openid-configuration").build())
             .get()
             .build()
 
-        val responseBody: String? = client.newCall(request).execute().body?.string()
-        println("body: $responseBody")
+        assertThat(client.newCall(request).execute().code).isEqualTo(404)
     }
-    // TODO tests for exception handling
+
+    private fun tokenRequest(issuerId: String, clientId: String, redirectUri: String, scope: String): Request {
+        val authorizationCodeFlowUrl: HttpUrl = authorizationCodeFlowUrl(
+            issuerId,
+            clientId,
+            redirectUri,
+            scope
+        )
+        val authorizationCode = server.issueAuthorizationCodeForTest(
+            AuthenticationRequest.parse(authorizationCodeFlowUrl.toUri())
+        )
+        val formBody: RequestBody = FormBody.Builder()
+            .add("scope", scope)
+            .add("code", authorizationCode.value)
+            .add("redirect_uri", redirectUri)
+            .add("grant_type", "authorization_code")
+            .build()
+        return Request.Builder()
+            .url(server.tokenEndpointUrl(issuerId))
+            .addHeader("Authorization", Credentials.basic(clientId, "test"))
+            .post(formBody)
+            .build()
+    }
+
+    private fun authorizationCodeFlowUrl(
+        issuerId: String,
+        clientId: String,
+        redirectUri: String,
+        scope: String
+    ): HttpUrl {
+        return server.authorizationEndpointUrl(issuerId).newBuilder()
+            .addEncodedQueryParameter("client_id", clientId)
+            .addEncodedQueryParameter("response_type", "code")
+            .addEncodedQueryParameter("redirect_uri", redirectUri)
+            .addEncodedQueryParameter("response_mode", "query")
+            .addEncodedQueryParameter("scope", URLEncoder.encode(scope, "UTF-8"))
+            .addEncodedQueryParameter("state", "1234")
+            .addEncodedQueryParameter("nonce", "5678")
+            .build()
+    }
 }

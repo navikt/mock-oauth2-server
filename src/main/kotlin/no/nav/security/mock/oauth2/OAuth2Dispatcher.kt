@@ -9,7 +9,6 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import mu.KotlinLogging
 import no.nav.security.mock.callback.DefaultJwtCallback
 import no.nav.security.mock.callback.JwtCallback
-import no.nav.security.mock.callback.MockOAuth2Callback
 import no.nav.security.mock.extensions.asAuthenticationRequest
 import no.nav.security.mock.extensions.asTokenRequest
 import no.nav.security.mock.extensions.authenticationSuccess
@@ -29,14 +28,29 @@ import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
 
 class OAuth2Dispatcher(
     // TODO rename to OAuth2DispatcherCallback?
-    private val mockOAuth2Callbacks: Set<MockOAuth2Callback> = setOf(MockOAuth2Callback("default")),
+    private val jwtCallbacks: Set<JwtCallback> = setOf(DefaultJwtCallback()),
     private val oAuth2TokenIssuer: OAuth2TokenIssuer = OAuth2TokenIssuer()
 ) : Dispatcher() {
+
+
+    private val jwtCallbackQueue: BlockingQueue<JwtCallback> = LinkedBlockingQueue()
+
+    private fun takeJwtCallbackOrCreateDefault(issuerId: String): JwtCallback {
+        if (jwtCallbackQueue.peek()?.issuerId() == issuerId) {
+            return jwtCallbackQueue.take()
+        }
+        return jwtCallbacks?.firstOrNull { it.issuerId() == issuerId }
+            ?: DefaultJwtCallback()
+    }
+
+    fun enqueueJwtCallback(jwtCallback: JwtCallback) = jwtCallbackQueue.add(jwtCallback)
 
     override fun dispatch(request: RecordedRequest): MockResponse {
         return runCatching {
@@ -73,6 +87,7 @@ class OAuth2Dispatcher(
             }
             url.isTokenEndpointUrl() -> {
                 log.debug("handle token request $request")
+                val jwtCallback: JwtCallback = takeJwtCallbackOrCreateDefault(issuerId)
                 val tokenRequest: TokenRequest = request.asTokenRequest()
                 val issuerUrl: HttpUrl = request.requestUrl?.toIssuerUrl()
                     ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "issuerid must be first segment in url path")
@@ -82,7 +97,7 @@ class OAuth2Dispatcher(
                             oAuth2TokenIssuer.authorizationCodeTokenResponse(
                                 issuerUrl = issuerUrl,
                                 tokenRequest = tokenRequest,
-                                jwtCallback = jwtCallback(issuerId)
+                                jwtCallback = jwtCallback
                             )
                         )
                     }
@@ -103,11 +118,6 @@ class OAuth2Dispatcher(
                 MockResponse().setResponseCode(404).setBody(msg)
             }
         }
-    }
-
-    private fun jwtCallback(issuerId: String): JwtCallback {
-        return mockOAuth2Callbacks.firstOrNull { it.issuerId == issuerId }?.jwtCallback
-            ?: DefaultJwtCallback()
     }
 
     private fun wellKnown(request: RecordedRequest): WellKnown =
