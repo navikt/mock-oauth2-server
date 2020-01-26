@@ -110,7 +110,6 @@ class MockOAuth2ServerTest {
         assertThat(idToken.jwtClaimsSet.audience.first()).isEqualTo("client1")
         val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
         assertThat(accessToken.jwtClaimsSet.audience).containsExactly("todo")
-
     }
 
     @Test
@@ -145,7 +144,6 @@ class MockOAuth2ServerTest {
         assertThat(accessToken.jwtClaimsSet.subject).isEqualTo("yolo")
         assertThat(accessToken.jwtClaimsSet.issuer).endsWith("custom")
     }
-
 
     @Test
     fun noIssuerIdInUrlShouldReturn404() {

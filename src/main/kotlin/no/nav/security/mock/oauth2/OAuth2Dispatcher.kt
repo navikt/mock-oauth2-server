@@ -39,14 +39,13 @@ class OAuth2Dispatcher(
     private val oAuth2TokenIssuer: OAuth2TokenIssuer = OAuth2TokenIssuer()
 ) : Dispatcher() {
 
-
     private val jwtCallbackQueue: BlockingQueue<JwtCallback> = LinkedBlockingQueue()
 
     private fun takeJwtCallbackOrCreateDefault(issuerId: String): JwtCallback {
         if (jwtCallbackQueue.peek()?.issuerId() == issuerId) {
             return jwtCallbackQueue.take()
         }
-        return jwtCallbacks?.firstOrNull { it.issuerId() == issuerId }
+        return jwtCallbacks.firstOrNull { it.issuerId() == issuerId }
             ?: DefaultJwtCallback()
     }
 
