@@ -1,6 +1,6 @@
 package no.nav.security.mock.extensions
 
-import OAuth2Exception
+import no.nav.security.mock.oauth2.OAuth2Exception
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.http.HTTPRequest

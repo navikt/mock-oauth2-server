@@ -1,6 +1,6 @@
 package no.nav.security.mock.extensions
 
-import OAuth2Exception
+import no.nav.security.mock.oauth2.OAuth2Exception
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.GrantType

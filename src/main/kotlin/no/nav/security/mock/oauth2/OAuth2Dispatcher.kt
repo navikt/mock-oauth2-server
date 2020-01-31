@@ -1,7 +1,5 @@
 package no.nav.security.mock.oauth2
 
-import OAuth2Exception
-import OAuth2TokenIssuer
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.GeneralException
 import com.nimbusds.oauth2.sdk.OAuth2Error
@@ -33,11 +31,13 @@ import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
 
+// TODO: support more flows and oidc session management / logout
 class OAuth2Dispatcher(
     // TODO rename to OAuth2DispatcherCallback?
     private val jwtCallbacks: Set<JwtCallback> = setOf(DefaultJwtCallback()),
     private val oAuth2TokenIssuer: OAuth2TokenIssuer = OAuth2TokenIssuer()
 ) : Dispatcher() {
+
 
     private val jwtCallbackQueue: BlockingQueue<JwtCallback> = LinkedBlockingQueue()
 

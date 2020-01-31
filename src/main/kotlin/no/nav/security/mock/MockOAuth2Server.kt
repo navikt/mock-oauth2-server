@@ -1,6 +1,6 @@
 package no.nav.security.mock
 
-import OAuth2TokenIssuer
+import no.nav.security.mock.oauth2.OAuth2TokenIssuer
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import no.nav.security.mock.callback.DefaultJwtCallback
@@ -17,7 +17,7 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import java.io.IOException
 
-internal class MockOAuth2Server(
+class MockOAuth2Server(
     jwtCallbacks: Set<JwtCallback> = setOf(DefaultJwtCallback())
 ) {
     private val mockWebServer: MockWebServer = MockWebServer()

@@ -1,3 +1,5 @@
+package no.nav.security.mock.oauth2
+
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
@@ -15,7 +17,6 @@ import mu.KotlinLogging
 import no.nav.security.mock.callback.JwtCallback
 import no.nav.security.mock.extensions.authorizationCodeResponse
 import no.nav.security.mock.extensions.clientIdAsString
-import no.nav.security.mock.oauth2.OAuth2TokenResponse
 import okhttp3.HttpUrl
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -29,9 +30,8 @@ import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 
-class OAuth2TokenIssuer(
+open class OAuth2TokenIssuer {
     private val jwtTokenProvider: JwtTokenProvider = JwtTokenProvider()
-) {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
 
     fun jwks(): JWKSet = jwtTokenProvider.publicJwkSet()
@@ -127,7 +127,7 @@ class OAuth2TokenIssuer(
     }
 }
 
-class JwtTokenProvider {
+internal class JwtTokenProvider {
     private val jwkSet: JWKSet
     private val rsaKey: RSAKey
     fun publicJwkSet(): JWKSet {

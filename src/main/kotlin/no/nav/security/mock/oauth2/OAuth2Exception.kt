@@ -1,3 +1,5 @@
+package no.nav.security.mock.oauth2
+
 import com.nimbusds.oauth2.sdk.ErrorObject
 
 class OAuth2Exception(val errorObject: ErrorObject?, msg: String, throwable: Throwable?) :
