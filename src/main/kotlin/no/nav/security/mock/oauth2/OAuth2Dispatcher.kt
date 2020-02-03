@@ -26,6 +26,7 @@ import no.nav.security.mock.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
+import no.nav.security.mock.oauth2.grant.JwtBearerGrantHandler
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -46,7 +47,8 @@ class OAuth2Dispatcher(
 
     private val grantHandlers: Map<GrantType, GrantHandler> = mapOf(
         GrantType.AUTHORIZATION_CODE to AuthorizationCodeHandler(tokenProvider),
-        GrantType.CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(tokenProvider)
+        GrantType.CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(tokenProvider),
+        GrantType.JWT_BEARER to JwtBearerGrantHandler(tokenProvider)
     )
 
     private fun takeJwtCallbackOrCreateDefault(issuerId: String): TokenCallback {
@@ -54,7 +56,7 @@ class OAuth2Dispatcher(
             return tokenCallbackQueue.take()
         }
         return tokenCallbacks.firstOrNull { it.issuerId() == issuerId }
-            ?: DefaultTokenCallback(issuerId = issuerId, audience = "default")
+            ?: DefaultTokenCallback(issuerId = issuerId)
     }
 
     fun enqueueJwtCallback(tokenCallback: TokenCallback) = tokenCallbackQueue.add(tokenCallback)

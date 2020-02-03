@@ -3,6 +3,7 @@ package no.nav.security.mock
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.SignedJWT
+import com.nimbusds.oauth2.sdk.GrantType
 import no.nav.security.mock.callback.DefaultTokenCallback
 import no.nav.security.mock.oauth2.OAuth2TokenResponse
 import okhttp3.Credentials
@@ -47,18 +48,14 @@ class MockOAuth2ServerTest {
         assertWellKnownResponseForIssuer("bar")
     }
 
-    private fun assertWellKnownResponseForIssuer(issuerId: String): String? {
+    @Test
+    fun noIssuerIdInUrlShouldReturn404() {
         val request: Request = Request.Builder()
-            .url(server.wellKnownUrl(issuerId))
+            .url(server.baseUrl().newBuilder().addPathSegments("/.well-known/openid-configuration").build())
             .get()
             .build()
 
-        val responseBody: String? = client.newCall(request).execute().body?.string()
-        assertThat(responseBody).contains(server.authorizationEndpointUrl(issuerId).toString())
-        assertThat(responseBody).contains(server.tokenEndpointUrl(issuerId).toString())
-        assertThat(responseBody).contains(server.jwksUrl(issuerId).toString())
-        assertThat(responseBody).contains(server.issuerUrl(issuerId).toString())
-        return responseBody
+        assertThat(client.newCall(request).execute().code).isEqualTo(404)
     }
 
     @Test
@@ -90,7 +87,7 @@ class MockOAuth2ServerTest {
     @Throws(IOException::class)
     fun tokenRequestWithCodeShouldReturnTokensWithDefaultClaims() {
         val response: Response = client.newCall(
-            tokenRequest(
+            authCodeTokenRequest(
                 "default",
                 "client1",
                 "https://myapp/callback",
@@ -124,7 +121,7 @@ class MockOAuth2ServerTest {
         )
 
         val response: Response = client.newCall(
-            tokenRequest(
+            authCodeTokenRequest(
                 "custom",
                 "client1",
                 "https://myapp/callback",
@@ -149,16 +146,62 @@ class MockOAuth2ServerTest {
     }
 
     @Test
-    fun noIssuerIdInUrlShouldReturn404() {
+    fun tokenRequestForjwtBearerGrant() {
+        val signedJWT = server.issueToken("default", "client1", DefaultTokenCallback())
+        val response: Response = client.newCall(
+            jwtBearerGrantTokenRequest(
+                "default",
+                "client1",
+                "scope1",
+                signedJWT.serialize()
+            )
+        ).execute()
+
+        assertThat(response.code).isEqualTo(200)
+        val tokenResponse: OAuth2TokenResponse = jacksonObjectMapper().readValue(checkNotNull(response.body?.string()))
+        assertThat(tokenResponse.accessToken).isNotNull()
+        assertThat(tokenResponse.idToken).isNull()
+        assertThat(tokenResponse.expiresIn).isGreaterThan(0)
+        assertThat(tokenResponse.scope).contains("scope1")
+        assertThat(tokenResponse.tokenType).isEqualTo("Bearer")
+        val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
+        assertThat(accessToken.jwtClaimsSet.audience).containsExactly("scope1")
+        assertThat(accessToken.jwtClaimsSet.issuer).endsWith("default")
+    }
+
+    private fun assertWellKnownResponseForIssuer(issuerId: String): String? {
         val request: Request = Request.Builder()
-            .url(server.baseUrl().newBuilder().addPathSegments("/.well-known/openid-configuration").build())
+            .url(server.wellKnownUrl(issuerId))
             .get()
             .build()
 
-        assertThat(client.newCall(request).execute().code).isEqualTo(404)
+        val responseBody: String? = client.newCall(request).execute().body?.string()
+        assertThat(responseBody).contains(server.authorizationEndpointUrl(issuerId).toString())
+        assertThat(responseBody).contains(server.tokenEndpointUrl(issuerId).toString())
+        assertThat(responseBody).contains(server.jwksUrl(issuerId).toString())
+        assertThat(responseBody).contains(server.issuerUrl(issuerId).toString())
+        return responseBody
     }
 
-    private fun tokenRequest(
+    private fun jwtBearerGrantTokenRequest(issuerId: String,
+                                           clientId: String,
+                                           scope: String,
+                                           assertion: String
+    ): Request {
+        val formBody: RequestBody = FormBody.Builder()
+            .add("scope", scope)
+            .add("assertion", assertion)
+            .add("grant_type", GrantType.JWT_BEARER.value)
+            .add("requested_token_use", "on_behalf_of")
+            .build()
+        return Request.Builder()
+            .url(server.tokenEndpointUrl(issuerId))
+            .addHeader("Authorization", Credentials.basic(clientId, "test"))
+            .post(formBody)
+            .build()
+    }
+
+    private fun authCodeTokenRequest(
         issuerId: String,
         clientId: String,
         redirectUri: String,
