@@ -45,9 +45,8 @@ class AuthorizationCodeHandler(
         val authenticationRequest = getAuthenticationRequest(tokenRequest.authorizationCode())
         val scope: String = tokenRequest.scope.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
-        val audience = "todo"
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, tokenCallback)
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, audience, nonce, tokenCallback)
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, nonce, tokenCallback)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",

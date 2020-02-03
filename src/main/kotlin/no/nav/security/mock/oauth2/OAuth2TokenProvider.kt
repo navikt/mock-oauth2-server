@@ -49,7 +49,8 @@ open class OAuth2TokenProvider {
                 tokenCallback.subject(tokenRequest),
                 tokenRequest.clientIdAsString(),
                 nonce,
-                tokenCallback.addClaims(tokenRequest)
+                tokenCallback.addClaims(tokenRequest),
+                tokenCallback.tokenExpiry()
             ).build()
         )
     }
@@ -57,7 +58,6 @@ open class OAuth2TokenProvider {
     fun accessToken(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
-        audience: String,
         nonce: String?,
         tokenCallback: TokenCallback
     ): SignedJWT {
@@ -65,10 +65,28 @@ open class OAuth2TokenProvider {
             defaultClaims(
                 issuerUrl,
                 tokenCallback.subject(tokenRequest),
-                audience,
+                tokenCallback.audience(tokenRequest),
                 nonce,
-                tokenCallback.addClaims(tokenRequest)
+                tokenCallback.addClaims(tokenRequest),
+                tokenCallback.tokenExpiry()
             ).build()
+        )
+    }
+
+    fun onBehalfOfAccessToken(
+        claimsSet: JWTClaimsSet,
+        tokenRequest: TokenRequest,
+        tokenCallback: TokenCallback
+    ): SignedJWT {
+        val now = Instant.now()
+        return createSignedJWT(
+            JWTClaimsSet.Builder(claimsSet)
+                .expirationTime(Date.from(now.plusSeconds(tokenCallback.tokenExpiry())))
+                .notBeforeTime(Date.from(now))
+                .issueTime(Date.from(now))
+                .jwtID(UUID.randomUUID().toString())
+                .audience(tokenCallback.audience(tokenRequest))
+                .build()
         )
     }
 
@@ -87,7 +105,8 @@ open class OAuth2TokenProvider {
         subject: String,
         audience: String,
         nonce: String?,
-        additionalClaims: Map<String, Any>
+        additionalClaims: Map<String, Any>,
+        expiry: Long
     ): JWTClaimsSet.Builder {
         val now = Instant.now()
         val jwtClaimsSetBuilder = JWTClaimsSet.Builder()
@@ -96,7 +115,7 @@ open class OAuth2TokenProvider {
             .issuer(issuerUrl.toString())
             .issueTime(Date.from(now))
             .notBeforeTime(Date.from(now))
-            .expirationTime(Date.from(now.plusSeconds(3600)))
+            .expirationTime(Date.from(now.plusSeconds(expiry)))
             .jwtID(UUID.randomUUID().toString())
 
         if (nonce != null) {

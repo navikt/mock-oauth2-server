@@ -41,7 +41,7 @@ class MockOAuth2ServerTest {
     }
 
     @Test
-    fun wellKnownUrlForMultipleIssuersShouldExistEvenThoughNotRegistered() {
+    fun wellKnownUrlForMultipleIssuers() {
         assertWellKnownResponseForIssuer("default")
         assertWellKnownResponseForIssuer("foo")
         assertWellKnownResponseForIssuer("bar")
@@ -62,7 +62,7 @@ class MockOAuth2ServerTest {
     }
 
     @Test
-    fun triggerAuthorizationCodeFlowWithDefaultIssuer() {
+    fun startAuthorizationCodeFlow() {
         val authorizationCodeFlowUrl = authorizationCodeFlowUrl(
             "default",
             "client1",
@@ -88,14 +88,14 @@ class MockOAuth2ServerTest {
 
     @Test
     @Throws(IOException::class)
-    fun tokenWithCodeFromDefaultIssuerShouldReturnTokensWithDefaultClaims() {
+    fun tokenRequestWithCodeShouldReturnTokensWithDefaultClaims() {
         val response: Response = client.newCall(
             tokenRequest(
                 "default",
                 "client1",
                 "https://myapp/callback",
                 "openid scope1",
-            "123"
+                "123"
             )
         ).execute()
 
@@ -107,18 +107,19 @@ class MockOAuth2ServerTest {
         assertThat(tokenResponse.scope).contains("openid scope1")
         assertThat(tokenResponse.tokenType).isEqualTo("Bearer")
         val idToken: SignedJWT = SignedJWT.parse(tokenResponse.idToken)
-        assertThat(idToken.jwtClaimsSet.audience.first()).isEqualTo("client1")
         val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
-        assertThat(accessToken.jwtClaimsSet.audience).containsExactly("todo")
+        assertThat(idToken.jwtClaimsSet.audience.first()).isEqualTo("client1")
+        assertThat(accessToken.jwtClaimsSet.audience).containsExactly("scope1")
     }
 
     @Test
     @Throws(IOException::class)
-    fun tokenWithCodeFromCustomIssuerShouldReturnTokensWithClaimsFromEnqueuedCallback() {
+    fun tokenWithCodeShouldReturnTokensWithClaimsFromEnqueuedCallback() {
         server.enqueueCallback(
             DefaultTokenCallback(
                 issuerId = "custom",
-                subject = "yolo"
+                subject = "yolo",
+                audience = "myaud"
             )
         )
 
@@ -142,7 +143,7 @@ class MockOAuth2ServerTest {
         val idToken: SignedJWT = SignedJWT.parse(tokenResponse.idToken)
         assertThat(idToken.jwtClaimsSet.audience.first()).isEqualTo("client1")
         val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
-        assertThat(accessToken.jwtClaimsSet.audience).containsExactly("todo")
+        assertThat(accessToken.jwtClaimsSet.audience).containsExactly("myaud")
         assertThat(accessToken.jwtClaimsSet.subject).isEqualTo("yolo")
         assertThat(accessToken.jwtClaimsSet.issuer).endsWith("custom")
     }

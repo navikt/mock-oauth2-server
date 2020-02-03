@@ -53,7 +53,7 @@ class MockOAuth2Server(
     fun authorizationEndpointUrl(issuerId: String): HttpUrl = mockWebServer.authorizationEndpointUrl(issuerId)
     fun baseUrl(): HttpUrl = mockWebServer.url("")
 
-    fun issueToken(issuerId: String, clientId: String, audience: String, tokenCallback: TokenCallback): SignedJWT {
+    fun issueToken(issuerId: String, clientId: String, tokenCallback: TokenCallback): SignedJWT {
         val uri = tokenEndpointUrl(issuerId)
         val issuerUrl = issuerUrl(issuerId)
         val tokenRequest = TokenRequest(
@@ -61,6 +61,6 @@ class MockOAuth2Server(
             ClientSecretBasic(ClientID(clientId), Secret("secret")),
             AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost"))
         )
-        return tokenProvider.accessToken(tokenRequest, issuerUrl, audience, null, tokenCallback)
+        return tokenProvider.accessToken(tokenRequest, issuerUrl, null, tokenCallback)
     }
 }

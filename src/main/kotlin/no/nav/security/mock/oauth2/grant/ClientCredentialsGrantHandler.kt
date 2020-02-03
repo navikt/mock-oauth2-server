@@ -8,7 +8,7 @@ import no.nav.security.mock.oauth2.OAuth2TokenResponse
 import okhttp3.HttpUrl
 import java.util.UUID
 
-class ClientCredentialsHandler(
+class ClientCredentialsGrantHandler(
     private val tokenProvider: OAuth2TokenProvider
 ) : GrantHandler {
 
@@ -20,7 +20,6 @@ class ClientCredentialsHandler(
         val accessToken = tokenProvider.accessToken(
             tokenRequest,
             issuerUrl,
-            "todo",
             null,
             tokenCallback
         )

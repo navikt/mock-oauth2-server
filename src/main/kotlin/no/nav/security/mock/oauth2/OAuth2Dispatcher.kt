@@ -24,7 +24,7 @@ import no.nav.security.mock.extensions.toIssuerUrl
 import no.nav.security.mock.extensions.toJwksUrl
 import no.nav.security.mock.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
-import no.nav.security.mock.oauth2.grant.ClientCredentialsHandler
+import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
@@ -39,14 +39,14 @@ private val log = KotlinLogging.logger {}
 class OAuth2Dispatcher(
     private val tokenProvider: OAuth2TokenProvider = OAuth2TokenProvider(),
     // TODO rename to OAuth2DispatcherCallback?
-    private val tokenCallbacks: Set<TokenCallback> = setOf(DefaultTokenCallback())
+    private val tokenCallbacks: Set<TokenCallback> = setOf(DefaultTokenCallback(audience = "default"))
 ) : Dispatcher() {
 
     private val tokenCallbackQueue: BlockingQueue<TokenCallback> = LinkedBlockingQueue()
 
     private val grantHandlers: Map<GrantType, GrantHandler> = mapOf(
         GrantType.AUTHORIZATION_CODE to AuthorizationCodeHandler(tokenProvider),
-        GrantType.CLIENT_CREDENTIALS to ClientCredentialsHandler(tokenProvider)
+        GrantType.CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(tokenProvider)
     )
 
     private fun takeJwtCallbackOrCreateDefault(issuerId: String): TokenCallback {
@@ -54,7 +54,7 @@ class OAuth2Dispatcher(
             return tokenCallbackQueue.take()
         }
         return tokenCallbacks.firstOrNull { it.issuerId() == issuerId }
-            ?: DefaultTokenCallback(issuerId = issuerId)
+            ?: DefaultTokenCallback(issuerId = issuerId, audience = "default")
     }
 
     fun enqueueJwtCallback(tokenCallback: TokenCallback) = tokenCallbackQueue.add(tokenCallback)
