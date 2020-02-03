@@ -51,7 +51,6 @@ class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvider) : Gr
         (tokenRequest.authorizationGrant as? JWTBearerGrant)?.jwtAssertion?.jwtClaimsSet
             ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "missing required parameter assertion")
 
-
     private fun verifyAssertion(issuerUrl: HttpUrl, assertion: String): JWTClaimsSet {
         val jwtProcessor: ConfigurableJWTProcessor<SecurityContext?> = DefaultJWTProcessor()
         jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("at+jwt"))
