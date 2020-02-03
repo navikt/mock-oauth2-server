@@ -1,12 +1,13 @@
 package no.nav.security.mock.oauth2
 
-import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.GeneralException
+import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
+import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import mu.KotlinLogging
-import no.nav.security.mock.callback.DefaultJwtCallback
-import no.nav.security.mock.callback.JwtCallback
+import no.nav.security.mock.callback.DefaultTokenCallback
+import no.nav.security.mock.callback.TokenCallback
 import no.nav.security.mock.extensions.asAuthenticationRequest
 import no.nav.security.mock.extensions.asTokenRequest
 import no.nav.security.mock.extensions.authenticationSuccess
@@ -22,6 +23,9 @@ import no.nav.security.mock.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.extensions.toIssuerUrl
 import no.nav.security.mock.extensions.toJwksUrl
 import no.nav.security.mock.extensions.toTokenEndpointUrl
+import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
+import no.nav.security.mock.oauth2.grant.ClientCredentialsHandler
+import no.nav.security.mock.oauth2.grant.GrantHandler
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -33,23 +37,27 @@ private val log = KotlinLogging.logger {}
 
 // TODO: support more flows and oidc session management / logout
 class OAuth2Dispatcher(
+    private val tokenProvider: OAuth2TokenProvider = OAuth2TokenProvider(),
     // TODO rename to OAuth2DispatcherCallback?
-    private val jwtCallbacks: Set<JwtCallback> = setOf(DefaultJwtCallback()),
-    private val oAuth2TokenIssuer: OAuth2TokenIssuer = OAuth2TokenIssuer()
+    private val tokenCallbacks: Set<TokenCallback> = setOf(DefaultTokenCallback())
 ) : Dispatcher() {
 
+    private val tokenCallbackQueue: BlockingQueue<TokenCallback> = LinkedBlockingQueue()
 
-    private val jwtCallbackQueue: BlockingQueue<JwtCallback> = LinkedBlockingQueue()
+    private val grantHandlers: Map<GrantType, GrantHandler> = mapOf(
+        GrantType.AUTHORIZATION_CODE to AuthorizationCodeHandler(tokenProvider),
+        GrantType.CLIENT_CREDENTIALS to ClientCredentialsHandler(tokenProvider)
+    )
 
-    private fun takeJwtCallbackOrCreateDefault(issuerId: String): JwtCallback {
-        if (jwtCallbackQueue.peek()?.issuerId() == issuerId) {
-            return jwtCallbackQueue.take()
+    private fun takeJwtCallbackOrCreateDefault(issuerId: String): TokenCallback {
+        if (tokenCallbackQueue.peek()?.issuerId() == issuerId) {
+            return tokenCallbackQueue.take()
         }
-        return jwtCallbacks.firstOrNull { it.issuerId() == issuerId }
-            ?: DefaultJwtCallback()
+        return tokenCallbacks.firstOrNull { it.issuerId() == issuerId }
+            ?: DefaultTokenCallback(issuerId = issuerId)
     }
 
-    fun enqueueJwtCallback(jwtCallback: JwtCallback) = jwtCallbackQueue.add(jwtCallback)
+    fun enqueueJwtCallback(tokenCallback: TokenCallback) = tokenCallbackQueue.add(tokenCallback)
 
     override fun dispatch(request: RecordedRequest): MockResponse {
         return runCatching {
@@ -72,7 +80,7 @@ class OAuth2Dispatcher(
         log.debug("received request on url=${request.requestUrl} with headers=${request.headers}")
         val issuerId: String = request.issuerId()
         val url = checkNotNull(request.requestUrl)
-        // TODO validate issuerid against registered issuers???
+
         return when {
             url.isWellKnownUrl() -> {
                 log.debug("returning well-known json data")
@@ -80,36 +88,32 @@ class OAuth2Dispatcher(
             }
             url.isAuthorizationEndpointUrl() -> {
                 log.debug("redirecting to callback with auth code")
-                MockResponse().authenticationSuccess(
-                    oAuth2TokenIssuer.authorizationCodeResponse(request.asAuthenticationRequest())
-                )
+                val authRequest: AuthenticationRequest = request.asAuthenticationRequest()
+
+                when {
+                    authRequest.responseType.impliesCodeFlow() -> {
+                        MockResponse().authenticationSuccess(
+                            (grantHandlers[GrantType.AUTHORIZATION_CODE] as AuthorizationCodeHandler)
+                                .authorizationCodeResponse(request.asAuthenticationRequest())
+                        )
+                    }
+                    else -> throw OAuth2Exception(
+                        OAuth2Error.INVALID_GRANT, "hybrid og implicit flow not supported (yet)."
+                    )
+                }
             }
             url.isTokenEndpointUrl() -> {
                 log.debug("handle token request $request")
-                val jwtCallback: JwtCallback = takeJwtCallbackOrCreateDefault(issuerId)
+                val tokenCallback: TokenCallback = takeJwtCallbackOrCreateDefault(issuerId)
                 val tokenRequest: TokenRequest = request.asTokenRequest()
-                val issuerUrl: HttpUrl = request.requestUrl?.toIssuerUrl()
-                    ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "issuerid must be first segment in url path")
-                when {
-                    tokenRequest.grantType() == AuthorizationCodeGrant.GRANT_TYPE -> {
-                        MockResponse().json(
-                            oAuth2TokenIssuer.authorizationCodeTokenResponse(
-                                issuerUrl = issuerUrl,
-                                tokenRequest = tokenRequest,
-                                jwtCallback = jwtCallback
-                            )
-                        )
-                    }
-                    else -> {
-                        val msg = "grant_type ${tokenRequest.grantType()} not supported."
-                        log.error(msg)
-                        throw OAuth2Exception(OAuth2Error.INVALID_GRANT, msg)
-                    }
-                }
+                val issuerUrl: HttpUrl = issuerUrl(request)
+                MockResponse().json(
+                    grantHandler(tokenRequest.grantType()).tokenResponse(tokenRequest, issuerUrl, tokenCallback)
+                )
             }
             url.isJwksUrl() -> {
                 log.debug("handle jwks request")
-                MockResponse().json(oAuth2TokenIssuer.jwks().toJSONObject())
+                MockResponse().json(tokenProvider.publicJwkSet().toJSONObject())
             }
             else -> {
                 val msg = "path '${request.requestUrl}' not found"
@@ -125,5 +129,14 @@ class OAuth2Dispatcher(
             authorizationEndpoint = request.requestUrl?.toAuthorizationEndpointUrl().toString(),
             tokenEndpoint = request.requestUrl?.toTokenEndpointUrl().toString(),
             jwksUri = request.requestUrl?.toJwksUrl().toString()
+        )
+
+    private fun issuerUrl(request: RecordedRequest): HttpUrl =
+        request.requestUrl?.toIssuerUrl()
+            ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "issuerid must be first segment in url path")
+
+    private fun grantHandler(grantType: GrantType): GrantHandler =
+        grantHandlers[grantType] ?: throw OAuth2Exception(
+            OAuth2Error.INVALID_GRANT, "grant_type $grantType not supported."
         )
 }

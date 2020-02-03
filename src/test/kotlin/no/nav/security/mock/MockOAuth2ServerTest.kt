@@ -3,8 +3,7 @@ package no.nav.security.mock
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.SignedJWT
-import com.nimbusds.openid.connect.sdk.AuthenticationRequest
-import no.nav.security.mock.callback.DefaultJwtCallback
+import no.nav.security.mock.callback.DefaultTokenCallback
 import no.nav.security.mock.oauth2.OAuth2TokenResponse
 import okhttp3.Credentials
 import okhttp3.FormBody
@@ -95,7 +94,8 @@ class MockOAuth2ServerTest {
                 "default",
                 "client1",
                 "https://myapp/callback",
-                "openid scope1"
+                "openid scope1",
+            "123"
             )
         ).execute()
 
@@ -116,17 +116,19 @@ class MockOAuth2ServerTest {
     @Throws(IOException::class)
     fun tokenWithCodeFromCustomIssuerShouldReturnTokensWithClaimsFromEnqueuedCallback() {
         server.enqueueCallback(
-            DefaultJwtCallback(
+            DefaultTokenCallback(
                 issuerId = "custom",
                 subject = "yolo"
             )
         )
+
         val response: Response = client.newCall(
             tokenRequest(
                 "custom",
                 "client1",
                 "https://myapp/callback",
-                "openid scope1"
+                "openid scope1",
+                "123"
             )
         ).execute()
 
@@ -155,19 +157,16 @@ class MockOAuth2ServerTest {
         assertThat(client.newCall(request).execute().code).isEqualTo(404)
     }
 
-    private fun tokenRequest(issuerId: String, clientId: String, redirectUri: String, scope: String): Request {
-        val authorizationCodeFlowUrl: HttpUrl = authorizationCodeFlowUrl(
-            issuerId,
-            clientId,
-            redirectUri,
-            scope
-        )
-        val authorizationCode = server.issueAuthorizationCodeForTest(
-            AuthenticationRequest.parse(authorizationCodeFlowUrl.toUri())
-        )
+    private fun tokenRequest(
+        issuerId: String,
+        clientId: String,
+        redirectUri: String,
+        scope: String,
+        code: String
+    ): Request {
         val formBody: RequestBody = FormBody.Builder()
             .add("scope", scope)
-            .add("code", authorizationCode.value)
+            .add("code", code)
             .add("redirect_uri", redirectUri)
             .add("grant_type", "authorization_code")
             .build()

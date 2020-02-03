@@ -15,7 +15,7 @@ fun HttpUrl.toTokenEndpointUrl(): HttpUrl = this.resolvePath("/${issuerId()}/tok
 fun HttpUrl.toJwksUrl(): HttpUrl = this.resolvePath("/${issuerId()}/jwks")
 fun HttpUrl.toIssuerUrl(): HttpUrl = this.resolvePath("/${issuerId()}")
 
-fun HttpUrl.issuerId(): String? = this.pathSegments.getOrNull(0)
+fun HttpUrl.issuerId(): String = this.pathSegments.getOrNull(0)
     ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "issuerId must be first segment in url path")
 
 private fun HttpUrl.withoutQuery(): HttpUrl = this.newBuilder().query(null).build()
