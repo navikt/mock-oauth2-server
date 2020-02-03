@@ -183,10 +183,11 @@ class MockOAuth2ServerTest {
         return responseBody
     }
 
-    private fun jwtBearerGrantTokenRequest(issuerId: String,
-                                           clientId: String,
-                                           scope: String,
-                                           assertion: String
+    private fun jwtBearerGrantTokenRequest(
+        issuerId: String,
+        clientId: String,
+        scope: String,
+        assertion: String
     ): Request {
         val formBody: RequestBody = FormBody.Builder()
             .add("scope", scope)
