@@ -11,9 +11,6 @@ val kotlinVersion = "1.3.61"
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.StandaloneMockOAuth2ServerKt"
 
-group = "no.nav.security"
-version = "0.1-SNAPSHOT"
-
 plugins {
     application
     kotlin("jvm") version "1.3.61"
@@ -61,7 +58,7 @@ dependencies {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = "mock-oauth2-server"
+            artifactId = "${rootProject.name}"
             from(components["java"])
             versionMapping {
                 usage("java-api") {
@@ -73,9 +70,9 @@ publishing {
                 }
             }
             pom {
-                name.set("mock-oauth2-server")
+                name.set("${rootProject.name}")
                 description.set("A simple mock oauth2 server based on OkHttp MockWebServer")
-                url.set("https://github.com/navikt/mock-oauth2-server")
+                url.set("https://github.com/navikt/${rootProject.name}")
 
                 licenses {
                     license {
@@ -95,9 +92,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:git://github.com/navikt/mock-oauth2-server.git")
-                    developerConnection.set("scm:git:ssh://github.com/navikt/mock-oauth2-server.git")
-                    url.set("https://github.com/navikt/mock-oauth2-server")
+                    connection.set("scm:git:git://github.com/navikt/${rootProject.name}.git")
+                    developerConnection.set("scm:git:ssh://github.com/navikt/${rootProject.name}.git")
+                    url.set("https://github.com/navikt/${rootProject.name}")
                 }
                 withXml {
                     //dependencies.
@@ -114,10 +111,17 @@ publishing {
     }
     repositories {
         maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/navikt/${rootProject.name}")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+           /*
             // change URLs to point to your repos, e.g. http://my.org/repo
             val releasesRepoUrl = uri("$mavenRepoBaseUrl/service/local/staging/deploy/maven2/")
             val snapshotsRepoUrl = uri("$mavenRepoBaseUrl/content/repositories/snapshots")
-            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
+            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl*/
         }
     }
 }
