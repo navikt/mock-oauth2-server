@@ -1,5 +1,3 @@
-import org.gradle.kotlin.dsl.application
-
 val assertjVersion = "3.14.0"
 val kotlinLoggingVersion = "1.7.8"
 val logbackVersion = "1.2.3"
@@ -145,7 +143,9 @@ jib {
 }
 
 tasks {
-
+    withType<org.jmailen.gradle.kotlinter.tasks.LintTask> {
+        dependsOn("formatKotlin")
+    }
     withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
         archiveBaseName.set("app")
         archiveClassifier.set("")

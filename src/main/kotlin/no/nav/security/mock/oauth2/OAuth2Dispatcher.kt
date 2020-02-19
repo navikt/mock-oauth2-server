@@ -41,7 +41,6 @@ private val log = KotlinLogging.logger {}
 // TODO: support more flows and oidc session management / logout
 class OAuth2Dispatcher(
     private val tokenProvider: OAuth2TokenProvider = OAuth2TokenProvider(),
-    // TODO rename to OAuth2DispatcherCallback?
     private val tokenCallbacks: Set<TokenCallback> = setOf(DefaultTokenCallback(audience = "default"))
 ) : Dispatcher() {
 
