@@ -1,8 +1,10 @@
 package no.nav.security.mock.oauth2
 
+import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.GeneralException
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.OAuth2Error
+import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import mu.KotlinLogging
@@ -66,15 +68,7 @@ class OAuth2Dispatcher(
             handleRequest(request)
         }.fold(
             onSuccess = { result -> result },
-            onFailure = { error ->
-                log.error("received exception when handling request.", error)
-                val errorObject = (error as? OAuth2Exception)
-                    ?.errorObject?.appendDescription(". ${error.message}")
-                    ?: (error as? GeneralException)?.errorObject
-                    ?: OAuth2Error.SERVER_ERROR
-                        .appendDescription(". received exception message: ${error.message}")
-                MockResponse().oauth2Error(errorObject)
-            }
+            onFailure = { error -> handleException(error) }
         )
     }
 
@@ -85,7 +79,7 @@ class OAuth2Dispatcher(
 
         return when {
             url.isWellKnownUrl() -> {
-                log.debug("returning well-known json data")
+                log.debug("returning well-known json data for url=$url")
                 MockResponse().json(wellKnown(request))
             }
             url.isAuthorizationEndpointUrl() -> {
@@ -107,7 +101,9 @@ class OAuth2Dispatcher(
             url.isTokenEndpointUrl() -> {
                 log.debug("handle token request $request")
                 val tokenCallback: TokenCallback = takeJwtCallbackOrCreateDefault(issuerId)
-                val tokenRequest: TokenRequest = request.asTokenRequest()
+                val tokenRequest: TokenRequest = request.asTokenRequest().also {
+                    log.debug("query in tokenreq: ${it.toHTTPRequest().query}")
+                }
                 val issuerUrl: HttpUrl = issuerUrl(request)
                 MockResponse().json(
                     grantHandler(tokenRequest.grantType()).tokenResponse(tokenRequest, issuerUrl, tokenCallback)
@@ -123,6 +119,21 @@ class OAuth2Dispatcher(
                 MockResponse().setResponseCode(404).setBody(msg)
             }
         }
+    }
+
+    private fun handleException(error: Throwable): MockResponse {
+        log.error("received exception when handling request.", error)
+        val errorObject: ErrorObject = when (error) {
+            is OAuth2Exception -> error.errorObject
+            is ParseException -> error.errorObject
+                ?: OAuth2Error.INVALID_REQUEST
+                    .appendDescription(". received exception message: ${error.message}")
+            is GeneralException -> error.errorObject
+            else -> null
+        } ?: OAuth2Error.SERVER_ERROR
+            .appendDescription(". received exception message: ${error.message}")
+
+        return MockResponse().oauth2Error(errorObject)
     }
 
     private fun wellKnown(request: RecordedRequest): WellKnown =

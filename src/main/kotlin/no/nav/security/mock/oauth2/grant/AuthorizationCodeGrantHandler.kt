@@ -43,7 +43,7 @@ class AuthorizationCodeHandler(
         tokenCallback: TokenCallback
     ): OAuth2TokenResponse {
         val authenticationRequest = getAuthenticationRequest(tokenRequest.authorizationCode())
-        val scope: String = tokenRequest.scope.toString()
+        val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, tokenCallback)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, nonce, tokenCallback)

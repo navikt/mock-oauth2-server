@@ -1,7 +1,7 @@
 package no.nav.security.mock.extensions
 
-import no.nav.security.mock.oauth2.OAuth2Exception
 import com.nimbusds.oauth2.sdk.OAuth2Error
+import no.nav.security.mock.oauth2.OAuth2Exception
 import okhttp3.HttpUrl
 
 fun HttpUrl.isWellKnownUrl(): Boolean = this == this.toWellKnownUrl()

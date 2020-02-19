@@ -7,6 +7,7 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
+import mu.KotlinLogging
 import no.nav.security.mock.callback.DefaultTokenCallback
 import no.nav.security.mock.callback.TokenCallback
 import no.nav.security.mock.extensions.authorizationEndpointUrl
@@ -21,7 +22,10 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import java.io.IOException
+import java.net.InetSocketAddress
 import java.net.URI
+
+private val log = KotlinLogging.logger {}
 
 class MockOAuth2Server(
     tokenCallbacks: Set<TokenCallback> = setOf(DefaultTokenCallback())
@@ -33,6 +37,13 @@ class MockOAuth2Server(
 
     fun start() {
         mockWebServer.start()
+        mockWebServer.dispatcher = dispatcher
+    }
+
+    fun start(port: Int = 0) {
+        val address = InetSocketAddress(0).address
+        log.info("attempting to start server on port $port and InetAddress=$address")
+        mockWebServer.start(address, port)
         mockWebServer.dispatcher = dispatcher
     }
 
