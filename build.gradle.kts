@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.application
+
 val assertjVersion = "3.14.0"
 val kotlinLoggingVersion = "1.7.8"
 val logbackVersion = "1.2.3"
@@ -5,19 +7,28 @@ val nimbusSdkVersion = "6.23"
 val mockWebServerVersion = "4.3.1"
 val jacksonVersion = "2.10.1"
 val junitJupiterVersion = "5.5.2"
+val konfigVersion = "1.6.10.0"
 val kotlinVersion = "1.3.61"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
+val mainClassKt = "no.nav.security.mock.StandaloneMockOAuth2ServerKt"
 
 group = "no.nav.security"
 version = "0.1-SNAPSHOT"
 
 plugins {
+    application
     kotlin("jvm") version "1.3.61"
     id("org.jmailen.kotlinter") version "2.2.0"
+    id("com.google.cloud.tools.jib") version "2.0.0"
+    id("com.github.johnrengelman.shadow") version "5.2.0"
     `java-library`
     `maven-publish`
     signing
+}
+
+application {
+    mainClassName = mainClassKt
 }
 
 java {
@@ -38,6 +49,7 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
+    implementation("com.natpryce:konfig:$konfigVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
@@ -122,7 +134,30 @@ tasks.javadoc {
     }
 }
 
+jib {
+    from {
+        image = "gcr.io/distroless/java:11"
+    }
+    container {
+        ports = listOf("1111")
+        mainClass = mainClassKt
+    }
+}
+
 tasks {
+
+    withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+        archiveBaseName.set("app")
+        archiveClassifier.set("")
+        manifest {
+            attributes(
+                mapOf(
+                    "Main-Class" to mainClassKt
+                )
+            )
+        }
+    }
+
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
             jvmTarget = "11"
@@ -132,12 +167,12 @@ tasks {
     withType<Test> {
         useJUnitPlatform()
     }
-/*
+
     "build" {
         dependsOn("shadowJar")
+        dependsOn("jibDockerBuild")
     }
 
- */
     withType<Sign>().configureEach {
         onlyIf { !version.toString().endsWith("SNAPSHOT") }
     }
