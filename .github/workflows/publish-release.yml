@@ -6,7 +6,7 @@ on:
 
 env:
   IMAGE_BASE_NAME: docker.pkg.github.com/${{ github.repository }}
-  IMAGE_NAME: mock-oauth2-server
+  IMAGE_NAME: ${IMAGE_BASE_NAME}/${IMAGE_NAME}
 
 jobs:
   publish-release:
@@ -39,7 +39,7 @@ jobs:
           echo "New version: ${NEW_VERSION}"
           echo "Github username: ${GITHUB_ACTOR}"
           ./gradlew -Pversion=${NEW_VERSION} publish
-          ./gradlew jibDockerBuild --image="${IMAGE_BASE_NAME}/${IMAGE_NAME}:${NEW_VERSION}"
+          ./gradlew jibDockerBuild --image="${IMAGE_NAME}:${NEW_VERSION}"
           echo "$GITHUB_TOKEN" | docker login --username "$GITHUB_REPOSITORY" --password-stdin https://docker.pkg.github.com
-          docker push "${IMAGE_BASE_NAME}/${IMAGE_NAME}:${NEW_VERSION}"
+          docker push "${IMAGE_NAME}:${NEW_VERSION}"
 
