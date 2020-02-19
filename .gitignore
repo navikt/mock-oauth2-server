@@ -6,3 +6,7 @@
 out/
 build/
 .gradle/
+/gradle/caches/
+/gradle/daemon/
+/gradle/native/
+/gradle/wrapper/dists/
