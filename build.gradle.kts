@@ -97,16 +97,6 @@ publishing {
                     developerConnection.set("scm:git:ssh://github.com/navikt/${rootProject.name}.git")
                     url.set("https://github.com/navikt/${rootProject.name}")
                 }
-                withXml {
-                    //dependencies.
-                    /*asNode().dependencies.'*'.findAll() {
-                        it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
-                            dep.name == it.artifactId.text()
-                        }
-                    }.each() {
-                        it.scope*.value = 'compile'
-                    }*/
-                }
             }
         }
     }
@@ -173,11 +163,15 @@ tasks {
         useJUnitPlatform()
     }
 
-    "build" {
+    "jibDockerBuild" {
+        dependsOn("shadowJar")
+    }
+/*
+    "publish" {
         dependsOn("shadowJar")
         dependsOn("jibDockerBuild")
     }
-
+*/
     withType<Sign>().configureEach {
         onlyIf { !version.toString().endsWith("SNAPSHOT") }
     }

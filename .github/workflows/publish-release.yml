@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+env:
+  IMAGE_BASE_NAME: docker.pkg.github.com/${{ github.repository }}/${{ github.repository }}
+
 jobs:
   publish-release:
     runs-on: ubuntu-latest
@@ -35,3 +38,7 @@ jobs:
           echo "New version: ${NEW_VERSION}"
           echo "Github username: ${GITHUB_ACTOR}"
           ./gradlew -Pversion=${NEW_VERSION} publish
+          ./gradlew jibDockerBuild --image="${IMAGE_BASE_NAME}:${NEW_VERSION}"
+          echo "$GITHUB_TOKEN" | docker login --username "$GITHUB_REPOSITORY" --password-stdin https://docker.pkg.github.com
+          docker push "${IMAGE_BASE_NAME}:${NEW_VERSION}"
+
