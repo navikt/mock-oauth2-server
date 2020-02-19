@@ -20,8 +20,9 @@ fun HttpUrl.issuerId(): String = this.pathSegments.getOrNull(0)
 
 private fun HttpUrl.withoutQuery(): HttpUrl = this.newBuilder().query(null).build()
 
-private fun HttpUrl.resolvePath(path: String): HttpUrl =
-    HttpUrl.Builder()
+private fun HttpUrl.resolvePath(path: String): HttpUrl {
+
+    return HttpUrl.Builder()
         .scheme(this.scheme)
         .host(this.host)
         .port(this.port)
@@ -30,3 +31,4 @@ private fun HttpUrl.resolvePath(path: String): HttpUrl =
         OAuth2Error.INVALID_REQUEST,
         "cannot resolve path $path"
     )
+}

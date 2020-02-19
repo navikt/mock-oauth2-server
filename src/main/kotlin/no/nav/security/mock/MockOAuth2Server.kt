@@ -10,11 +10,10 @@ import com.nimbusds.oauth2.sdk.id.ClientID
 import mu.KotlinLogging
 import no.nav.security.mock.callback.DefaultTokenCallback
 import no.nav.security.mock.callback.TokenCallback
-import no.nav.security.mock.extensions.authorizationEndpointUrl
-import no.nav.security.mock.extensions.issuerUrl
-import no.nav.security.mock.extensions.jwksUrl
-import no.nav.security.mock.extensions.tokenEndpointUrl
-import no.nav.security.mock.extensions.wellKnownUrl
+import no.nav.security.mock.extensions.toAuthorizationEndpointUrl
+import no.nav.security.mock.extensions.toJwksUrl
+import no.nav.security.mock.extensions.toTokenEndpointUrl
+import no.nav.security.mock.extensions.toWellKnownUrl
 import no.nav.security.mock.oauth2.OAuth2Dispatcher
 import no.nav.security.mock.oauth2.OAuth2TokenProvider
 import okhttp3.HttpUrl
@@ -57,11 +56,11 @@ class MockOAuth2Server(
 
     fun takeRequest(): RecordedRequest = mockWebServer.takeRequest()
 
-    fun wellKnownUrl(issuerId: String): HttpUrl = mockWebServer.wellKnownUrl(issuerId)
-    fun tokenEndpointUrl(issuerId: String): HttpUrl = mockWebServer.tokenEndpointUrl(issuerId)
-    fun jwksUrl(issuerId: String): HttpUrl = mockWebServer.jwksUrl(issuerId)
-    fun issuerUrl(issuerId: String): HttpUrl = mockWebServer.issuerUrl(issuerId)
-    fun authorizationEndpointUrl(issuerId: String): HttpUrl = mockWebServer.authorizationEndpointUrl(issuerId)
+    fun wellKnownUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId).toWellKnownUrl()
+    fun tokenEndpointUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId).toTokenEndpointUrl()
+    fun jwksUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId).toJwksUrl()
+    fun issuerUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId)
+    fun authorizationEndpointUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId).toAuthorizationEndpointUrl()
     fun baseUrl(): HttpUrl = mockWebServer.url("")
 
     fun issueToken(issuerId: String, clientId: String, tokenCallback: TokenCallback): SignedJWT {
