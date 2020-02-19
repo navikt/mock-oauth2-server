@@ -127,9 +127,9 @@ publishing {
     }
 }
 
-signing {
+/*signing {
     sign(publishing.publications["mavenJava"])
-}
+}*/
 
 tasks.javadoc {
     if (JavaVersion.current().isJava9Compatible) {
