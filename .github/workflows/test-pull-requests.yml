@@ -1,9 +1,6 @@
-name: Build master
+name: Test pull requests
 
-on:
-  push:
-    branches:
-      - master
+on: [pull_request]
 
 jobs:
   build:
@@ -34,12 +31,4 @@ jobs:
             ${{ runner.os }}-gradle-wrapper-
 
       - name: Build with Gradle
-        run: ./gradlew build
-
-  release-notes:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Release Drafter
-        uses: release-drafter/release-drafter@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew clean build
