@@ -119,7 +119,7 @@ publishing {
 
 ext["signing.gnupg.keyName"] = System.getenv("GPG_KEY_NAME")
 ext["signing.gnupg.passphrase"] = System.getenv("GPG_PASSPHRASE")
-ext["signing.gnupg.useLegacyGpg"] = true
+ext["signing.gnupg.executable"] = "gpg"
 
 signing {
     useGpgCmd()
