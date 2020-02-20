@@ -42,7 +42,8 @@ jobs:
           GPG_KEY_BASE64: ${{ secrets.GPG_KEY_BASE64 }}
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: echo $GPG_KEY_BASE64 | base64 --decode | gpg --yes --batch --import
+        run:
+          export GPG_TTY=$(tty) && echo $GPG_KEY_BASE64 | base64 --decode | gpg --fast-import --batch
 
       - name: Publish artifact
         env:
@@ -57,7 +58,6 @@ jobs:
         run: |
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
           echo "New version: ${NEW_VERSION}"
-          echo "Github username: ${GITHUB_ACTOR}"
           ./gradlew -Pversion=${NEW_VERSION} publish
           ./gradlew jibDockerBuild --image="${IMAGE_NAME}:${NEW_VERSION}"
           echo "$GITHUB_TOKEN" | docker login --username "$GITHUB_REPOSITORY" --password-stdin https://docker.pkg.github.com
