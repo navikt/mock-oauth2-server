@@ -59,7 +59,7 @@ dependencies {
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = "${rootProject.name}"
+            artifactId = rootProject.name
             from(components["java"])
             versionMapping {
                 usage("java-api") {
@@ -71,7 +71,7 @@ publishing {
                 }
             }
             pom {
-                name.set("${rootProject.name}")
+                name.set(rootProject.name)
                 description.set("A simple mock oauth2 server based on OkHttp MockWebServer")
                 url.set("https://github.com/navikt/${rootProject.name}")
 
@@ -85,11 +85,6 @@ publishing {
                     developer {
                         organization.set("NAV (Arbeids- og velferdsdirektoratet) - The Norwegian Labour and Welfare Administration")
                         organizationUrl.set("https://www.nav.no")
-                    }
-                    developer {
-                        id.set("tommytroen")
-                        name.set("Tommy Trøen")
-                        email.set("tommy.troen@nav.no")
                     }
                 }
                 scm {
@@ -108,18 +103,28 @@ publishing {
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
             }
-           /*
-            // change URLs to point to your repos, e.g. http://my.org/repo
+        }
+        maven {
+            name = "Sonatype"
             val releasesRepoUrl = uri("$mavenRepoBaseUrl/service/local/staging/deploy/maven2/")
             val snapshotsRepoUrl = uri("$mavenRepoBaseUrl/content/repositories/snapshots")
-            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl*/
+            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
+            credentials {
+                username = System.getenv("SONATYPE_USERNAME")
+                password = System.getenv("SONATYPE_PASSWORD")
+            }
         }
     }
 }
 
-/*signing {
+ext["signing.gnupg.keyName"] = System.getenv("GPG_KEY_NAME")
+ext["signing.gnupg.passphrase"] = System.getenv("GPG_PASSPHRASE")
+ext["signing.gnupg.useLegacyGpg"] = true
+
+signing {
+    useGpgCmd()
     sign(publishing.publications["mavenJava"])
-}*/
+}
 
 tasks.javadoc {
     if (JavaVersion.current().isJava9Compatible) {
@@ -166,13 +171,15 @@ tasks {
     "jibDockerBuild" {
         dependsOn("shadowJar")
     }
-/*
-    "publish" {
+
+ /*   "publish" {
         dependsOn("shadowJar")
         dependsOn("jibDockerBuild")
-    }
-*/
+    }*/
+
     withType<Sign>().configureEach {
-        onlyIf { !version.toString().endsWith("SNAPSHOT") }
+        onlyIf {
+            project.hasProperty("signing.gnupg.keyName")
+        }
     }
 }
