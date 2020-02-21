@@ -18,6 +18,7 @@ plugins {
     id("com.google.cloud.tools.jib") version "2.0.0"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("net.researchgate.release") version "2.8.1"
+    id("io.codearte.nexus-staging") version "0.21.2"
     `java-library`
     `maven-publish`
     signing
@@ -54,6 +55,12 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
+}
+
+nexusStaging {
+    username = System.getenv("SONATYPE_USERNAME")
+    password = System.getenv("SONATYPE_PASSWORD")
+    packageGroup = "no.nav"
 }
 
 publishing {
