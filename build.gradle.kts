@@ -189,4 +189,8 @@ tasks {
             project.hasProperty("signing.gnupg.keyName")
         }
     }
+
+    withType<PublishToMavenRepository> {
+        finalizedBy("closeAndReleaseRepository")
+    }
 }
