@@ -19,6 +19,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("net.researchgate.release") version "2.8.1"
     id("io.codearte.nexus-staging") version "0.21.2"
+    id("de.marcphilipp.nexus-publish") version "0.3.0"
     `java-library`
     `maven-publish`
     signing
@@ -61,6 +62,12 @@ nexusStaging {
     username = System.getenv("SONATYPE_USERNAME")
     password = System.getenv("SONATYPE_PASSWORD")
     packageGroup = "no.nav"
+}
+
+nexusPublishing {
+    repositories {
+        sonatype()
+    }
 }
 
 publishing {
@@ -111,6 +118,7 @@ publishing {
                 password = System.getenv("GITHUB_TOKEN")
             }
         }
+        /*
         maven {
             name = "Sonatype"
             val releasesRepoUrl = uri("$mavenRepoBaseUrl/service/local/staging/deploy/maven2/")
@@ -120,7 +128,7 @@ publishing {
                 username = System.getenv("SONATYPE_USERNAME")
                 password = System.getenv("SONATYPE_PASSWORD")
             }
-        }
+        }*/
     }
 }
 
@@ -190,7 +198,7 @@ tasks {
         }
     }
 
-    withType<PublishToMavenRepository> {
+    /*withType<PublishToMavenRepository> {
         finalizedBy("closeAndReleaseRepository")
-    }
+    }*/
 }
