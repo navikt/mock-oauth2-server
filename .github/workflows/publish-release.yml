@@ -56,6 +56,6 @@ jobs:
           export GPG_TTY=$(tty) && echo ${GPG_KEY_BASE64} | base64 --decode | gpg --fast-import --batch
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
           echo "New version: ${NEW_VERSION}"
-          ./gradlew -Pversion=${NEW_VERSION} publish --info
+          ./gradlew -Pversion=${NEW_VERSION} publishToSonatype --info
           ./gradlew getStagingProfile closeAndReleaseRepository --info
 
