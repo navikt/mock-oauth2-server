@@ -1,3 +1,5 @@
+import java.time.Duration
+
 val assertjVersion = "3.14.0"
 val kotlinLoggingVersion = "1.7.8"
 val logbackVersion = "1.2.3"
@@ -19,7 +21,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("net.researchgate.release") version "2.8.1"
     id("io.codearte.nexus-staging") version "0.21.2"
-    id("de.marcphilipp.nexus-publish") version "0.3.0"
+    id("de.marcphilipp.nexus-publish") version "0.4.0"
     `java-library`
     `maven-publish`
     signing
@@ -65,6 +67,7 @@ nexusStaging {
 }
 
 nexusPublishing {
+    clientTimeout.set(Duration.ofMinutes(2))
     repositories {
         sonatype()
     }
