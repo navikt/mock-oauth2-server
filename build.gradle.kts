@@ -190,10 +190,13 @@ tasks {
         dependsOn("shadowJar")
     }
 
- /*   "publish" {
-        dependsOn("shadowJar")
-        dependsOn("jibDockerBuild")
-    }*/
+    "publish" {
+       dependsOn("initializeSonatypeStagingRepository")
+    }
+
+    "publishToSonatype" {
+        dependsOn("publish")
+    }
 
     withType<Sign>().configureEach {
         onlyIf {
