@@ -1,10 +1,10 @@
-package no.nav.security.mock.callback
+package no.nav.security.mock.oauth2.callback
 
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue
-import no.nav.security.mock.extensions.clientIdAsString
-import no.nav.security.mock.extensions.grantType
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
+import no.nav.security.mock.oauth2.extensions.grantType
 import java.util.UUID
 
 interface TokenCallback {
@@ -15,14 +15,16 @@ interface TokenCallback {
     fun tokenExpiry(): Long
 }
 
-class DefaultTokenCallback(
+open class DefaultTokenCallback(
     private val issuerId: String = "default",
     private val subject: String = UUID.randomUUID().toString(),
     private val audience: String? = null,
     private val claims: Map<String, Any> = emptyMap(),
     private val expiry: Long = 3600
 ) : TokenCallback {
+
     override fun issuerId(): String = issuerId
+
     override fun subject(tokenRequest: TokenRequest): String {
         return when (GrantType.CLIENT_CREDENTIALS) {
             tokenRequest.grantType() -> tokenRequest.clientID.value

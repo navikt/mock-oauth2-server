@@ -9,9 +9,8 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
-import mu.KotlinLogging
-import no.nav.security.mock.callback.TokenCallback
-import no.nav.security.mock.extensions.clientIdAsString
+import no.nav.security.mock.oauth2.callback.TokenCallback
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import okhttp3.HttpUrl
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -22,14 +21,13 @@ import java.time.Instant
 import java.util.Date
 import java.util.UUID
 
-private val log = KotlinLogging.logger {}
-
 open class OAuth2TokenProvider {
     private val jwkSet: JWKSet
     private val rsaKey: RSAKey
 
     init {
-        jwkSet = generateJWKSet(DEFAULT_KEYID)
+        jwkSet =
+            generateJWKSet(DEFAULT_KEYID)
         rsaKey = jwkSet.getKeyByKeyId(DEFAULT_KEYID) as RSAKey
     }
 
@@ -130,7 +128,12 @@ open class OAuth2TokenProvider {
     companion object {
         private const val DEFAULT_KEYID = "mock-oauth2-server-key"
         private fun generateJWKSet(keyId: String): JWKSet {
-            return JWKSet(createJWK(keyId, generateKeyPair()))
+            return JWKSet(
+                createJWK(
+                    keyId,
+                    generateKeyPair()
+                )
+            )
         }
 
         private fun generateKeyPair(): KeyPair {

@@ -1,4 +1,4 @@
-package no.nav.security.mock
+package no.nav.security.mock.oauth2
 
 import com.natpryce.konfig.ConfigurationProperties
 import com.natpryce.konfig.EnvironmentVariables

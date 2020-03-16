@@ -1,4 +1,4 @@
-package no.nav.security.mock
+package no.nav.security.mock.oauth2
 
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
@@ -8,14 +8,12 @@ import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
 import mu.KotlinLogging
-import no.nav.security.mock.callback.DefaultTokenCallback
-import no.nav.security.mock.callback.TokenCallback
-import no.nav.security.mock.extensions.toAuthorizationEndpointUrl
-import no.nav.security.mock.extensions.toJwksUrl
-import no.nav.security.mock.extensions.toTokenEndpointUrl
-import no.nav.security.mock.extensions.toWellKnownUrl
-import no.nav.security.mock.oauth2.OAuth2Dispatcher
-import no.nav.security.mock.oauth2.OAuth2TokenProvider
+import no.nav.security.mock.oauth2.callback.TokenCallback
+import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toJwksUrl
+import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
+import no.nav.security.mock.oauth2.mockwebserver.OAuth2Dispatcher
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockWebServer
@@ -27,12 +25,17 @@ import java.net.URI
 private val log = KotlinLogging.logger {}
 
 class MockOAuth2Server(
-    tokenCallbacks: Set<TokenCallback> = setOf(DefaultTokenCallback())
+    config: OAuth2Config = OAuth2Config(
+        interactiveLogin = false,
+        tokenProvider = OAuth2TokenProvider(),
+        tokenCallbacks = emptySet()
+    )
 ) {
     private val mockWebServer: MockWebServer = MockWebServer()
-    private val tokenProvider: OAuth2TokenProvider = OAuth2TokenProvider()
+    private val tokenProvider: OAuth2TokenProvider =
+        OAuth2TokenProvider()
 
-    var dispatcher: Dispatcher = OAuth2Dispatcher(tokenProvider, tokenCallbacks)
+    var dispatcher: Dispatcher = OAuth2Dispatcher(config)
 
     fun start() {
         mockWebServer.start()
@@ -52,7 +55,7 @@ class MockOAuth2Server(
     }
 
     fun enqueueCallback(tokenCallback: TokenCallback) =
-        (dispatcher as OAuth2Dispatcher).enqueueJwtCallback(tokenCallback)
+        (dispatcher as OAuth2Dispatcher).enqueueTokenCallback(tokenCallback)
 
     fun takeRequest(): RecordedRequest = mockWebServer.takeRequest()
 
