@@ -41,5 +41,3 @@ data class OAuth2HttpRequest(
         private fun decode(string: String): String = URLDecoder.decode(string, StandardCharsets.UTF_8)
     }
 }
-
-

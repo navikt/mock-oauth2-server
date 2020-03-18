@@ -14,11 +14,11 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import com.nimbusds.oauth2.sdk.JWTBearerGrant
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
-import no.nav.security.mock.oauth2.callback.TokenCallback
+import no.nav.security.mock.oauth2.token.TokenCallback
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.OAuth2Exception
-import no.nav.security.mock.oauth2.OAuth2TokenProvider
+import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 import java.util.HashSet
 import java.util.UUID

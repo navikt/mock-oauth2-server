@@ -1,4 +1,4 @@
-package no.nav.security.mock.oauth2
+package no.nav.security.mock.oauth2.token
 
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.JWSAlgorithm
@@ -9,7 +9,6 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
-import no.nav.security.mock.oauth2.callback.TokenCallback
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import okhttp3.HttpUrl
 import java.security.KeyPair

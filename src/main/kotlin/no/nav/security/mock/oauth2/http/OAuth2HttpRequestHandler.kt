@@ -10,8 +10,6 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
-import no.nav.security.mock.oauth2.callback.DefaultTokenCallback
-import no.nav.security.mock.oauth2.callback.TokenCallback
 import no.nav.security.mock.oauth2.extensions.grantType
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
@@ -29,6 +27,8 @@ import no.nav.security.mock.oauth2.grant.GrantHandler
 import no.nav.security.mock.oauth2.grant.JwtBearerGrantHandler
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
+import no.nav.security.mock.oauth2.token.DefaultTokenCallback
+import no.nav.security.mock.oauth2.token.TokenCallback
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 

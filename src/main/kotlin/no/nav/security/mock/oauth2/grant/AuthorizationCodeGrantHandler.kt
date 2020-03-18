@@ -8,12 +8,12 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
-import no.nav.security.mock.oauth2.OAuth2TokenProvider
-import no.nav.security.mock.oauth2.callback.TokenCallback
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
+import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
+import no.nav.security.mock.oauth2.token.TokenCallback
 import okhttp3.HttpUrl
 import java.util.UUID
 
@@ -27,13 +27,13 @@ class AuthorizationCodeHandler(
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = HashMap()
 
     fun authorizationCodeResponse(authenticationRequest: AuthenticationRequest, login: Login? = null): AuthenticationSuccessResponse {
-        return when {
+        when {
             authenticationRequest.responseType.impliesCodeFlow() -> {
                 val code = AuthorizationCode()
                 log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
-                if(login?.username != null){
-                    log.debug("adding user with username ${login?.username} to cache")
+                if (login?.username != null) {
+                    log.debug("adding user with username ${login.username} to cache")
                     codeToLoginCache[code] = login
                 }
                 return AuthenticationSuccessResponse(
@@ -58,6 +58,7 @@ class AuthorizationCodeHandler(
         tokenCallback: TokenCallback
     ): OAuth2TokenResponse {
         val code = tokenRequest.authorizationCode()
+        log.debug("issuing token for code=$code")
         val authenticationRequest = takeAuthenticationRequestFromCache(code)
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
@@ -77,7 +78,7 @@ class AuthorizationCodeHandler(
     private fun getLoginTokenCallbackOrDefault(code: AuthorizationCode, tokenCallback: TokenCallback): TokenCallback {
         return takeLoginFromCache(code)?.username?.let {
             LoginTokenCallback(it, tokenCallback)
-        }?: tokenCallback
+        } ?: tokenCallback
     }
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)

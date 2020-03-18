@@ -4,8 +4,9 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
-import no.nav.security.mock.oauth2.callback.DefaultTokenCallback
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
+import no.nav.security.mock.oauth2.token.DefaultTokenCallback
+import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.HttpUrl
@@ -110,7 +111,7 @@ class MockOAuth2ServerTest {
         val code = checkNotNull(url.queryParameter("code"))
         val tokenResponse: Response = client.newCall(
             authCodeTokenRequest(
-                "default",
+                server.tokenEndpointUrl("default"),
                 "client1",
                 "https://myapp/callback",
                 "openid scope1",
@@ -146,14 +147,15 @@ class MockOAuth2ServerTest {
                 .get()
                 .build()
         ).execute()
+        assertThat(authEndpointResponse.headers["Content-Type"]).isEqualTo("text/html;charset=UTF-8")
         val expectedSubject = "foo"
-        val loginResponse: Response = client.newCall(loginSubmitReques(authorizationCodeFlowUrl, expectedSubject)).execute()
+        val loginResponse: Response = client.newCall(loginSubmitRequest(authorizationCodeFlowUrl, expectedSubject)).execute()
         assertThat(loginResponse.code).isEqualTo(302)
         val url: HttpUrl = checkNotNull(loginResponse.headers["location"]?.toHttpUrlOrNull())
         val code = checkNotNull(url.queryParameter("code"))
         val tokenResponse: Response = client.newCall(
             authCodeTokenRequest(
-                "default",
+                interactiveLoginServer.tokenEndpointUrl("default"),
                 "client1",
                 "https://myapp/callback",
                 "openid scope1",
@@ -180,7 +182,7 @@ class MockOAuth2ServerTest {
     fun tokenRequestWithCodeShouldReturnTokensWithDefaultClaims() {
         val response: Response = client.newCall(
             authCodeTokenRequest(
-                "default",
+                server.tokenEndpointUrl("default"),
                 "client1",
                 "https://myapp/callback",
                 "openid scope1",
@@ -214,7 +216,7 @@ class MockOAuth2ServerTest {
 
         val response: Response = client.newCall(
             authCodeTokenRequest(
-                "custom",
+                server.tokenEndpointUrl("custom"),
                 "client1",
                 "https://myapp/callback",
                 "openid scope1",
@@ -275,7 +277,7 @@ class MockOAuth2ServerTest {
         return responseBody
     }
 
-    private fun loginSubmitReques(url: HttpUrl, username: String): Request {
+    private fun loginSubmitRequest(url: HttpUrl, username: String): Request {
         val formBody: RequestBody = FormBody.Builder()
             .add("username", username)
             .build()
@@ -305,7 +307,7 @@ class MockOAuth2ServerTest {
     }
 
     private fun authCodeTokenRequest(
-        issuerId: String,
+        tokenEndpointUrl: HttpUrl,
         clientId: String,
         redirectUri: String,
         scope: String,
@@ -318,7 +320,7 @@ class MockOAuth2ServerTest {
             .add("grant_type", "authorization_code")
             .build()
         return Request.Builder()
-            .url(server.tokenEndpointUrl(issuerId))
+            .url(tokenEndpointUrl)
             .addHeader("Authorization", Credentials.basic(clientId, "test"))
             .post(formBody)
             .build()

@@ -1,4 +1,4 @@
-package no.nav.security.mock.oauth2.callback
+package no.nav.security.mock.oauth2.token
 
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest

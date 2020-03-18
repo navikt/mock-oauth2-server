@@ -8,12 +8,13 @@ import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
 import mu.KotlinLogging
-import no.nav.security.mock.oauth2.callback.TokenCallback
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
 import no.nav.security.mock.oauth2.mockwebserver.OAuth2Dispatcher
+import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
+import no.nav.security.mock.oauth2.token.TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockWebServer

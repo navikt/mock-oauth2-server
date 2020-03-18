@@ -4,7 +4,7 @@ import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.templates.TemplateMapper
 import no.nav.security.mock.oauth2.templates.TemplateMapper.Companion.create
 
-val templateMapper: TemplateMapper = create{}
+val templateMapper: TemplateMapper = create {}
 
 class LoginRequestHandler {
 

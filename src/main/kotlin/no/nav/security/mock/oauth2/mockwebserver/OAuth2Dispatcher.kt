@@ -2,9 +2,9 @@ package no.nav.security.mock.oauth2.mockwebserver
 
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
-import no.nav.security.mock.oauth2.callback.TokenCallback
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequestHandler
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
+import no.nav.security.mock.oauth2.token.TokenCallback
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
