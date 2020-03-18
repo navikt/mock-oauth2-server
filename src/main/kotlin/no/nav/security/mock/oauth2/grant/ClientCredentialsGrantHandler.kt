@@ -1,9 +1,9 @@
 package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.oauth2.sdk.TokenRequest
-import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
+import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 import java.util.UUID
@@ -15,13 +15,13 @@ class ClientCredentialsGrantHandler(
     override fun tokenResponse(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
-        OAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback
     ): OAuth2TokenResponse {
         val accessToken = tokenProvider.accessToken(
             tokenRequest,
             issuerUrl,
             null,
-            OAuth2TokenCallback
+            oAuth2TokenCallback
         )
         return OAuth2TokenResponse(
             tokenType = "Bearer",

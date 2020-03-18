@@ -39,7 +39,7 @@ class MockOAuth2ServerTest {
         interactiveLoginServer = MockOAuth2Server(
             OAuth2Config(
                 interactiveLogin = true,
-                OAuth2TokenCallbacks = emptySet(),
+                oAuth2TokenCallbacks = emptySet(),
                 tokenProvider = OAuth2TokenProvider()
             )
         )

@@ -12,8 +12,8 @@ import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
-import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
+import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 import java.util.UUID
 
@@ -55,15 +55,15 @@ class AuthorizationCodeHandler(
     override fun tokenResponse(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
-        OAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback
     ): OAuth2TokenResponse {
         val code = tokenRequest.authorizationCode()
         log.debug("issuing token for code=$code")
         val authenticationRequest = takeAuthenticationRequestFromCache(code)
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, OAuth2TokenCallback))
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, OAuth2TokenCallback))
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback))
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback))
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",

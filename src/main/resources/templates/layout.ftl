@@ -1,11 +1,13 @@
 <#macro mainLayout title="" description="">
 <!DOCTYPE html>
+<#--noinspection HtmlRequiredLangAttribute-->
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>${title} | ${description}</title>
     <style type="text/css">
+        <#--noinspection CssUnknownTarget-->
         @import url(https://fonts.googleapis.com/css?family=Roboto:400,100);
 
         body {
@@ -15,14 +17,12 @@
         }
 
         .login-card {
-            padding: 40px;
-            padding-top: 0px;
-            padding-bottom: 10px;
+            padding: 0px 40px 10px;
             width: 274px;
             background-color: #F7F7F7;
             margin: 0 auto 10px;
             border-radius: 2px;
-            box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
 
@@ -71,14 +71,14 @@
         }
 
         .login-submit {
-            border: 0px;
+            border: 0;
             color: #fff;
             text-shadow: 0 1px rgba(0, 0, 0, 0.1);
             background-color: #4d90fe;
         }
 
         .login-submit:hover {
-            border: 0px;
+            border: 0;
             text-shadow: 0 1px rgba(0, 0, 0, 0.3);
             background-color: #357ae8;
         }

@@ -32,7 +32,7 @@ class MockOAuth2Server(
     config: OAuth2Config = OAuth2Config(
         interactiveLogin = false,
         tokenProvider = OAuth2TokenProvider(),
-        OAuth2TokenCallbacks = emptySet()
+        oAuth2TokenCallbacks = emptySet()
     )
 ) {
     private val mockWebServer: MockWebServer = MockWebServer()
@@ -58,8 +58,8 @@ class MockOAuth2Server(
         mockWebServer.shutdown()
     }
 
-    fun enqueueCallback(OAuth2TokenCallback: OAuth2TokenCallback) =
-        (dispatcher as MockOAuth2Dispatcher).enqueueTokenCallback(OAuth2TokenCallback)
+    fun enqueueCallback(oAuth2TokenCallback: OAuth2TokenCallback) =
+        (dispatcher as MockOAuth2Dispatcher).enqueueTokenCallback(oAuth2TokenCallback)
 
     fun takeRequest(): RecordedRequest = mockWebServer.takeRequest()
 
@@ -87,7 +87,7 @@ class MockOAuth2Dispatcher(
 ) : Dispatcher() {
     private val httpRequestHandler: OAuth2HttpRequestHandler = OAuth2HttpRequestHandler(config)
 
-    fun enqueueTokenCallback(OAuth2TokenCallback: OAuth2TokenCallback) = httpRequestHandler.enqueueJwtCallback(OAuth2TokenCallback)
+    fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = httpRequestHandler.enqueueJwtCallback(oAuth2TokenCallback)
 
     override fun dispatch(request: RecordedRequest): MockResponse =
         mockResponse(httpRequestHandler.handleRequest(request.asOAuth2HttpRequest()))

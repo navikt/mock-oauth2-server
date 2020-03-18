@@ -39,7 +39,7 @@ class OAuth2HttpRequestHandler(
     private val config: OAuth2Config
 ) {
     private val loginRequestHandler = LoginRequestHandler()
-    private val OAuth2TokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
+    private val oAuth2TokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
 
     private val grantHandlers: Map<GrantType, GrantHandler> = mapOf(
         GrantType.AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider),
@@ -80,9 +80,9 @@ class OAuth2HttpRequestHandler(
                 }
                 url.isTokenEndpointUrl() -> {
                     log.debug("handle token request $request")
-                    val OAuth2TokenCallback: OAuth2TokenCallback = takeJwtCallbackOrCreateDefault(request.url.issuerId())
+                    val oAuth2TokenCallback: OAuth2TokenCallback = takeJwtCallbackOrCreateDefault(request.url.issuerId())
                     val tokenRequest: TokenRequest = request.asTokenRequest()
-                    json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), OAuth2TokenCallback))
+                    json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), oAuth2TokenCallback))
                 }
                 url.isJwksUrl() -> {
                     log.debug("handle jwks request")
@@ -100,13 +100,13 @@ class OAuth2HttpRequestHandler(
         )
     }
 
-    fun enqueueJwtCallback(OAuth2TokenCallback: OAuth2TokenCallback) = OAuth2TokenCallbackQueue.add(OAuth2TokenCallback)
+    fun enqueueJwtCallback(oAuth2TokenCallback: OAuth2TokenCallback) = oAuth2TokenCallbackQueue.add(oAuth2TokenCallback)
 
     private fun takeJwtCallbackOrCreateDefault(issuerId: String): OAuth2TokenCallback {
-        if (OAuth2TokenCallbackQueue.peek()?.issuerId() == issuerId) {
-            return OAuth2TokenCallbackQueue.take()
+        if (oAuth2TokenCallbackQueue.peek()?.issuerId() == issuerId) {
+            return oAuth2TokenCallbackQueue.take()
         }
-        return config.OAuth2TokenCallbacks.firstOrNull { it.issuerId() == issuerId }
+        return config.oAuth2TokenCallbacks.firstOrNull { it.issuerId() == issuerId }
             ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
     }
 
