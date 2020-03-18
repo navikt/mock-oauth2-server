@@ -5,7 +5,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
-import no.nav.security.mock.oauth2.token.DefaultTokenCallback
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Credentials
 import okhttp3.FormBody
@@ -39,7 +39,7 @@ class MockOAuth2ServerTest {
         interactiveLoginServer = MockOAuth2Server(
             OAuth2Config(
                 interactiveLogin = true,
-                tokenCallbacks = emptySet(),
+                OAuth2TokenCallbacks = emptySet(),
                 tokenProvider = OAuth2TokenProvider()
             )
         )
@@ -207,7 +207,7 @@ class MockOAuth2ServerTest {
     @Throws(IOException::class)
     fun tokenWithCodeShouldReturnTokensWithClaimsFromEnqueuedCallback() {
         server.enqueueCallback(
-            DefaultTokenCallback(
+            DefaultOAuth2TokenCallback(
                 issuerId = "custom",
                 subject = "yolo",
                 audience = "myaud"
@@ -241,7 +241,7 @@ class MockOAuth2ServerTest {
 
     @Test
     fun tokenRequestForjwtBearerGrant() {
-        val signedJWT = server.issueToken("default", "client1", DefaultTokenCallback())
+        val signedJWT = server.issueToken("default", "client1", DefaultOAuth2TokenCallback())
         val response: Response = client.newCall(
             jwtBearerGrantTokenRequest(
                 "default",

@@ -7,7 +7,7 @@ import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
 import java.util.UUID
 
-interface TokenCallback {
+interface OAuth2TokenCallback {
     fun issuerId(): String
     fun subject(tokenRequest: TokenRequest): String
     fun audience(tokenRequest: TokenRequest): String
@@ -15,13 +15,13 @@ interface TokenCallback {
     fun tokenExpiry(): Long
 }
 
-open class DefaultTokenCallback(
+open class DefaultOAuth2TokenCallback(
     private val issuerId: String = "default",
     private val subject: String = UUID.randomUUID().toString(),
     private val audience: String? = null,
     private val claims: Map<String, Any> = emptyMap(),
     private val expiry: Long = 3600
-) : TokenCallback {
+) : OAuth2TokenCallback {
 
     override fun issuerId(): String = issuerId
 

@@ -27,8 +27,8 @@ import no.nav.security.mock.oauth2.grant.GrantHandler
 import no.nav.security.mock.oauth2.grant.JwtBearerGrantHandler
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
-import no.nav.security.mock.oauth2.token.DefaultTokenCallback
-import no.nav.security.mock.oauth2.token.TokenCallback
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
+import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -39,7 +39,7 @@ class OAuth2HttpRequestHandler(
     private val config: OAuth2Config
 ) {
     private val loginRequestHandler = LoginRequestHandler()
-    private val tokenCallbackQueue: BlockingQueue<TokenCallback> = LinkedBlockingQueue()
+    private val OAuth2TokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
 
     private val grantHandlers: Map<GrantType, GrantHandler> = mapOf(
         GrantType.AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider),
@@ -80,9 +80,9 @@ class OAuth2HttpRequestHandler(
                 }
                 url.isTokenEndpointUrl() -> {
                     log.debug("handle token request $request")
-                    val tokenCallback: TokenCallback = takeJwtCallbackOrCreateDefault(request.url.issuerId())
+                    val OAuth2TokenCallback: OAuth2TokenCallback = takeJwtCallbackOrCreateDefault(request.url.issuerId())
                     val tokenRequest: TokenRequest = request.asTokenRequest()
-                    json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), tokenCallback))
+                    json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), OAuth2TokenCallback))
                 }
                 url.isJwksUrl() -> {
                     log.debug("handle jwks request")
@@ -100,14 +100,14 @@ class OAuth2HttpRequestHandler(
         )
     }
 
-    fun enqueueJwtCallback(tokenCallback: TokenCallback) = tokenCallbackQueue.add(tokenCallback)
+    fun enqueueJwtCallback(OAuth2TokenCallback: OAuth2TokenCallback) = OAuth2TokenCallbackQueue.add(OAuth2TokenCallback)
 
-    private fun takeJwtCallbackOrCreateDefault(issuerId: String): TokenCallback {
-        if (tokenCallbackQueue.peek()?.issuerId() == issuerId) {
-            return tokenCallbackQueue.take()
+    private fun takeJwtCallbackOrCreateDefault(issuerId: String): OAuth2TokenCallback {
+        if (OAuth2TokenCallbackQueue.peek()?.issuerId() == issuerId) {
+            return OAuth2TokenCallbackQueue.take()
         }
-        return config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId }
-            ?: DefaultTokenCallback(issuerId = issuerId)
+        return config.OAuth2TokenCallbacks.firstOrNull { it.issuerId() == issuerId }
+            ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
     }
 
     private fun handleException(error: Throwable): OAuth2HttpResponse {

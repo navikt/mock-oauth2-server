@@ -13,7 +13,7 @@ import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
-import no.nav.security.mock.oauth2.token.TokenCallback
+import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import okhttp3.HttpUrl
 import java.util.UUID
 
@@ -55,15 +55,15 @@ class AuthorizationCodeHandler(
     override fun tokenResponse(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
-        tokenCallback: TokenCallback
+        OAuth2TokenCallback: OAuth2TokenCallback
     ): OAuth2TokenResponse {
         val code = tokenRequest.authorizationCode()
         log.debug("issuing token for code=$code")
         val authenticationRequest = takeAuthenticationRequestFromCache(code)
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, tokenCallback))
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, tokenCallback))
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, OAuth2TokenCallback))
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, OAuth2TokenCallback))
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -75,20 +75,20 @@ class AuthorizationCodeHandler(
         )
     }
 
-    private fun getLoginTokenCallbackOrDefault(code: AuthorizationCode, tokenCallback: TokenCallback): TokenCallback {
+    private fun getLoginTokenCallbackOrDefault(code: AuthorizationCode, OAuth2TokenCallback: OAuth2TokenCallback): OAuth2TokenCallback {
         return takeLoginFromCache(code)?.username?.let {
-            LoginTokenCallback(it, tokenCallback)
-        } ?: tokenCallback
+            LoginOAuth2TokenCallback(it, OAuth2TokenCallback)
+        } ?: OAuth2TokenCallback
     }
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
     private fun takeAuthenticationRequestFromCache(code: AuthorizationCode): AuthenticationRequest? = codeToAuthRequestCache.remove(code)
 
-    private class LoginTokenCallback(val subject: String, val tokenCallback: TokenCallback) : TokenCallback {
-        override fun issuerId(): String = tokenCallback.issuerId()
+    private class LoginOAuth2TokenCallback(val subject: String, val OAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
+        override fun issuerId(): String = OAuth2TokenCallback.issuerId()
         override fun subject(tokenRequest: TokenRequest): String = subject
-        override fun audience(tokenRequest: TokenRequest): String = tokenCallback.audience(tokenRequest)
-        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = tokenCallback.addClaims(tokenRequest)
-        override fun tokenExpiry(): Long = tokenCallback.tokenExpiry()
+        override fun audience(tokenRequest: TokenRequest): String = OAuth2TokenCallback.audience(tokenRequest)
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = OAuth2TokenCallback.addClaims(tokenRequest)
+        override fun tokenExpiry(): Long = OAuth2TokenCallback.tokenExpiry()
     }
 }

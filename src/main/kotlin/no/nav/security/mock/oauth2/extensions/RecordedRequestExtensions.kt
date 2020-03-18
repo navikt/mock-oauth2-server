@@ -1,4 +1,4 @@
-package no.nav.security.mock.oauth2.mockwebserver
+package no.nav.security.mock.oauth2.extensions
 
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import okhttp3.mockwebserver.RecordedRequest

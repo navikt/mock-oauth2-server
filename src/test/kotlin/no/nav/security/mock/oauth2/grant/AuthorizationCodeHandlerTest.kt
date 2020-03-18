@@ -12,7 +12,7 @@ import com.nimbusds.oauth2.sdk.id.ClientID
 import com.nimbusds.oauth2.sdk.id.State
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
-import no.nav.security.mock.oauth2.token.DefaultTokenCallback
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.login.Login
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -64,7 +64,7 @@ internal class AuthorizationCodeHandlerTest {
         val tokenResponse = handler.tokenResponse(
             tokenRequest(response.authorizationCode, "http://redirect", "openid"),
             "http://myissuer".toHttpUrl(),
-            DefaultTokenCallback()
+            DefaultOAuth2TokenCallback()
         )
         val idToken: SignedJWT = SignedJWT.parse(tokenResponse.idToken)
         assertThat(idToken.jwtClaimsSet.audience.first()).isEqualTo("client1")

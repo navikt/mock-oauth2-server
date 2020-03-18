@@ -14,7 +14,7 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import com.nimbusds.oauth2.sdk.JWTBearerGrant
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
-import no.nav.security.mock.oauth2.token.TokenCallback
+import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -28,14 +28,14 @@ class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvider) : Gr
     override fun tokenResponse(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
-        tokenCallback: TokenCallback
+        OAuth2TokenCallback: OAuth2TokenCallback
     ): OAuth2TokenResponse {
 
         val receivedClaimsSet = assertion(tokenRequest)
         val accessToken = tokenProvider.onBehalfOfAccessToken(
             receivedClaimsSet,
             tokenRequest,
-            tokenCallback
+            OAuth2TokenCallback
         )
         return OAuth2TokenResponse(
             tokenType = "Bearer",
