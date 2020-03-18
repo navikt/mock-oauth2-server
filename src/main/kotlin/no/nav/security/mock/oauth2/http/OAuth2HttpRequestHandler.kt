@@ -15,6 +15,7 @@ import no.nav.security.mock.oauth2.callback.TokenCallback
 import no.nav.security.mock.oauth2.extensions.grantType
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
+import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
 import no.nav.security.mock.oauth2.extensions.issuerId
@@ -61,7 +62,7 @@ class OAuth2HttpRequestHandler(
                     val authorizationCodeHandler = (grantHandler(authRequest) as AuthorizationCodeHandler)
                     return when (request.method) {
                         "GET" -> {
-                            if (config.interactiveLogin)
+                            if (config.interactiveLogin || authRequest.isPrompt())
                                 html(loginRequestHandler.loginHtml(request))
                             else {
                                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
