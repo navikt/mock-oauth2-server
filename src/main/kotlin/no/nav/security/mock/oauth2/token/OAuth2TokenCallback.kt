@@ -37,7 +37,7 @@ open class DefaultTokenCallback(
         return audience
             ?: let {
                 tokenRequest.scope?.toStringList()
-                    ?.filterNot { oidcScopeList.contains(it) }?.first()
+                    ?.filterNot { oidcScopeList.contains(it) }?.firstOrNull()
             } ?: "default"
     }
 
