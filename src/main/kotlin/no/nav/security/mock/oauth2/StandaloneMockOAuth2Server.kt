@@ -21,5 +21,9 @@ data class Configuration(
 
 fun main() {
     val config = Configuration()
-    MockOAuth2Server().start(config.server.port)
+    MockOAuth2Server(
+        OAuth2Config(
+            interactiveLogin = true
+        )
+    ).start(config.server.port)
 }

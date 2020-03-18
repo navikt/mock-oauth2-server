@@ -29,11 +29,7 @@ import java.net.URI
 private val log = KotlinLogging.logger {}
 
 class MockOAuth2Server(
-    config: OAuth2Config = OAuth2Config(
-        interactiveLogin = false,
-        tokenProvider = OAuth2TokenProvider(),
-        oAuth2TokenCallbacks = emptySet()
-    )
+    config: OAuth2Config = OAuth2Config()
 ) {
     private val mockWebServer: MockWebServer = MockWebServer()
     private val tokenProvider: OAuth2TokenProvider =
