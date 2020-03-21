@@ -9,7 +9,7 @@ val jacksonVersion = "2.10.1"
 val junitJupiterVersion = "5.5.2"
 val konfigVersion = "1.6.10.0"
 val kotlinVersion = "1.3.61"
-
+val freemarkerVersion = "2.3.29"
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.StandaloneMockOAuth2ServerKt"
 
@@ -54,6 +54,7 @@ dependencies {
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    implementation("org.freemarker:freemarker:$freemarkerVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")

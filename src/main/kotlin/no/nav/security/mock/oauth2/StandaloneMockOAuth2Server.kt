@@ -1,4 +1,4 @@
-package no.nav.security.mock
+package no.nav.security.mock.oauth2
 
 import com.natpryce.konfig.ConfigurationProperties
 import com.natpryce.konfig.EnvironmentVariables
@@ -21,5 +21,9 @@ data class Configuration(
 
 fun main() {
     val config = Configuration()
-    MockOAuth2Server().start(config.server.port)
+    MockOAuth2Server(
+        OAuth2Config(
+            interactiveLogin = true
+        )
+    ).start(config.server.port)
 }

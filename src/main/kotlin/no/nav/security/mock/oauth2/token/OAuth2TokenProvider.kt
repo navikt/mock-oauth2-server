@@ -1,4 +1,4 @@
-package no.nav.security.mock.oauth2
+package no.nav.security.mock.oauth2.token
 
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.JWSAlgorithm
@@ -9,9 +9,7 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
-import mu.KotlinLogging
-import no.nav.security.mock.callback.TokenCallback
-import no.nav.security.mock.extensions.clientIdAsString
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import okhttp3.HttpUrl
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -22,14 +20,13 @@ import java.time.Instant
 import java.util.Date
 import java.util.UUID
 
-private val log = KotlinLogging.logger {}
-
 open class OAuth2TokenProvider {
     private val jwkSet: JWKSet
     private val rsaKey: RSAKey
 
     init {
-        jwkSet = generateJWKSet(DEFAULT_KEYID)
+        jwkSet =
+            generateJWKSet(DEFAULT_KEYID)
         rsaKey = jwkSet.getKeyByKeyId(DEFAULT_KEYID) as RSAKey
     }
 
@@ -41,16 +38,16 @@ open class OAuth2TokenProvider {
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
         nonce: String?,
-        tokenCallback: TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback
     ): SignedJWT {
         return createSignedJWT(
             defaultClaims(
                 issuerUrl,
-                tokenCallback.subject(tokenRequest),
+                oAuth2TokenCallback.subject(tokenRequest),
                 tokenRequest.clientIdAsString(),
                 nonce,
-                tokenCallback.addClaims(tokenRequest),
-                tokenCallback.tokenExpiry()
+                oAuth2TokenCallback.addClaims(tokenRequest),
+                oAuth2TokenCallback.tokenExpiry()
             ).build()
         )
     }
@@ -59,16 +56,16 @@ open class OAuth2TokenProvider {
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
         nonce: String?,
-        tokenCallback: TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback
     ): SignedJWT {
         return createSignedJWT(
             defaultClaims(
                 issuerUrl,
-                tokenCallback.subject(tokenRequest),
-                tokenCallback.audience(tokenRequest),
+                oAuth2TokenCallback.subject(tokenRequest),
+                oAuth2TokenCallback.audience(tokenRequest),
                 nonce,
-                tokenCallback.addClaims(tokenRequest),
-                tokenCallback.tokenExpiry()
+                oAuth2TokenCallback.addClaims(tokenRequest),
+                oAuth2TokenCallback.tokenExpiry()
             ).build()
         )
     }
@@ -76,16 +73,16 @@ open class OAuth2TokenProvider {
     fun onBehalfOfAccessToken(
         claimsSet: JWTClaimsSet,
         tokenRequest: TokenRequest,
-        tokenCallback: TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback
     ): SignedJWT {
         val now = Instant.now()
         return createSignedJWT(
             JWTClaimsSet.Builder(claimsSet)
-                .expirationTime(Date.from(now.plusSeconds(tokenCallback.tokenExpiry())))
+                .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
                 .notBeforeTime(Date.from(now))
                 .issueTime(Date.from(now))
                 .jwtID(UUID.randomUUID().toString())
-                .audience(tokenCallback.audience(tokenRequest))
+                .audience(oAuth2TokenCallback.audience(tokenRequest))
                 .build()
         )
     }
@@ -130,7 +127,12 @@ open class OAuth2TokenProvider {
     companion object {
         private const val DEFAULT_KEYID = "mock-oauth2-server-key"
         private fun generateJWKSet(keyId: String): JWKSet {
-            return JWKSet(createJWK(keyId, generateKeyPair()))
+            return JWKSet(
+                createJWK(
+                    keyId,
+                    generateKeyPair()
+                )
+            )
         }
 
         private fun generateKeyPair(): KeyPair {
