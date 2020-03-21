@@ -80,7 +80,7 @@ class OAuth2HttpRequestHandler(
                 }
                 url.isTokenEndpointUrl() -> {
                     log.debug("handle token request $request")
-                    val oAuth2TokenCallback: OAuth2TokenCallback = takeJwtCallbackOrCreateDefault(request.url.issuerId())
+                    val oAuth2TokenCallback: OAuth2TokenCallback = takeTokenCallbackOrCreateDefault(request.url.issuerId())
                     val tokenRequest: TokenRequest = request.asTokenRequest()
                     json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), oAuth2TokenCallback))
                 }
@@ -100,9 +100,9 @@ class OAuth2HttpRequestHandler(
         )
     }
 
-    fun enqueueJwtCallback(oAuth2TokenCallback: OAuth2TokenCallback) = oAuth2TokenCallbackQueue.add(oAuth2TokenCallback)
+    fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = oAuth2TokenCallbackQueue.add(oAuth2TokenCallback)
 
-    private fun takeJwtCallbackOrCreateDefault(issuerId: String): OAuth2TokenCallback {
+    private fun takeTokenCallbackOrCreateDefault(issuerId: String): OAuth2TokenCallback {
         if (oAuth2TokenCallbackQueue.peek()?.issuerId() == issuerId) {
             return oAuth2TokenCallbackQueue.take()
         }

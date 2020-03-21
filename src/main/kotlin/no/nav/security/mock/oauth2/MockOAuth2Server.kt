@@ -25,6 +25,8 @@ import okhttp3.mockwebserver.RecordedRequest
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.URI
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
 
@@ -54,9 +56,9 @@ class MockOAuth2Server(
         mockWebServer.shutdown()
     }
 
-    fun enqueueCallback(oAuth2TokenCallback: OAuth2TokenCallback) =
-        (dispatcher as MockOAuth2Dispatcher).enqueueTokenCallback(oAuth2TokenCallback)
-
+    fun url(path: String): HttpUrl = mockWebServer.url(path)
+    fun enqueueResponse(response: MockResponse) = (dispatcher as MockOAuth2Dispatcher).enqueueResponse(response)
+    fun enqueueCallback(oAuth2TokenCallback: OAuth2TokenCallback) = (dispatcher as MockOAuth2Dispatcher).enqueueTokenCallback(oAuth2TokenCallback)
     fun takeRequest(): RecordedRequest = mockWebServer.takeRequest()
 
     fun wellKnownUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId).toWellKnownUrl()
@@ -82,11 +84,17 @@ class MockOAuth2Dispatcher(
     config: OAuth2Config
 ) : Dispatcher() {
     private val httpRequestHandler: OAuth2HttpRequestHandler = OAuth2HttpRequestHandler(config)
+    private val responseQueue: BlockingQueue<MockResponse> = LinkedBlockingQueue()
 
-    fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = httpRequestHandler.enqueueJwtCallback(oAuth2TokenCallback)
+    fun enqueueResponse(mockResponse: MockResponse) = responseQueue.add(mockResponse)
+    fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = httpRequestHandler.enqueueTokenCallback(oAuth2TokenCallback)
 
     override fun dispatch(request: RecordedRequest): MockResponse =
-        mockResponse(httpRequestHandler.handleRequest(request.asOAuth2HttpRequest()))
+        when {
+            responseQueue.peek() != null -> responseQueue.take()
+            else -> mockResponse(httpRequestHandler.handleRequest(request.asOAuth2HttpRequest()))
+        }
+
 
     private fun mockResponse(response: OAuth2HttpResponse): MockResponse =
         MockResponse()

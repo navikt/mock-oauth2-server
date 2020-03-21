@@ -15,6 +15,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
+import okhttp3.mockwebserver.MockResponse
 import okio.IOException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -56,6 +57,23 @@ class MockOAuth2ServerTest {
         assertWellKnownResponseForIssuer("default")
         assertWellKnownResponseForIssuer("foo")
         assertWellKnownResponseForIssuer("bar")
+    }
+
+    @Test
+    fun enqueuedResponse(){
+        assertWellKnownResponseForIssuer("default")
+        server.enqueueResponse(MockResponse()
+            .setResponseCode(200)
+            .setBody("some body")
+        )
+        val request: Request = Request.Builder()
+            .url(server.url("/someurl"))
+            .get()
+            .build()
+
+        val response = client.newCall(request).execute()
+        assertThat(response.code).isEqualTo(200)
+        assertThat(response.body?.string()).isEqualTo("some body")
     }
 
     @Test
