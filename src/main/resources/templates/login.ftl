@@ -10,10 +10,11 @@
             </label>
             <button type="submit" class="login login-submit">Sign-in</button>
         </form>
-    </div>
-    <div class="login-card">
         <div class="grant-debug">
-            TODO
+            <h3>Debug info</h3>
+            <#list query as propName, propValue>
+                <div align="left"><strong>${propName}</strong> = ${propValue}</div>
+            </#list>
         </div>
     </div>
 </@layout.mainLayout>

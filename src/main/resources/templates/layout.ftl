@@ -122,7 +122,7 @@
             text-align: center;
             font-size: 12px;
             color: #999;
-            padding-top: 10px;
+            padding: 15px;
         }
 
         button {

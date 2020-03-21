@@ -15,7 +15,14 @@ class TemplateMapper(
 ) {
 
     fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest): String =
-        asString(HtmlContent("login.ftl", oAuth2HttpRequest))
+        asString(
+            HtmlContent(
+                "login.ftl", mapOf(
+                    "request" to oAuth2HttpRequest,
+                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map
+                )
+            )
+        )
 
     private fun asString(htmlContent: HtmlContent): String =
         StringWriter().apply {

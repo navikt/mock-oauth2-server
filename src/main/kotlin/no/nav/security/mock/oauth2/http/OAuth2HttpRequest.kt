@@ -29,7 +29,7 @@ data class OAuth2HttpRequest(
 
     data class Parameters(val parameterString: String?) {
 
-        private val map: Map<String, String> =
+        val map: Map<String, String> =
             parameterString?.split("&")
                 ?.filter { it.contains("=") }
                 ?.associate {
