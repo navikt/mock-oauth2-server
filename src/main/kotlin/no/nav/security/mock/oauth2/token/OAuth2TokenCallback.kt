@@ -27,7 +27,7 @@ open class DefaultOAuth2TokenCallback(
 
     override fun subject(tokenRequest: TokenRequest): String {
         return when (GrantType.CLIENT_CREDENTIALS) {
-            tokenRequest.grantType() -> tokenRequest.clientID.value
+            tokenRequest.grantType() -> tokenRequest.clientIdAsString()
             else -> subject
         }
     }
