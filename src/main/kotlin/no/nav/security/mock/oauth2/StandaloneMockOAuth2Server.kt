@@ -6,6 +6,7 @@ import com.natpryce.konfig.Key
 import com.natpryce.konfig.intType
 import com.natpryce.konfig.overriding
 import com.natpryce.konfig.stringType
+import java.net.InetSocketAddress
 
 private val config = ConfigurationProperties.systemProperties() overriding
         EnvironmentVariables()
@@ -21,9 +22,10 @@ data class Configuration(
 
 fun main() {
     val config = Configuration()
+    // TODO check if ok in docker compose
     MockOAuth2Server(
         OAuth2Config(
             interactiveLogin = true
         )
-    ).start(config.server.port)
+    ).start(InetSocketAddress(0).address, config.server.port)
 }

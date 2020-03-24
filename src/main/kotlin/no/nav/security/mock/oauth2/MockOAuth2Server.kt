@@ -22,13 +22,14 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import java.io.IOException
-import java.net.InetSocketAddress
+import java.net.InetAddress
 import java.net.URI
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
 
+// TODO make open so others can extend?
 class MockOAuth2Server(
     val config: OAuth2Config = OAuth2Config()
 ) {
@@ -36,15 +37,13 @@ class MockOAuth2Server(
 
     var dispatcher: Dispatcher = MockOAuth2Dispatcher(config)
 
-    fun start() {
-        mockWebServer.start()
-        mockWebServer.dispatcher = dispatcher
-    }
+    @Throws(IOException::class)
+    @JvmOverloads
+    fun start(port: Int = 0) = start(InetAddress.getByName("localhost"), port)
 
-    fun start(port: Int = 0) {
-        val address = InetSocketAddress(0).address
-        log.info("attempting to start server on port $port and InetAddress=$address")
-        mockWebServer.start(address, port)
+    @Throws(IOException::class)
+    fun start(inetAddress: InetAddress, port: Int) {
+        mockWebServer.start(inetAddress, port)
         mockWebServer.dispatcher = dispatcher
     }
 

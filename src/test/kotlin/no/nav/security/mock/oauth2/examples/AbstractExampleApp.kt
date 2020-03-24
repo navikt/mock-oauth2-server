@@ -105,7 +105,7 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
 
     fun json(value: Any): MockResponse = MockResponse()
         .setResponseCode(200)
-        .setHeader("Content-Type","application/json")
+        .setHeader("Content-Type", "application/json")
         .setBody(ObjectMapper().writeValueAsString(value))
 
     abstract fun handleRequest(request: RecordedRequest): MockResponse

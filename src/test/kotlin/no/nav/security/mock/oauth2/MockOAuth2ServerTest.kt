@@ -2,9 +2,14 @@ package no.nav.security.mock.oauth2
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
+import com.nimbusds.oauth2.sdk.id.Issuer
+import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
+import no.nav.security.mock.oauth2.http.WellKnown
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Credentials
@@ -53,6 +58,31 @@ class MockOAuth2ServerTest {
     }
 
     @Test
+    fun startServerWithFixedPort() {
+        val serverWithFixedPort = MockOAuth2Server()
+        serverWithFixedPort.start(1234)
+        val wellKnown: WellKnown = assertWellKnownResponseForIssuer(serverWithFixedPort, "default")
+
+        val tokenIssuedDirectlyFromServer: SignedJWT = serverWithFixedPort.issueToken("default", "yo", DefaultOAuth2TokenCallback())
+        assertThat(tokenIssuedDirectlyFromServer.verifySignatureAndIssuer(Issuer(wellKnown.issuer), retrieveJwks(wellKnown.jwksUri))).isNotNull
+
+        val authCodeTokenResponse: Response = client.newCall(
+            authCodeTokenRequest(
+                wellKnown.tokenEndpoint.toHttpUrlOrNull()!!,
+                "client",
+                "someredirect",
+                "scope1",
+                "123"
+            )
+        ).execute()
+
+        val tokenResponse: OAuth2TokenResponse = jacksonObjectMapper().readValue(authCodeTokenResponse.body!!.string())
+        val tokenFromAuthCode: SignedJWT = tokenResponse.idToken!!.let { SignedJWT.parse(it) }
+        assertThat(tokenFromAuthCode.verifySignatureAndIssuer(Issuer(wellKnown.issuer), retrieveJwks(wellKnown.jwksUri))).isNotNull
+        serverWithFixedPort.shutdown()
+    }
+
+    @Test
     fun wellKnownUrlForMultipleIssuers() {
         assertWellKnownResponseForIssuer("default")
         assertWellKnownResponseForIssuer("foo")
@@ -62,9 +92,10 @@ class MockOAuth2ServerTest {
     @Test
     fun enqueuedResponse() {
         assertWellKnownResponseForIssuer("default")
-        server.enqueueResponse(MockResponse()
-            .setResponseCode(200)
-            .setBody("some body")
+        server.enqueueResponse(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody("some body")
         )
         val request: Request = Request.Builder()
             .url(server.url("/someurl"))
@@ -279,6 +310,52 @@ class MockOAuth2ServerTest {
         val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
         assertThat(accessToken.jwtClaimsSet.audience).containsExactly("scope1")
         assertThat(accessToken.jwtClaimsSet.issuer).endsWith("default")
+    }
+
+    @Test
+    fun issueTokenDirectlyFromMockOAuth2Server() {
+        val signedJWT: SignedJWT = server.issueToken(
+            "default", "client1", DefaultOAuth2TokenCallback(
+                issuerId = "default",
+                subject = "mysub",
+                audience = "muyaud",
+                claims = mapOf("someclaim" to "claimvalue")
+            )
+        )
+        val wellKnownResponseBody = assertWellKnownResponseForIssuer("default")!!
+        val wellKnown: WellKnown = jacksonObjectMapper().readValue(wellKnownResponseBody)
+        val jwkSet: JWKSet = retrieveJwks(wellKnown.jwksUri)
+        val jwtClaimsSet: JWTClaimsSet = signedJWT.verifySignatureAndIssuer(Issuer(wellKnown.issuer), jwkSet)
+        assertThat(jwtClaimsSet.issuer).isEqualTo(wellKnown.issuer)
+        assertThat(jwtClaimsSet.subject).isEqualTo("mysub")
+        assertThat(jwtClaimsSet.audience).containsExactly("muyaud")
+        assertThat(jwtClaimsSet.getClaim("someclaim")).isEqualTo("claimvalue")
+    }
+
+    private fun retrieveJwks(jwksUri: String): JWKSet {
+        return client.newCall(
+            Request.Builder()
+                .url(jwksUri)
+                .get()
+                .build()
+        ).execute().body?.string()?.let {
+            JWKSet.parse(it)
+        } ?: throw RuntimeException("could not retrieve jwks")
+    }
+
+    private fun assertWellKnownResponseForIssuer(mockOAuth2Server: MockOAuth2Server, issuerId: String): WellKnown {
+        val wellKnownResponse: Response = client.newCall(
+            Request.Builder()
+                .url(mockOAuth2Server.wellKnownUrl(issuerId))
+                .get()
+                .build()
+        ).execute()
+        val wellKnown: WellKnown = jacksonObjectMapper().readValue(wellKnownResponse.body!!.string())
+        assertThat(wellKnown.issuer).isEqualTo(mockOAuth2Server.issuerUrl(issuerId).toString())
+        assertThat(wellKnown.authorizationEndpoint).isEqualTo(mockOAuth2Server.authorizationEndpointUrl(issuerId).toString())
+        assertThat(wellKnown.tokenEndpoint).isEqualTo(mockOAuth2Server.tokenEndpointUrl(issuerId).toString())
+        assertThat(wellKnown.jwksUri).isEqualTo(mockOAuth2Server.jwksUrl(issuerId).toString())
+        return wellKnown
     }
 
     private fun assertWellKnownResponseForIssuer(issuerId: String): String? {
