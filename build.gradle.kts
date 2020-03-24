@@ -11,7 +11,7 @@ val konfigVersion = "1.6.10.0"
 val kotlinVersion = "1.3.61"
 val freemarkerVersion = "2.3.29"
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
-val mainClassKt = "no.nav.security.mock.StandaloneMockOAuth2ServerKt"
+val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
