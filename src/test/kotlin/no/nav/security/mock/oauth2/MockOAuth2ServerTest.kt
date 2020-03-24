@@ -60,7 +60,7 @@ class MockOAuth2ServerTest {
     }
 
     @Test
-    fun enqueuedResponse(){
+    fun enqueuedResponse() {
         assertWellKnownResponseForIssuer("default")
         server.enqueueResponse(MockResponse()
             .setResponseCode(200)

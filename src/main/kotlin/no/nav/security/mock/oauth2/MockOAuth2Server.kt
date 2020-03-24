@@ -16,7 +16,6 @@ import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequestHandler
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
-import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -31,11 +30,9 @@ import java.util.concurrent.LinkedBlockingQueue
 private val log = KotlinLogging.logger {}
 
 class MockOAuth2Server(
-    config: OAuth2Config = OAuth2Config()
+    val config: OAuth2Config = OAuth2Config()
 ) {
     private val mockWebServer: MockWebServer = MockWebServer()
-    private val tokenProvider: OAuth2TokenProvider =
-        OAuth2TokenProvider()
 
     var dispatcher: Dispatcher = MockOAuth2Dispatcher(config)
 
@@ -76,7 +73,7 @@ class MockOAuth2Server(
             ClientSecretBasic(ClientID(clientId), Secret("secret")),
             AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost"))
         )
-        return tokenProvider.accessToken(tokenRequest, issuerUrl, null, OAuth2TokenCallback)
+        return config.tokenProvider.accessToken(tokenRequest, issuerUrl, null, OAuth2TokenCallback)
     }
 }
 
@@ -94,7 +91,6 @@ class MockOAuth2Dispatcher(
             responseQueue.peek() != null -> responseQueue.take()
             else -> mockResponse(httpRequestHandler.handleRequest(request.asOAuth2HttpRequest()))
         }
-
 
     private fun mockResponse(response: OAuth2HttpResponse): MockResponse =
         MockResponse()
