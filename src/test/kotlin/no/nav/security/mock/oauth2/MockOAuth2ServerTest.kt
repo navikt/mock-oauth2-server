@@ -37,6 +37,7 @@ class MockOAuth2ServerTest {
 
     private lateinit var server: MockOAuth2Server
     private lateinit var interactiveLoginServer: MockOAuth2Server
+    private lateinit var serverWithFixedPort: MockOAuth2Server
 
     @BeforeEach
     fun before() {
@@ -49,18 +50,20 @@ class MockOAuth2ServerTest {
                 tokenProvider = OAuth2TokenProvider()
             )
         )
+        serverWithFixedPort = MockOAuth2Server()
+        serverWithFixedPort.start(1234)
     }
 
     @AfterEach
     fun shutdown() {
         server.shutdown()
         interactiveLoginServer.shutdown()
+        serverWithFixedPort.shutdown()
     }
 
     @Test
     fun startServerWithFixedPort() {
-        val serverWithFixedPort = MockOAuth2Server()
-        serverWithFixedPort.start(1234)
+
         val wellKnown: WellKnown = assertWellKnownResponseForIssuer(serverWithFixedPort, "default")
 
         val tokenIssuedDirectlyFromServer: SignedJWT = serverWithFixedPort.issueToken("default", "yo", DefaultOAuth2TokenCallback())
@@ -79,7 +82,6 @@ class MockOAuth2ServerTest {
         val tokenResponse: OAuth2TokenResponse = jacksonObjectMapper().readValue(authCodeTokenResponse.body!!.string())
         val tokenFromAuthCode: SignedJWT = tokenResponse.idToken!!.let { SignedJWT.parse(it) }
         assertThat(tokenFromAuthCode.verifySignatureAndIssuer(Issuer(wellKnown.issuer), retrieveJwks(wellKnown.jwksUri))).isNotNull
-        serverWithFixedPort.shutdown()
     }
 
     @Test
