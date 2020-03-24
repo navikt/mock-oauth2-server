@@ -92,7 +92,6 @@ class MockOAuth2Dispatcher(
             else -> mockResponse(httpRequestHandler.handleRequest(request.asOAuth2HttpRequest()))
         }
 
-
     private fun mockResponse(response: OAuth2HttpResponse): MockResponse =
         MockResponse()
             .setHeaders(response.headers)
