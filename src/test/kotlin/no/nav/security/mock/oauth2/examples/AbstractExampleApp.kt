@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.examples
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.JWKSet
@@ -95,7 +96,17 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
         }
     }
 
+    fun bearerToken(request: RecordedRequest): String? =
+        request.headers["Authorization"]
+            ?.split("Bearer ")
+            ?.let { it[0] }
+
     fun notAuthorized(): MockResponse = MockResponse().setResponseCode(401)
+
+    fun json(value: Any): MockResponse = MockResponse()
+        .setResponseCode(200)
+        .setHeader("Content-Type","application/json")
+        .setBody(ObjectMapper().writeValueAsString(value))
 
     abstract fun handleRequest(request: RecordedRequest): MockResponse
 }
