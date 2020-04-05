@@ -174,7 +174,7 @@ The standalone server will default to port `1111` and can be started by invoking
 
 ##### Debugger
 
-Point your browser to [http://localhost:<your port>/<any issuerid>/debugger](http://localhost:1111/default/debugger) to check it out
+Point your browser to [http://localhost:1111/default/debugger](http://localhost:1111/default/debugger) to check it out
 
 ##### Docker 
 
