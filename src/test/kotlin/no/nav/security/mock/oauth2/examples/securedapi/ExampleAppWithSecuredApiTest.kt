@@ -50,7 +50,7 @@ internal class ExampleAppWithSecuredApiTest {
         val response: Response = client.newCall(
             Request.Builder()
                 .url(exampleApp.url("/api"))
-                .addHeader("Authorization", "Bearer ${token.serialize()}")
+                .addHeader("Authorization", "Bearer " + token.serialize())
                 .get()
                 .build()
         ).execute()

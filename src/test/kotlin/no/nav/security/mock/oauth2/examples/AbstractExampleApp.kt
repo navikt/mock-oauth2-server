@@ -99,7 +99,7 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
     fun bearerToken(request: RecordedRequest): String? =
         request.headers["Authorization"]
             ?.split("Bearer ")
-            ?.let { it[0] }
+            ?.let { it[1] }
 
     fun notAuthorized(): MockResponse = MockResponse().setResponseCode(401)
 
