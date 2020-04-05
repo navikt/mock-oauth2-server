@@ -6,7 +6,7 @@ A scriptable/customizable web server for testing HTTP clients using OAuth2/OpenI
 
 Even though the server aims to be compliant with regards to the supported OAuth2/OpenID Connect specifications, you should never use it for anything else than tests. That being said, when developing OAuth2 clients you should always verify that the expected requests are being made in your tests.
 
-##Motivation
+## Motivation
 
 The motivation behind this library is to provide a setup such that application developers don't feel the need to disable security in their apps when running tests! If you have any issues with regards to OAuth2 and tokens et. al. and consider to disable "security" when running tests please submit an issue or a PR so that we can all help developers and security to live in harmony once again (if ever..)!
 
