@@ -12,9 +12,10 @@ data class OAuth2HttpRequest(
     val headers: Headers,
     val method: String,
     val url: HttpUrl,
-    val body: String?
+    val body: String? = null
 ) {
     val formParameters: Parameters = Parameters(body)
+    val cookies: Map<String, String> = headers["Cookie"]?.keyValuesToMap(";") ?: emptyMap()
 
     fun asTokenRequest(): TokenRequest =
         TokenRequest.parse(
@@ -28,16 +29,17 @@ data class OAuth2HttpRequest(
     fun asAuthenticationRequest(): AuthenticationRequest = AuthenticationRequest.parse(this.url.toUri())
 
     data class Parameters(val parameterString: String?) {
-
-        val map: Map<String, String> =
-            parameterString?.split("&")
-                ?.filter { it.contains("=") }
-                ?.associate {
-                    val (left, right) = it.split("=")
-                    decode(left) to decode(right)
-                } ?: emptyMap()
-
+        val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
         fun get(name: String): String? = map[name]
-        private fun decode(string: String): String = URLDecoder.decode(string, StandardCharsets.UTF_8)
     }
 }
+
+private fun String.urlDecode(): String = URLDecoder.decode(this, StandardCharsets.UTF_8)
+
+private fun String.keyValuesToMap(listDelimiter: String): Map<String, String> =
+    this.split(listDelimiter)
+        .filter { it.contains("=") }
+        .associate {
+            val (key, value) = it.split("=")
+            key.urlDecode().trim() to value.urlDecode().trim()
+        }

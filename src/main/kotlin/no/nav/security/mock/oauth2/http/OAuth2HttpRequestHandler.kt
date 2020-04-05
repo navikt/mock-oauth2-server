@@ -10,8 +10,11 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.debugger.DebuggerRequestHandler
 import no.nav.security.mock.oauth2.extensions.grantType
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
+import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
+import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
@@ -38,7 +41,8 @@ private val log = KotlinLogging.logger {}
 class OAuth2HttpRequestHandler(
     private val config: OAuth2Config
 ) {
-    private val loginRequestHandler = LoginRequestHandler()
+    private val loginRequestHandler = LoginRequestHandler(templateMapper)
+    private val debuggerRequestHandler = DebuggerRequestHandler(templateMapper)
     private val oAuth2TokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
 
     private val grantHandlers: Map<GrantType, GrantHandler> = mapOf(
@@ -69,7 +73,7 @@ class OAuth2HttpRequestHandler(
                             }
                         }
                         "POST" -> {
-                            val login: Login = LoginRequestHandler().loginSubmit(request)
+                            val login: Login = loginRequestHandler.loginSubmit(request)
                             authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
                         }
                         else -> throw OAuth2Exception(
@@ -87,6 +91,17 @@ class OAuth2HttpRequestHandler(
                 url.isJwksUrl() -> {
                     log.debug("handle jwks request")
                     return json(config.tokenProvider.publicJwkSet().toJSONObject())
+                }
+                url.isDebuggerUrl() -> {
+                    log.debug("handle debugger request")
+                    return debuggerRequestHandler.handleDebuggerForm(request)
+                }
+                url.isDebuggerCallbackUrl() -> {
+                    log.debug("handle debugger callback request")
+                    return debuggerRequestHandler.handleDebuggerCallback(request)
+                }
+                url.encodedPath == "/favicon.ico" -> {
+                    return OAuth2HttpResponse(status = 200)
                 }
                 else -> {
                     val msg = "path '${request.url}' not found"

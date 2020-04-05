@@ -9,6 +9,6 @@
     </appender>
 
     <root level="debug">
-        <appender-ref ref="stdout" />
+        <appender-ref ref="stdout"/>
     </root>
 </configuration>

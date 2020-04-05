@@ -1,20 +1,43 @@
-<#import "layout.ftl" as layout />
+<#import "main.ftl" as layout />
 
 <@layout.mainLayout title="mock-oauth2-server" description="Just a mock login">
-    <div class="login-card">
-        <h1>Sign-in to the Mock OAuth2 Server</h1>
-        <form autocomplete="off" method="post">
-            <input type="hidden" name="uuid" value=""/>
-            <label>
-                <input required type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
-            </label>
-            <button type="submit" class="login login-submit">Sign-in</button>
-        </form>
-        <div class="grant-debug">
-            <h3>Debug info</h3>
-            <#list query as propName, propValue>
-                <div align="left"><strong>${propName}</strong> = ${propValue}</div>
-            </#list>
+<div class="container">
+    <section class="header">
+        <h2 class="title">Mock OAuth2 Server Sign-in</h2>
+    </section>
+    <div class="docs-section" id="sign-in">
+        <div class="row">
+            <div class="three columns">&nbsp;</div>
+            <div class="six columns">
+                <form method="post">
+                    <label>
+                        <input class="u-full-width" required type="text" name="username"
+                               placeholder="Enter any user/subject"
+                               autofocus="on">
+                    </label>
+                    <label>
+                        <input class="u-full-width" required type="text" name="acr"
+                               placeholder="Optional 'acr' claim value"
+                               autofocus="on">
+                    </label>
+                    <input class="button-primary" type="submit" value="Sign-in">
+                </form>
+            </div>
+            <div class="three columns">&nbsp;</div>
         </div>
     </div>
+    <div class="docs-section">
+
+        <div class="row">
+            <div class="three columns">&nbsp;</div>
+            <div class="six columns">
+                <h6 class="docs-header">Authorization Request</h6>
+                <#list query as propName, propValue>
+                    <div style="text-align: left; color:grey;"><strong>${propName}</strong> = ${propValue}</div>
+                </#list>
+            </div>
+            <div class="three columns">&nbsp;</div>
+        </div>
+    </div>
+</div>
 </@layout.mainLayout>

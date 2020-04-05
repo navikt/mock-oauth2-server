@@ -12,8 +12,8 @@ import com.nimbusds.oauth2.sdk.id.ClientID
 import com.nimbusds.oauth2.sdk.id.State
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
-import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.login.Login
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.assertj.core.api.Assertions.assertThat
@@ -107,8 +107,10 @@ internal class AuthorizationCodeHandlerTest {
         return TokenRequest(
             URI.create("http://localhost/token"),
             ClientSecretBasic(ClientID("client1"), Secret("clientSecret")),
-            AuthorizationCodeGrant(code,
-            URI.create(redirectUri)),
+            AuthorizationCodeGrant(
+                code,
+                URI.create(redirectUri)
+            ),
             Scope(scope)
         )
     }

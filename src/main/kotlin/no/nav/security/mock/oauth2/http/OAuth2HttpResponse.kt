@@ -6,10 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nimbusds.oauth2.sdk.ErrorObject
+import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
+import no.nav.security.mock.oauth2.templates.TemplateMapper
 import okhttp3.Headers
 
-private val objectMapper: ObjectMapper = jacksonObjectMapper()
+val objectMapper: ObjectMapper = jacksonObjectMapper()
+val templateMapper: TemplateMapper = TemplateMapper.create {}
 
 data class OAuth2HttpResponse(
     val headers: Headers = Headers.headersOf(),
@@ -76,14 +79,30 @@ fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
     body = content
 )
 
+fun redirect(location: String, headers: Headers = Headers.headersOf()): OAuth2HttpResponse = OAuth2HttpResponse(
+    headers = Headers.headersOf("Location", location).newBuilder().addAll(headers).build(),
+    status = 302
+)
+
 fun notFound(): OAuth2HttpResponse = OAuth2HttpResponse(status = 404)
 
 fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessResponse): OAuth2HttpResponse {
-    val httpResponse = authenticationSuccessResponse.toHTTPResponse()
-    return OAuth2HttpResponse(
-        headers = Headers.headersOf("Location", httpResponse.location!!.toString()),
-        status = 302
-    )
+    return when (authenticationSuccessResponse.responseMode) {
+        ResponseMode.FORM_POST -> {
+            OAuth2HttpResponse(
+                status = 200,
+                body = templateMapper.authorizationCodeResponseHtml(
+                    authenticationSuccessResponse.redirectionURI.toString(),
+                    authenticationSuccessResponse.authorizationCode.value,
+                    authenticationSuccessResponse.state.value
+                )
+            )
+        }
+        else -> OAuth2HttpResponse(
+            headers = Headers.headersOf("Location", authenticationSuccessResponse.toURI().toString()),
+            status = 302
+        )
+    }
 }
 
 fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {

@@ -62,8 +62,9 @@ class AuthorizationCodeHandler(
         val authenticationRequest = takeAuthenticationRequestFromCache(code)
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback))
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, nonce, getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback))
+        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, loginTokenCallbackOrDefault)
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, nonce, loginTokenCallbackOrDefault)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -76,7 +77,7 @@ class AuthorizationCodeHandler(
     }
 
     private fun getLoginTokenCallbackOrDefault(code: AuthorizationCode, OAuth2TokenCallback: OAuth2TokenCallback): OAuth2TokenCallback {
-        return takeLoginFromCache(code)?.username?.let {
+        return takeLoginFromCache(code)?.let {
             LoginOAuth2TokenCallback(it, OAuth2TokenCallback)
         } ?: OAuth2TokenCallback
     }
@@ -84,11 +85,15 @@ class AuthorizationCodeHandler(
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
     private fun takeAuthenticationRequestFromCache(code: AuthorizationCode): AuthenticationRequest? = codeToAuthRequestCache.remove(code)
 
-    private class LoginOAuth2TokenCallback(val subject: String, val OAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
+    private class LoginOAuth2TokenCallback(val login: Login, val OAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
         override fun issuerId(): String = OAuth2TokenCallback.issuerId()
-        override fun subject(tokenRequest: TokenRequest): String = subject
+        override fun subject(tokenRequest: TokenRequest): String = login.username
         override fun audience(tokenRequest: TokenRequest): String = OAuth2TokenCallback.audience(tokenRequest)
-        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = OAuth2TokenCallback.addClaims(tokenRequest)
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
+            OAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
+                login.acr?.let { put("acr", it) }
+            }
+
         override fun tokenExpiry(): Long = OAuth2TokenCallback.tokenExpiry()
     }
 }

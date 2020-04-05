@@ -2,11 +2,8 @@ package no.nav.security.mock.oauth2.login
 
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.templates.TemplateMapper
-import no.nav.security.mock.oauth2.templates.TemplateMapper.Companion.create
 
-val templateMapper: TemplateMapper = create {}
-
-class LoginRequestHandler {
+class LoginRequestHandler(private val templateMapper: TemplateMapper) {
 
     fun loginHtml(httpRequest: OAuth2HttpRequest): String = templateMapper.loginHtml(httpRequest)
 
