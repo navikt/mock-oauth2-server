@@ -2,15 +2,20 @@ name-template: $NEXT_PATCH_VERSION
 tag-template: $NEXT_PATCH_VERSION
 change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
 categories:
-  - title: Major Changes
-    label: "changes: major"
-
-  - title: Minor Changes
-    label: "changes: minor"
-
-  - title: Patch Changes
-    label: "changes: patch"
-
+  - title: '🚀 Features'
+    labels:
+      - 'feature'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+  - title: '⬆️ Dependency upgrades'
+    labels:
+      - 'bump'
+      - 'dependencies'
+exclude-labels:
+  - 'skip-changelog'
 template: |
-  ## Non-version Changes
+  ## What's Changed
   $CHANGES
