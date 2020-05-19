@@ -10,3 +10,5 @@ build/
 /gradle/daemon/
 /gradle/native/
 /gradle/wrapper/dists/
+
+.DS_Store

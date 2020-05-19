@@ -39,7 +39,7 @@ jobs:
       - name: Publish artifact
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_KEY_BASE64: ${{ secrets.GPG_KEY_BASE64 }}
+          GPG_KEYS: ${{ secrets.GPG_KEYS }}
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
@@ -48,7 +48,7 @@ jobs:
         # The GITHUB_REF tag comes in the format 'refs/tags/xxx'.
         # So if we split on '/' and take the 3rd value, we can get the release name.
         run: |
-          export GPG_TTY=$(tty) && echo ${GPG_KEY_BASE64} | base64 --decode | gpg --fast-import --batch
+          export GPG_TTY=$(tty) && echo ${GPG_KEYS} | gpg --fast-import --batch
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
           REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')
           IMAGE=${IMAGE_BASE_NAME}/${REPO_NAME}:${NEW_VERSION}
