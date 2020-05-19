@@ -4,13 +4,14 @@ import com.nimbusds.oauth2.sdk.OAuth2Error
 import no.nav.security.mock.oauth2.OAuth2Exception
 import okhttp3.HttpUrl
 
-fun HttpUrl.isWellKnownUrl(): Boolean = this == this.toWellKnownUrl()
+fun HttpUrl.isWellKnownUrl(): Boolean = this == this.toWellKnownUrl() || this == this.toOAuth2AuthorizationServerMetadataUrl()
 fun HttpUrl.isAuthorizationEndpointUrl(): Boolean = this.withoutQuery() == this.toAuthorizationEndpointUrl()
 fun HttpUrl.isTokenEndpointUrl(): Boolean = this == this.toTokenEndpointUrl()
 fun HttpUrl.isJwksUrl(): Boolean = this == this.toJwksUrl()
 fun HttpUrl.isDebuggerUrl(): Boolean = this.withoutQuery() == this.toDebuggerUrl()
 fun HttpUrl.isDebuggerCallbackUrl(): Boolean = this.withoutQuery() == this.toDebuggerCallbackUrl()
 
+fun HttpUrl.toOAuth2AuthorizationServerMetadataUrl() = this.resolvePath("/${issuerId()}/.well-known/oauth-authorization-server")
 fun HttpUrl.toWellKnownUrl(): HttpUrl = this.resolvePath("/${issuerId()}/.well-known/openid-configuration")
 fun HttpUrl.toAuthorizationEndpointUrl(): HttpUrl = this.resolvePath("/${issuerId()}/authorize")
 fun HttpUrl.toTokenEndpointUrl(): HttpUrl = this.resolvePath("/${issuerId()}/token")
