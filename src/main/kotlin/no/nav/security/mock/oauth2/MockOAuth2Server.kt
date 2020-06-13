@@ -15,6 +15,7 @@ import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequestHandler
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
@@ -24,6 +25,7 @@ import okhttp3.mockwebserver.RecordedRequest
 import java.io.IOException
 import java.net.InetAddress
 import java.net.URI
+import java.util.UUID
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -74,6 +76,25 @@ class MockOAuth2Server(
         )
         return config.tokenProvider.accessToken(tokenRequest, issuerUrl, null, OAuth2TokenCallback)
     }
+
+    @JvmOverloads
+    fun issueToken(
+        issuerId: String = "default",
+        subject: String = UUID.randomUUID().toString(),
+        audience: String? = "default",
+        claims: Map<String, Any> = emptyMap(),
+        expiry: Long = 3600
+    ): SignedJWT = issueToken(
+        issuerId,
+        "default",
+        DefaultOAuth2TokenCallback(
+            issuerId,
+            subject,
+            audience,
+            claims,
+            expiry
+        )
+    )
 }
 
 class MockOAuth2Dispatcher(

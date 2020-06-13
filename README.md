@@ -141,7 +141,6 @@ fun loginWithIdTokenForSubjectFoo() {
  If you need specific claims in the resulting `id_token` - e.g. `acr` or a custom claim you can also use the `OAuth2TokenCallback`:
 
 ~~~kotlin
-```
 @Test
 fun loginWithIdTokenForAcrClaimEqualsLevel4() {
     server.enqueueCallback(
@@ -152,7 +151,6 @@ fun loginWithIdTokenForAcrClaimEqualsLevel4() {
     )
   // Invoke your app here and assert acr=Level4 is present in id_token
 }
-```
 ~~~
 
 ##### Testing an API requiring access_token (e.g. a signed JWT)
@@ -167,6 +165,28 @@ request.addHeader("Authorization", "Bearer ${token.serialize()}")
 ##### More examples 
 
 Have a look at some kotlin examples in the src/test directory [examples](src/test/kotlin/no/nav/security/mock/oauth2/examples)
+
+### API
+
+##### Server URLs
+
+You can retrieve URLs from the server with the correct port and issuerId etc by invoking one of the ` fun *Url(issuerId: String): HttpUrl` functions/methods: 
+
+```kotlin
+val server = MockOAuth2Server()
+server.start()
+val wellKnownUrl = server.wellKnownUrl("yourissuer")
+// will result in the following url:
+// http://localhost:<a random port>/yourissuer/.well-known/openid-configuration
+```
+
+##### OAuth2Config
+
+TODO 
+
+##### RecordedRequest
+TODO
+
 
 ### Standalone server
 
