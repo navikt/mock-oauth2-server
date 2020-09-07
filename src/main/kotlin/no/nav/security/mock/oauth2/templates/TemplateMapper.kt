@@ -18,7 +18,8 @@ class TemplateMapper(
     fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest): String =
         asString(
             HtmlContent(
-                "login.ftl", mapOf(
+                "login.ftl",
+                mapOf(
                     "request_url" to oAuth2HttpRequest.url.newBuilder().query(null).build().toString(),
                     "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map
                 )
@@ -28,7 +29,8 @@ class TemplateMapper(
     fun debuggerCallbackHtml(tokenRequest: String, tokenResponse: String): String {
         return asString(
             HtmlContent(
-                "debugger_callback.ftl", mapOf(
+                "debugger_callback.ftl",
+                mapOf(
                     "token_request" to tokenRequest,
                     "token_response" to tokenResponse
                 )
@@ -40,7 +42,8 @@ class TemplateMapper(
         val urlWithoutQuery = oAuth2HttpRequest.url.newBuilder().query(null)
         return asString(
             HtmlContent(
-                "debugger.ftl", mapOf(
+                "debugger.ftl",
+                mapOf(
                     "url" to urlWithoutQuery,
                     "token_url" to oAuth2HttpRequest.url.toTokenEndpointUrl(),
                     "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map
@@ -52,7 +55,8 @@ class TemplateMapper(
     fun authorizationCodeResponseHtml(redirectUri: String, code: String, state: String): String =
         asString(
             HtmlContent(
-                "authorization_code_response.ftl", mapOf(
+                "authorization_code_response.ftl",
+                mapOf(
                     "redirect_uri" to redirectUri,
                     "code" to code,
                     "state" to state

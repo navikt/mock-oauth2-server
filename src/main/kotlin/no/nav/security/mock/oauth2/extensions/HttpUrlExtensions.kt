@@ -32,8 +32,5 @@ private fun HttpUrl.resolvePath(path: String): HttpUrl {
         .host(this.host)
         .port(this.port)
         .build()
-        .resolve(path.removePrefix("/")) ?: throw OAuth2Exception(
-        OAuth2Error.INVALID_REQUEST,
-        "cannot resolve path $path"
-    )
+        .resolve(path.removePrefix("/")) ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "cannot resolve path $path")
 }
