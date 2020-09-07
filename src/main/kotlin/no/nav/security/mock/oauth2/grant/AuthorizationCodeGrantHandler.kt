@@ -47,7 +47,8 @@ class AuthorizationCodeHandler(
                 )
             }
             else -> throw OAuth2Exception(
-                OAuth2Error.INVALID_GRANT, "hybrid og implicit flow not supported (yet)."
+                OAuth2Error.INVALID_GRANT,
+                "hybrid og implicit flow not supported (yet)."
             )
         }
     }

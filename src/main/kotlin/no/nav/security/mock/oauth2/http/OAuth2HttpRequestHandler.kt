@@ -129,9 +129,10 @@ class OAuth2HttpRequestHandler(
         log.error("received exception when handling request.", error)
         val errorObject: ErrorObject = when (error) {
             is OAuth2Exception -> error.errorObject
-            is ParseException -> error.errorObject
-                ?: OAuth2Error.INVALID_REQUEST
-                    .appendDescription(". received exception message: ${error.message}")
+            is ParseException ->
+                error.errorObject
+                    ?: OAuth2Error.INVALID_REQUEST
+                        .appendDescription(". received exception message: ${error.message}")
             is GeneralException -> error.errorObject
             else -> null
         } ?: OAuth2Error.SERVER_ERROR
@@ -143,12 +144,14 @@ class OAuth2HttpRequestHandler(
         if (authenticationRequest.responseType.impliesCodeFlow()) {
             (grantHandlers[GrantType.AUTHORIZATION_CODE] as AuthorizationCodeHandler)
         } else throw OAuth2Exception(
-            OAuth2Error.INVALID_GRANT, "hybrid og implicit flow not supported (yet)."
+            OAuth2Error.INVALID_GRANT,
+            "hybrid og implicit flow not supported (yet)."
         )
 
     private fun grantHandler(tokenRequest: TokenRequest): GrantHandler =
         grantHandlers[tokenRequest.grantType()] ?: throw OAuth2Exception(
-            OAuth2Error.INVALID_GRANT, "grant_type ${tokenRequest.grantType()} not supported."
+            OAuth2Error.INVALID_GRANT,
+            "grant_type ${tokenRequest.grantType()} not supported."
         )
 
     private fun wellKnown(request: OAuth2HttpRequest): WellKnown =
