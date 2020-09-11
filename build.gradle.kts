@@ -80,6 +80,12 @@ publishing {
         create<MavenPublication>("mavenJava") {
             artifactId = rootProject.name
             from(components["java"])
+            artifact(tasks["sourcesJar"]){
+                classifier = "sources"
+            }
+            artifact(tasks["javadocJar"]){
+                classifier = "javadoc"
+            }
             versionMapping {
                 usage("java-api") {
                     fromResolutionOf("runtimeClasspath")
@@ -157,7 +163,7 @@ jib {
         image = "gcr.io/distroless/java:11"
     }
     container {
-        ports = listOf("1111")
+        ports = listOf("8080")
         mainClass = mainClassKt
     }
 }
