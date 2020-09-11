@@ -317,7 +317,9 @@ class MockOAuth2ServerTest {
     @Test
     fun issueTokenDirectlyFromMockOAuth2Server() {
         val signedJWT: SignedJWT = server.issueToken(
-            "default", "client1", DefaultOAuth2TokenCallback(
+            "default",
+            "client1",
+            DefaultOAuth2TokenCallback(
                 issuerId = "default",
                 subject = "mysub",
                 audience = "muyaud",

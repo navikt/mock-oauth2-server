@@ -60,20 +60,23 @@ data class OAuth2TokenResponse(
 
 fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
-        OAuth2HttpResponse.ContentType.HEADER, OAuth2HttpResponse.ContentType.JSON
+        OAuth2HttpResponse.ContentType.HEADER,
+        OAuth2HttpResponse.ContentType.JSON
     ),
     status = 200,
     body = when (anyObject) {
         is String -> anyObject
-        else -> objectMapper
-            .enable(SerializationFeature.INDENT_OUTPUT)
-            .writeValueAsString(anyObject)
+        else ->
+            objectMapper
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .writeValueAsString(anyObject)
     }
 )
 
 fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
-        OAuth2HttpResponse.ContentType.HEADER, OAuth2HttpResponse.ContentType.HTML
+        OAuth2HttpResponse.ContentType.HEADER,
+        OAuth2HttpResponse.ContentType.HTML
     ),
     status = 200,
     body = content
@@ -109,7 +112,8 @@ fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
     val responseCode = error.httpStatusCode.takeUnless { it == 302 } ?: 400
     return OAuth2HttpResponse(
         headers = Headers.headersOf(
-            OAuth2HttpResponse.ContentType.HEADER, OAuth2HttpResponse.ContentType.JSON
+            OAuth2HttpResponse.ContentType.HEADER,
+            OAuth2HttpResponse.ContentType.JSON
         ),
         status = responseCode,
         body = objectMapper
