@@ -1,27 +1,26 @@
 import java.time.Duration
 
-val assertjVersion = "3.14.0"
-val kotlinLoggingVersion = "1.7.8"
+val assertjVersion = "3.17.2"
+val kotlinLoggingVersion = "1.8.3"
 val logbackVersion = "1.2.3"
-val nimbusSdkVersion = "6.23"
-val mockWebServerVersion = "4.3.1"
-val jacksonVersion = "2.10.1"
-val junitJupiterVersion = "5.5.2"
+val nimbusSdkVersion = "8.19.1"
+val mockWebServerVersion = "4.8.1"
+val jacksonVersion = "2.11.2"
+val junitJupiterVersion = "5.7.0-RC1"
 val konfigVersion = "1.6.10.0"
-val kotlinVersion = "1.3.61"
-val freemarkerVersion = "2.3.29"
+val kotlinVersion = "1.4.0"
+val freemarkerVersion = "2.3.30"
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.3.61"
-    id("com.github.ben-manes.versions") version "0.30.0"
-    id("org.jmailen.kotlinter") version "2.2.0"
-    id("com.google.cloud.tools.jib") version "2.0.0"
-    id("com.github.johnrengelman.shadow") version "5.2.0"
+    kotlin("jvm") version "1.4.0"
+    id("org.jmailen.kotlinter") version "3.0.2"
+    id("com.google.cloud.tools.jib") version "2.5.0"
+    id("com.github.johnrengelman.shadow") version "6.0.0"
     id("net.researchgate.release") version "2.8.1"
-    id("io.codearte.nexus-staging") version "0.21.2"
+    id("io.codearte.nexus-staging") version "0.22.0"
     id("de.marcphilipp.nexus-publish") version "0.4.0"
     `java-library`
     `maven-publish`
@@ -205,6 +204,10 @@ tasks {
         onlyIf {
             project.hasProperty("signing.gnupg.keyName")
         }
+    }
+
+    withType<Wrapper> {
+        gradleVersion = "6.6.1"
     }
 
     /*withType<PublishToMavenRepository> {
