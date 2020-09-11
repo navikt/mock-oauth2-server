@@ -20,6 +20,7 @@ import no.nav.security.mock.oauth2.http.html
 import no.nav.security.mock.oauth2.http.objectMapper
 import no.nav.security.mock.oauth2.http.redirect
 import no.nav.security.mock.oauth2.templates.TemplateMapper
+import okhttp3.Credentials
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -54,7 +55,8 @@ class DebuggerRequestHandler(private val templateMapper: TemplateMapper) {
                 log.debug("handling GET request, return html form")
                 html(
                     templateMapper.debuggerFormHtml(
-                        debuggerAuthorizationRequest(request.url.toAuthorizationEndpointUrl(), request.url.toDebuggerCallbackUrl())
+                        debuggerAuthorizationRequest(request.url.toAuthorizationEndpointUrl(), request.url.toDebuggerCallbackUrl()),
+                        ClientAuthMethod.CLIENT_SECRET_BASIC.name
                     )
                 )
             }
@@ -66,6 +68,7 @@ class DebuggerRequestHandler(private val templateMapper: TemplateMapper) {
                     ?.removeAllEncodedQueryParameters("authorize_url")
                     ?.removeAllEncodedQueryParameters("token_url")
                     ?.removeAllEncodedQueryParameters("client_secret")
+                    ?.removeAllEncodedQueryParameters("client_auth_method")
                     ?.build()
 
                 log.debug("attempting to redirect to $httpUrl, setting received params in encrypted cookie")
@@ -98,17 +101,27 @@ class DebuggerRequestHandler(private val templateMapper: TemplateMapper) {
             ?: request.formParameters.get("code")
             ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "no code parameter present")
 
-        val body: String = mapOf(
+        val clientAuthentication = ClientAuthentication.fromMap(sessionParameters)
+        val formBodyString: String = mapOf(
             "grant_type" to "authorization_code",
             "code" to code,
-            "scope" to sessionParameters.urlEncodeParameter("scope"),
-            "redirect_uri" to sessionParameters.urlEncodeParameter("redirect_uri"),
-            "client_id" to sessionParameters.urlEncodeParameter("client_id"),
-            "client_secret" to sessionParameters.urlEncodeParameter("client_secret")
+            "scope" to sessionParameters.urlEncode("scope"),
+            "redirect_uri" to sessionParameters.urlEncode("redirect_uri")
         ).toKeyValueString("&")
 
+        val body = when (clientAuthentication.clientAuthMethod) {
+            ClientAuthMethod.CLIENT_SECRET_POST -> {
+                formBodyString.plus("&${clientAuthentication.form()}")
+            }
+            else -> formBodyString
+        }
+        val headers = when (clientAuthentication.clientAuthMethod) {
+            ClientAuthMethod.CLIENT_SECRET_BASIC -> Headers.headersOf("Authorization", clientAuthentication.basic())
+            else -> Headers.headersOf()
+        }
         val tokenResponse: String = client.newCall(
             Request.Builder()
+                .headers(headers)
                 .url(tokenUrl)
                 .post(body.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
                 .build()
@@ -117,7 +130,10 @@ class DebuggerRequestHandler(private val templateMapper: TemplateMapper) {
         val formattedTokenRequest = "POST ${tokenUrl.encodedPath} HTTP/1.1\n" +
             "Host: ${tokenUrl.toHostHeader(true)}\n" +
             "Content-Type: application/x-www-form-urlencoded\n" +
-            "\n$body"
+            headers.joinToString("\n") {
+                "${it.first}: ${it.second}"
+            } +
+            "\n\n$body"
 
         return html(templateMapper.debuggerCallbackHtml(formattedTokenRequest, tokenResponse))
     }
@@ -138,7 +154,10 @@ class DebuggerRequestHandler(private val templateMapper: TemplateMapper) {
     }
 }
 
-private fun debuggerAuthorizationRequest(authEndpointUrl: HttpUrl, redirectUrl: HttpUrl): OAuth2HttpRequest =
+private fun debuggerAuthorizationRequest(
+    authEndpointUrl: HttpUrl,
+    redirectUrl: HttpUrl
+): OAuth2HttpRequest =
     authEndpointUrl.newBuilder()
         .addQueryParameter("client_id", "debugger")
         .addQueryParameter("response_type", "code")
@@ -155,10 +174,15 @@ private fun debuggerAuthorizationRequest(authEndpointUrl: HttpUrl, redirectUrl: 
             )
         }
 
-private fun Map<String, String>.urlEncodeParameter(key: String): String =
-    this[key]
-        ?.let { URLEncoder.encode(it, StandardCharsets.UTF_8) }
-        ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "missing required parameter $key")
+private fun String.appendForm(name: String, value: String): String = this.plus("&$name=$value")
+
+private fun String.urlEncode(): String = URLEncoder.encode(this, StandardCharsets.UTF_8)
+
+private fun Map<String, String>.require(key: String): String =
+    this[key] ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "missing required parameter $key")
+
+private fun Map<String, String>.urlEncode(key: String): String =
+    require(key).urlEncode()
 
 private fun Map<String, String>.toKeyValueString(entrySeparator: String): String =
     this.map { "${it.key}=${it.value}" }
@@ -176,3 +200,26 @@ private fun String.decrypt(key: SecretKey): String =
     JWEObject.parse(this).also {
         it.decrypt(DirectDecrypter(key))
     }.payload.toString()
+
+private enum class ClientAuthMethod {
+    CLIENT_SECRET_POST,
+    CLIENT_SECRET_BASIC
+}
+
+private data class ClientAuthentication(
+    val clientId: String,
+    val clientSecret: String,
+    val clientAuthMethod: ClientAuthMethod
+) {
+    fun form(): String = "client_id=${clientId.urlEncode()}&client_secret=${clientSecret.urlEncode()}"
+    fun basic(): String = Credentials.basic(clientId, clientSecret, StandardCharsets.UTF_8)
+
+    companion object {
+        fun fromMap(map: Map<String, String>): ClientAuthentication =
+            ClientAuthentication(
+                map.require("client_id"),
+                map.require("client_secret"),
+                ClientAuthMethod.valueOf(map.require("client_auth_method"))
+            )
+    }
+}

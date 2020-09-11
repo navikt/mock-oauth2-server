@@ -16,7 +16,7 @@ data class Configuration(
 ) {
     data class Server(
         val hostname: String = config.getOrElse(Key("server.hostname", stringType), "localhost"),
-        val port: Int = config.getOrElse(Key("server.port", intType), 1111)
+        val port: Int = config.getOrElse(Key("server.port", intType), 8080)
     )
 }
 

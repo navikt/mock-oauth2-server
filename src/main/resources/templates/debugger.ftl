@@ -17,6 +17,9 @@
                     <label for="authorize_url">Token Endpoint</label>
                     <input class="u-full-width" type="text" placeholder="The Token endpoint of your ID provider"
                            name="token_url" value="${token_url}">
+                    <label for="client_auth_method">Client Authentication Method</label>
+                    <input class="u-full-width" type="text" placeholder="Client auth method" name="client_auth_method"
+                           value="${client_auth_method}">
                     <label for="client_id">Client Id</label>
                     <input class="u-full-width" type="text" placeholder="Your registered client_id" name="client_id"
                            value="${query.client_id}">

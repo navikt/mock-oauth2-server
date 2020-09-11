@@ -36,14 +36,15 @@ class TemplateMapper(
         )
     }
 
-    fun debuggerFormHtml(oAuth2HttpRequest: OAuth2HttpRequest): String {
+    fun debuggerFormHtml(oAuth2HttpRequest: OAuth2HttpRequest, clientAuthMethod: String): String {
         val urlWithoutQuery = oAuth2HttpRequest.url.newBuilder().query(null)
         return asString(
             HtmlContent(
                 "debugger.ftl", mapOf(
                     "url" to urlWithoutQuery,
                     "token_url" to oAuth2HttpRequest.url.toTokenEndpointUrl(),
-                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map
+                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map,
+                    "client_auth_method" to clientAuthMethod
                 )
             )
         )
