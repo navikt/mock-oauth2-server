@@ -80,12 +80,7 @@ publishing {
         create<MavenPublication>("mavenJava") {
             artifactId = rootProject.name
             from(components["java"])
-            artifact(tasks["sourcesJar"]){
-                classifier = "sources"
-            }
-            artifact(tasks["javadocJar"]){
-                classifier = "javadoc"
-            }
+
             versionMapping {
                 usage("java-api") {
                     fromResolutionOf("runtimeClasspath")
@@ -129,17 +124,6 @@ publishing {
                 password = System.getenv("GITHUB_TOKEN")
             }
         }
-        /*
-        maven {
-            name = "Sonatype"
-            val releasesRepoUrl = uri("$mavenRepoBaseUrl/service/local/staging/deploy/maven2/")
-            val snapshotsRepoUrl = uri("$mavenRepoBaseUrl/content/repositories/snapshots")
-            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
-            credentials {
-                username = System.getenv("SONATYPE_USERNAME")
-                password = System.getenv("SONATYPE_PASSWORD")
-            }
-        }*/
     }
 }
 
@@ -168,10 +152,15 @@ jib {
     }
 }
 
+(components["java"] as AdhocComponentWithVariants).withVariantsFromConfiguration(configurations["shadowRuntimeElements"]) {
+    skip()
+}
+
 tasks {
     withType<org.jmailen.gradle.kotlinter.tasks.LintTask> {
         dependsOn("formatKotlin")
     }
+
     withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
         archiveBaseName.set("app")
         archiveClassifier.set("")
@@ -208,15 +197,11 @@ tasks {
 
     withType<Sign>().configureEach {
         onlyIf {
-            project.hasProperty("signing.gnupg.keyName")
+            project.hasProperty("signatory.keyId")
         }
     }
 
     withType<Wrapper> {
         gradleVersion = "6.6.1"
     }
-
-    /*withType<PublishToMavenRepository> {
-        finalizedBy("closeAndReleaseRepository")
-    }*/
 }
