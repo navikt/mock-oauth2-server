@@ -195,11 +195,11 @@ tasks {
         dependsOn("publish")
     }
 
-    withType<Sign>().configureEach {
+    /*withType<Sign>().configureEach {
         onlyIf {
             project.hasProperty("signatory.keyId")
         }
-    }
+    }*/
 
     withType<Wrapper> {
         gradleVersion = "6.6.1"
