@@ -12,13 +12,7 @@ import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.debugger.DebuggerRequestHandler
 import no.nav.security.mock.oauth2.extensions.grantType
-import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
-import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
-import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
-import no.nav.security.mock.oauth2.extensions.isJwksUrl
 import no.nav.security.mock.oauth2.extensions.isPrompt
-import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
-import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
@@ -28,6 +22,14 @@ import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
 import no.nav.security.mock.oauth2.grant.JwtBearerGrantHandler
+import no.nav.security.mock.oauth2.http.RequestType.ACCESS_TOKEN
+import no.nav.security.mock.oauth2.http.RequestType.AUTHORIZATION
+import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER
+import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER_CALLBACK
+import no.nav.security.mock.oauth2.http.RequestType.FAVICON
+import no.nav.security.mock.oauth2.http.RequestType.JWKS
+import no.nav.security.mock.oauth2.http.RequestType.TOKEN_EXCHANGE
+import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
@@ -54,13 +56,9 @@ class OAuth2HttpRequestHandler(
     fun handleRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
         return runCatching {
             log.debug("received request on url=${request.url} with headers=${request.headers}")
-            val url = request.url
-            return when {
-                url.isWellKnownUrl() -> {
-                    log.debug("returning well-known json data for url=$url")
-                    return json(wellKnown(request))
-                }
-                url.isAuthorizationEndpointUrl() -> {
+            return when (request.type()) {
+                WELL_KNOWN -> json(wellKnown(request)).also { log.debug("returning well-known json data for url=${request.url}") }
+                AUTHORIZATION -> {
                     log.debug("received call to authorization endpoint")
                     val authRequest: AuthenticationRequest = request.asAuthenticationRequest()
                     val authorizationCodeHandler = (grantHandler(authRequest) as AuthorizationCodeHandler)
@@ -82,32 +80,18 @@ class OAuth2HttpRequestHandler(
                         )
                     }
                 }
-                url.isTokenEndpointUrl() -> {
+                ACCESS_TOKEN -> {
                     log.debug("handle token request $request")
                     val oAuth2TokenCallback: OAuth2TokenCallback = takeTokenCallbackOrCreateDefault(request.url.issuerId())
-                    val tokenRequest: TokenRequest = request.asTokenRequest()
+                    val tokenRequest: TokenRequest = request.asNimbusTokenRequest()
                     json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), oAuth2TokenCallback))
                 }
-                url.isJwksUrl() -> {
-                    log.debug("handle jwks request")
-                    return json(config.tokenProvider.publicJwkSet().toJSONObject())
-                }
-                url.isDebuggerUrl() -> {
-                    log.debug("handle debugger request")
-                    return debuggerRequestHandler.handleDebuggerForm(request)
-                }
-                url.isDebuggerCallbackUrl() -> {
-                    log.debug("handle debugger callback request")
-                    return debuggerRequestHandler.handleDebuggerCallback(request)
-                }
-                url.encodedPath == "/favicon.ico" -> {
-                    return OAuth2HttpResponse(status = 200)
-                }
-                else -> {
-                    val msg = "path '${request.url}' not found"
-                    log.error(msg)
-                    return notFound()
-                }
+                TOKEN_EXCHANGE -> json("OH YEAH!!!!!")
+                JWKS -> json(config.tokenProvider.publicJwkSet().toJSONObject()).also { log.debug("handle jwks request") }
+                DEBUGGER -> debuggerRequestHandler.handleDebuggerForm(request).also { log.debug("handle debugger request") }
+                DEBUGGER_CALLBACK -> debuggerRequestHandler.handleDebuggerCallback(request).also { log.debug("handle debugger callback request") }
+                FAVICON -> OAuth2HttpResponse(status = 200)
+                else -> notFound().also { log.error("path '${request.url}' not found") }
             }
         }.fold(
             onSuccess = { result -> result },

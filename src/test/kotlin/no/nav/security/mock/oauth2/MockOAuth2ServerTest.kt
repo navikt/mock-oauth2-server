@@ -51,7 +51,7 @@ class MockOAuth2ServerTest {
             )
         )
         serverWithFixedPort = MockOAuth2Server()
-        serverWithFixedPort.start(1234)
+        serverWithFixedPort.start(port = 1234)
     }
 
     @AfterEach

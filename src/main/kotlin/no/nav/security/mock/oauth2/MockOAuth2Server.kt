@@ -7,7 +7,6 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
-import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
@@ -29,8 +28,6 @@ import java.util.UUID
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
-private val log = KotlinLogging.logger {}
-
 // TODO make open so others can extend?
 class MockOAuth2Server(
     val config: OAuth2Config = OAuth2Config()
@@ -39,12 +36,12 @@ class MockOAuth2Server(
 
     var dispatcher: Dispatcher = MockOAuth2Dispatcher(config)
 
-    @Throws(IOException::class)
     @JvmOverloads
-    fun start(port: Int = 0) = start(InetAddress.getByName("localhost"), port)
-
     @Throws(IOException::class)
-    fun start(inetAddress: InetAddress, port: Int) {
+    fun start(
+        inetAddress: InetAddress = InetAddress.getByName("localhost"),
+        port: Int = 0
+    ) {
         mockWebServer.start(inetAddress, port)
         mockWebServer.dispatcher = dispatcher
     }
