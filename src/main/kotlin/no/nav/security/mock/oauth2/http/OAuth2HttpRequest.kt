@@ -47,7 +47,8 @@ data class OAuth2HttpRequest(
         url.isWellKnownUrl() -> WELL_KNOWN
         url.isAuthorizationEndpointUrl() -> AUTHORIZATION
         url.isTokenEndpointUrl() &&
-            "urn:ietf:params:oauth:grant-type:token-exchange" == formParameters.get("grant_type") -> TOKEN_EXCHANGE
+            "urn:ietf:params:oauth:grant-type:token-exchange" ==
+            formParameters.get("grant_type")  -> TOKEN_EXCHANGE
         url.isTokenEndpointUrl() -> ACCESS_TOKEN
         url.isJwksUrl() -> JWKS
         url.isDebuggerUrl() -> DEBUGGER
@@ -73,5 +74,6 @@ private fun String.keyValuesToMap(listDelimiter: String): Map<String, String> =
         }
 
 enum class RequestType {
-    WELL_KNOWN, AUTHORIZATION, ACCESS_TOKEN, TOKEN_EXCHANGE, JWKS, DEBUGGER, DEBUGGER_CALLBACK, FAVICON, UNKNOWN
+    WELL_KNOWN, AUTHORIZATION, ACCESS_TOKEN, TOKEN_EXCHANGE, JWKS,
+    DEBUGGER, DEBUGGER_CALLBACK, FAVICON, UNKNOWN
 }

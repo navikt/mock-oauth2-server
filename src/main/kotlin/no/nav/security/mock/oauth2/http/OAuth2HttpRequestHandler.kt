@@ -22,6 +22,7 @@ import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
 import no.nav.security.mock.oauth2.grant.JwtBearerGrantHandler
+import no.nav.security.mock.oauth2.grant.TokenExchangeHandler
 import no.nav.security.mock.oauth2.http.RequestType.ACCESS_TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.AUTHORIZATION
 import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER
@@ -52,6 +53,8 @@ class OAuth2HttpRequestHandler(
         GrantType.CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(config.tokenProvider),
         GrantType.JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider)
     )
+
+    private val tokenExchangeHandler = TokenExchangeHandler(config.tokenProvider)
 
     fun handleRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
         return runCatching {
@@ -86,7 +89,7 @@ class OAuth2HttpRequestHandler(
                     val tokenRequest: TokenRequest = request.asNimbusTokenRequest()
                     json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), oAuth2TokenCallback))
                 }
-                TOKEN_EXCHANGE -> json("OH YEAH!!!!!")
+                TOKEN_EXCHANGE -> json(tokenExchangeHandler.tokenResponse(request))
                 JWKS -> json(config.tokenProvider.publicJwkSet().toJSONObject()).also { log.debug("handle jwks request") }
                 DEBUGGER -> debuggerRequestHandler.handleDebuggerForm(request).also { log.debug("handle debugger request") }
                 DEBUGGER_CALLBACK -> debuggerRequestHandler.handleDebuggerCallback(request).also { log.debug("handle debugger callback request") }

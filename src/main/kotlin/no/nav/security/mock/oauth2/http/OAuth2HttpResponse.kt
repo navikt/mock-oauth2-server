@@ -46,6 +46,8 @@ data class WellKnown(
 data class OAuth2TokenResponse(
     @JsonProperty("token_type")
     val tokenType: String,
+    @JsonProperty("issued_token_type")
+    val issuedTokenType: String? = null,
     @JsonProperty("id_token")
     val idToken: String? = null,
     @JsonProperty("access_token")
