@@ -24,7 +24,9 @@ class JwtBearerGrantIntegrationTest {
     fun `token request with JwtBearerGrant should exchange assertion with a new token containing many of the same claims`() {
         withMockOAuth2Server {
             val signedJWT = this.issueToken(
-                "idprovider", "client1", DefaultOAuth2TokenCallback(
+                issuerId = "idprovider",
+                clientId = "client1",
+                tokenCallback = DefaultOAuth2TokenCallback(
                     issuerId = "idprovider",
                     subject = "mysub",
                     claims = mapOf(
@@ -37,7 +39,7 @@ class JwtBearerGrantIntegrationTest {
             val response: Response = client.tokenRequest(
                 url = this.tokenEndpointUrl("aad"),
                 userPwd = Pair("client1", "secret"),
-                mapOf(
+                parameters = mapOf(
                     "grant_type" to GrantType.JWT_BEARER.value,
                     "scope" to "scope1",
                     "assertion" to signedJWT.serialize()
