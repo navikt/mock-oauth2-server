@@ -7,6 +7,12 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
+import java.io.IOException
+import java.net.InetAddress
+import java.net.URI
+import java.util.UUID
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
@@ -21,12 +27,6 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
-import java.io.IOException
-import java.net.InetAddress
-import java.net.URI
-import java.util.UUID
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
 
 // TODO make open so others can extend?
 class MockOAuth2Server(
@@ -71,7 +71,7 @@ class MockOAuth2Server(
             ClientSecretBasic(ClientID(clientId), Secret("secret")),
             AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost"))
         )
-        return config.tokenProvider.accessToken(tokenRequest, issuerUrl, null, OAuth2TokenCallback)
+        return config.tokenProvider.accessToken(tokenRequest, issuerUrl, OAuth2TokenCallback, null)
     }
 
     @JvmOverloads

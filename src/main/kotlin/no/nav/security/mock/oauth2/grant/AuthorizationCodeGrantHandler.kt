@@ -6,16 +6,18 @@ import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
+import java.util.UUID
+import kotlin.collections.set
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
+import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
-import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 
@@ -54,10 +56,11 @@ class AuthorizationCodeHandler(
     }
 
     override fun tokenResponse(
-        tokenRequest: TokenRequest,
+        request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
         oAuth2TokenCallback: OAuth2TokenCallback
     ): OAuth2TokenResponse {
+        val tokenRequest = request.asNimbusTokenRequest()
         val code = tokenRequest.authorizationCode()
         log.debug("issuing token for code=$code")
         val authenticationRequest = takeAuthenticationRequestFromCache(code)
@@ -65,7 +68,7 @@ class AuthorizationCodeHandler(
         val nonce: String? = authenticationRequest?.nonce?.value
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, loginTokenCallbackOrDefault)
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, nonce, loginTokenCallbackOrDefault)
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",

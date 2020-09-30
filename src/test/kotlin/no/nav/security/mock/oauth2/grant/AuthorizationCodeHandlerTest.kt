@@ -2,23 +2,19 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
-import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.ResponseMode
-import com.nimbusds.oauth2.sdk.Scope
-import com.nimbusds.oauth2.sdk.TokenRequest
-import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
-import com.nimbusds.oauth2.sdk.auth.Secret
-import com.nimbusds.oauth2.sdk.id.ClientID
 import com.nimbusds.oauth2.sdk.id.State
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
+import java.net.URI
+import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
+import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.net.URI
 
 internal class AuthorizationCodeHandlerTest {
     private val handler = AuthorizationCodeHandler()
@@ -103,15 +99,20 @@ internal class AuthorizationCodeHandlerTest {
         code: AuthorizationCode,
         redirectUri: String,
         scope: String
-    ): TokenRequest {
-        return TokenRequest(
-            URI.create("http://localhost/token"),
-            ClientSecretBasic(ClientID("client1"), Secret("clientSecret")),
-            AuthorizationCodeGrant(
-                code,
-                URI.create(redirectUri)
-            ),
-            Scope(scope)
-        )
+    ): OAuth2HttpRequest {
+        return OAuth2HttpRequest(
+            headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+            method = "POST",
+            url = "http://localhost/token".toHttpUrl(),
+            body = "grant_type=authorization_code&" +
+                "client_id=client1&" +
+                "client_secret=secret&" +
+                "code=${code.value}&" +
+                "redirect_uri=$redirectUri&" +
+                "scope=$scope"
+
+        ).also {
+            println("code is $code")
+        }
     }
 }

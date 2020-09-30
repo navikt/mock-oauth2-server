@@ -9,8 +9,6 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
-import no.nav.security.mock.oauth2.extensions.clientIdAsString
-import okhttp3.HttpUrl
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.NoSuchAlgorithmException
@@ -19,6 +17,8 @@ import java.security.interfaces.RSAPublicKey
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
+import okhttp3.HttpUrl
 
 open class OAuth2TokenProvider {
     private val jwkSet: JWKSet
@@ -55,8 +55,8 @@ open class OAuth2TokenProvider {
     fun accessToken(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
-        nonce: String?,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
+        nonce: String? = null
     ): SignedJWT {
         return createSignedJWT(
             defaultClaims(
@@ -70,14 +70,16 @@ open class OAuth2TokenProvider {
         )
     }
 
-    fun onBehalfOfAccessToken(
-        claimsSet: JWTClaimsSet,
+    fun exchangeAccessToken(
         tokenRequest: TokenRequest,
+        issuerUrl: HttpUrl,
+        claimsSet: JWTClaimsSet,
         oAuth2TokenCallback: OAuth2TokenCallback
     ): SignedJWT {
         val now = Instant.now()
         return createSignedJWT(
             JWTClaimsSet.Builder(claimsSet)
+                .issuer(issuerUrl.toString())
                 .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
                 .notBeforeTime(Date.from(now))
                 .issueTime(Date.from(now))

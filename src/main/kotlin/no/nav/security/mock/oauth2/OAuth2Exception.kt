@@ -1,6 +1,7 @@
 package no.nav.security.mock.oauth2
 
 import com.nimbusds.oauth2.sdk.ErrorObject
+import com.nimbusds.oauth2.sdk.OAuth2Error
 
 class OAuth2Exception(val errorObject: ErrorObject?, msg: String, throwable: Throwable?) :
     RuntimeException(msg, throwable) {
@@ -8,3 +9,5 @@ class OAuth2Exception(val errorObject: ErrorObject?, msg: String, throwable: Thr
     constructor(msg: String, throwable: Throwable?) : this(null, msg, throwable)
     constructor(errorObject: ErrorObject?, msg: String) : this(errorObject, msg, null)
 }
+
+fun badRequest(message: String) = OAuth2Exception(OAuth2Error.INVALID_REQUEST, message)
