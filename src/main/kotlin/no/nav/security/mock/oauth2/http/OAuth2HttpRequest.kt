@@ -81,6 +81,7 @@ data class OAuth2HttpRequest(
 
     fun grantType(): GrantType =
         this.formParameters.map["grant_type"]
+            ?.ifBlank { null }
             ?.let { GrantType(it) }
             ?: throw missingParameter("grant_type")
 

@@ -117,3 +117,15 @@ class MockOAuth2Dispatcher(
                 response.body?.let { this.setBody(it) }
             }
 }
+
+fun <R> withMockOAuth2Server(
+    test: MockOAuth2Server.() -> R
+): R {
+    val server = MockOAuth2Server()
+    server.start()
+    try {
+        return server.test()
+    } finally {
+        server.shutdown()
+    }
+}
