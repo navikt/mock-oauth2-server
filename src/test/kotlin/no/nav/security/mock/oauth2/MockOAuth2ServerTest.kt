@@ -7,6 +7,7 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.id.Issuer
+import java.net.URLEncoder
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.http.WellKnown
@@ -26,7 +27,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.net.URLEncoder
 
 // TODO add more tests for exception handling
 class MockOAuth2ServerTest {
@@ -46,7 +46,7 @@ class MockOAuth2ServerTest {
         interactiveLoginServer = MockOAuth2Server(
             OAuth2Config(
                 interactiveLogin = true,
-                oAuth2TokenCallbacks = emptySet(),
+                tokenCallbacks = emptySet(),
                 tokenProvider = OAuth2TokenProvider()
             )
         )

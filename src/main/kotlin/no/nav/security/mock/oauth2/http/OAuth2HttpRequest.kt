@@ -1,6 +1,6 @@
 package no.nav.security.mock.oauth2.http
 
-import com.nimbusds.oauth2.sdk.Scope
+import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
@@ -13,15 +13,20 @@ import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
 import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
+import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toIssuerUrl
+import no.nav.security.mock.oauth2.extensions.toJwksUrl
+import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
-import no.nav.security.mock.oauth2.http.RequestType.ACCESS_TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.AUTHORIZATION
 import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER
 import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER_CALLBACK
 import no.nav.security.mock.oauth2.http.RequestType.FAVICON
 import no.nav.security.mock.oauth2.http.RequestType.JWKS
+import no.nav.security.mock.oauth2.http.RequestType.TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.UNKNOWN
 import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
+import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
 
@@ -35,20 +40,20 @@ data class OAuth2HttpRequest(
     val cookies: Map<String, String> = headers["Cookie"]?.keyValuesToMap(";") ?: emptyMap()
 
     fun asTokenExchangeRequest(): TokenRequest {
-        val httpRequest: HTTPRequest = this.asHTTPRequest()
+        val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
         val clientAuthentication: ClientAuthentication = ClientAuthentication.parse(httpRequest)
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
         return TokenRequest(
             this.url.toUri(),
             clientAuthentication,
             tokenExchangeGrant,
-            Scope(),
+            null,
             emptyList(),
             formParameters.map.mapValues { mutableListOf(it.value) }
         )
     }
 
-    fun asHTTPRequest(): HTTPRequest {
+    fun asNimbusHTTPRequest(): HTTPRequest {
         return HTTPRequest(HTTPRequest.Method.valueOf(method), url.toUrl())
             .apply {
                 headers.forEach { header -> this.setHeader(header.first, header.second) }
@@ -58,7 +63,7 @@ data class OAuth2HttpRequest(
 
     fun asNimbusTokenRequest(): TokenRequest =
         TokenRequest.parse(
-            this.asHTTPRequest()
+            this.asNimbusHTTPRequest()
         )
 
     fun asAuthenticationRequest(): AuthenticationRequest = AuthenticationRequest.parse(this.url.toUri())
@@ -66,7 +71,7 @@ data class OAuth2HttpRequest(
     fun type() = when {
         url.isWellKnownUrl() -> WELL_KNOWN
         url.isAuthorizationEndpointUrl() -> AUTHORIZATION
-        url.isTokenEndpointUrl() -> ACCESS_TOKEN
+        url.isTokenEndpointUrl() -> TOKEN
         url.isJwksUrl() -> JWKS
         url.isDebuggerUrl() -> DEBUGGER
         url.isDebuggerCallbackUrl() -> DEBUGGER_CALLBACK
@@ -74,7 +79,18 @@ data class OAuth2HttpRequest(
         else -> UNKNOWN
     }
 
-    fun grantType(): String? = this.formParameters.map["grant_type"]
+    fun grantType(): GrantType =
+        this.formParameters.map["grant_type"]
+            ?.let { GrantType(it) }
+            ?: throw missingParameter("grant_type")
+
+    fun toWellKnown() =
+        WellKnown(
+            issuer = this.url.toIssuerUrl().toString(),
+            authorizationEndpoint = this.url.toAuthorizationEndpointUrl().toString(),
+            tokenEndpoint = this.url.toTokenEndpointUrl().toString(),
+            jwksUri = this.url.toJwksUrl().toString()
+        )
 
     data class Parameters(val parameterString: String?) {
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
@@ -93,6 +109,6 @@ private fun String.keyValuesToMap(listDelimiter: String): Map<String, String> =
         }
 
 enum class RequestType {
-    WELL_KNOWN, AUTHORIZATION, ACCESS_TOKEN, JWKS,
+    WELL_KNOWN, AUTHORIZATION, TOKEN, JWKS,
     DEBUGGER, DEBUGGER_CALLBACK, FAVICON, UNKNOWN
 }
