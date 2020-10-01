@@ -87,7 +87,6 @@ fun clientAssertion(
         .build()
         .sign(rsaKey)
 
-
 fun JWTClaimsSet.sign(rsaKey: RSAKey = generateRsaKey()): SignedJWT =
     SignedJWT(
         JWSHeader.Builder(JWSAlgorithm.RS256)
