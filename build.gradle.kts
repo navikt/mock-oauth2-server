@@ -10,6 +10,8 @@ val junitJupiterVersion = "5.7.0-RC1"
 val konfigVersion = "1.6.10.0"
 val kotlinVersion = "1.4.0"
 val freemarkerVersion = "2.3.30"
+val kotestVersion = "4.2.5"
+
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
@@ -57,6 +59,8 @@ dependencies {
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion") // for kotest framework
+    testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion") // for kotest core jvm assertions
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
 }

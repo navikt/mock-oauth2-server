@@ -1,16 +1,20 @@
 package no.nav.security.mock.oauth2.e2e
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.nimbusds.jwt.SignedJWT
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import no.nav.security.mock.oauth2.ParsedTokenResponse
+import no.nav.security.mock.oauth2.audience
+import no.nav.security.mock.oauth2.claims
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
-import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
+import no.nav.security.mock.oauth2.issuer
+import no.nav.security.mock.oauth2.toTokenResponse
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.tokenRequest
+import no.nav.security.mock.oauth2.verify
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.OkHttpClient
-import okhttp3.Response
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class TokenExchangeGrantIntegrationTest {
@@ -22,9 +26,9 @@ class TokenExchangeGrantIntegrationTest {
 
     // TODO: use client_assertion (private_key_jwt) instead of basic auth as tokenx in NAV only supports this
     @Test
-    fun `token request with TokenExchange grant should exchange subject_token with a new token containing many of the same claims`() {
+    fun `token request with JwtBearerGrant should exchange assertion with a new token containing many of the same claims`() {
         withMockOAuth2Server {
-            val signedJWT = this.issueToken(
+            val initialToken = this.issueToken(
                 issuerId = "idprovider",
                 clientId = "client1",
                 tokenCallback = DefaultOAuth2TokenCallback(
@@ -36,32 +40,33 @@ class TokenExchangeGrantIntegrationTest {
                     )
                 )
             )
-
-            val response: Response = client.tokenRequest(
-                url = this.tokenEndpointUrl("tokenx"),
-                userPwd = Pair("client1", "secret"),
+            val issuerId = "tokenx"
+            val response: ParsedTokenResponse = client.tokenRequest(
+                url = this.tokenEndpointUrl(issuerId),
+                basicAuth = Pair("client1", "secret"),
                 parameters = mapOf(
                     "grant_type" to TOKEN_EXCHANGE.value,
                     "subject_token_type" to "urn:ietf:params:oauth:token-type:jwt",
-                    "subject_token" to signedJWT.serialize(),
-                    "audience" to "desiredaudience",
+                    "subject_token" to initialToken.serialize(),
+                    "audience" to "targetAudience",
                 )
-            )
+            ).toTokenResponse()
 
-            assertThat(response.code).isEqualTo(200)
-            val tokenResponse: OAuth2TokenResponse = jacksonObjectMapper().readValue(checkNotNull(response.body?.string()))
-            assertThat(tokenResponse.accessToken).isNotNull
-            assertThat(tokenResponse.idToken).isNull()
-            assertThat(tokenResponse.expiresIn).isGreaterThan(0)
-            assertThat(tokenResponse.scope).isNull()
-            assertThat(tokenResponse.tokenType).isEqualTo("Bearer")
-            assertThat(tokenResponse.issuedTokenType).isEqualTo("urn:ietf:params:oauth:token-type:access_token")
-            val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
-            assertThat(accessToken.jwtClaimsSet.audience).containsExactly("desiredaudience")
-            assertThat(accessToken.jwtClaimsSet.issuer).endsWith("tokenx")
+            response.status shouldBe 200
+            response.expiresIn shouldBeGreaterThan 0
+            response.scope shouldBe null
+            response.tokenType shouldBe "Bearer"
+            response.accessToken shouldNotBe null
+            response.idToken shouldBe null
+            response.refreshToken shouldBe null
+            response.issuedTokenType shouldBe "urn:ietf:params:oauth:token-type:access_token"
 
-            assertThat(accessToken.jwtClaimsSet.getClaim("claim1")).isEqualTo("value1")
-            assertThat(accessToken.jwtClaimsSet.getClaim("claim2")).isEqualTo("value2")
+            response.accessToken?.verify(this.issuerUrl(issuerId), this.jwksUrl(issuerId))
+
+            response.accessToken?.audience shouldContainExactly listOf("targetAudience")
+            response.accessToken?.issuer shouldBe this.issuerUrl(issuerId).toString()
+            response.accessToken?.claims?.get("claim1") shouldBe "value1"
+            response.accessToken?.claims?.get("claim2") shouldBe "value2"
         }
     }
 }

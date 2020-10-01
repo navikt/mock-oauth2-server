@@ -1,16 +1,21 @@
 package no.nav.security.mock.oauth2.e2e
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
-import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import no.nav.security.mock.oauth2.ParsedTokenResponse
+import no.nav.security.mock.oauth2.audience
+import no.nav.security.mock.oauth2.claims
+import no.nav.security.mock.oauth2.issuer
+import no.nav.security.mock.oauth2.toTokenResponse
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.tokenRequest
+import no.nav.security.mock.oauth2.verify
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.OkHttpClient
-import okhttp3.Response
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class JwtBearerGrantIntegrationTest {
@@ -23,7 +28,7 @@ class JwtBearerGrantIntegrationTest {
     @Test
     fun `token request with JwtBearerGrant should exchange assertion with a new token containing many of the same claims`() {
         withMockOAuth2Server {
-            val signedJWT = this.issueToken(
+            val initialToken = this.issueToken(
                 issuerId = "idprovider",
                 clientId = "client1",
                 tokenCallback = DefaultOAuth2TokenCallback(
@@ -36,29 +41,31 @@ class JwtBearerGrantIntegrationTest {
                 )
             )
 
-            val response: Response = client.tokenRequest(
+            val response: ParsedTokenResponse = client.tokenRequest(
                 url = this.tokenEndpointUrl("aad"),
-                userPwd = Pair("client1", "secret"),
+                basicAuth = Pair("client1", "secret"),
                 parameters = mapOf(
                     "grant_type" to GrantType.JWT_BEARER.value,
                     "scope" to "scope1",
-                    "assertion" to signedJWT.serialize()
+                    "assertion" to initialToken.serialize()
                 )
-            )
+            ).toTokenResponse()
 
-            assertThat(response.code).isEqualTo(200)
-            val tokenResponse: OAuth2TokenResponse = jacksonObjectMapper().readValue(checkNotNull(response.body?.string()))
-            assertThat(tokenResponse.accessToken).isNotNull
-            assertThat(tokenResponse.idToken).isNull()
-            assertThat(tokenResponse.expiresIn).isGreaterThan(0)
-            assertThat(tokenResponse.scope).contains("scope1")
-            assertThat(tokenResponse.tokenType).isEqualTo("Bearer")
-            val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
-            assertThat(accessToken.jwtClaimsSet.audience).containsExactly("scope1")
-            assertThat(accessToken.jwtClaimsSet.issuer).endsWith("aad")
+            response.status shouldBe 200
+            response.expiresIn shouldBeGreaterThan 0
+            response.scope shouldContain "scope1"
+            response.tokenType shouldBe "Bearer"
+            response.accessToken shouldNotBe null
+            response.idToken shouldBe null
+            response.refreshToken shouldBe null
+            response.issuedTokenType shouldBe null
 
-            assertThat(accessToken.jwtClaimsSet.getClaim("claim1")).isEqualTo("value1")
-            assertThat(accessToken.jwtClaimsSet.getClaim("claim2")).isEqualTo("value2")
+            response.accessToken?.verify(this.issuerUrl("aad"), this.jwksUrl("aad"))
+
+            response.accessToken?.audience shouldContainExactly listOf("scope1")
+            response.accessToken?.issuer shouldBe this.issuerUrl("aad").toString()
+            response.accessToken?.claims?.get("claim1") shouldBe "value1"
+            response.accessToken?.claims?.get("claim2") shouldBe "value2"
         }
     }
 }
