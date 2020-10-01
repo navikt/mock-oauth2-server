@@ -4,15 +4,19 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import no.nav.security.mock.oauth2.ParsedTokenResponse
-import no.nav.security.mock.oauth2.audience
-import no.nav.security.mock.oauth2.claims
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
-import no.nav.security.mock.oauth2.issuer
-import no.nav.security.mock.oauth2.toTokenResponse
+import no.nav.security.mock.oauth2.testutils.ClientAssertionType
+import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
+import no.nav.security.mock.oauth2.testutils.SubjectTokenType
+import no.nav.security.mock.oauth2.testutils.audience
+import no.nav.security.mock.oauth2.testutils.claims
+import no.nav.security.mock.oauth2.testutils.clientAssertion
+import no.nav.security.mock.oauth2.testutils.issuer
+import no.nav.security.mock.oauth2.testutils.subject
+import no.nav.security.mock.oauth2.testutils.toTokenResponse
+import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.testutils.verify
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
-import no.nav.security.mock.oauth2.tokenRequest
-import no.nav.security.mock.oauth2.verify
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
@@ -24,31 +28,37 @@ class TokenExchangeGrantIntegrationTest {
         .followRedirects(false)
         .build()
 
-    // TODO: use client_assertion (private_key_jwt) instead of basic auth as tokenx in NAV only supports this
     @Test
-    fun `token request with JwtBearerGrant should exchange assertion with a new token containing many of the same claims`() {
+    fun `token request with token exchange grant should exchange subject_token with a new token containing many of the same claims`() {
         withMockOAuth2Server {
+            val initialSubject = "yolo"
             val initialToken = this.issueToken(
                 issuerId = "idprovider",
-                clientId = "client1",
+                clientId = "initialClient",
                 tokenCallback = DefaultOAuth2TokenCallback(
                     issuerId = "idprovider",
-                    subject = "mysub",
+                    subject = initialSubject,
                     claims = mapOf(
                         "claim1" to "value1",
                         "claim2" to "value2",
                     )
                 )
             )
+
             val issuerId = "tokenx"
+            val tokenEndpointUrl = this.tokenEndpointUrl(issuerId)
+            val clientAssertion = clientAssertion("tokenExchangeClient", tokenEndpointUrl.toUrl()).serialize()
+            val targetAudienceForToken = "targetAudience"
+
             val response: ParsedTokenResponse = client.tokenRequest(
-                url = this.tokenEndpointUrl(issuerId),
-                basicAuth = Pair("client1", "secret"),
+                url = tokenEndpointUrl,
                 parameters = mapOf(
                     "grant_type" to TOKEN_EXCHANGE.value,
-                    "subject_token_type" to "urn:ietf:params:oauth:token-type:jwt",
+                    "client_assertion_type" to ClientAssertionType.JWT_BEARER,
+                    "client_assertion" to clientAssertion,
+                    "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
                     "subject_token" to initialToken.serialize(),
-                    "audience" to "targetAudience",
+                    "audience" to targetAudienceForToken
                 )
             ).toTokenResponse()
 
@@ -63,7 +73,8 @@ class TokenExchangeGrantIntegrationTest {
 
             response.accessToken?.verify(this.issuerUrl(issuerId), this.jwksUrl(issuerId))
 
-            response.accessToken?.audience shouldContainExactly listOf("targetAudience")
+            response.accessToken?.subject shouldBe initialSubject
+            response.accessToken?.audience shouldContainExactly listOf(targetAudienceForToken)
             response.accessToken?.issuer shouldBe this.issuerUrl(issuerId).toString()
             response.accessToken?.claims?.get("claim1") shouldBe "value1"
             response.accessToken?.claims?.get("claim2") shouldBe "value2"

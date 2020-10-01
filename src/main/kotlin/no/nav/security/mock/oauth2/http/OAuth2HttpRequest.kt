@@ -39,6 +39,11 @@ data class OAuth2HttpRequest(
     val formParameters: Parameters = Parameters(body)
     val cookies: Map<String, String> = headers["Cookie"]?.keyValuesToMap(";") ?: emptyMap()
 
+    /*
+    TODO: check for correct ClientAuthentication in case of client_assertion (private_key_jwt)
+        verify not neccessary (as keys would have to be preregistered), but claims that is not validated by
+        ClientAuthentication.parse(httpRequest) should be checked, i.e. lifetime of assertion etc
+    */
     fun asTokenExchangeRequest(): TokenRequest {
         val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
         val clientAuthentication: ClientAuthentication = ClientAuthentication.parse(httpRequest)
