@@ -34,8 +34,8 @@ class AuthorizationCodeHandler(
                 val code = AuthorizationCode()
                 log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
-                if (login?.username != null) {
-                    log.debug("adding user with username ${login.username} to cache")
+                login?.also {
+                    log.debug("adding user with username ${it.username} to cache")
                     codeToLoginCache[code] = login
                 }
                 return AuthenticationSuccessResponse(

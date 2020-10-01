@@ -104,10 +104,9 @@ class MockOAuth2Dispatcher(
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = httpRequestHandler.enqueueTokenCallback(oAuth2TokenCallback)
 
     override fun dispatch(request: RecordedRequest): MockResponse =
-        when {
-            responseQueue.peek() != null -> responseQueue.take()
-            else -> mockResponse(httpRequestHandler.handleRequest(request.asOAuth2HttpRequest()))
-        }
+        responseQueue.peek()?.let {
+            responseQueue.take()
+        } ?: mockResponse(httpRequestHandler.handleRequest(request.asOAuth2HttpRequest()))
 
     private fun mockResponse(response: OAuth2HttpResponse): MockResponse =
         MockResponse()

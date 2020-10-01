@@ -21,14 +21,8 @@ import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import okhttp3.HttpUrl
 
 open class OAuth2TokenProvider {
-    private val jwkSet: JWKSet
-    private val rsaKey: RSAKey
-
-    init {
-        jwkSet =
-            generateJWKSet(DEFAULT_KEYID)
-        rsaKey = jwkSet.getKeyByKeyId(DEFAULT_KEYID) as RSAKey
-    }
+    private val jwkSet: JWKSet = generateJWKSet(DEFAULT_KEYID)
+    private val rsaKey: RSAKey = jwkSet.getKeyByKeyId(DEFAULT_KEYID) as RSAKey
 
     fun publicJwkSet(): JWKSet {
         return jwkSet.toPublicJWKSet()
@@ -39,36 +33,32 @@ open class OAuth2TokenProvider {
         issuerUrl: HttpUrl,
         nonce: String?,
         oAuth2TokenCallback: OAuth2TokenCallback
-    ): SignedJWT {
-        return createSignedJWT(
-            defaultClaims(
-                issuerUrl,
-                oAuth2TokenCallback.subject(tokenRequest),
-                tokenRequest.clientIdAsString(),
-                nonce,
-                oAuth2TokenCallback.addClaims(tokenRequest),
-                oAuth2TokenCallback.tokenExpiry()
-            ).build()
+    ) = createSignedJWT(
+        defaultClaims(
+            issuerUrl,
+            oAuth2TokenCallback.subject(tokenRequest),
+            tokenRequest.clientIdAsString(),
+            nonce,
+            oAuth2TokenCallback.addClaims(tokenRequest),
+            oAuth2TokenCallback.tokenExpiry()
         )
-    }
+    )
 
     fun accessToken(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
         oAuth2TokenCallback: OAuth2TokenCallback,
         nonce: String? = null
-    ): SignedJWT {
-        return createSignedJWT(
-            defaultClaims(
-                issuerUrl,
-                oAuth2TokenCallback.subject(tokenRequest),
-                oAuth2TokenCallback.audience(tokenRequest),
-                nonce,
-                oAuth2TokenCallback.addClaims(tokenRequest),
-                oAuth2TokenCallback.tokenExpiry()
-            ).build()
+    ) = createSignedJWT(
+        defaultClaims(
+            issuerUrl,
+            oAuth2TokenCallback.subject(tokenRequest),
+            oAuth2TokenCallback.audience(tokenRequest),
+            nonce,
+            oAuth2TokenCallback.addClaims(tokenRequest),
+            oAuth2TokenCallback.tokenExpiry()
         )
-    }
+    )
 
     fun exchangeAccessToken(
         tokenRequest: TokenRequest,
@@ -106,7 +96,7 @@ open class OAuth2TokenProvider {
         nonce: String?,
         additionalClaims: Map<String, Any>,
         expiry: Long
-    ): JWTClaimsSet.Builder {
+    ): JWTClaimsSet {
         val now = Instant.now()
         val jwtClaimsSetBuilder = JWTClaimsSet.Builder()
             .subject(subject)
@@ -117,13 +107,14 @@ open class OAuth2TokenProvider {
             .expirationTime(Date.from(now.plusSeconds(expiry)))
             .jwtID(UUID.randomUUID().toString())
 
-        if (nonce != null) {
-            jwtClaimsSetBuilder.claim("nonce", nonce)
+        nonce?.also {
+            jwtClaimsSetBuilder.claim("nonce", it)
         }
+
         additionalClaims.forEach {
             jwtClaimsSetBuilder.claim(it.key, it.value)
         }
-        return jwtClaimsSetBuilder
+        return jwtClaimsSetBuilder.build()
     }
 
     companion object {
