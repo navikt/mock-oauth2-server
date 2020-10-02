@@ -9,18 +9,17 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
+import okhttp3.HttpUrl
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.security.NoSuchAlgorithmException
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
-import no.nav.security.mock.oauth2.extensions.clientIdAsString
-import okhttp3.HttpUrl
 
-open class OAuth2TokenProvider {
+class OAuth2TokenProvider {
     private val jwkSet: JWKSet = generateJWKSet(DEFAULT_KEYID)
     private val rsaKey: RSAKey = jwkSet.getKeyByKeyId(DEFAULT_KEYID) as RSAKey
 
@@ -65,9 +64,8 @@ open class OAuth2TokenProvider {
         issuerUrl: HttpUrl,
         claimsSet: JWTClaimsSet,
         oAuth2TokenCallback: OAuth2TokenCallback
-    ): SignedJWT {
-        val now = Instant.now()
-        return createSignedJWT(
+    ) = Instant.now().let { now ->
+        createSignedJWT(
             JWTClaimsSet.Builder(claimsSet)
                 .issuer(issuerUrl.toString())
                 .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
@@ -79,7 +77,7 @@ open class OAuth2TokenProvider {
         )
     }
 
-    fun createSignedJWT(claimsSet: JWTClaimsSet): SignedJWT {
+    private fun createSignedJWT(claimsSet: JWTClaimsSet): SignedJWT {
         val header = JWSHeader.Builder(JWSAlgorithm.RS256)
             .keyID(rsaKey.keyID)
             .type(JOSEObjectType.JWT)
@@ -96,10 +94,9 @@ open class OAuth2TokenProvider {
         nonce: String?,
         additionalClaims: Map<String, Any>,
         expiry: Long
-    ): JWTClaimsSet {
+    ) = JWTClaimsSet.Builder().let { builder ->
         val now = Instant.now()
-        val jwtClaimsSetBuilder = JWTClaimsSet.Builder()
-            .subject(subject)
+        builder.subject(subject)
             .audience(audience)
             .issuer(issuerUrl.toString())
             .issueTime(Date.from(now))
@@ -107,42 +104,27 @@ open class OAuth2TokenProvider {
             .expirationTime(Date.from(now.plusSeconds(expiry)))
             .jwtID(UUID.randomUUID().toString())
 
-        nonce?.also {
-            jwtClaimsSetBuilder.claim("nonce", it)
-        }
+        nonce?.also { builder.claim("nonce", it) }
 
-        additionalClaims.forEach {
-            jwtClaimsSetBuilder.claim(it.key, it.value)
-        }
-        return jwtClaimsSetBuilder.build()
+        additionalClaims.forEach { builder.claim(it.key, it.value) }
+        builder.build()
     }
 
     companion object {
         private const val DEFAULT_KEYID = "mock-oauth2-server-key"
-        private fun generateJWKSet(keyId: String): JWKSet {
-            return JWKSet(
-                createJWK(
-                    keyId,
-                    generateKeyPair()
-                )
-            )
-        }
+        private fun generateJWKSet(keyId: String) =
+            JWKSet(createRSAKey(keyId, generateKeyPair()))
 
-        private fun generateKeyPair(): KeyPair {
-            return try {
-                val gen = KeyPairGenerator.getInstance("RSA")
-                gen.initialize(2048)
-                gen.generateKeyPair()
-            } catch (e: NoSuchAlgorithmException) {
-                throw RuntimeException(e)
+        private fun generateKeyPair(): KeyPair =
+            KeyPairGenerator.getInstance("RSA").let {
+                it.initialize(2048)
+                it.generateKeyPair()
             }
-        }
 
-        private fun createJWK(keyID: String, keyPair: KeyPair): RSAKey {
-            return RSAKey.Builder(keyPair.public as RSAPublicKey)
+        private fun createRSAKey(keyID: String, keyPair: KeyPair) =
+            RSAKey.Builder(keyPair.public as RSAPublicKey)
                 .privateKey(keyPair.private as RSAPrivateKey)
                 .keyID(keyID)
                 .build()
-        }
     }
 }

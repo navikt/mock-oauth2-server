@@ -11,6 +11,7 @@ import com.nimbusds.jose.crypto.DirectEncrypter
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.extensions.removeAllEncodedQueryParams
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.toDebuggerUrl
@@ -45,9 +46,7 @@ class DebuggerRequestHandler(private val templateMapper: TemplateMapper) {
 
     private val encryptionKey: SecretKey =
         KeyGenerator.getInstance("AES")
-            .apply {
-                this.init(128)
-            }.generateKey()
+            .apply { this.init(128) }.generateKey()
 
     fun handleDebuggerForm(request: OAuth2HttpRequest): OAuth2HttpResponse {
         return when (request.method) {
@@ -62,14 +61,11 @@ class DebuggerRequestHandler(private val templateMapper: TemplateMapper) {
             }
             "POST" -> {
                 log.debug("handling POST request, return redirect")
-                val authorizeUrl = request.formParameters.get("authorize_url")
-                val httpUrl = authorizeUrl?.toHttpUrl()?.newBuilder()
-                    ?.encodedQuery(request.formParameters.parameterString)
-                    ?.removeAllEncodedQueryParameters("authorize_url")
-                    ?.removeAllEncodedQueryParameters("token_url")
-                    ?.removeAllEncodedQueryParameters("client_secret")
-                    ?.removeAllEncodedQueryParameters("client_auth_method")
-                    ?.build()
+                val authorizeUrl = request.formParameters.get("authorize_url") ?: error("authorize_url is missing")
+                val httpUrl = authorizeUrl.toHttpUrl().newBuilder()
+                    .encodedQuery(request.formParameters.parameterString)
+                    .removeAllEncodedQueryParams("authorize_url", "token_url", "client_secret", "client_auth_method")
+                    .build()
 
                 log.debug("attempting to redirect to $httpUrl, setting received params in encrypted cookie")
                 val cookieValue = objectMapper.writeValueAsString(request.formParameters.map).encrypt(encryptionKey)
@@ -173,8 +169,6 @@ private fun debuggerAuthorizationRequest(
                 url = it
             )
         }
-
-private fun String.appendForm(name: String, value: String): String = this.plus("&$name=$value")
 
 private fun String.urlEncode(): String = URLEncoder.encode(this, StandardCharsets.UTF_8)
 
