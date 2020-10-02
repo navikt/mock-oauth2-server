@@ -1,16 +1,6 @@
 package no.nav.security.mock.oauth2.grant
 
-import com.nimbusds.jose.JOSEObjectType
-import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet
-import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier
-import com.nimbusds.jose.proc.JWSKeySelector
-import com.nimbusds.jose.proc.JWSVerificationKeySelector
-import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jwt.JWTClaimsSet
-import com.nimbusds.jwt.proc.ConfigurableJWTProcessor
-import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
-import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import com.nimbusds.oauth2.sdk.JWTBearerGrant
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
@@ -48,23 +38,4 @@ class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvider) : Gr
     private fun assertion(tokenRequest: TokenRequest): JWTClaimsSet =
         (tokenRequest.authorizationGrant as? JWTBearerGrant)?.jwtAssertion?.jwtClaimsSet
             ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "missing required parameter assertion")
-
-    private fun verifyAssertion(issuerUrl: HttpUrl, assertion: String): JWTClaimsSet {
-        val jwtProcessor: ConfigurableJWTProcessor<SecurityContext?> = DefaultJWTProcessor()
-        jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("at+jwt"))
-        val keySelector: JWSKeySelector<SecurityContext?> = JWSVerificationKeySelector(
-            JWSAlgorithm.RS256,
-            ImmutableJWKSet(tokenProvider.publicJwkSet())
-        )
-        jwtProcessor.jwsKeySelector = keySelector
-        jwtProcessor.jwtClaimsSetVerifier = DefaultJWTClaimsVerifier(
-            JWTClaimsSet.Builder().issuer(issuerUrl.toString()).build(),
-            HashSet(listOf("sub", "iat", "exp", "aud"))
-        )
-        return try {
-            jwtProcessor.process(assertion, null)
-        } catch (e: Exception) {
-            throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "invalid assertion.", e)
-        }
-    }
 }
