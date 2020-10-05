@@ -15,12 +15,14 @@ import no.nav.security.mock.oauth2.extensions.grantType
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
+import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
+import no.nav.security.mock.oauth2.extensions.isEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
 import no.nav.security.mock.oauth2.extensions.isPrompt
-import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
@@ -87,6 +89,11 @@ class OAuth2HttpRequestHandler(
                     val oAuth2TokenCallback: OAuth2TokenCallback = takeTokenCallbackOrCreateDefault(request.url.issuerId())
                     val tokenRequest: TokenRequest = request.asTokenRequest()
                     json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), oAuth2TokenCallback))
+                }
+                url.isEndSessionEndpointUrl() -> {
+                    log.debug("handle end session request $request")
+                    val postLogoutRedirectUri = request.url.queryParameter("post_logout_redirect_uri") ?: "https://www.nav.no"
+                    redirect(postLogoutRedirectUri)
                 }
                 url.isJwksUrl() -> {
                     log.debug("handle jwks request")
@@ -159,6 +166,7 @@ class OAuth2HttpRequestHandler(
             issuer = request.url.toIssuerUrl().toString(),
             authorizationEndpoint = request.url.toAuthorizationEndpointUrl().toString(),
             tokenEndpoint = request.url.toTokenEndpointUrl().toString(),
+            endSessionEndpoint = request.url.toEndSessionEndpointUrl().toString(),
             jwksUri = request.url.toJwksUrl().toString()
         )
 }
