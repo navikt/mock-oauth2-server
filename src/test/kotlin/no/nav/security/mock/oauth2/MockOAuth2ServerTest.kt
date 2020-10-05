@@ -374,6 +374,7 @@ class MockOAuth2ServerTest {
         assertThat(responseBody).contains(server.tokenEndpointUrl(issuerId).toString())
         assertThat(responseBody).contains(server.jwksUrl(issuerId).toString())
         assertThat(responseBody).contains(server.issuerUrl(issuerId).toString())
+        assertThat(responseBody).contains(server.endSessionEndpointUrl(issuerId).toString())
         return responseBody
     }
 
