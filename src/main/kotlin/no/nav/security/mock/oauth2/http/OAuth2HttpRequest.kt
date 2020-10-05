@@ -7,6 +7,8 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
@@ -31,8 +33,6 @@ import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -109,7 +109,7 @@ data class OAuth2HttpRequest(
         formParameters.map["client_assertion"]?.let { assertion ->
             SignedJWT.parse(assertion).expiresIn() > 0
         } ?: false
-    } else true
+    } else false
 
     companion object {
         private const val PRIVATE_KEY_JWT = "urn:ietf:params:oauth:client-assertion-type:private_key_jwt"
