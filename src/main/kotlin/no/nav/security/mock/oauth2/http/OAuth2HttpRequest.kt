@@ -1,12 +1,14 @@
 package no.nav.security.mock.oauth2.http
 
+import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
+import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
+import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
@@ -29,6 +31,8 @@ import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -39,15 +43,13 @@ data class OAuth2HttpRequest(
     val formParameters: Parameters = Parameters(body)
     val cookies: Map<String, String> = headers["Cookie"]?.keyValuesToMap(";") ?: emptyMap()
 
-    /*
-    TODO: check for correct ClientAuthentication in case of client_assertion (private_key_jwt)
-        verify not neccessary (as keys would have to be preregistered), but claims that is not validated by
-        ClientAuthentication.parse(httpRequest) should be checked, i.e. lifetime of assertion etc
-    */
     fun asTokenExchangeRequest(): TokenRequest {
         val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
         val clientAuthentication: ClientAuthentication = ClientAuthentication.parse(httpRequest)
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
+        if (!clientAssertionJwtIsValid()) {
+            throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "claims in private_key_jwt must be valid when using client assertion")
+        }
         return TokenRequest(
             this.url.toUri(),
             clientAuthentication,
@@ -102,6 +104,12 @@ data class OAuth2HttpRequest(
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
         fun get(name: String): String? = map[name]
     }
+
+    private fun clientAssertionJwtIsValid() = if ("urn:ietf:params:oauth:client-assertion-type:private_key_jwt" == formParameters.map["client_assertion_type"]) {
+        formParameters.map["client_assertion"]?.let { assertion ->
+            SignedJWT.parse(assertion).expiresIn() > 0
+        } ?: false
+    } else true
 }
 
 private fun String.urlDecode(): String = URLDecoder.decode(this, StandardCharsets.UTF_8)
