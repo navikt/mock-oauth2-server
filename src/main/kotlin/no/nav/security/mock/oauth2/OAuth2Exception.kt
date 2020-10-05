@@ -14,3 +14,5 @@ class OAuth2Exception(val errorObject: ErrorObject?, msg: String, throwable: Thr
 fun badRequest(message: String) = OAuth2Exception(OAuth2Error.INVALID_REQUEST, message)
 fun missingParameter(name: String) = OAuth2Exception(OAuth2Error.INVALID_REQUEST, "missing required parameter $name")
 fun invalidGrant(grantType: GrantType) = OAuth2Exception(OAuth2Error.INVALID_GRANT, "grant_type $grantType not supported.")
+
+fun invalidRequest(message: String): Nothing = throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, message)

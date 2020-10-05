@@ -1,22 +1,19 @@
 package no.nav.security.mock.oauth2.http
 
-import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
-import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import no.nav.security.mock.oauth2.OAuth2Exception
-import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
 import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
+import no.nav.security.mock.oauth2.extensions.requirePrivateKeyJwt
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
@@ -45,11 +42,9 @@ data class OAuth2HttpRequest(
 
     fun asTokenExchangeRequest(): TokenRequest {
         val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
-        val clientAuthentication: ClientAuthentication = ClientAuthentication.parse(httpRequest)
+        val clientAuthentication = ClientAuthentication.parse(httpRequest).requirePrivateKeyJwt(this.url.toString())
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
-        if (!clientAssertionJwtIsValid()) {
-            throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "claims in private_key_jwt must be valid when using client assertion")
-        }
+
         return TokenRequest(
             this.url.toUri(),
             clientAuthentication,
@@ -103,16 +98,6 @@ data class OAuth2HttpRequest(
     data class Parameters(val parameterString: String?) {
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
         fun get(name: String): String? = map[name]
-    }
-
-    private fun clientAssertionJwtIsValid() = if (CLIENT_ASSERTION_TYPE_JWT_BEARER == formParameters.map["client_assertion_type"]) {
-        formParameters.map["client_assertion"]?.let { assertion ->
-            SignedJWT.parse(assertion).expiresIn() > 0
-        } ?: false
-    } else false
-
-    companion object {
-        private const val CLIENT_ASSERTION_TYPE_JWT_BEARER = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
     }
 }
 
