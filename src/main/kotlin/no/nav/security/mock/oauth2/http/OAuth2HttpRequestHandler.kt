@@ -24,6 +24,7 @@ import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
@@ -159,6 +160,7 @@ class OAuth2HttpRequestHandler(
             issuer = request.url.toIssuerUrl().toString(),
             authorizationEndpoint = request.url.toAuthorizationEndpointUrl().toString(),
             tokenEndpoint = request.url.toTokenEndpointUrl().toString(),
+            endSessionEndpoint = request.url.toEndSessionEndpointUrl().toString(),
             jwksUri = request.url.toJwksUrl().toString()
         )
 }

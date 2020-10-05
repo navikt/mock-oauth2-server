@@ -357,6 +357,7 @@ class MockOAuth2ServerTest {
         val wellKnown: WellKnown = jacksonObjectMapper().readValue(wellKnownResponse.body!!.string())
         assertThat(wellKnown.issuer).isEqualTo(mockOAuth2Server.issuerUrl(issuerId).toString())
         assertThat(wellKnown.authorizationEndpoint).isEqualTo(mockOAuth2Server.authorizationEndpointUrl(issuerId).toString())
+        assertThat(wellKnown.endSessionEndpoint).isEqualTo(mockOAuth2Server.endSessionEndpointUrl(issuerId).toString())
         assertThat(wellKnown.tokenEndpoint).isEqualTo(mockOAuth2Server.tokenEndpointUrl(issuerId).toString())
         assertThat(wellKnown.jwksUri).isEqualTo(mockOAuth2Server.jwksUrl(issuerId).toString())
         return wellKnown
