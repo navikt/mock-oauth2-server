@@ -80,7 +80,8 @@ class OAuth2HttpRequestHandler(
                 }
                 url.isEndSessionEndpointUrl() -> {
                     log.debug("handle end session request $request")
-                    json({})
+                    val referer = request.headers["Referer"]?.replace("/$".toRegex(), "")
+                    redirect("$referer/oauth2/logout")
                 }
                 url.isJwksUrl() -> {
                     log.debug("handle jwks request")
