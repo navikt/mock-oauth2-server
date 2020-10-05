@@ -7,7 +7,7 @@ import okhttp3.HttpUrl
 fun HttpUrl.isWellKnownUrl(): Boolean = this == this.toWellKnownUrl() || this == this.toOAuth2AuthorizationServerMetadataUrl()
 fun HttpUrl.isAuthorizationEndpointUrl(): Boolean = this.withoutQuery() == this.toAuthorizationEndpointUrl()
 fun HttpUrl.isTokenEndpointUrl(): Boolean = this == this.toTokenEndpointUrl()
-fun HttpUrl.isEndSessionEndpointUrl(): Boolean = this == this.toEndSessionEndpointUrl()
+fun HttpUrl.isEndSessionEndpointUrl(): Boolean = this.toString().contains(this.toEndSessionEndpointUrl().toString(), ignoreCase = true)
 fun HttpUrl.isJwksUrl(): Boolean = this == this.toJwksUrl()
 fun HttpUrl.isDebuggerUrl(): Boolean = this.withoutQuery() == this.toDebuggerUrl()
 fun HttpUrl.isDebuggerCallbackUrl(): Boolean = this.withoutQuery() == this.toDebuggerCallbackUrl()

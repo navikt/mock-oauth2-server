@@ -11,9 +11,21 @@ import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.debugger.DebuggerRequestHandler
-import no.nav.security.mock.oauth2.extensions.*
+import no.nav.security.mock.oauth2.extensions.grantType
+import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
+import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
+import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
 import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isEndSessionEndpointUrl
+import no.nav.security.mock.oauth2.extensions.isJwksUrl
+import no.nav.security.mock.oauth2.extensions.isPrompt
+import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
+import no.nav.security.mock.oauth2.extensions.issuerId
+import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toIssuerUrl
+import no.nav.security.mock.oauth2.extensions.toJwksUrl
+import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
@@ -79,9 +91,10 @@ class OAuth2HttpRequestHandler(
                     json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), oAuth2TokenCallback))
                 }
                 url.isEndSessionEndpointUrl() -> {
+                    // TODO: The redirect should be to Issuer.post_logout_redirect_uri
                     log.debug("handle end session request $request")
-                    val referer = request.headers["Referer"]?.replace("/$".toRegex(), "")
-                    redirect("$referer/oauth2/logout")
+                    val postLogoutRedirectUri = request.url.queryParameter("post_logout_redirect_uri") ?: "http://nav.no"
+                    redirect(postLogoutRedirectUri)
                 }
                 url.isJwksUrl() -> {
                     log.debug("handle jwks request")
