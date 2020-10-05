@@ -91,7 +91,6 @@ class OAuth2HttpRequestHandler(
                     json(grantHandler(tokenRequest).tokenResponse(tokenRequest, request.url.toIssuerUrl(), oAuth2TokenCallback))
                 }
                 url.isEndSessionEndpointUrl() -> {
-                    // TODO: The redirect should be to Issuer.post_logout_redirect_uri
                     log.debug("handle end session request $request")
                     val postLogoutRedirectUri = request.url.queryParameter("post_logout_redirect_uri") ?: "https://www.nav.no"
                     redirect(postLogoutRedirectUri)
