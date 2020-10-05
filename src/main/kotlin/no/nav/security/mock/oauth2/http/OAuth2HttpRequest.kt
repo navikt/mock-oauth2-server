@@ -105,14 +105,14 @@ data class OAuth2HttpRequest(
         fun get(name: String): String? = map[name]
     }
 
-    private fun clientAssertionJwtIsValid() = if (PRIVATE_KEY_JWT == formParameters.map["client_assertion_type"]) {
+    private fun clientAssertionJwtIsValid() = if (CLIENT_ASSERTION_TYPE_JWT_BEARER == formParameters.map["client_assertion_type"]) {
         formParameters.map["client_assertion"]?.let { assertion ->
             SignedJWT.parse(assertion).expiresIn() > 0
         } ?: false
     } else false
 
     companion object {
-        private const val PRIVATE_KEY_JWT = "urn:ietf:params:oauth:client-assertion-type:private_key_jwt"
+        private const val CLIENT_ASSERTION_TYPE_JWT_BEARER = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
     }
 }
 
