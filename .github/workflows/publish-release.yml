@@ -36,6 +36,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-wrapper-
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PAT }}
+
       - name: Publish artifact
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,7 +51,6 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
 
         # The GITHUB_REF tag comes in the format 'refs/tags/xxx'.
         # So if we split on '/' and take the 3rd value, we can get the release name.
@@ -54,5 +60,4 @@ jobs:
           IMAGE=${IMAGE_BASE_NAME}:${NEW_VERSION}
           echo "Releasing new version ${NEW_VERSION} of ${REPO_NAME} and docker image $IMAGE"
           ./gradlew jibDockerBuild --image="${IMAGE}"
-          echo "$GHCR_PAT" | docker login --username jksolbakken --password-stdin ghcr.io
           docker push "${IMAGE}"
