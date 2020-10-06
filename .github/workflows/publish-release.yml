@@ -5,7 +5,7 @@ on:
     types: [published]
 
 env:
-  IMAGE_BASE_NAME: ghcr.io/navikt/${{ github.repository }}
+  IMAGE_BASE_NAME: ghcr.io/navikt/mock-oauth2-server
 
 jobs:
   publish-release:
