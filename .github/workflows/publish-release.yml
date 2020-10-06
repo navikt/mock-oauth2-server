@@ -53,8 +53,6 @@ jobs:
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
           IMAGE=${IMAGE_BASE_NAME}:${NEW_VERSION}
           echo "Releasing new version ${NEW_VERSION} of ${REPO_NAME} and docker image $IMAGE"
-          ./gradlew -Pversion=${NEW_VERSION} publish closeAndReleaseRepository -Dorg.gradle.internal.publish.checksums.insecure=true --info
           ./gradlew jibDockerBuild --image="${IMAGE}"
           echo "$GHCR_PAT" | docker login --username jksolbakken --password-stdin ghcr.io
           docker push "${IMAGE}"
-
