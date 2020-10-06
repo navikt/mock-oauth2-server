@@ -104,7 +104,6 @@ val SignedJWT.audience: List<String> get() = jwtClaimsSet.audience
 val SignedJWT.issuer: String get() = jwtClaimsSet.issuer
 val SignedJWT.subject: String get() = jwtClaimsSet.subject
 val SignedJWT.claims: Map<String, Any> get() = jwtClaimsSet.claims
-val SignedJWT.expiry: Instant get() = jwtClaimsSet.expirationTime.toInstant()
 
 fun SignedJWT.verifyWith(issuer: HttpUrl, jwkSetUri: HttpUrl): JWTClaimsSet {
     return DefaultJWTProcessor<SecurityContext?>()
