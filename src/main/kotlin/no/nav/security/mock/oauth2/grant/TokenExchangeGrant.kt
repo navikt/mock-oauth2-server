@@ -6,6 +6,7 @@ import no.nav.security.mock.oauth2.invalidRequest
 
 val TOKEN_EXCHANGE = GrantType("urn:ietf:params:oauth:grant-type:token-exchange")
 
+@Suppress("MemberVisibilityCanBePrivate")
 class TokenExchangeGrant(
     val subjectTokenType: String,
     val subjectToken: String,

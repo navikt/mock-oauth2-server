@@ -57,6 +57,7 @@ data class OAuth2HttpRequest(
         )
     }
 
+    @Suppress("MemberVisibilityCanBePrivate")
     fun asNimbusHTTPRequest(): HTTPRequest {
         return HTTPRequest(HTTPRequest.Method.valueOf(method), url.toUrl())
             .apply {
