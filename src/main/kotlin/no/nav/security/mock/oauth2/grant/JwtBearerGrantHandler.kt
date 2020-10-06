@@ -31,8 +31,12 @@ class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvider) : Gr
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
             expiresIn = accessToken.expiresIn(),
-            scope = tokenRequest.scope.toString()
+            scope = receivedClaimsSet.toScope(tokenRequest) as? String ?: throw OAuth2Exception("Scope is not specified in assertion or request")
         )
+    }
+
+    private fun JWTClaimsSet.toScope(tokenRequest: TokenRequest): Any {
+        return getClaim("scope") ?: tokenRequest.scope.toString()
     }
 
     private fun assertion(tokenRequest: TokenRequest): JWTClaimsSet =

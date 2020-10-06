@@ -72,10 +72,17 @@ class OAuth2TokenProvider {
                 .notBeforeTime(Date.from(now))
                 .issueTime(Date.from(now))
                 .jwtID(UUID.randomUUID().toString())
-                .audience(oAuth2TokenCallback.audience(tokenRequest))
-                .build()
+                .also {
+                    it.toAudience(claimsSet, oAuth2TokenCallback.audience(tokenRequest))
+                }.build()
         )
     }
+
+    private fun JWTClaimsSet.Builder.toAudience(claimsSet: JWTClaimsSet, tokenRequestAudience: String): JWTClaimsSet.Builder {
+        return audience(claimsSet.resourceClaim() ?: tokenRequestAudience)
+    }
+
+    private fun JWTClaimsSet.resourceClaim() = getClaim("resource")?.toString()
 
     private fun createSignedJWT(claimsSet: JWTClaimsSet): SignedJWT {
         val header = JWSHeader.Builder(JWSAlgorithm.RS256)
