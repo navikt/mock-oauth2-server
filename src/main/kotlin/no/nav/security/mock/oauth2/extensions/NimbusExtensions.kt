@@ -70,12 +70,12 @@ fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet): JWTClaim
     }
 }
 
-fun ClientAuthentication.requirePrivateKeyJwt(requiredAudience: String): PrivateKeyJWT =
+fun ClientAuthentication.requirePrivateKeyJwt(requiredAudience: String, maxLifetimeSeconds: Long): PrivateKeyJWT =
     (this as? PrivateKeyJWT)
         ?.let {
             when {
-                it.clientAssertion.expiresIn() > 120 -> {
-                    invalidRequest("invalid client_assertion: client_assertion expiry is too long( should be < 120s)")
+                it.clientAssertion.expiresIn() > maxLifetimeSeconds -> {
+                    invalidRequest("invalid client_assertion: client_assertion expiry is too long( should be < $maxLifetimeSeconds)")
                 }
                 !it.clientAssertion.jwtClaimsSet.audience.contains(requiredAudience) -> {
                     invalidRequest("invalid client_assertion: client_assertion must contain required audience '$requiredAudience'")

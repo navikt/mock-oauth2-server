@@ -45,7 +45,7 @@ data class OAuth2HttpRequest(
 
     fun asTokenExchangeRequest(): TokenRequest {
         val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
-        val clientAuthentication = ClientAuthentication.parse(httpRequest).requirePrivateKeyJwt(this.url.toString())
+        val clientAuthentication = ClientAuthentication.parse(httpRequest).requirePrivateKeyJwt(this.url.toString(), 120)
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
 
         return TokenRequest(
