@@ -12,7 +12,7 @@ import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.issuer
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
-import no.nav.security.mock.oauth2.testutils.verify
+import no.nav.security.mock.oauth2.testutils.verifyWith
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.OkHttpClient
@@ -60,7 +60,7 @@ class JwtBearerGrantIntegrationTest {
             response.refreshToken shouldBe null
             response.issuedTokenType shouldBe null
 
-            response.accessToken?.verify(this.issuerUrl("aad"), this.jwksUrl("aad"))
+            response.accessToken?.verifyWith(this.issuerUrl("aad"), this.jwksUrl("aad"))
 
             response.accessToken?.audience shouldContainExactly listOf("scope1")
             response.accessToken?.issuer shouldBe this.issuerUrl("aad").toString()

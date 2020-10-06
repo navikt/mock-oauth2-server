@@ -15,6 +15,17 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
 import com.nimbusds.jwt.proc.DefaultJWTProcessor
+import com.nimbusds.oauth2.sdk.GrantType
+import com.nimbusds.oauth2.sdk.GrantType.AUTHORIZATION_CODE
+import com.nimbusds.oauth2.sdk.GrantType.CLIENT_CREDENTIALS
+import com.nimbusds.oauth2.sdk.GrantType.JWT_BEARER
+import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
+import io.kotest.assertions.assertSoftly
+import io.kotest.matchers.Matcher
+import io.kotest.matchers.MatcherResult
+import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import java.net.URL
 import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPrivateKey
@@ -22,6 +33,8 @@ import java.security.interfaces.RSAPublicKey
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
+import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import okhttp3.HttpUrl
 
@@ -47,14 +60,61 @@ data class ParsedTokenResponse(
     val idToken: SignedJWT? = tokenResponse.idToken?.asJwt()
 }
 
+infix fun ParsedTokenResponse.shouldBeValidFor(type: GrantType) {
+    assertSoftly(this) {
+        status shouldBe 200
+        expiresIn shouldBeGreaterThan 0
+        tokenType shouldBe "Bearer"
+        accessToken shouldNotBe null
+        when (type) {
+            REFRESH_TOKEN, AUTHORIZATION_CODE -> {
+                idToken shouldNotBe null
+                refreshToken shouldNotBe null
+            }
+            TOKEN_EXCHANGE, JWT_BEARER, CLIENT_CREDENTIALS -> {
+                idToken shouldBe null
+                refreshToken shouldBe null
+            }
+        }
+    }
+}
+
+fun verifyWith(issuerId: String, server: MockOAuth2Server) = object : Matcher<SignedJWT> {
+    override fun test(value: SignedJWT): MatcherResult {
+        return try {
+            value.verifyWith(server.issuerUrl(issuerId), server.jwksUrl(issuerId))
+            MatcherResult(
+                true,
+                "should not happen, famous last words",
+                "JWT should not verify, expected exception."
+            )
+        } catch (e: Exception) {
+            MatcherResult(
+                false,
+                "${e.message}",
+                "JWT should not verify, expected exception."
+            )
+        }
+    }
+}
+
+enum class TokenResponseType {
+    REFRESH_TOKEN_RESPONSE,
+    AUTHORIZATION_CODE_RESPONSE,
+    TOKEN_EXCHANGE_RESPONSE,
+    JWT_BEARER_RESPONSE,
+    CLIENT_CREDENTIALS_RESPONSE
+}
+
 fun String.asJwt(): SignedJWT = SignedJWT.parse(this)
 
 val SignedJWT.audience: List<String> get() = jwtClaimsSet.audience
 val SignedJWT.issuer: String get() = jwtClaimsSet.issuer
 val SignedJWT.subject: String get() = jwtClaimsSet.subject
 val SignedJWT.claims: Map<String, Any> get() = jwtClaimsSet.claims
+val SignedJWT.expiry: Instant get() = jwtClaimsSet.expirationTime.toInstant()
 
-fun SignedJWT.verify(issuer: HttpUrl, jwkSetUri: HttpUrl): JWTClaimsSet {
+fun SignedJWT.verifyWith(issuer: HttpUrl, jwkSetUri: HttpUrl): JWTClaimsSet {
     return DefaultJWTProcessor<SecurityContext?>()
         .apply {
             jwsKeySelector = JWSVerificationKeySelector(JWSAlgorithm.RS256, RemoteJWKSet(jwkSetUri.toUrl()))

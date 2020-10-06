@@ -5,8 +5,6 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
@@ -14,6 +12,7 @@ import no.nav.security.mock.oauth2.extensions.isEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
 import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
+import no.nav.security.mock.oauth2.extensions.keyValuesToMap
 import no.nav.security.mock.oauth2.extensions.requirePrivateKeyJwt
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
@@ -105,16 +104,6 @@ data class OAuth2HttpRequest(
         fun get(name: String): String? = map[name]
     }
 }
-
-private fun String.urlDecode(): String = URLDecoder.decode(this, StandardCharsets.UTF_8)
-
-private fun String.keyValuesToMap(listDelimiter: String): Map<String, String> =
-    this.split(listDelimiter)
-        .filter { it.contains("=") }
-        .associate {
-            val (key, value) = it.split("=")
-            key.urlDecode().trim() to value.urlDecode().trim()
-        }
 
 enum class RequestType {
     WELL_KNOWN, AUTHORIZATION, TOKEN, END_SESSION, JWKS,

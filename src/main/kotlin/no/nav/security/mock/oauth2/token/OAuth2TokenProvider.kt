@@ -9,8 +9,6 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
-import no.nav.security.mock.oauth2.extensions.clientIdAsString
-import okhttp3.HttpUrl
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPrivateKey
@@ -18,6 +16,8 @@ import java.security.interfaces.RSAPublicKey
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
+import okhttp3.HttpUrl
 
 class OAuth2TokenProvider {
     private val jwkSet: JWKSet = generateJWKSet(DEFAULT_KEYID)
@@ -30,8 +30,8 @@ class OAuth2TokenProvider {
     fun idToken(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
-        nonce: String?,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
+        nonce: String? = null
     ) = createSignedJWT(
         defaultClaims(
             issuerUrl,

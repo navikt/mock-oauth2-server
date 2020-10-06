@@ -6,7 +6,6 @@ import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
-import java.util.UUID
 import kotlin.collections.set
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -22,7 +21,8 @@ import okhttp3.HttpUrl
 private val log = KotlinLogging.logger {}
 
 class AuthorizationCodeHandler(
-    private val tokenProvider: OAuth2TokenProvider = OAuth2TokenProvider()
+    private val tokenProvider: OAuth2TokenProvider,
+    private val refreshTokenManager: RefreshTokenManager
 ) : GrantHandler {
 
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
@@ -67,14 +67,15 @@ class AuthorizationCodeHandler(
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, nonce, loginTokenCallbackOrDefault)
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
+        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             idToken = idToken.serialize(),
             accessToken = accessToken.serialize(),
-            refreshToken = UUID.randomUUID().toString(),
+            refreshToken = refreshToken,
             expiresIn = idToken.expiresIn(),
             scope = scope
         )

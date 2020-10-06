@@ -10,6 +10,7 @@ import java.net.URI
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
+import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -17,7 +18,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 internal class AuthorizationCodeHandlerTest {
-    private val handler = AuthorizationCodeHandler()
+    private val handler = AuthorizationCodeHandler(OAuth2TokenProvider(), RefreshTokenManager())
 
     @Test
     fun authorizationCodeResponse() {

@@ -21,7 +21,7 @@ import no.nav.security.mock.oauth2.testutils.sign
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
-import no.nav.security.mock.oauth2.testutils.verify
+import no.nav.security.mock.oauth2.testutils.verifyWith
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.OkHttpClient
@@ -78,7 +78,7 @@ class TokenExchangeGrantIntegrationTest {
             response.refreshToken shouldBe null
             response.issuedTokenType shouldBe "urn:ietf:params:oauth:token-type:access_token"
 
-            response.accessToken?.verify(this.issuerUrl(issuerId), this.jwksUrl(issuerId))
+            response.accessToken?.verifyWith(this.issuerUrl(issuerId), this.jwksUrl(issuerId))
 
             response.accessToken?.subject shouldBe initialSubject
             response.accessToken?.audience shouldContainExactly listOf(targetAudienceForToken)

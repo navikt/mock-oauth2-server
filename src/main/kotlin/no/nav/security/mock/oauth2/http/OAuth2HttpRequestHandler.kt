@@ -6,6 +6,7 @@ import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.GrantType.AUTHORIZATION_CODE
 import com.nimbusds.oauth2.sdk.GrantType.CLIENT_CREDENTIALS
 import com.nimbusds.oauth2.sdk.GrantType.JWT_BEARER
+import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
@@ -22,6 +23,8 @@ import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
 import no.nav.security.mock.oauth2.grant.JwtBearerGrantHandler
+import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
+import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
 import no.nav.security.mock.oauth2.http.RequestType.AUTHORIZATION
@@ -47,12 +50,14 @@ class OAuth2HttpRequestHandler(
     private val loginRequestHandler = LoginRequestHandler(templateMapper)
     private val debuggerRequestHandler = DebuggerRequestHandler(templateMapper)
     private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
+    private val refreshTokenManager = RefreshTokenManager()
 
     private val grantHandlers: Map<GrantType, GrantHandler> = mapOf(
-        AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider),
+        AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider, refreshTokenManager),
         CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(config.tokenProvider),
         JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
-        TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider)
+        TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),
+        REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager)
     )
 
     fun handleRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
