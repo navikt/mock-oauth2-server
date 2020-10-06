@@ -3,9 +3,9 @@ package no.nav.security.mock.oauth2.token
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue
+import java.util.UUID
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
-import java.util.UUID
 
 interface OAuth2TokenCallback {
     fun issuerId(): String
@@ -15,6 +15,7 @@ interface OAuth2TokenCallback {
     fun tokenExpiry(): Long
 }
 
+// TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
 open class DefaultOAuth2TokenCallback(
     private val issuerId: String = "default",
     private val subject: String = UUID.randomUUID().toString(),
@@ -38,7 +39,9 @@ open class DefaultOAuth2TokenCallback(
             ?: let {
                 tokenRequest.scope?.toStringList()
                     ?.filterNot { oidcScopeList.contains(it) }?.firstOrNull()
-            } ?: "default"
+            }
+            ?: tokenRequest.customParameters["audience"]?.first()
+            ?: "default"
     }
 
     override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =

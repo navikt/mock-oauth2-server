@@ -25,6 +25,9 @@ fun HttpUrl.toDebuggerCallbackUrl(): HttpUrl = this.resolvePath("/${issuerId()}/
 fun HttpUrl.issuerId(): String = this.pathSegments.getOrNull(0)
     ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "issuerId must be first segment in url path")
 
+fun HttpUrl.Builder.removeAllEncodedQueryParams(vararg params: String) =
+    apply { params.forEach { removeAllEncodedQueryParameters(it) } }
+
 private fun HttpUrl.withoutQuery(): HttpUrl = this.newBuilder().query(null).build()
 
 private fun HttpUrl.resolvePath(path: String): HttpUrl {

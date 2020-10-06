@@ -7,13 +7,18 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
-import mu.KotlinLogging
+import java.io.IOException
+import java.net.InetAddress
+import java.net.URI
+import java.util.UUID
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
-import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequestHandler
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
@@ -23,14 +28,6 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
-import java.io.IOException
-import java.net.InetAddress
-import java.net.URI
-import java.util.UUID
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
-
-private val log = KotlinLogging.logger {}
 
 // TODO make open so others can extend?
 class MockOAuth2Server(
@@ -40,12 +37,12 @@ class MockOAuth2Server(
 
     var dispatcher: Dispatcher = MockOAuth2Dispatcher(config)
 
-    @Throws(IOException::class)
     @JvmOverloads
-    fun start(port: Int = 0) = start(InetAddress.getByName("localhost"), port)
-
     @Throws(IOException::class)
-    fun start(inetAddress: InetAddress, port: Int) {
+    fun start(
+        inetAddress: InetAddress = InetAddress.getByName("localhost"),
+        port: Int = 0
+    ) {
         mockWebServer.start(inetAddress, port)
         mockWebServer.dispatcher = dispatcher
     }
@@ -68,7 +65,7 @@ class MockOAuth2Server(
     fun endSessionEndpointUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId).toEndSessionEndpointUrl()
     fun baseUrl(): HttpUrl = mockWebServer.url("")
 
-    fun issueToken(issuerId: String, clientId: String, OAuth2TokenCallback: OAuth2TokenCallback): SignedJWT {
+    fun issueToken(issuerId: String, clientId: String, tokenCallback: OAuth2TokenCallback): SignedJWT {
         val uri = tokenEndpointUrl(issuerId)
         val issuerUrl = issuerUrl(issuerId)
         val tokenRequest = TokenRequest(
@@ -76,7 +73,7 @@ class MockOAuth2Server(
             ClientSecretBasic(ClientID(clientId), Secret("secret")),
             AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost"))
         )
-        return config.tokenProvider.accessToken(tokenRequest, issuerUrl, null, OAuth2TokenCallback)
+        return config.tokenProvider.accessToken(tokenRequest, issuerUrl, tokenCallback, null)
     }
 
     @JvmOverloads
@@ -109,10 +106,9 @@ class MockOAuth2Dispatcher(
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = httpRequestHandler.enqueueTokenCallback(oAuth2TokenCallback)
 
     override fun dispatch(request: RecordedRequest): MockResponse =
-        when {
-            responseQueue.peek() != null -> responseQueue.take()
-            else -> mockResponse(httpRequestHandler.handleRequest(request.asOAuth2HttpRequest()))
-        }
+        responseQueue.peek()?.let {
+            responseQueue.take()
+        } ?: mockResponse(httpRequestHandler.handleRequest(request.asOAuth2HttpRequest()))
 
     private fun mockResponse(response: OAuth2HttpResponse): MockResponse =
         MockResponse()
@@ -121,4 +117,16 @@ class MockOAuth2Dispatcher(
             .apply {
                 response.body?.let { this.setBody(it) }
             }
+}
+
+fun <R> withMockOAuth2Server(
+    test: MockOAuth2Server.() -> R
+): R {
+    val server = MockOAuth2Server()
+    server.start()
+    try {
+        return server.test()
+    } finally {
+        server.shutdown()
+    }
 }

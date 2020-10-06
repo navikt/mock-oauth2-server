@@ -18,13 +18,16 @@ import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
+import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT
 import com.nimbusds.oauth2.sdk.id.Issuer
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.Prompt
-import no.nav.security.mock.oauth2.OAuth2Exception
 import java.time.Duration
 import java.time.Instant
 import java.util.HashSet
+import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.invalidRequest
 
 fun AuthenticationRequest.isPrompt(): Boolean =
     this.prompt?.any {
@@ -66,3 +69,17 @@ fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet): JWTClaim
         throw OAuth2Exception("invalid signed JWT.", e)
     }
 }
+
+fun ClientAuthentication.requirePrivateKeyJwt(requiredAudience: String, maxLifetimeSeconds: Long): PrivateKeyJWT =
+    (this as? PrivateKeyJWT)
+        ?.let {
+            when {
+                it.clientAssertion.expiresIn() > maxLifetimeSeconds -> {
+                    invalidRequest("invalid client_assertion: client_assertion expiry is too long( should be < $maxLifetimeSeconds)")
+                }
+                !it.clientAssertion.jwtClaimsSet.audience.contains(requiredAudience) -> {
+                    invalidRequest("invalid client_assertion: client_assertion must contain required audience '$requiredAudience'")
+                }
+                else -> it
+            }
+        } ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain a valid client_assertion.")
