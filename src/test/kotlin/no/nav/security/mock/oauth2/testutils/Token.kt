@@ -98,14 +98,6 @@ fun verifyWith(issuerId: String, server: MockOAuth2Server) = object : Matcher<Si
     }
 }
 
-enum class TokenResponseType {
-    REFRESH_TOKEN_RESPONSE,
-    AUTHORIZATION_CODE_RESPONSE,
-    TOKEN_EXCHANGE_RESPONSE,
-    JWT_BEARER_RESPONSE,
-    CLIENT_CREDENTIALS_RESPONSE
-}
-
 fun String.asJwt(): SignedJWT = SignedJWT.parse(this)
 
 val SignedJWT.audience: List<String> get() = jwtClaimsSet.audience
