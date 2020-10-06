@@ -30,6 +30,8 @@ data class WellKnown(
     val issuer: String,
     @JsonProperty("authorization_endpoint")
     val authorizationEndpoint: String,
+    @JsonProperty("end_session_endpoint")
+    val endSessionEndpoint: String,
     @JsonProperty("token_endpoint")
     val tokenEndpoint: String,
     @JsonProperty("jwks_uri")

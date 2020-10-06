@@ -28,6 +28,7 @@ import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
 import no.nav.security.mock.oauth2.http.RequestType.AUTHORIZATION
 import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER
 import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER_CALLBACK
+import no.nav.security.mock.oauth2.http.RequestType.END_SESSION
 import no.nav.security.mock.oauth2.http.RequestType.FAVICON
 import no.nav.security.mock.oauth2.http.RequestType.JWKS
 import no.nav.security.mock.oauth2.http.RequestType.TOKEN
@@ -61,6 +62,7 @@ class OAuth2HttpRequestHandler(
                 WELL_KNOWN -> json(request.toWellKnown()).also { log.debug("returning well-known json data for url=${request.url}") }
                 AUTHORIZATION -> handleAuthenticationRequest(request)
                 TOKEN -> handleTokenRequest(request)
+                END_SESSION -> handleEndSessionRequest(request)
                 JWKS -> json(config.tokenProvider.publicJwkSet().toJSONObject()).also { log.debug("handle jwks request") }
                 DEBUGGER -> debuggerRequestHandler.handleDebuggerForm(request).also { log.debug("handle debugger request") }
                 DEBUGGER_CALLBACK -> debuggerRequestHandler.handleDebuggerCallback(request).also { log.debug("handle debugger callback request") }
@@ -74,6 +76,12 @@ class OAuth2HttpRequestHandler(
     }
 
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = tokenCallbackQueue.add(oAuth2TokenCallback)
+
+    private fun handleEndSessionRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
+        log.debug("handle end session request $request")
+        val postLogoutRedirectUri = request.url.queryParameter("post_logout_redirect_uri") ?: "https://www.nav.no"
+        return redirect(postLogoutRedirectUri)
+    }
 
     private fun handleAuthenticationRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
         log.debug("received call to authorization endpoint")

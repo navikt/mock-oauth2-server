@@ -58,7 +58,7 @@ Latest version [![Maven Central](https://img.shields.io/maven-central/v/no.nav.s
 Latest version [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/navikt/mock-oauth2-server?color=green&include_prereleases&label=GitHub%20Package%20Registry&logo=Docker)](https://github.com/navikt/mock-oauth2-server/packages/)
 
 ```
-docker pull docker.pkg.github.com/navikt/mock-oauth2-server/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+docker pull ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
 ```
 
 
@@ -69,14 +69,14 @@ docker pull docker.pkg.github.com/navikt/mock-oauth2-server/mock-oauth2-server:$
 
 The **mock-oauth2-server** will supply different configurations depending on the url used against the server, more specifically the first **path** (or context root) element in your request url will specify the `issuerId`.
 
-A request to `http://localhost:1111/default/.well-known/openid-configuration` will yield an `issuerId` of `default` with the following configuration:
+A request to `http://localhost:8080/default/.well-known/openid-configuration` will yield an `issuerId` of `default` with the following configuration:
 
 ```json
 {
-   "issuer":"http://localhost:1111/default",
-   "authorization_endpoint":"http://localhost:1111/default/authorize",
-   "token_endpoint":"http://localhost:1111/default/token",
-   "jwks_uri":"http://localhost:1111/default/jwks",
+   "issuer":"http://localhost:8080/default",
+   "authorization_endpoint":"http://localhost:8080/default/authorize",
+   "token_endpoint":"http://localhost:8080/default/token",
+   "jwks_uri":"http://localhost:8080/default/jwks",
    "response_types_supported":[
       "query",
       "fragment",
@@ -91,9 +91,9 @@ A request to `http://localhost:1111/default/.well-known/openid-configuration` wi
 }
 ```
 
-The actual issuer value in a JWT will be `iss: "http://localhost:1111/default"`
+The actual issuer value in a JWT will be `iss: "http://localhost:8080/default"`
 
-To use another issuer with id `anotherissuer` simply make a request to `http://localhost:1111/anotherissuer/.well-known/openid-configuration` and the configuration will change accordingly.
+To use another issuer with id `anotherissuer` simply make a request to `http://localhost:8080/anotherissuer/.well-known/openid-configuration` and the configuration will change accordingly.
 
 ### Unit tests
 
@@ -190,11 +190,11 @@ TODO
 
 ### Standalone server
 
-The standalone server will default to port `1111` and can be started by invoking `main()` in  `StandaloneMockOAuth2Server.kt` (in kotlin) or `StandaloneMockOAuth2ServerKt` (in Java)
+The standalone server will default to port `8080` and can be started by invoking `main()` in  `StandaloneMockOAuth2Server.kt` (in kotlin) or `StandaloneMockOAuth2ServerKt` (in Java)
 
 ##### Debugger
 
-Point your browser to [http://localhost:1111/default/debugger](http://localhost:1111/default/debugger) to check it out
+Point your browser to [http://localhost:8080/default/debugger](http://localhost:8080/default/debugger) to check it out
 
 ##### Docker 
 
@@ -207,7 +207,7 @@ Build to local docker daemon
 Run container
 
 ```gradle
-docker run -p 1111:1111 $IMAGE_NAME
+docker run -p 8080:8080 $IMAGE_NAME
 ```
 
 ##### Docker-Compose
@@ -222,9 +222,9 @@ services:
     ports:
       - 8080:8080
   mock-oauth2-server:
-    image: docker.pkg.github.com/navikt/mock-oauth2-server/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+    image: ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
     ports:
-      - 1111:1111
+      - 8080:8080
     hostname: host.docker.internal
 ```
 

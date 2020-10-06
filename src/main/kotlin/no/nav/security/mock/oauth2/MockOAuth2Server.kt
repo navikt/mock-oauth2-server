@@ -15,6 +15,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
@@ -61,6 +62,7 @@ class MockOAuth2Server(
     fun jwksUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId).toJwksUrl()
     fun issuerUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId)
     fun authorizationEndpointUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId).toAuthorizationEndpointUrl()
+    fun endSessionEndpointUrl(issuerId: String): HttpUrl = mockWebServer.url(issuerId).toEndSessionEndpointUrl()
     fun baseUrl(): HttpUrl = mockWebServer.url("")
 
     fun issueToken(issuerId: String, clientId: String, tokenCallback: OAuth2TokenCallback): SignedJWT {
