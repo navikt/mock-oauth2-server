@@ -44,6 +44,7 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
 
         # The GITHUB_REF tag comes in the format 'refs/tags/xxx'.
         # So if we split on '/' and take the 3rd value, we can get the release name.
