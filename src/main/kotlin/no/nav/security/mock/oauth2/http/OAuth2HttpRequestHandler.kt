@@ -14,7 +14,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
-import no.nav.security.mock.oauth2.badRequest
 import no.nav.security.mock.oauth2.debugger.DebuggerRequestHandler
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
@@ -34,6 +33,7 @@ import no.nav.security.mock.oauth2.http.RequestType.JWKS
 import no.nav.security.mock.oauth2.http.RequestType.TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.invalidGrant
+import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
@@ -99,7 +99,7 @@ class OAuth2HttpRequestHandler(
                 val login: Login = loginRequestHandler.loginSubmit(request)
                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
             }
-            else -> throw badRequest("Unsupported request method ${request.method}")
+            else -> invalidRequest("Unsupported request method ${request.method}")
         }
     }
 
@@ -107,7 +107,7 @@ class OAuth2HttpRequestHandler(
         log.debug("handle token request $request")
         val grantType = request.grantType()
         val tokenCallback: OAuth2TokenCallback = tokenCallbackFromQueueOrDefault(request.url.issuerId())
-        val grantHandler: GrantHandler = grantHandlers[grantType] ?: throw invalidGrant(grantType)
+        val grantHandler: GrantHandler = grantHandlers[grantType] ?: invalidGrant(grantType)
         val tokenResponse = grantHandler.tokenResponse(request, request.url.toIssuerUrl(), tokenCallback)
         return json(tokenResponse)
     }

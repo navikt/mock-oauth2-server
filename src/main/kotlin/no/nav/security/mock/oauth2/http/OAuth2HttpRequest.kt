@@ -89,7 +89,7 @@ data class OAuth2HttpRequest(
         this.formParameters.map["grant_type"]
             ?.ifBlank { null }
             ?.let { GrantType(it) }
-            ?: throw missingParameter("grant_type")
+            ?: missingParameter("grant_type")
 
     fun toWellKnown() =
         WellKnown(

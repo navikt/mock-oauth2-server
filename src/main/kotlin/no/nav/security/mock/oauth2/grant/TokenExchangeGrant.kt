@@ -2,7 +2,7 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.oauth2.sdk.AuthorizationGrant
 import com.nimbusds.oauth2.sdk.GrantType
-import no.nav.security.mock.oauth2.badRequest
+import no.nav.security.mock.oauth2.invalidRequest
 
 val TOKEN_EXCHANGE = GrantType("urn:ietf:params:oauth:grant-type:token-exchange")
 
@@ -31,4 +31,4 @@ class TokenExchangeGrant(
 }
 
 private inline fun <reified T> Map<String, T>.require(name: String): T =
-    this[name] ?: throw badRequest("missing required parameter $name")
+    this[name] ?: invalidRequest("missing required parameter $name")
