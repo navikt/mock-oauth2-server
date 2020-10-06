@@ -60,5 +60,7 @@ jobs:
           REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')
           IMAGE=${IMAGE_BASE_NAME}/${REPO_NAME}:${NEW_VERSION}
           echo "Releasing new version ${NEW_VERSION} of ${REPO_NAME} and docker image $IMAGE"
+          ./gradlew -Pversion=${NEW_VERSION} publish closeAndReleaseRepository -Dorg.gradle.internal.publish.checksums.insecure=true --info
           ./gradlew jibDockerBuild --image="${IMAGE}"
           docker push "${IMAGE}"
+
