@@ -6,11 +6,12 @@ import com.nimbusds.openid.connect.sdk.OIDCScopeValue
 import java.util.UUID
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
+import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 
 interface OAuth2TokenCallback {
     fun issuerId(): String
     fun subject(tokenRequest: TokenRequest): String
-    fun audience(tokenRequest: TokenRequest): String
+    fun audience(tokenRequest: TokenRequest): List<String>
     fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
     fun tokenExpiry(): Long
 }
@@ -19,7 +20,8 @@ interface OAuth2TokenCallback {
 open class DefaultOAuth2TokenCallback(
     private val issuerId: String = "default",
     private val subject: String = UUID.randomUUID().toString(),
-    private val audience: String? = null,
+    // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
+    private val audience: List<String>? = null,
     private val claims: Map<String, Any> = emptyMap(),
     private val expiry: Long = 3600
 ) : OAuth2TokenCallback {
@@ -33,15 +35,14 @@ open class DefaultOAuth2TokenCallback(
         }
     }
 
-    override fun audience(tokenRequest: TokenRequest): String {
+    override fun audience(tokenRequest: TokenRequest): List<String> {
         val oidcScopeList = OIDCScopeValue.values().map { it.toString() }
         return audience
+            ?: (tokenRequest.authorizationGrant as? TokenExchangeGrant)?.audience
             ?: let {
                 tokenRequest.scope?.toStringList()
-                    ?.filterNot { oidcScopeList.contains(it) }?.firstOrNull()
-            }
-            ?: tokenRequest.customParameters["audience"]?.first()
-            ?: "default"
+                    ?.filterNot { oidcScopeList.contains(it) }
+            } ?: listOf("default")
     }
 
     override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =

@@ -36,7 +36,7 @@ class OAuth2TokenProvider {
         defaultClaims(
             issuerUrl,
             oAuth2TokenCallback.subject(tokenRequest),
-            tokenRequest.clientIdAsString(),
+            listOf(tokenRequest.clientIdAsString()),
             nonce,
             oAuth2TokenCallback.addClaims(tokenRequest),
             oAuth2TokenCallback.tokenExpiry()
@@ -90,7 +90,7 @@ class OAuth2TokenProvider {
     private fun defaultClaims(
         issuerUrl: HttpUrl,
         subject: String,
-        audience: String,
+        audience: List<String>,
         nonce: String?,
         additionalClaims: Map<String, Any>,
         expiry: Long

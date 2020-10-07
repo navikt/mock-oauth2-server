@@ -1,7 +1,9 @@
 package no.nav.security.mock.oauth2.e2e
 
 import com.nimbusds.oauth2.sdk.GrantType
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -58,6 +60,54 @@ class JwtBearerGrantIntegrationTest {
             response.accessToken!! should verifyWith(issuerId, this)
             response.accessToken.subject shouldBe initialSubject
             response.accessToken.audience shouldContainExactly listOf("scope1")
+            response.accessToken.claims["claim1"] shouldBe "value1"
+            response.accessToken.claims["claim2"] shouldBe "value2"
+        }
+    }
+
+    @Test
+    fun `token request with JwtBearerGrant should exchange assertion with a new token with scope specified in assertion claim or request parmas`() {
+        withMockOAuth2Server {
+            val initialSubject = "mysub"
+            val initialToken = this.issueToken(
+                issuerId = "idprovider",
+                clientId = "client1",
+                tokenCallback = DefaultOAuth2TokenCallback(
+                    issuerId = "idprovider",
+                    subject = initialSubject,
+                    audience = emptyList(),
+                    claims = mapOf(
+                        "claim1" to "value1",
+                        "claim2" to "value2",
+                        "scope" to "ascope",
+                        "resource" to "aud1",
+                    )
+                )
+            )
+
+            initialToken.audience.shouldBeEmpty()
+
+            val issuerId = "aad"
+
+            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, audience = emptyList()))
+
+            val response: ParsedTokenResponse = client.tokenRequest(
+                url = this.tokenEndpointUrl(issuerId),
+                parameters = mapOf(
+                    "grant_type" to GrantType.JWT_BEARER.value,
+                    "assertion" to initialToken.serialize()
+                )
+            ).toTokenResponse()
+
+            println("YOLO:" + response.accessToken?.serialize())
+
+            response shouldBeValidFor GrantType.JWT_BEARER
+            response.scope shouldContain "ascope"
+            response.issuedTokenType shouldBe null
+            response.accessToken.shouldNotBeNull()
+            response.accessToken should verifyWith(issuerId, this, listOf("sub", "iss", "iat", "exp"))
+            response.accessToken.subject shouldBe initialSubject
+            response.accessToken.audience.shouldBeEmpty()
             response.accessToken.claims["claim1"] shouldBe "value1"
             response.accessToken.claims["claim2"] shouldBe "value2"
         }

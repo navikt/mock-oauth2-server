@@ -79,10 +79,14 @@ infix fun ParsedTokenResponse.shouldBeValidFor(type: GrantType) {
     }
 }
 
-fun verifyWith(issuerId: String, server: MockOAuth2Server) = object : Matcher<SignedJWT> {
+fun verifyWith(
+    issuerId: String,
+    server: MockOAuth2Server,
+    requiredClaims: List<String> = listOf("sub", "iss", "iat", "exp", "aud")
+) = object : Matcher<SignedJWT> {
     override fun test(value: SignedJWT): MatcherResult {
         return try {
-            value.verifyWith(server.issuerUrl(issuerId), server.jwksUrl(issuerId))
+            value.verifyWith(server.issuerUrl(issuerId), server.jwksUrl(issuerId), requiredClaims)
             MatcherResult(
                 true,
                 "should not happen, famous last words",
@@ -105,7 +109,11 @@ val SignedJWT.issuer: String get() = jwtClaimsSet.issuer
 val SignedJWT.subject: String get() = jwtClaimsSet.subject
 val SignedJWT.claims: Map<String, Any> get() = jwtClaimsSet.claims
 
-fun SignedJWT.verifyWith(issuer: HttpUrl, jwkSetUri: HttpUrl): JWTClaimsSet {
+fun SignedJWT.verifyWith(
+    issuer: HttpUrl,
+    jwkSetUri: HttpUrl,
+    requiredClaims: List<String> = listOf("sub", "iss", "iat", "exp", "aud")
+): JWTClaimsSet {
     return DefaultJWTProcessor<SecurityContext?>()
         .apply {
             jwsKeySelector = JWSVerificationKeySelector(JWSAlgorithm.RS256, RemoteJWKSet(jwkSetUri.toUrl()))
@@ -113,9 +121,7 @@ fun SignedJWT.verifyWith(issuer: HttpUrl, jwkSetUri: HttpUrl): JWTClaimsSet {
                 JWTClaimsSet.Builder()
                     .issuer(issuer.toString())
                     .build(),
-                HashSet(
-                    listOf("sub", "iss", "iat", "exp", "aud")
-                )
+                HashSet(requiredClaims)
             )
         }.process(this, null)
 }
