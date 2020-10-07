@@ -20,7 +20,7 @@ import okhttp3.HttpUrl
 
 private val log = KotlinLogging.logger {}
 
-class AuthorizationCodeHandler(
+internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager
 ) : GrantHandler {

@@ -7,7 +7,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 
-class ClientCredentialsGrantHandler(
+internal class ClientCredentialsGrantHandler(
     private val tokenProvider: OAuth2TokenProvider
 ) : GrantHandler {
 

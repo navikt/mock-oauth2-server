@@ -15,7 +15,7 @@ import okhttp3.HttpUrl
 
 private val log = KotlinLogging.logger {}
 
-class RefreshTokenGrantHandler(
+internal class RefreshTokenGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager
 ) : GrantHandler {
@@ -29,7 +29,7 @@ class RefreshTokenGrantHandler(
         val refreshToken = tokenRequest.refreshTokenGrant().refreshToken.value
         log.debug("issuing token for refreshToken=$refreshToken")
         val scope: String? = tokenRequest.scope?.toString()
-        val refreshTokenCallbackOrDefault = refreshTokenManager.cache[refreshToken] ?: oAuth2TokenCallback
+        val refreshTokenCallbackOrDefault = refreshTokenManager[refreshToken] ?: oAuth2TokenCallback
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, refreshTokenCallbackOrDefault)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, refreshTokenCallbackOrDefault)
 
