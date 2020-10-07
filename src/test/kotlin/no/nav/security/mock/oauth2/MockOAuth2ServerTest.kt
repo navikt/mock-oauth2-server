@@ -261,7 +261,7 @@ class MockOAuth2ServerTest {
             DefaultOAuth2TokenCallback(
                 issuerId = "custom",
                 subject = "yolo",
-                audience = "myaud"
+                audience = listOf("myaud")
             )
         )
 
@@ -322,7 +322,7 @@ class MockOAuth2ServerTest {
             DefaultOAuth2TokenCallback(
                 issuerId = "default",
                 subject = "mysub",
-                audience = "muyaud",
+                audience = listOf("muyaud"),
                 claims = mapOf("someclaim" to "claimvalue")
             )
         )

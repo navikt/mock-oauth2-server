@@ -89,7 +89,7 @@ class MockOAuth2Server(
         DefaultOAuth2TokenCallback(
             issuerId,
             subject,
-            audience,
+            audience?.let { listOf(it) },
             claims,
             expiry
         )

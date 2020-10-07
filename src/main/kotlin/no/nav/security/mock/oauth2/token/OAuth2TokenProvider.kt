@@ -9,8 +9,6 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
-import no.nav.security.mock.oauth2.extensions.clientIdAsString
-import okhttp3.HttpUrl
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPrivateKey
@@ -18,6 +16,8 @@ import java.security.interfaces.RSAPublicKey
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
+import okhttp3.HttpUrl
 
 class OAuth2TokenProvider {
     private val jwkSet: JWKSet = generateJWKSet(DEFAULT_KEYID)
@@ -36,7 +36,7 @@ class OAuth2TokenProvider {
         defaultClaims(
             issuerUrl,
             oAuth2TokenCallback.subject(tokenRequest),
-            tokenRequest.clientIdAsString(),
+            listOf(tokenRequest.clientIdAsString()),
             nonce,
             oAuth2TokenCallback.addClaims(tokenRequest),
             oAuth2TokenCallback.tokenExpiry()
@@ -72,17 +72,10 @@ class OAuth2TokenProvider {
                 .notBeforeTime(Date.from(now))
                 .issueTime(Date.from(now))
                 .jwtID(UUID.randomUUID().toString())
-                .also {
-                    it.toAudience(claimsSet, oAuth2TokenCallback.audience(tokenRequest))
-                }.build()
+                .audience(oAuth2TokenCallback.audience(tokenRequest))
+                .build()
         )
     }
-
-    private fun JWTClaimsSet.Builder.toAudience(claimsSet: JWTClaimsSet, tokenRequestAudience: String): JWTClaimsSet.Builder {
-        return audience(claimsSet.resourceClaim() ?: tokenRequestAudience)
-    }
-
-    private fun JWTClaimsSet.resourceClaim() = getClaim("resource")?.toString()
 
     private fun createSignedJWT(claimsSet: JWTClaimsSet): SignedJWT {
         val header = JWSHeader.Builder(JWSAlgorithm.RS256)
@@ -97,7 +90,7 @@ class OAuth2TokenProvider {
     private fun defaultClaims(
         issuerUrl: HttpUrl,
         subject: String,
-        audience: String,
+        audience: List<String>,
         nonce: String?,
         additionalClaims: Map<String, Any>,
         expiry: Long

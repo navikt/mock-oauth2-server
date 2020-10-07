@@ -1,6 +1,7 @@
 package no.nav.security.mock.oauth2.e2e
 
 import com.nimbusds.oauth2.sdk.GrantType
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -80,14 +81,16 @@ class JwtBearerGrantIntegrationTest {
                 tokenCallback = DefaultOAuth2TokenCallback(
                     issuerId = "idprovider",
                     subject = "mysub",
+                    audience = emptyList(),
                     claims = mapOf(
                         "claim1" to "value1",
                         "claim2" to "value2",
                         "scope" to "ascope",
-                        "resource" to "aud1"
+                        "resource" to "aud1",
                     )
                 )
             )
+            initialToken.audience.shouldBeEmpty()
 
             val response: ParsedTokenResponse = client.tokenRequest(
                 url = this.tokenEndpointUrl("aad"),
@@ -108,7 +111,6 @@ class JwtBearerGrantIntegrationTest {
 
             response.accessToken.shouldNotBeNull()
             response.accessToken.verify(this.issuerUrl("aad"), this.jwksUrl("aad"))
-            response.accessToken.audience shouldContainExactly listOf("aud1")
             response.accessToken.issuer shouldBe this.issuerUrl("aad").toString()
             response.accessToken.claims["claim1"] shouldBe "value1"
             response.accessToken.claims["claim2"] shouldBe "value2"
