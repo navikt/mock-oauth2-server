@@ -18,6 +18,7 @@ The motivation behind this library is to provide a setup such that application d
   * OAuth2 Client Credentials Grant
   * OAuth2 JWT Bearer Grant (On-Behalf-Of flow)
   * OAuth2 Token Exchange Grant
+  * OAuth2 Refresh Token Grant
 * **Issued JWT tokens are verifiable** through standard mechanisms with OpenID Connect Discovery / OAuth2 Authorization Server Metadata
 * **Unit/Integration test support**
   * Start and stop server for each test
