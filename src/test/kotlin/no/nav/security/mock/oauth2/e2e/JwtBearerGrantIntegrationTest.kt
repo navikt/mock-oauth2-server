@@ -3,6 +3,7 @@ package no.nav.security.mock.oauth2.e2e
 import com.nimbusds.oauth2.sdk.GrantType
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
@@ -60,12 +61,13 @@ class JwtBearerGrantIntegrationTest {
             response.refreshToken shouldBe null
             response.issuedTokenType shouldBe null
 
-            response.accessToken?.verify(this.issuerUrl("aad"), this.jwksUrl("aad"))
+            response.accessToken.shouldNotBeNull()
+            response.accessToken.verify(this.issuerUrl("aad"), this.jwksUrl("aad"))
 
-            response.accessToken?.audience shouldContainExactly listOf("scope1")
-            response.accessToken?.issuer shouldBe this.issuerUrl("aad").toString()
-            response.accessToken?.claims?.get("claim1") shouldBe "value1"
-            response.accessToken?.claims?.get("claim2") shouldBe "value2"
+            response.accessToken.audience shouldContainExactly listOf("scope1")
+            response.accessToken.issuer shouldBe this.issuerUrl("aad").toString()
+            response.accessToken.claims["claim1"] shouldBe "value1"
+            response.accessToken.claims["claim2"] shouldBe "value2"
         }
     }
 
@@ -104,12 +106,12 @@ class JwtBearerGrantIntegrationTest {
             response.refreshToken shouldBe null
             response.issuedTokenType shouldBe null
 
-            response.accessToken?.verify(this.issuerUrl("aad"), this.jwksUrl("aad"))
-
-            response.accessToken?.audience shouldContainExactly listOf("aud1")
-            response.accessToken?.issuer shouldBe this.issuerUrl("aad").toString()
-            response.accessToken?.claims?.get("claim1") shouldBe "value1"
-            response.accessToken?.claims?.get("claim2") shouldBe "value2"
+            response.accessToken.shouldNotBeNull()
+            response.accessToken.verify(this.issuerUrl("aad"), this.jwksUrl("aad"))
+            response.accessToken.audience shouldContainExactly listOf("aud1")
+            response.accessToken.issuer shouldBe this.issuerUrl("aad").toString()
+            response.accessToken.claims["claim1"] shouldBe "value1"
+            response.accessToken.claims["claim2"] shouldBe "value2"
         }
     }
 }
