@@ -30,8 +30,8 @@ class OAuth2TokenProvider {
     fun idToken(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
-        nonce: String?,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
+        nonce: String? = null
     ) = createSignedJWT(
         defaultClaims(
             issuerUrl,

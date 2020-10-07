@@ -4,6 +4,7 @@ import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.OAuth2Error
 
+@Suppress("unused")
 class OAuth2Exception(val errorObject: ErrorObject?, msg: String, throwable: Throwable?) :
     RuntimeException(msg, throwable) {
     constructor(msg: String) : this(null, msg, null)

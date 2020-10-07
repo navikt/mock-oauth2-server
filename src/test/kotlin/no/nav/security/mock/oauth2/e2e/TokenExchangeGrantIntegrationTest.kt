@@ -2,9 +2,8 @@ package no.nav.security.mock.oauth2.e2e
 
 import com.nimbusds.jwt.JWTClaimsSet
 import io.kotest.matchers.collections.shouldContainExactly
-import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
@@ -16,12 +15,12 @@ import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.clientAssertion
 import no.nav.security.mock.oauth2.testutils.generateRsaKey
-import no.nav.security.mock.oauth2.testutils.issuer
+import no.nav.security.mock.oauth2.testutils.shouldBeValidFor
 import no.nav.security.mock.oauth2.testutils.sign
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
-import no.nav.security.mock.oauth2.testutils.verify
+import no.nav.security.mock.oauth2.testutils.verifyWith
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.OkHttpClient
@@ -69,22 +68,17 @@ class TokenExchangeGrantIntegrationTest {
                 )
             ).toTokenResponse()
 
-            response.status shouldBe 200
-            response.expiresIn shouldBeGreaterThan 0
+            response shouldBeValidFor TOKEN_EXCHANGE
             response.scope shouldBe null
             response.tokenType shouldBe "Bearer"
-            response.accessToken shouldNotBe null
-            response.idToken shouldBe null
-            response.refreshToken shouldBe null
             response.issuedTokenType shouldBe "urn:ietf:params:oauth:token-type:access_token"
 
-            response.accessToken?.verify(this.issuerUrl(issuerId), this.jwksUrl(issuerId))
+            response.accessToken!! should verifyWith(issuerId, this)
 
-            response.accessToken?.subject shouldBe initialSubject
-            response.accessToken?.audience shouldContainExactly listOf(targetAudienceForToken)
-            response.accessToken?.issuer shouldBe this.issuerUrl(issuerId).toString()
-            response.accessToken?.claims?.get("claim1") shouldBe "value1"
-            response.accessToken?.claims?.get("claim2") shouldBe "value2"
+            response.accessToken.subject shouldBe initialSubject
+            response.accessToken.audience shouldContainExactly listOf(targetAudienceForToken)
+            response.accessToken.claims["claim1"] shouldBe "value1"
+            response.accessToken.claims["claim2"] shouldBe "value2"
         }
     }
 

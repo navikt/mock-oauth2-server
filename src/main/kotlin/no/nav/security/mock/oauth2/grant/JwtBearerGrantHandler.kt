@@ -13,7 +13,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 
-class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvider) : GrantHandler {
+internal class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvider) : GrantHandler {
 
     override fun tokenResponse(
         request: OAuth2HttpRequest,

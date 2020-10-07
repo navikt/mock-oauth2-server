@@ -30,6 +30,7 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 
 // TODO make open so others can extend?
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 class MockOAuth2Server(
     val config: OAuth2Config = OAuth2Config()
 ) {
