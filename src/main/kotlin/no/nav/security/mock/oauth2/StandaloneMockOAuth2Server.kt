@@ -7,7 +7,6 @@ import com.natpryce.konfig.intType
 import com.natpryce.konfig.overriding
 import com.natpryce.konfig.stringType
 import java.net.InetAddress
-import java.net.InetSocketAddress
 
 private val config = ConfigurationProperties.systemProperties() overriding
     EnvironmentVariables()
