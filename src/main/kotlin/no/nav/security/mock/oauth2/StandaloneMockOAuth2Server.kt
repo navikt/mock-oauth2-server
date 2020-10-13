@@ -6,6 +6,7 @@ import com.natpryce.konfig.Key
 import com.natpryce.konfig.intType
 import com.natpryce.konfig.overriding
 import com.natpryce.konfig.stringType
+import java.net.InetAddress
 import java.net.InetSocketAddress
 
 private val config = ConfigurationProperties.systemProperties() overriding
@@ -26,5 +27,5 @@ fun main() {
         OAuth2Config(
             interactiveLogin = true
         )
-    ).start(InetSocketAddress(0).address, config.server.port)
+    ).start(InetAddress.getByName(config.server.hostname), config.server.port)
 }
