@@ -194,6 +194,8 @@ TODO
 
 The standalone server will default to port `8080` and can be started by invoking `main()` in  `StandaloneMockOAuth2Server.kt` (in kotlin) or `StandaloneMockOAuth2ServerKt` (in Java)
 
+On Windows, it's easier to run the server in docker while specifying the host as localhost, e.g. `docker run -p 8080:8080 -h localhost $IMAGE_NAME`
+
 ##### Debugger
 
 Point your browser to [http://localhost:8080/default/debugger](http://localhost:8080/default/debugger) to check it out
