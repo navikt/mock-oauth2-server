@@ -5,6 +5,7 @@ import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jose.jwk.KeyUse
 import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
@@ -124,6 +125,7 @@ class OAuth2TokenProvider {
         private fun createRSAKey(keyID: String, keyPair: KeyPair) =
             RSAKey.Builder(keyPair.public as RSAPublicKey)
                 .privateKey(keyPair.private as RSAPrivateKey)
+                .keyUse(KeyUse.SIGNATURE)
                 .keyID(keyID)
                 .build()
     }
