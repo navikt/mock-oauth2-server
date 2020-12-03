@@ -9,6 +9,10 @@ import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.DirectDecrypter
 import com.nimbusds.jose.crypto.DirectEncrypter
 import com.nimbusds.oauth2.sdk.OAuth2Error
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.removeAllEncodedQueryParams
@@ -30,10 +34,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.internal.toHostHeader
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
 
 private val log = KotlinLogging.logger { }
 
@@ -166,7 +166,7 @@ private fun debuggerAuthorizationRequest(
             OAuth2HttpRequest(
                 headers = Headers.headersOf(),
                 method = "GET",
-                url = it
+                originalUrl = it
             )
         }
 

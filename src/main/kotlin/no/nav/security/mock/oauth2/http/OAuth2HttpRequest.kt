@@ -36,9 +36,10 @@ import okhttp3.HttpUrl
 data class OAuth2HttpRequest(
     val headers: Headers,
     val method: String,
-    val url: HttpUrl,
+    val originalUrl: HttpUrl,
     val body: String? = null
 ) {
+    val url: HttpUrl get() = proxyAwareUrl()
     val formParameters: Parameters = Parameters(body)
     val cookies: Map<String, String> = headers["Cookie"]?.keyValuesToMap(";") ?: emptyMap()
 
@@ -93,12 +94,30 @@ data class OAuth2HttpRequest(
 
     fun toWellKnown() =
         WellKnown(
-            issuer = this.url.toIssuerUrl().toString(),
-            authorizationEndpoint = this.url.toAuthorizationEndpointUrl().toString(),
-            tokenEndpoint = this.url.toTokenEndpointUrl().toString(),
-            endSessionEndpoint = this.url.toEndSessionEndpointUrl().toString(),
-            jwksUri = this.url.toJwksUrl().toString()
+            issuer = this.proxyAwareUrl().toIssuerUrl().toString(),
+            authorizationEndpoint = this.proxyAwareUrl().toAuthorizationEndpointUrl().toString(),
+            tokenEndpoint = this.proxyAwareUrl().toTokenEndpointUrl().toString(),
+            endSessionEndpoint = this.proxyAwareUrl().toEndSessionEndpointUrl().toString(),
+            jwksUri = this.proxyAwareUrl().toJwksUrl().toString()
         )
+
+    internal fun proxyAwareUrl(): HttpUrl {
+        val hostheader = this.headers["host"]
+        val proto = this.headers["x-forwarded-proto"]
+        val port = this.headers["x-forwarded-port"]
+        return if (hostheader != null && proto != null) {
+            HttpUrl.Builder()
+                .scheme(proto)
+                .host(hostheader)
+                .apply {
+                    port?.toInt()?.let { port(it) }
+                }
+                .encodedPath(originalUrl.encodedPath)
+                .query(originalUrl.query).build()
+        } else {
+            originalUrl
+        }
+    }
 
     data class Parameters(val parameterString: String?) {
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
