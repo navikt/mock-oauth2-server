@@ -32,14 +32,14 @@ import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
-import okhttp3.mockwebserver.RecordedRequest
 
 data class OAuth2HttpRequest(
     val headers: Headers,
     val method: String,
-    val url: HttpUrl,
+    val originalUrl: HttpUrl,
     val body: String? = null
 ) {
+    val url: HttpUrl get() = proxyAwareUrl()
     val formParameters: Parameters = Parameters(body)
     val cookies: Map<String, String> = headers["Cookie"]?.keyValuesToMap(";") ?: emptyMap()
 
@@ -112,10 +112,10 @@ data class OAuth2HttpRequest(
                 .apply {
                     port?.toInt()?.let { port(it) }
                 }
-                .encodedPath(url.encodedPath)
-                .query(this.url.query).build()
+                .encodedPath(originalUrl.encodedPath)
+                .query(originalUrl.query).build()
         } else {
-            url
+            originalUrl
         }
     }
 

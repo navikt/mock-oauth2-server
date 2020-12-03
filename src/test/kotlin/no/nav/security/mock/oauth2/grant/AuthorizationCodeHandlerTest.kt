@@ -104,7 +104,7 @@ internal class AuthorizationCodeHandlerTest {
         return OAuth2HttpRequest(
             headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
             method = "POST",
-            url = "http://localhost/token".toHttpUrl(),
+            originalUrl = "http://localhost/token".toHttpUrl(),
             body = "grant_type=authorization_code&" +
                 "client_id=client1&" +
                 "client_secret=secret&" +

@@ -12,17 +12,20 @@ internal class OAuth2HttpRequestTest {
         val req1 = OAuth2HttpRequest(
             headers = Headers.headersOf(),
             method = "GET",
-            url = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
         )
         req1.proxyAwareUrl().toString() shouldBe "http://localhost:8080/mypath?query=1"
         val req2 = OAuth2HttpRequest(
             headers = Headers.headersOf(
-                "host", "fakedings.nais.io",
-                "x-forwarded-proto", "https",
-                "x-forwarded-port", "444"
+                "host",
+                "fakedings.nais.io",
+                "x-forwarded-proto",
+                "https",
+                "x-forwarded-port",
+                "444"
             ),
             method = "GET",
-            url = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
         )
         req2.proxyAwareUrl().toString() shouldBe "https://fakedings.nais.io:444/mypath?query=1"
     }
@@ -32,17 +35,20 @@ internal class OAuth2HttpRequestTest {
         val req1 = OAuth2HttpRequest(
             headers = Headers.headersOf(),
             method = "GET",
-            url = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
         )
         req1.toWellKnown().issuer shouldBe "http://localhost:8080/mypath"
         val req2 = OAuth2HttpRequest(
             headers = Headers.headersOf(
-                "host", "fakedings.nais.io",
-                "x-forwarded-proto", "https",
-                "x-forwarded-port", "444"
+                "host",
+                "fakedings.nais.io",
+                "x-forwarded-proto",
+                "https",
+                "x-forwarded-port",
+                "444"
             ),
             method = "GET",
-            url = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
         )
         req2.toWellKnown().issuer shouldBe "https://fakedings.nais.io:444/mypath"
     }
