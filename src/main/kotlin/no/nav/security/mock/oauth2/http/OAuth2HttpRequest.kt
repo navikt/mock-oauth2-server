@@ -32,6 +32,7 @@ import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.mockwebserver.RecordedRequest
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -93,12 +94,30 @@ data class OAuth2HttpRequest(
 
     fun toWellKnown() =
         WellKnown(
-            issuer = this.url.toIssuerUrl().toString(),
-            authorizationEndpoint = this.url.toAuthorizationEndpointUrl().toString(),
-            tokenEndpoint = this.url.toTokenEndpointUrl().toString(),
-            endSessionEndpoint = this.url.toEndSessionEndpointUrl().toString(),
-            jwksUri = this.url.toJwksUrl().toString()
+            issuer = this.proxyAwareUrl().toIssuerUrl().toString(),
+            authorizationEndpoint = this.proxyAwareUrl().toAuthorizationEndpointUrl().toString(),
+            tokenEndpoint = this.proxyAwareUrl().toTokenEndpointUrl().toString(),
+            endSessionEndpoint = this.proxyAwareUrl().toEndSessionEndpointUrl().toString(),
+            jwksUri = this.proxyAwareUrl().toJwksUrl().toString()
         )
+
+    internal fun proxyAwareUrl(): HttpUrl {
+        val hostheader = this.headers["host"]
+        val proto = this.headers["x-forwarded-proto"]
+        val port = this.headers["x-forwarded-port"]
+        return if (hostheader != null && proto != null) {
+            HttpUrl.Builder()
+                .scheme(proto)
+                .host(hostheader)
+                .apply {
+                    port?.toInt()?.let { port(it) }
+                }
+                .encodedPath(url.encodedPath)
+                .query(this.url.query).build()
+        } else {
+            url
+        }
+    }
 
     data class Parameters(val parameterString: String?) {
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
