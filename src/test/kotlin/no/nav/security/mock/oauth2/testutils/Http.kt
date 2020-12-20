@@ -85,7 +85,7 @@ fun OkHttpClient.post(
 
 fun OkHttpClient.get(
     url: HttpUrl,
-    parameters: Map<String, String>
+    parameters: Map<String, String> = emptyMap()
 ): Response =
     this.newCall(
         Request.Builder().get(

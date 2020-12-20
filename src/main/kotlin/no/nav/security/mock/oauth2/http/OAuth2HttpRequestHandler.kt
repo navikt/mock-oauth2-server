@@ -39,14 +39,19 @@ import no.nav.security.mock.oauth2.invalidGrant
 import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
+import no.nav.security.mock.oauth2.server.Route
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
+import org.http4k.core.HttpHandler
+import org.http4k.core.Request
+import org.http4k.core.Response
+import org.http4k.core.Status
 
 private val log = KotlinLogging.logger {}
 
 class OAuth2HttpRequestHandler(
     private val config: OAuth2Config
-) {
+): Route {
     private val loginRequestHandler = LoginRequestHandler(templateMapper)
     private val debuggerRequestHandler = DebuggerRequestHandler(templateMapper)
     private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
@@ -60,7 +65,7 @@ class OAuth2HttpRequestHandler(
         REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager)
     )
 
-    fun handleRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
+    override fun handleRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
         return runCatching {
             log.debug("received request on url=${request.url} with headers=${request.headers}")
             return when (request.type()) {
@@ -135,4 +140,5 @@ class OAuth2HttpRequestHandler(
         } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: ${error.message}")
         return oauth2Error(errorObject)
     }
+
 }

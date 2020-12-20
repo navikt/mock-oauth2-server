@@ -7,6 +7,10 @@ import com.natpryce.konfig.intType
 import com.natpryce.konfig.overriding
 import com.natpryce.konfig.stringType
 import java.net.InetSocketAddress
+import no.nav.security.mock.oauth2.http.OAuth2HttpRequestHandler
+import no.nav.security.mock.oauth2.server.MockWebServerConfig
+import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
+import okhttp3.mockwebserver.MockWebServer
 
 private val config = ConfigurationProperties.systemProperties() overriding
     EnvironmentVariables()
@@ -27,4 +31,8 @@ fun main() {
             interactiveLogin = true
         )
     ).start(InetSocketAddress(0).address, config.server.port)
+
+    /*MockWebServerConfig(MockWebServer()).toServer(OAuth2HttpRequestHandler(OAuth2Config(
+        interactiveLogin = true
+    )))*/
 }

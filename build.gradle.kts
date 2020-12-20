@@ -1,5 +1,6 @@
 import java.time.Duration
 
+val http4kVersion = "3.279.0"
 val assertjVersion = "3.17.2"
 val kotlinLoggingVersion = "1.8.3"
 val logbackVersion = "1.2.3"
@@ -53,6 +54,9 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("com.natpryce:konfig:$konfigVersion")
+    implementation(platform("org.http4k:http4k-bom:$http4kVersion"))
+    implementation("org.http4k:http4k-core")
+    implementation( "org.http4k:http4k-server-netty")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")

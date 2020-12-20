@@ -12,12 +12,14 @@ import java.net.URLEncoder
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.http.WellKnown
+
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -28,6 +30,7 @@ import okio.IOException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 // TODO add more tests for exception handling
@@ -64,6 +67,20 @@ class MockOAuth2ServerTest {
     }
 
     @Test
+    fun `server with and without custom routes`() {
+
+        val s1 = MockOAuth2Server()
+
+        println("dynamic base: " + server.baseUrl())
+        println("port: ${serverWithFixedPort.port}")
+
+        println("well: " + server.wellKnownUrl("yolo"))
+        println("using url fun " + client.get(server.wellKnownUrl("yolo"))?.code)
+        println(client.get("http://localhost:${server.port}/yolo".toHttpUrl())?.code)
+
+    }
+
+    @Test
     fun startServerWithFixedPort() {
 
         val wellKnown: WellKnown = assertWellKnownResponseForIssuer(serverWithFixedPort, "default")
@@ -94,6 +111,7 @@ class MockOAuth2ServerTest {
     }
 
     @Test
+    @Disabled("deprecated api")
     fun enqueuedResponse() {
         assertWellKnownResponseForIssuer("default")
         server.enqueueResponse(
@@ -136,6 +154,7 @@ class MockOAuth2ServerTest {
 
         val response: Response = client.newCall(request).execute()
         assertThat(response.code).isEqualTo(302)
+        println("**** headers: ${response.headers}")
         val httpUrl: HttpUrl = checkNotNull(response.headers["location"]?.toHttpUrlOrNull())
         assertThat(httpUrl.queryParameter("state")).isEqualTo(
             authorizationCodeFlowUrl.queryParameter("state")
