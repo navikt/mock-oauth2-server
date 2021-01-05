@@ -8,7 +8,6 @@ val mockWebServerVersion = "4.8.1"
 val jacksonVersion = "2.11.2"
 val nettyVersion = "4.1.56.Final"
 val junitJupiterVersion = "5.7.0-RC1"
-val konfigVersion = "1.6.10.0"
 val kotlinVersion = "1.4.0"
 val freemarkerVersion = "2.3.30"
 val kotestVersion = "4.2.5"
@@ -53,7 +52,6 @@ dependencies {
     implementation(kotlin("reflect"))
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
-    implementation("com.natpryce:konfig:$konfigVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-all:$nettyVersion")
