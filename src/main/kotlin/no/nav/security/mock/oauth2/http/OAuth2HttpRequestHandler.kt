@@ -60,11 +60,6 @@ class OAuth2HttpRequestHandler(
         REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager)
     )
 
-    // TODO: use router function here aswell
-    fun withRoutes(request: OAuth2HttpRequest) {
-        OAuth2HttpRouter.routes().invoke(request)
-    }
-
     fun handleRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
         return runCatching {
             log.debug("received request on url=${request.url} with headers=${request.headers}")
