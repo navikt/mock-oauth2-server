@@ -7,10 +7,15 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.id.Issuer
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldStartWith
 import java.net.URLEncoder
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
+import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.http.WellKnown
+import no.nav.security.mock.oauth2.http.route
+import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Credentials
@@ -26,6 +31,7 @@ import okio.IOException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 // TODO add more tests for exception handling
@@ -62,6 +68,20 @@ class MockOAuth2ServerTest {
     }
 
     @Test
+    fun `server with custom routes`() {
+        val s = MockOAuth2Server(
+            route("/custom") {
+                OAuth2HttpResponse(status = 200, body = "custom route")
+            }
+        ).apply {
+            start()
+        }
+        client.get(s.wellKnownUrl("someissuer")).body?.string() shouldStartWith "{"
+        client.get(s.url("/custom")).body?.string() shouldBe "custom route"
+        client.get(s.url("/someissuer/custom")).body?.string() shouldBe "custom route"
+    }
+
+    @Test
     fun startServerWithFixedPort() {
 
         val wellKnown: WellKnown = assertWellKnownResponseForIssuer(serverWithFixedPort, "default")
@@ -92,6 +112,7 @@ class MockOAuth2ServerTest {
     }
 
     @Test
+    @Disabled("deprecated api")
     fun enqueuedResponse() {
         assertWellKnownResponseForIssuer("default")
         server.enqueueResponse(
@@ -134,6 +155,7 @@ class MockOAuth2ServerTest {
 
         val response: Response = client.newCall(request).execute()
         assertThat(response.code).isEqualTo(302)
+        println("**** headers: ${response.headers}")
         val httpUrl: HttpUrl = checkNotNull(response.headers["location"]?.toHttpUrlOrNull())
         assertThat(httpUrl.queryParameter("state")).isEqualTo(
             authorizationCodeFlowUrl.queryParameter("state")

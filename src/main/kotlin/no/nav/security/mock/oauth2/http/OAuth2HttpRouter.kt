@@ -1,10 +1,7 @@
-package no.nav.security.mock.oauth2.server
+package no.nav.security.mock.oauth2.http
 
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.endsWith
-import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
-import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
-import okhttp3.HttpUrl
 
 private val log = KotlinLogging.logger { }
 
@@ -14,11 +11,13 @@ interface Route : RequestHandler {
     fun match(request: OAuth2HttpRequest): Boolean
 }
 
-class HttpRouter(
-    private vararg val routes: Route
+class OAuth2HttpRouter(
+    private val routes: MutableList<Route> = mutableListOf()
 ) : RequestHandler {
 
     var notFoundHandler: (OAuth2HttpRequest) -> OAuth2HttpResponse = { OAuth2HttpResponse(status = 404, body = "no route found") }
+
+    override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse = match(request)
 
     private fun match(request: OAuth2HttpRequest): OAuth2HttpResponse =
         routes.also {
@@ -29,12 +28,17 @@ class HttpRouter(
             ?: notFoundHandler.invoke(request)
                 .also { log.debug("no handler found, using notFoundHandler") }
 
-    override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse = match(request)
+    companion object {
+        fun routes(vararg route: Route): OAuth2HttpRouter = OAuth2HttpRouter(mutableListOf(*route))
+    }
 }
 
 @JvmOverloads
 fun route(path: String, method: String? = null, requestHandler: RequestHandler): Route =
     routeFromPathAndMethod(path, method, requestHandler)
+
+fun put(path: String, requestHandler: RequestHandler): Route =
+    routeFromPathAndMethod(path, "PUT", requestHandler)
 
 fun post(path: String, requestHandler: RequestHandler): Route =
     routeFromPathAndMethod(path, "POST", requestHandler)

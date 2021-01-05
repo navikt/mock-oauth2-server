@@ -7,6 +7,9 @@ import com.natpryce.konfig.intType
 import com.natpryce.konfig.overriding
 import com.natpryce.konfig.stringType
 import java.net.InetSocketAddress
+import no.nav.security.mock.oauth2.http.NettyWrapper
+import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
+import no.nav.security.mock.oauth2.http.route
 
 private val config = ConfigurationProperties.systemProperties() overriding
     EnvironmentVariables()
@@ -24,7 +27,11 @@ fun main() {
     val config = Configuration()
     MockOAuth2Server(
         OAuth2Config(
-            interactiveLogin = true
-        )
+            interactiveLogin = true,
+            httpServer = NettyWrapper()
+        ),
+        route("/isalive") {
+            OAuth2HttpResponse(status = 200, body = "alive and well")
+        }
     ).start(InetSocketAddress(0).address, config.server.port)
 }

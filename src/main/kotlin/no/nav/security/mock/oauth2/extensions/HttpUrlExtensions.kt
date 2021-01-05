@@ -28,10 +28,18 @@ fun HttpUrl.issuerId(): String = this.pathSegments.getOrNull(0)
 fun HttpUrl.Builder.removeAllEncodedQueryParams(vararg params: String) =
     apply { params.forEach { removeAllEncodedQueryParameters(it) } }
 
+fun HttpUrl.match(path: String) =
+    path.trimPath().let {
+        this.pathSegments.containsAll(it.split("/"))
+    }
+
+fun HttpUrl.endsWith(path: String): Boolean = this.pathSegments.joinToString("/").endsWith(path.trimPath())
+
+private fun String.trimPath() = removePrefix("/").removeSuffix("/")
+
 private fun HttpUrl.withoutQuery(): HttpUrl = this.newBuilder().query(null).build()
 
 private fun HttpUrl.resolvePath(path: String): HttpUrl {
-
     return HttpUrl.Builder()
         .scheme(this.scheme)
         .host(this.host)

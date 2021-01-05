@@ -6,6 +6,7 @@ val logbackVersion = "1.2.3"
 val nimbusSdkVersion = "8.19.1"
 val mockWebServerVersion = "4.8.1"
 val jacksonVersion = "2.11.2"
+val nettyVersion = "4.1.56.Final"
 val junitJupiterVersion = "5.7.0-RC1"
 val konfigVersion = "1.6.10.0"
 val kotlinVersion = "1.4.0"
@@ -34,8 +35,8 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_14
+    targetCompatibility = JavaVersion.VERSION_14
     withJavadocJar()
     withSourcesJar()
 }
@@ -55,6 +56,7 @@ dependencies {
     implementation("com.natpryce:konfig:$konfigVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
+    implementation("io.netty:netty-all:$nettyVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
@@ -149,7 +151,7 @@ tasks.javadoc {
 
 jib {
     from {
-        image = "gcr.io/distroless/java:11"
+        image = "gcr.io/distroless/java:14"
     }
     container {
         ports = listOf("8080")
@@ -180,7 +182,7 @@ tasks {
 
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
-            jvmTarget = "11"
+            jvmTarget = "14"
         }
     }
 
@@ -200,11 +202,11 @@ tasks {
         dependsOn("publish")
     }
 
-    /*withType<Sign>().configureEach {
+    withType<Sign>().configureEach {
         onlyIf {
             project.hasProperty("signatory.keyId")
         }
-    }*/
+    }
 
     withType<Wrapper> {
         gradleVersion = "6.6.1"
