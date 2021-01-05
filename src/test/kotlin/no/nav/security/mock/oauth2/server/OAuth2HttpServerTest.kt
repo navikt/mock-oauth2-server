@@ -31,7 +31,6 @@ internal class OAuth2HttpServerTest {
             it.body == "formparam=formvalue1" -> ok("bodymatch")
             it.url.pathSegments.contains("redirect") ->
                 redirect("http://someredirect")
-            it.url.pathSegments.contains("host") -> ok("hostname: ${it.url.host}")
             else -> {
                 OAuth2HttpResponse(status = 404)
             }
@@ -63,9 +62,6 @@ internal class OAuth2HttpServerTest {
         client.get(this.url("/redirect")).apply {
             this.code shouldBe 302
             this.headers["Location"] shouldBe "http://someredirect"
-        }
-        client.get(this.url("/host")).apply {
-            println("*** body for host:" + this.body?.string())
         }
     }
 

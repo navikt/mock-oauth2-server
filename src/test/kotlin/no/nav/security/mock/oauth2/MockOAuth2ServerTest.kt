@@ -155,7 +155,6 @@ class MockOAuth2ServerTest {
 
         val response: Response = client.newCall(request).execute()
         assertThat(response.code).isEqualTo(302)
-        println("**** headers: ${response.headers}")
         val httpUrl: HttpUrl = checkNotNull(response.headers["location"]?.toHttpUrlOrNull())
         assertThat(httpUrl.queryParameter("state")).isEqualTo(
             authorizationCodeFlowUrl.queryParameter("state")
