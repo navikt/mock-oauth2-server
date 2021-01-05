@@ -35,8 +35,8 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_14
-    targetCompatibility = JavaVersion.VERSION_14
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
     withJavadocJar()
     withSourcesJar()
 }
@@ -151,7 +151,7 @@ tasks.javadoc {
 
 jib {
     from {
-        image = "gcr.io/distroless/java:14"
+        image = "gcr.io/distroless/java:11"
     }
     container {
         ports = listOf("8080")
@@ -182,7 +182,7 @@ tasks {
 
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
-            jvmTarget = "14"
+            jvmTarget = "11"
         }
     }
 
