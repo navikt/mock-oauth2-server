@@ -16,6 +16,7 @@ import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.http.WellKnown
 import no.nav.security.mock.oauth2.http.route
 import no.nav.security.mock.oauth2.testutils.get
+import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Credentials
@@ -155,6 +156,7 @@ class MockOAuth2ServerTest {
 
         val response: Response = client.newCall(request).execute()
         assertThat(response.code).isEqualTo(302)
+        println("**** headers: ${response.headers}")
         val httpUrl: HttpUrl = checkNotNull(response.headers["location"]?.toHttpUrlOrNull())
         assertThat(httpUrl.queryParameter("state")).isEqualTo(
             authorizationCodeFlowUrl.queryParameter("state")
@@ -333,6 +335,35 @@ class MockOAuth2ServerTest {
         val accessToken: SignedJWT = SignedJWT.parse(tokenResponse.accessToken)
         assertThat(accessToken.jwtClaimsSet.audience).containsExactly("scope1")
         assertThat(accessToken.jwtClaimsSet.issuer).endsWith("default")
+    }
+
+    @Test
+    fun takeRequestShouldReturnReceivedRequest() {
+        server.enqueueCallback(DefaultOAuth2TokenCallback())
+        client.post(
+            server.baseUrl(),
+            mapOf(
+                "param1" to "value1"
+            )
+        ).body?.close()
+
+        val recordedRequest1 = server.takeRequest()
+        recordedRequest1.requestUrl shouldBe server.baseUrl()
+        recordedRequest1.body.readUtf8() shouldBe "param1=value1"
+
+        client.post(
+            server.tokenEndpointUrl("test"),
+            mapOf(
+                "client_id" to "client",
+                "client_secret" to "sec",
+                "grant_type" to "client_credentials",
+                "scope" to "scope1"
+            )
+        ).body?.close()
+
+        val recordedRequest2 = server.takeRequest()
+        recordedRequest2.requestUrl shouldBe server.tokenEndpointUrl("test")
+        recordedRequest2.body.readUtf8() shouldBe "client_id=client&client_secret=sec&grant_type=client_credentials&scope=scope1"
     }
 
     @Test
