@@ -99,8 +99,6 @@ class JwtBearerGrantIntegrationTest {
                 )
             ).toTokenResponse()
 
-            println("YOLO:" + response.accessToken?.serialize())
-
             response shouldBeValidFor GrantType.JWT_BEARER
             response.scope shouldContain "ascope"
             response.issuedTokenType shouldBe null

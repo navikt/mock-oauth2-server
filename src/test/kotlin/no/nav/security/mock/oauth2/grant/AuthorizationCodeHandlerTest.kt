@@ -112,8 +112,6 @@ internal class AuthorizationCodeHandlerTest {
                 "redirect_uri=$redirectUri&" +
                 "scope=$scope"
 
-        ).also {
-            println("code is $code")
-        }
+        )
     }
 }

@@ -85,14 +85,22 @@ fun OkHttpClient.post(
 
 fun OkHttpClient.get(
     url: HttpUrl,
-    parameters: Map<String, String>
+    headers: Headers = Headers.headersOf(),
+    parameters: Map<String, String> = emptyMap()
 ): Response =
     this.newCall(
         Request.Builder().get(
             url,
+            headers,
             parameters
         )
     ).execute()
+
+fun Request.Builder.get(url: HttpUrl, headers: Headers = Headers.headersOf(), parameters: Map<String, String> = emptyMap()) =
+    this.url(url.of(parameters))
+        .headers(headers)
+        .get()
+        .build()
 
 fun Request.Builder.get(url: HttpUrl, parameters: Map<String, String>) =
     this.url(url.of(parameters))

@@ -5,4 +5,3 @@ import okhttp3.mockwebserver.RecordedRequest
 
 fun RecordedRequest.asOAuth2HttpRequest(): OAuth2HttpRequest =
     OAuth2HttpRequest(this.headers, checkNotNull(this.method), checkNotNull(this.requestUrl), this.body.copy().readUtf8())
-

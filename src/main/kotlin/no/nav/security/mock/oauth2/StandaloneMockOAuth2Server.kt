@@ -1,22 +1,17 @@
 package no.nav.security.mock.oauth2
 
-import com.natpryce.konfig.ConfigurationProperties
-import com.natpryce.konfig.EnvironmentVariables
-import com.natpryce.konfig.Key
-import com.natpryce.konfig.intType
-import com.natpryce.konfig.overriding
-import com.natpryce.konfig.stringType
+import java.net.InetAddress
 import java.net.InetSocketAddress
-
-private val config = ConfigurationProperties.systemProperties() overriding
-    EnvironmentVariables()
+import no.nav.security.mock.oauth2.http.NettyWrapper
+import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
+import no.nav.security.mock.oauth2.http.route
 
 data class Configuration(
     val server: Server = Server()
 ) {
     data class Server(
-        val hostname: String = config.getOrElse(Key("server.hostname", stringType), "localhost"),
-        val port: Int = config.getOrElse(Key("server.port", intType), 8080)
+        val hostname: InetAddress = "SERVER_HOSTNAME".fromEnv()?.let { InetAddress.getByName(it) } ?: InetSocketAddress(0).address,
+        val port: Int = "SERVER_PORT".fromEnv()?.toInt() ?: 8080
     )
 }
 
@@ -24,7 +19,13 @@ fun main() {
     val config = Configuration()
     MockOAuth2Server(
         OAuth2Config(
-            interactiveLogin = true
-        )
-    ).start(InetSocketAddress(0).address, config.server.port)
+            interactiveLogin = true,
+            httpServer = NettyWrapper()
+        ),
+        route("/isalive") {
+            OAuth2HttpResponse(status = 200, body = "alive and well")
+        }
+    ).start(config.server.hostname, config.server.port)
 }
+
+fun String.fromEnv(): String? = System.getenv(this)
