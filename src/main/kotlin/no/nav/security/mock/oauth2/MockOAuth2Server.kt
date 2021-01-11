@@ -49,7 +49,10 @@ open class MockOAuth2Server(
 
     @JvmOverloads
     @Throws(IOException::class)
-    fun start(inetAddress: InetAddress = InetAddress.getByName("localhost"), port: Int = 0) {
+    fun start(port: Int = 0) = start(InetAddress.getByName("localhost"), port)
+
+    @Throws(IOException::class)
+    fun start(inetAddress: InetAddress, port: Int) {
         log.debug("attempt to start server on port=$port")
         httpServer.start(inetAddress, port, router)
     }
