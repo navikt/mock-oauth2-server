@@ -7,14 +7,17 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.id.Issuer
+import io.kotest.matchers.maps.shouldContainAll
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldStartWith
 import java.net.URLEncoder
+import java.time.Duration
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.http.WellKnown
 import no.nav.security.mock.oauth2.http.route
+import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
@@ -386,6 +389,29 @@ class MockOAuth2ServerTest {
         assertThat(jwtClaimsSet.subject).isEqualTo("mysub")
         assertThat(jwtClaimsSet.audience).containsExactly("muyaud")
         assertThat(jwtClaimsSet.getClaim("someclaim")).isEqualTo("claimvalue")
+    }
+
+    @Test
+    fun `anyToken should issue token with claims from input and be verifyable by servers keys`() {
+        val issuerId = "issuer1"
+        val token = server.anyToken(
+            server.issuerUrl(issuerId),
+            mutableMapOf(
+                "sub" to "yolo",
+                "aud" to listOf("myapp"),
+                "customInt" to 123,
+                "customList" to listOf(1, 2, 3)
+            ),
+            Duration.ofSeconds(10)
+        )
+        val jwkSet: JWKSet = retrieveJwks(server.jwksUrl(issuerId).toString())
+        token.verifySignatureAndIssuer(Issuer(server.issuerUrl("issuer1").toString()), jwkSet)
+        token.claims shouldContainAll mutableMapOf(
+            "sub" to "yolo",
+            "aud" to listOf("myapp"),
+            "customInt" to 123,
+            "customList" to listOf(1, 2, 3)
+        )
     }
 
     private fun retrieveJwks(jwksUri: String): JWKSet {
