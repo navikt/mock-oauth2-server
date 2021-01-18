@@ -1,8 +1,11 @@
 package no.nav.security.mock.oauth2
 
+import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
+import com.nimbusds.oauth2.sdk.AuthorizationGrant
+import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
@@ -10,6 +13,7 @@ import com.nimbusds.oauth2.sdk.id.ClientID
 import java.io.IOException
 import java.net.InetAddress
 import java.net.URI
+import java.time.Duration
 import java.util.UUID
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
@@ -112,7 +116,32 @@ open class MockOAuth2Server(
             expiry
         )
     )
+
+    @JvmOverloads
+    fun anyToken(issuerUrl: HttpUrl, claims: Map<String, Any>, expiry: Duration = Duration.ofHours(1)): SignedJWT {
+        val jwtClaimsSet = claims.toJwtClaimsSet()
+        val mockGrant: AuthorizationGrant = object : AuthorizationGrant(GrantType("MockGrant")) {
+            override fun toParameters(): MutableMap<String, MutableList<String>> = mutableMapOf()
+        }
+        return this.config.tokenProvider.exchangeAccessToken(
+            TokenRequest(URI.create("http://mockgrant"), mockGrant),
+            issuerUrl,
+            jwtClaimsSet,
+            DefaultOAuth2TokenCallback(
+                audience = jwtClaimsSet.audience,
+                expiry = expiry.toMillis()
+            )
+        )
+    }
 }
+
+internal fun Map<String, Any>.toJwtClaimsSet(): JWTClaimsSet =
+    JWTClaimsSet.Builder()
+        .apply {
+            this@toJwtClaimsSet.forEach {
+                this.claim(it.key, it.value)
+            }
+        }.build()
 
 fun <R> withMockOAuth2Server(
     test: MockOAuth2Server.() -> R
