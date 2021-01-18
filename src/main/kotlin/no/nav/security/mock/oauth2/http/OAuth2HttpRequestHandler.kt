@@ -41,6 +41,8 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
+import java.net.URLEncoder
+import java.nio.charset.Charset
 
 private val log = KotlinLogging.logger {}
 
@@ -127,12 +129,13 @@ class OAuth2HttpRequestHandler(
 
     private fun handleException(error: Throwable): OAuth2HttpResponse {
         log.error("received exception when handling request.", error)
+        val msg = URLEncoder.encode(error.message, Charset.forName("UTF-8"))
         val errorObject: ErrorObject = when (error) {
             is OAuth2Exception -> error.errorObject
-            is ParseException -> error.errorObject ?: OAuth2Error.INVALID_REQUEST.setDescription("failed to parse request: ${error.message}")
+            is ParseException -> error.errorObject ?: OAuth2Error.INVALID_REQUEST.setDescription("failed to parse request: $msg")
             is GeneralException -> error.errorObject
             else -> null
-        } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: ${error.message}")
+        } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
         return oauth2Error(errorObject)
     }
 }

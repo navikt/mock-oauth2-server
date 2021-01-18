@@ -1,28 +1,30 @@
 import java.time.Duration
-
-val assertjVersion = "3.17.2"
-val kotlinLoggingVersion = "1.8.3"
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+val assertjVersion = "3.18.1"
+val kotlinLoggingVersion = "2.0.4"
 val logbackVersion = "1.2.3"
-val nimbusSdkVersion = "8.19.1"
-val mockWebServerVersion = "4.8.1"
-val jacksonVersion = "2.11.2"
-val nettyVersion = "4.1.56.Final"
-val junitJupiterVersion = "5.7.0-RC1"
-val kotlinVersion = "1.4.0"
+val nimbusSdkVersion = "8.32.1"
+val mockWebServerVersion = "4.9.0"
+val jacksonVersion = "2.12.1"
+val nettyVersion = "4.1.57.Final"
+val junitJupiterVersion = "5.7.0"
+val kotlinVersion = "1.4.21-2"
 val freemarkerVersion = "2.3.30"
-val kotestVersion = "4.2.5"
+val kotestVersion = "4.3.2"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.4.0"
-    id("org.jmailen.kotlinter") version "3.0.2"
-    id("com.google.cloud.tools.jib") version "2.5.0"
-    id("com.github.johnrengelman.shadow") version "6.0.0"
+    kotlin("jvm") version "1.4.21"
+    id("se.patrikerdes.use-latest-versions") version "0.2.15"
+    id("com.github.ben-manes.versions") version "0.36.0"
+    id("org.jmailen.kotlinter") version "3.3.0"
+    id("com.google.cloud.tools.jib") version "2.7.1"
+    id("com.github.johnrengelman.shadow") version "6.1.0"
     id("net.researchgate.release") version "2.8.1"
-    id("io.codearte.nexus-staging") version "0.21.2"
+    id("io.codearte.nexus-staging") version "0.22.0"
     id("de.marcphilipp.nexus-publish") version "0.4.0"
     `java-library`
     `maven-publish`
@@ -161,6 +163,38 @@ jib {
     skip()
 }
 
+fun isNonStable(version: String): Boolean {
+    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.toUpperCase().contains(it) }
+    val regex = "^[0-9,.v-]+(-r)?$".toRegex()
+    val isStable = stableKeyword || regex.matches(version)
+    return isStable.not()
+}
+
+tasks.named("dependencyUpdates", DependencyUpdatesTask::class.java).configure {
+    this.
+    resolutionStrategy {
+        componentSelection {
+            all {
+                if (isNonStable(candidate.version) ) {
+                    reject("Release candidate")
+                }
+            }
+        }
+    }
+}
+
+tasks.named("useLatestVersions", se.patrikerdes.UseLatestVersionsTask::class.java).configure {
+    updateBlacklist = listOf(
+        "io.codearte:nexus-staging"
+    )
+}
+
+buildscript {
+    dependencies {
+        configurations.classpath.get().exclude("xerces", "xercesImpl")
+    }
+}
+
 tasks {
     withType<org.jmailen.gradle.kotlinter.tasks.LintTask> {
         dependsOn("formatKotlin")
@@ -207,6 +241,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "6.6.1"
+        gradleVersion = "6.8"
     }
 }

@@ -71,7 +71,6 @@ class RefreshTokenGrantIntegrationTest {
             refreshTokenResponse.idToken.subject shouldBe initialSubject
             refreshTokenResponse.idToken.audience shouldBe tokenResponseBeforeRefresh.idToken.audience
             refreshTokenResponse.accessToken.subject shouldBe initialSubject
-            refreshTokenResponse.accessToken.audience shouldBe tokenResponseBeforeRefresh.accessToken.audience
         }
     }
 
