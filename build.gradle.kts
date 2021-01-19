@@ -236,7 +236,7 @@ tasks {
 
     withType<Sign>().configureEach {
         onlyIf {
-            project.hasProperty("signatory.keyId")
+            System.getenv("GPG_KEYS") != null
         }
     }
 
