@@ -89,7 +89,7 @@ class MockWebServerWrapper : OAuth2HttpServer {
                 .setHeaders(this.headers)
                 .setResponseCode(this.status)
                 .let {
-                    if (this.body != null) it.setBody(this.body) else it
+                    if (this.body != null) it.setBody(this.body) else it.setBody("")
                 }
     }
 }
