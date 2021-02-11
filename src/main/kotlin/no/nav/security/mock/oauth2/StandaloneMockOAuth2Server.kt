@@ -19,7 +19,7 @@ fun main() {
     val config = Configuration()
     MockOAuth2Server(
         OAuth2Config(
-            interactiveLogin = true,
+            interactiveLogin = "INTERACTIVE_LOGIN".fromEnv()?.toBoolean()?:true,
             httpServer = NettyWrapper()
         ),
         route("/isalive") {
