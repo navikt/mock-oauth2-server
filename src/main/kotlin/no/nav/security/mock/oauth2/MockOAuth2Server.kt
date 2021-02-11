@@ -10,6 +10,8 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import java.io.IOException
 import java.net.InetAddress
 import java.net.URI
@@ -118,7 +120,8 @@ open class MockOAuth2Server(
             subject,
             audience?.let { listOf(it) },
             claims,
-            expiry
+            expiry,
+            scopeIssAud = "SCOPE_W_ISS_AUD".fromEnv()?.let { Json.decodeFromString<Map<String, Map<String, String>>>(it) } ?: mapOf()
         )
     )
 

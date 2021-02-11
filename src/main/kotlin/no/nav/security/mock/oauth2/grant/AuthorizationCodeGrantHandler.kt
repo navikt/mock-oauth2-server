@@ -100,5 +100,6 @@ internal class AuthorizationCodeHandler(
             }
 
         override fun tokenExpiry(): Long = OAuth2TokenCallback.tokenExpiry()
+        override fun issuerUrl(tokenRequest: TokenRequest): String? = null
     }
 }

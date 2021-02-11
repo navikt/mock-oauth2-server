@@ -14,6 +14,7 @@ interface OAuth2TokenCallback {
     fun audience(tokenRequest: TokenRequest): List<String>
     fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
     fun tokenExpiry(): Long
+    fun issuerUrl(tokenRequest: TokenRequest): String?
 }
 
 // TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
@@ -23,7 +24,8 @@ open class DefaultOAuth2TokenCallback(
     // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
     private val audience: List<String>? = null,
     private val claims: Map<String, Any> = emptyMap(),
-    private val expiry: Long = 3600
+    private val expiry: Long = 3600,
+    private val scopeIssAud: Map<String, Map<String, String>>? = null,
 ) : OAuth2TokenCallback {
 
     override fun issuerId(): String = issuerId
@@ -35,9 +37,21 @@ open class DefaultOAuth2TokenCallback(
         }
     }
 
+    override fun issuerUrl(tokenRequest: TokenRequest): String? {
+        return scopeIssAud?.filter {
+            tokenRequest.scope?.toStringList()?.contains(it.key) ?: false
+        }?.map { it.value["iss"] }?.firstOrNull()
+    }
+
     override fun audience(tokenRequest: TokenRequest): List<String> {
         val oidcScopeList = OIDCScopeValue.values().map { it.toString() }
         return audience
+            ?: let {
+                scopeIssAud?.filter {
+                    tokenRequest.scope?.toStringList()?.contains(it.key) ?: false
+                }?.map { it.value["aud"] }?.filterNotNull()?.ifEmpty { null }
+            }
+            ?: let { tokenRequest.scope?.toStringList() }
             ?: (tokenRequest.authorizationGrant as? TokenExchangeGrant)?.audience
             ?: let {
                 tokenRequest.scope?.toStringList()

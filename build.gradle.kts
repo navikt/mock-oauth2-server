@@ -18,6 +18,7 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 plugins {
     application
     kotlin("jvm") version "1.4.30"
+    kotlin("plugin.serialization") version "1.4.30"
     id("se.patrikerdes.use-latest-versions") version "0.2.15"
     id("com.github.ben-manes.versions") version "0.36.0"
     id("org.jmailen.kotlinter") version "3.3.0"
@@ -60,6 +61,7 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion") // for kotest framework

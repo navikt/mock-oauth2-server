@@ -68,7 +68,7 @@ class OAuth2TokenProvider {
     ) = Instant.now().let { now ->
         createSignedJWT(
             JWTClaimsSet.Builder(claimsSet)
-                .issuer(issuerUrl.toString())
+                .issuer(oAuth2TokenCallback.issuerUrl(tokenRequest)?:issuerUrl.toString())
                 .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
                 .notBeforeTime(Date.from(now))
                 .issueTime(Date.from(now))
