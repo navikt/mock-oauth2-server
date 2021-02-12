@@ -417,7 +417,7 @@ class MockOAuth2ServerTest {
     }
 
     @Test
-    fun `takeRequest should time out if no request is received`(){
+    fun `takeRequest should time out if no request is received`() {
         shouldThrow<java.lang.RuntimeException> {
             server.takeRequest(5, TimeUnit.MILLISECONDS)
         }
