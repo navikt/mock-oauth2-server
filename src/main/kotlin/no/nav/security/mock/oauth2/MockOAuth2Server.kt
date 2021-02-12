@@ -32,6 +32,8 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
+import java.lang.RuntimeException
+import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger { }
 
@@ -75,9 +77,11 @@ open class MockOAuth2Server(
 
     fun enqueueCallback(oAuth2TokenCallback: OAuth2TokenCallback) = defaultRequestHandler.enqueueTokenCallback(oAuth2TokenCallback)
 
-    fun takeRequest(): RecordedRequest =
-        (httpServer as? MockWebServerWrapper)?.mockWebServer?.takeRequest()
-            ?: throw UnsupportedOperationException("can only takeRequest when httpServer is of type MockWebServer")
+    @JvmOverloads
+    fun takeRequest(timeout: Long = 2, unit: TimeUnit = TimeUnit.SECONDS): RecordedRequest =
+        (httpServer as? MockWebServerWrapper)?.mockWebServer?.let {
+            it.takeRequest(timeout, unit) ?: throw RuntimeException("no request found in queue within timeout $timeout $unit")
+        } ?: throw UnsupportedOperationException("can only takeRequest when httpServer is of type MockWebServer")
 
     fun wellKnownUrl(issuerId: String): HttpUrl = url(issuerId).toWellKnownUrl()
     fun tokenEndpointUrl(issuerId: String): HttpUrl = url(issuerId).toTokenEndpointUrl()

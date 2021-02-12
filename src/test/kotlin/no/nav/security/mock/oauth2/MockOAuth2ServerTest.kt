@@ -7,6 +7,7 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.id.Issuer
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.maps.shouldContainAll
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldStartWith
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import java.util.concurrent.TimeUnit
 
 // TODO add more tests for exception handling
 class MockOAuth2ServerTest {
@@ -412,6 +414,16 @@ class MockOAuth2ServerTest {
             "customInt" to 123,
             "customList" to listOf(1, 2, 3)
         )
+    }
+
+    @Test
+    fun `takeRequest should time out if no request is received`(){
+        shouldThrow<java.lang.RuntimeException> {
+            server.takeRequest(5, TimeUnit.MILLISECONDS)
+        }
+        val url = server.wellKnownUrl("1")
+        client.get(url)
+        server.takeRequest().requestUrl shouldBe url
     }
 
     private fun retrieveJwks(jwksUri: String): JWKSet {
