@@ -10,6 +10,8 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import java.net.URLEncoder
+import java.nio.charset.Charset
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import mu.KotlinLogging
@@ -41,8 +43,6 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
-import java.net.URLEncoder
-import java.nio.charset.Charset
 
 private val log = KotlinLogging.logger {}
 
@@ -86,8 +86,10 @@ class OAuth2HttpRequestHandler(
 
     private fun handleEndSessionRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
         log.debug("handle end session request $request")
-        val postLogoutRedirectUri = request.url.queryParameter("post_logout_redirect_uri") ?: "https://www.nav.no"
-        return redirect(postLogoutRedirectUri)
+        val postLogoutRedirectUri = request.url.queryParameter("post_logout_redirect_uri")
+        return postLogoutRedirectUri?.let {
+            redirect(postLogoutRedirectUri)
+        } ?: html("logged out")
     }
 
     private fun handleAuthenticationRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
