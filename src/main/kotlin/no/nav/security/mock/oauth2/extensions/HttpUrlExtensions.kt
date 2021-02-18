@@ -2,48 +2,85 @@ package no.nav.security.mock.oauth2.extensions
 
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.AUTHORIZATION
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER_CALLBACK
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.END_SESSION
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.JWKS
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import okhttp3.HttpUrl
 
-fun HttpUrl.isWellKnownUrl(): Boolean = this == this.toWellKnownUrl() || this == this.toOAuth2AuthorizationServerMetadataUrl()
-fun HttpUrl.isAuthorizationEndpointUrl(): Boolean = this.withoutQuery() == this.toAuthorizationEndpointUrl()
-fun HttpUrl.isTokenEndpointUrl(): Boolean = this == this.toTokenEndpointUrl()
-fun HttpUrl.isEndSessionEndpointUrl(): Boolean = this.withoutQuery() == this.toEndSessionEndpointUrl()
-fun HttpUrl.isJwksUrl(): Boolean = this == this.toJwksUrl()
-fun HttpUrl.isDebuggerUrl(): Boolean = this.withoutQuery() == this.toDebuggerUrl()
-fun HttpUrl.isDebuggerCallbackUrl(): Boolean = this.withoutQuery() == this.toDebuggerCallbackUrl()
+object OAuth2Endpoints {
+    const val OAUTH2_WELL_KNOWN = "/.well-known/oauth-authorization-server"
+    const val OIDC_WELL_KNOWN = "/.well-known/openid-configuration"
+    const val AUTHORIZATION = "/authorize"
+    const val TOKEN = "/token"
+    const val END_SESSION = "/endsession"
+    const val JWKS = "/jwks"
+    const val DEBUGGER = "/debugger"
+    const val DEBUGGER_CALLBACK = "/debugger/callback"
 
-fun HttpUrl.toOAuth2AuthorizationServerMetadataUrl() = this.resolvePath("/${issuerId()}/.well-known/oauth-authorization-server")
-fun HttpUrl.toWellKnownUrl(): HttpUrl = this.resolvePath("/${issuerId()}/.well-known/openid-configuration")
-fun HttpUrl.toAuthorizationEndpointUrl(): HttpUrl = this.resolvePath("/${issuerId()}/authorize")
-fun HttpUrl.toEndSessionEndpointUrl(): HttpUrl = this.resolvePath("/${issuerId()}/endsession")
-fun HttpUrl.toTokenEndpointUrl(): HttpUrl = this.resolvePath("/${issuerId()}/token")
-fun HttpUrl.toJwksUrl(): HttpUrl = this.resolvePath("/${issuerId()}/jwks")
-fun HttpUrl.toIssuerUrl(): HttpUrl = this.resolvePath("/${issuerId()}")
-fun HttpUrl.toDebuggerUrl(): HttpUrl = this.resolvePath("/${issuerId()}/debugger")
-fun HttpUrl.toDebuggerCallbackUrl(): HttpUrl = this.resolvePath("/${issuerId()}/debugger/callback")
+    val all = listOf(
+        OAUTH2_WELL_KNOWN,
+        OIDC_WELL_KNOWN,
+        AUTHORIZATION,
+        TOKEN,
+        END_SESSION,
+        JWKS,
+        DEBUGGER,
+        DEBUGGER_CALLBACK
+    )
+}
 
-fun HttpUrl.issuerId(): String = this.pathSegments.getOrNull(0)
-    ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "issuerId must be first segment in url path")
+fun HttpUrl.isWellKnownUrl(): Boolean = this.endsWith(OAUTH2_WELL_KNOWN) || this.endsWith(OIDC_WELL_KNOWN)
+fun HttpUrl.isAuthorizationEndpointUrl(): Boolean = this.endsWith(AUTHORIZATION)
+fun HttpUrl.isTokenEndpointUrl(): Boolean = this.endsWith(TOKEN)
+fun HttpUrl.isEndSessionEndpointUrl(): Boolean = this.endsWith(END_SESSION)
+fun HttpUrl.isJwksUrl(): Boolean = this.endsWith(JWKS)
+fun HttpUrl.isDebuggerUrl(): Boolean = this.endsWith(DEBUGGER)
+fun HttpUrl.isDebuggerCallbackUrl(): Boolean = this.endsWith(DEBUGGER_CALLBACK)
+
+fun HttpUrl.toOAuth2AuthorizationServerMetadataUrl() = issuer(OAUTH2_WELL_KNOWN)
+fun HttpUrl.toWellKnownUrl(): HttpUrl = issuer(OIDC_WELL_KNOWN)
+fun HttpUrl.toAuthorizationEndpointUrl(): HttpUrl = issuer(AUTHORIZATION)
+fun HttpUrl.toEndSessionEndpointUrl(): HttpUrl = issuer(END_SESSION)
+fun HttpUrl.toTokenEndpointUrl(): HttpUrl = issuer(TOKEN)
+fun HttpUrl.toJwksUrl(): HttpUrl = issuer(JWKS)
+fun HttpUrl.toIssuerUrl(): HttpUrl = issuer()
+fun HttpUrl.toDebuggerUrl(): HttpUrl = issuer(DEBUGGER)
+fun HttpUrl.toDebuggerCallbackUrl(): HttpUrl = issuer(DEBUGGER_CALLBACK)
+
+fun HttpUrl.issuerId(): String {
+    val path = this.pathSegments.joinToString("/").trimPath()
+    OAuth2Endpoints.all.forEach {
+        if (path.endsWith(it)) {
+            return path.substringBefore(it)
+        }
+    }
+    return path
+}
 
 fun HttpUrl.Builder.removeAllEncodedQueryParams(vararg params: String) =
     apply { params.forEach { removeAllEncodedQueryParameters(it) } }
-
-fun HttpUrl.match(path: String) =
-    path.trimPath().let {
-        this.pathSegments.containsAll(it.split("/"))
-    }
 
 fun HttpUrl.endsWith(path: String): Boolean = this.pathSegments.joinToString("/").endsWith(path.trimPath())
 
 private fun String.trimPath() = removePrefix("/").removeSuffix("/")
 
-private fun HttpUrl.withoutQuery(): HttpUrl = this.newBuilder().query(null).build()
+private fun HttpUrl.issuer(path: String = ""): HttpUrl =
+    baseUrl().let {
+        it.resolve(joinPaths(issuerId(), path))
+            ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "cannot resolve path $path")
+    }
 
-private fun HttpUrl.resolvePath(path: String): HttpUrl {
-    return HttpUrl.Builder()
+private fun joinPaths(vararg path: String) =
+    path.filter { it.isNotEmpty() }.joinToString("/") { it.trimPath() }
+
+private fun HttpUrl.baseUrl(): HttpUrl =
+    HttpUrl.Builder()
         .scheme(this.scheme)
         .host(this.host)
         .port(this.port)
         .build()
-        .resolve(path.removePrefix("/")) ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "cannot resolve path $path")
-}
