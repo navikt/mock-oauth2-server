@@ -13,6 +13,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldStartWith
 import java.net.URLEncoder
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import java.util.concurrent.TimeUnit
 
 // TODO add more tests for exception handling
 class MockOAuth2ServerTest {
@@ -115,6 +115,7 @@ class MockOAuth2ServerTest {
         assertWellKnownResponseForIssuer("default")
         assertWellKnownResponseForIssuer("foo")
         assertWellKnownResponseForIssuer("bar")
+        assertWellKnownResponseForIssuer("path1/path2/path3")
     }
 
     @Test
@@ -134,16 +135,6 @@ class MockOAuth2ServerTest {
         val response = client.newCall(request).execute()
         assertThat(response.code).isEqualTo(200)
         assertThat(response.body?.string()).isEqualTo("some body")
-    }
-
-    @Test
-    fun noIssuerIdInUrlShouldReturn404() {
-        val request: Request = Request.Builder()
-            .url(server.baseUrl().newBuilder().addPathSegments("/.well-known/openid-configuration").build())
-            .get()
-            .build()
-
-        assertThat(client.newCall(request).execute().code).isEqualTo(404)
     }
 
     @Test
