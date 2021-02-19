@@ -15,10 +15,12 @@ import java.net.InetAddress
 import java.net.URI
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
+import no.nav.security.mock.oauth2.extensions.toOAuth2AuthorizationServerMetadataUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
@@ -32,8 +34,6 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
-import java.lang.RuntimeException
-import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger { }
 
@@ -84,6 +84,7 @@ open class MockOAuth2Server(
         } ?: throw UnsupportedOperationException("can only takeRequest when httpServer is of type MockWebServer")
 
     fun wellKnownUrl(issuerId: String): HttpUrl = url(issuerId).toWellKnownUrl()
+    fun oauth2AuthorizationServerMetadataUrl(issuerId: String): HttpUrl = url(issuerId).toOAuth2AuthorizationServerMetadataUrl()
     fun tokenEndpointUrl(issuerId: String): HttpUrl = url(issuerId).toTokenEndpointUrl()
     fun jwksUrl(issuerId: String): HttpUrl = url(issuerId).toJwksUrl()
     fun issuerUrl(issuerId: String): HttpUrl = url(issuerId)
