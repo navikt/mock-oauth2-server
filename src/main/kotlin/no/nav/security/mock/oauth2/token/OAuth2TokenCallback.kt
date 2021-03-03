@@ -3,14 +3,15 @@ package no.nav.security.mock.oauth2.token
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue
-import java.util.UUID
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
+import java.time.Duration
+import java.util.UUID
 
 interface OAuth2TokenCallback {
     fun issuerId(): String
-    fun subject(tokenRequest: TokenRequest): String
+    fun subject(tokenRequest: TokenRequest): String?
     fun audience(tokenRequest: TokenRequest): List<String>
     fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
     fun tokenExpiry(): Long
@@ -56,4 +57,39 @@ open class DefaultOAuth2TokenCallback(
         }
 
     override fun tokenExpiry(): Long = expiry
+}
+
+data class RequestMappingTokenCallback(
+    val issuerId: String,
+    val requestMappings: Set<RequestMapping>,
+    val tokenExpiry: Long = Duration.ofHours(1).toSeconds()
+) : OAuth2TokenCallback {
+    override fun issuerId(): String = issuerId
+    override fun subject(tokenRequest: TokenRequest): String? =
+        requestMappings.getClaimOrNull(tokenRequest, "sub")
+
+    override fun audience(tokenRequest: TokenRequest): List<String> =
+        requestMappings.getClaimOrNull(tokenRequest, "aud") ?: emptyList()
+
+    override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
+        requestMappings.getClaims(tokenRequest)
+
+    override fun tokenExpiry(): Long = tokenExpiry
+
+    private fun Set<RequestMapping>.getClaims(tokenRequest: TokenRequest) =
+        firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
+
+    private inline fun <reified T> Set<RequestMapping>.getClaimOrNull(tokenRequest: TokenRequest, key: String): T? =
+        getClaims(tokenRequest)[key] as? T
+}
+
+data class RequestMapping(
+    private val requestParam: String,
+    private val match: String = "*",
+    val claims: Map<String, Any> = emptyMap()
+) {
+    fun isMatch(tokenRequest: TokenRequest): Boolean =
+        tokenRequest.toHTTPRequest().queryParameters[requestParam]?.any {
+            if (match != "*") it == match else true
+        } ?: false
 }
