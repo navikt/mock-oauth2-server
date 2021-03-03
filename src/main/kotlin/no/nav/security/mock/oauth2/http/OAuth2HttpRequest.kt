@@ -48,6 +48,7 @@ data class OAuth2HttpRequest(
         val clientAuthentication = ClientAuthentication.parse(httpRequest).requirePrivateKeyJwt(this.url.toString(), 120)
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
 
+        // TODO: add scope if present in request
         return TokenRequest(
             this.url.toUri(),
             clientAuthentication,
