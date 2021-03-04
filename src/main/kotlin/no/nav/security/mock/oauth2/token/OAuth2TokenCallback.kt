@@ -2,10 +2,10 @@ package no.nav.security.mock.oauth2.token
 
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
-import com.nimbusds.openid.connect.sdk.OIDCScopeValue
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
-import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
+import no.nav.security.mock.oauth2.extensions.scopesWithoutOidcScopes
+import no.nav.security.mock.oauth2.extensions.tokenExchangeGrantOrNull
 import java.time.Duration
 import java.util.UUID
 
@@ -37,13 +37,13 @@ open class DefaultOAuth2TokenCallback(
     }
 
     override fun audience(tokenRequest: TokenRequest): List<String> {
-        val oidcScopeList = OIDCScopeValue.values().map { it.toString() }
-        return audience
-            ?: (tokenRequest.authorizationGrant as? TokenExchangeGrant)?.audience
-            ?: let {
-                tokenRequest.scope?.toStringList()
-                    ?.filterNot { oidcScopeList.contains(it) }
-            } ?: listOf("default")
+        val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
+        return when {
+            audience != null -> audience
+            audienceParam != null -> audienceParam
+            tokenRequest.scope != null -> tokenRequest.scopesWithoutOidcScopes()
+            else -> listOf("default")
+        }
     }
 
     override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
