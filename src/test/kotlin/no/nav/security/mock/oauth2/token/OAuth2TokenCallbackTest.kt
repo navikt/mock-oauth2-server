@@ -8,7 +8,6 @@ import io.kotest.matchers.shouldBe
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.util.Base64
@@ -76,12 +75,17 @@ internal class OAuth2TokenCallbackTest {
             }
         }
 
-        @Disabled("fix in callback")
         @Test
-        fun `oidc auth code token request should return client_id as aud from callback`() {
-            val tokenRequest = authCodeRequest("scope" to "openid")
-            DefaultOAuth2TokenCallback().asClue {
-                it.audience(tokenRequest) shouldBe "clientId"
+        fun `oidc auth code token request should return scopes not in OIDC from audience in callback`() {
+            authCodeRequest("scope" to "openid").let { tokenRequest ->
+                DefaultOAuth2TokenCallback().asClue {
+                    it.audience(tokenRequest) shouldBe emptyList()
+                }
+            }
+            authCodeRequest("scope" to "openid scope1").let { tokenRequest ->
+                DefaultOAuth2TokenCallback().asClue {
+                    it.audience(tokenRequest) shouldBe listOf("scope1")
+                }
             }
         }
     }
