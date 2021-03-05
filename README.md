@@ -182,14 +182,6 @@ val wellKnownUrl = server.wellKnownUrl("yourissuer")
 // http://localhost:<a random port>/yourissuer/.well-known/openid-configuration
 ```
 
-##### OAuth2Config
-
-TODO 
-
-##### RecordedRequest
-TODO
-
-
 ### Standalone server
 
 The standalone server will default to port `8080` and can be started by invoking `main()` in  `StandaloneMockOAuth2Server.kt` (in kotlin) or `StandaloneMockOAuth2ServerKt` (in Java)
