@@ -1,12 +1,14 @@
 package no.nav.security.mock.oauth2.e2e
 
 import com.nimbusds.oauth2.sdk.GrantType
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
-import no.nav.security.mock.oauth2.testutils.authorizationCode
+import no.nav.security.mock.oauth2.testutils.client
+import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.shouldBeValidFor
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
@@ -14,14 +16,12 @@ import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.testutils.verifyWith
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
 
 class RefreshTokenGrantIntegrationTest {
-    private val client: OkHttpClient = OkHttpClient()
-        .newBuilder()
-        .followRedirects(false)
-        .build()
+    private val client: OkHttpClient = client()
 
     @Test
     fun `token request with refresh_token grant should return id_token and access_token with same subject as authorization code grant`() {
@@ -30,8 +30,15 @@ class RefreshTokenGrantIntegrationTest {
             val issuerId = "idprovider"
 
             // Authenticate using Authorization Code Flow
-            val codeResponse = client.authenticationRequest(this.authorizationEndpointUrl(issuerId), initialSubject)
-            val authorizationCode = checkNotNull(codeResponse.authorizationCode)
+            // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
+            val authorizationCode = client.post(
+                this.authorizationEndpointUrl("default").authenticationRequest(),
+                mapOf("username" to initialSubject)
+            ).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+            authorizationCode.shouldNotBeNull()
 
             // Token Request based on authorization code
             val tokenResponseBeforeRefresh = client.tokenRequest(

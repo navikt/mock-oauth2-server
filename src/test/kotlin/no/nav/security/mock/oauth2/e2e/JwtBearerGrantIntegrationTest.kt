@@ -10,6 +10,7 @@ import io.kotest.matchers.string.shouldContain
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
 import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.claims
+import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.shouldBeValidFor
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
@@ -17,15 +18,11 @@ import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.testutils.verifyWith
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
-import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
 
 class JwtBearerGrantIntegrationTest {
 
-    private val client: OkHttpClient = OkHttpClient()
-        .newBuilder()
-        .followRedirects(false)
-        .build()
+    private val client = client()
 
     @Test
     fun `token request with JwtBearerGrant should exchange assertion with a new token containing many of the same claims`() {
@@ -57,7 +54,8 @@ class JwtBearerGrantIntegrationTest {
             response shouldBeValidFor GrantType.JWT_BEARER
             response.scope shouldContain "scope1"
             response.issuedTokenType shouldBe null
-            response.accessToken!! should verifyWith(issuerId, this)
+            response.accessToken.shouldNotBeNull()
+            response.accessToken should verifyWith(issuerId, this)
             response.accessToken.subject shouldBe initialSubject
             response.accessToken.audience shouldContainExactly listOf("scope1")
             response.accessToken.claims["claim1"] shouldBe "value1"
@@ -66,7 +64,7 @@ class JwtBearerGrantIntegrationTest {
     }
 
     @Test
-    fun `token request with JwtBearerGrant should exchange assertion with a new token with scope specified in assertion claim or request parmas`() {
+    fun `token request with JwtBearerGrant should exchange assertion with a new token with scope specified in assertion claim or request params`() {
         withMockOAuth2Server {
             val initialSubject = "mysub"
             val initialToken = this.issueToken(

@@ -8,6 +8,7 @@ import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.RequestHandler
 import no.nav.security.mock.oauth2.http.redirect
+import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import okhttp3.Headers
@@ -18,9 +19,7 @@ private val log = KotlinLogging.logger { }
 
 internal class OAuth2HttpServerTest {
 
-    val client: OkHttpClient = OkHttpClient().newBuilder()
-        .followRedirects(false)
-        .build()
+    val client: OkHttpClient = client()
 
     val requestHandler: RequestHandler = {
         log.debug("received request on url=${it.url}")

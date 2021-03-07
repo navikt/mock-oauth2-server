@@ -1,5 +1,7 @@
 package no.nav.security.mock.oauth2.testutils
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import java.net.URLEncoder
 import no.nav.security.mock.oauth2.extensions.keyValuesToMap
 import okhttp3.Credentials
@@ -15,11 +17,19 @@ fun Response.toTokenResponse(): ParsedTokenResponse = ParsedTokenResponse(
     checkNotNull(this.body).string()
 )
 
+inline fun <reified T> Response.parse(): T = jacksonObjectMapper().readValue(checkNotNull(body?.string()))
+
 val Response.authorizationCode: String?
     get() =
         this.headers["location"]?.let {
             it.substringAfter("?").keyValuesToMap("&")["code"]
         }
+
+fun client(followRedirects: Boolean = false): OkHttpClient =
+    OkHttpClient()
+        .newBuilder()
+        .followRedirects(followRedirects)
+        .build()
 
 fun OkHttpClient.tokenRequest(url: HttpUrl, parameters: Map<String, String>): Response =
     tokenRequest(url, Headers.headersOf(), parameters)
@@ -47,29 +57,6 @@ fun OkHttpClient.tokenRequest(
         Headers.headersOf("Authorization", Credentials.basic(basicAuth.first, basicAuth.second)),
         parameters
     )
-
-fun OkHttpClient.authenticationRequest(
-    url: HttpUrl,
-    subject: String,
-    clientId: String = "defaultClient",
-    redirectUri: String = "https://defaultUri",
-    scope: String = "openid"
-) = this.post(
-    url.of(
-        mapOf(
-            "client_id" to clientId,
-            "response_type" to "code",
-            "redirect_uri" to redirectUri,
-            "response_mode" to "query",
-            "scope" to URLEncoder.encode(scope, "UTF-8"),
-            "state" to "1234",
-            "nonce" to "5678"
-        )
-    ),
-    mapOf(
-        "username" to subject,
-    )
-)
 
 fun OkHttpClient.post(
     url: HttpUrl,
