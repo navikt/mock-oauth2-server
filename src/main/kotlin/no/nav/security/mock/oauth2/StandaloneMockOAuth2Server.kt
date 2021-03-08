@@ -22,7 +22,7 @@ object StandaloneConfig {
 
     fun port(): Int = SERVER_PORT.fromEnv()?.toInt() ?: 8080
 
-    fun oauth2Config(): OAuth2Config = with(JSON_CONFIG.fromEnv() ?: JSON_CONFIG_PATH.fromEnv("config.json").readFile()) {
+    fun oauth2Config(): OAuth2Config = with(jsonFromEnv()) {
         if (this != null) {
             OAuth2Config.fromJson(this)
         } else {
@@ -32,6 +32,8 @@ object StandaloneConfig {
             )
         }
     }
+
+    private fun jsonFromEnv() = JSON_CONFIG.fromEnv() ?: JSON_CONFIG_PATH.fromEnv("config.json").readFile()
 
     private fun String.readFile(): String? =
         try {
