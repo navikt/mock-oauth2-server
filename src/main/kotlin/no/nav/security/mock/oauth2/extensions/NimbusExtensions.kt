@@ -22,11 +22,13 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT
 import com.nimbusds.oauth2.sdk.id.Issuer
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import com.nimbusds.openid.connect.sdk.OIDCScopeValue
 import com.nimbusds.openid.connect.sdk.Prompt
 import java.time.Duration
 import java.time.Instant
 import java.util.HashSet
 import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.invalidRequest
 
 fun AuthenticationRequest.isPrompt(): Boolean =
@@ -37,6 +39,13 @@ fun AuthenticationRequest.isPrompt(): Boolean =
 fun TokenRequest.grantType(): GrantType =
     this.authorizationGrant?.type
         ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "missing required parameter grant_type")
+
+fun TokenRequest.scopesWithoutOidcScopes() =
+    scope?.toStringList()?.filterNot { value ->
+        OIDCScopeValue.values().map { it.toString() }.contains(value)
+    } ?: emptyList()
+
+fun TokenRequest.tokenExchangeGrantOrNull(): TokenExchangeGrant? = authorizationGrant as? TokenExchangeGrant
 
 fun TokenRequest.authorizationCode(): AuthorizationCode =
     this.authorizationGrant

@@ -8,6 +8,8 @@
         </layout>
     </appender>
 
+    <logger name="io.netty" level="info" />
+
     <root level="debug">
         <appender-ref ref="stdout"/>
     </root>

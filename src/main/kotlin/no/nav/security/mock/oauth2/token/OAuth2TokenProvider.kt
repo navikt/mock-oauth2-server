@@ -90,7 +90,7 @@ class OAuth2TokenProvider {
 
     private fun defaultClaims(
         issuerUrl: HttpUrl,
-        subject: String,
+        subject: String?,
         audience: List<String>,
         nonce: String?,
         additionalClaims: Map<String, Any>,
