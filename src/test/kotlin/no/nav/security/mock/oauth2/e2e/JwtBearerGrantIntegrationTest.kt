@@ -91,6 +91,7 @@ class JwtBearerGrantIntegrationTest {
 
             val response: ParsedTokenResponse = client.tokenRequest(
                 url = this.tokenEndpointUrl(issuerId),
+                basicAuth = Pair("client1", "secret"),
                 parameters = mapOf(
                     "grant_type" to GrantType.JWT_BEARER.value,
                     "assertion" to initialToken.serialize()
