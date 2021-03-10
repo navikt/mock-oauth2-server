@@ -1,16 +1,12 @@
 package no.nav.security.mock.oauth2.token
 
-import com.nimbusds.oauth2.sdk.TokenRequest
 import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.maps.shouldContainAll
 import io.kotest.matchers.shouldBe
-import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
-import okhttp3.Headers
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import no.nav.security.mock.oauth2.testutils.nimbusTokenRequest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import java.util.Base64
 
 internal class OAuth2TokenCallbackTest {
 
@@ -18,7 +14,7 @@ internal class OAuth2TokenCallbackTest {
 
     @Nested
     inner class RequestMappingTokenCallbacks {
-        val issuer1 = RequestMappingTokenCallback(
+        private val issuer1 = RequestMappingTokenCallback(
             issuerId = "issuer1",
             requestMappings = setOf(
                 RequestMapping(
@@ -91,25 +87,13 @@ internal class OAuth2TokenCallbackTest {
     }
 
     private fun authCodeRequest(vararg formParams: Pair<String, String>) =
-        tokenRequest(
+        nimbusTokenRequest(
+            clientId,
             "grant_type" to "authorization_code",
             "code" to "123",
             *formParams
         )
 
     private fun clientCredentialsRequest(vararg formParams: Pair<String, String>) =
-        tokenRequest("grant_type" to "client_credentials", *formParams)
-
-    private fun tokenRequest(vararg formParams: Pair<String, String>): TokenRequest =
-        OAuth2HttpRequest(
-            Headers.headersOf(
-                "Content-Type", "application/x-www-form-urlencoded",
-                "Authorization", "Basic ${Base64.getEncoder().encodeToString("$clientId:clientSecret".toByteArray())}"
-            ),
-            "POST",
-            "http://localhost/token".toHttpUrl(),
-            formParams.joinToString("&") {
-                "${it.first}=${it.second}"
-            }
-        ).asNimbusTokenRequest()
+        nimbusTokenRequest(clientId, "grant_type" to "client_credentials", *formParams)
 }

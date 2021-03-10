@@ -20,6 +20,7 @@ import com.nimbusds.oauth2.sdk.GrantType.AUTHORIZATION_CODE
 import com.nimbusds.oauth2.sdk.GrantType.CLIENT_CREDENTIALS
 import com.nimbusds.oauth2.sdk.GrantType.JWT_BEARER
 import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
+import com.nimbusds.oauth2.sdk.TokenRequest
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
@@ -35,8 +36,12 @@ import java.util.Date
 import java.util.UUID
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
+import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
+import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.util.Base64
 
 object ClientAssertionType {
     const val JWT_BEARER = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
@@ -101,6 +106,19 @@ fun verifyWith(
         }
     }
 }
+
+fun nimbusTokenRequest(clientId: String, vararg formParams: Pair<String, String>): TokenRequest =
+    OAuth2HttpRequest(
+        Headers.headersOf(
+            "Content-Type", "application/x-www-form-urlencoded",
+            "Authorization", "Basic ${Base64.getEncoder().encodeToString("$clientId:clientSecret".toByteArray())}"
+        ),
+        "POST",
+        "http://localhost/token".toHttpUrl(),
+        formParams.joinToString("&") {
+            "${it.first}=${it.second}"
+        }
+    ).asNimbusTokenRequest()
 
 fun String.asJwt(): SignedJWT = SignedJWT.parse(this)
 

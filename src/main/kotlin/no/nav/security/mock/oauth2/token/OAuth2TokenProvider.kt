@@ -10,15 +10,16 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
+import okhttp3.HttpUrl
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
+import java.time.Duration
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
-import no.nav.security.mock.oauth2.extensions.clientIdAsString
-import okhttp3.HttpUrl
 
 class OAuth2TokenProvider {
     private val jwkSet: JWKSet = generateJWKSet(DEFAULT_KEYID)
@@ -74,9 +75,23 @@ class OAuth2TokenProvider {
                 .issueTime(Date.from(now))
                 .jwtID(UUID.randomUUID().toString())
                 .audience(oAuth2TokenCallback.audience(tokenRequest))
+                .addClaims(oAuth2TokenCallback.addClaims(tokenRequest))
                 .build()
         )
     }
+
+    fun jwt(claims: Map<String, Any>, expiry: Duration = Duration.ofHours(1)): SignedJWT =
+        JWTClaimsSet.Builder().let { builder ->
+            val now = Instant.now()
+            builder
+                .issueTime(Date.from(now))
+                .notBeforeTime(Date.from(now))
+                .expirationTime(Date.from(now.plusSeconds(expiry.toSeconds())))
+            builder.addClaims(claims)
+            builder.build()
+        }.let {
+            createSignedJWT(it)
+        }
 
     private fun createSignedJWT(claimsSet: JWTClaimsSet): SignedJWT {
         val header = JWSHeader.Builder(JWSAlgorithm.RS256)
@@ -86,6 +101,10 @@ class OAuth2TokenProvider {
         val signer = RSASSASigner(rsaKey.toPrivateKey())
         signedJWT.sign(signer)
         return signedJWT
+    }
+
+    private fun JWTClaimsSet.Builder.addClaims(claims: Map<String, Any> = emptyMap()) = apply {
+        claims.forEach { this.claim(it.key, it.value) }
     }
 
     private fun defaultClaims(
@@ -106,8 +125,7 @@ class OAuth2TokenProvider {
             .jwtID(UUID.randomUUID().toString())
 
         nonce?.also { builder.claim("nonce", it) }
-
-        additionalClaims.forEach { builder.claim(it.key, it.value) }
+        builder.addClaims(additionalClaims)
         builder.build()
     }
 

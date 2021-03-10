@@ -129,7 +129,7 @@ open class MockOAuth2Server(
             override fun toParameters(): MutableMap<String, MutableList<String>> = mutableMapOf()
         }
         return this.config.tokenProvider.exchangeAccessToken(
-            TokenRequest(URI.create("http://mockgrant"), mockGrant),
+            TokenRequest(URI.create("http://mockgrant"), ClientID("mockclientid"), mockGrant),
             issuerUrl,
             jwtClaimsSet,
             DefaultOAuth2TokenCallback(
