@@ -2,30 +2,30 @@ import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
 val assertjVersion = "3.19.0"
-val kotlinLoggingVersion = "2.0.4"
+val kotlinLoggingVersion = "2.0.6"
 val logbackVersion = "1.2.3"
-val nimbusSdkVersion = "8.36"
+val nimbusSdkVersion = "9.2.3"
 val mockWebServerVersion = "4.9.1"
-val jacksonVersion = "2.12.1"
-val nettyVersion = "4.1.59.Final"
+val jacksonVersion = "2.12.2"
+val nettyVersion = "4.1.60.Final"
 val junitJupiterVersion = "5.7.1"
-val kotlinVersion = "1.4.30"
+val kotlinVersion = "1.4.32"
 val freemarkerVersion = "2.3.31"
-val kotestVersion = "4.4.1"
+val kotestVersion = "4.4.3"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.4.30"
+    kotlin("jvm") version "1.4.32"
     id("se.patrikerdes.use-latest-versions") version "0.2.15"
-    id("com.github.ben-manes.versions") version "0.36.0"
+    id("com.github.ben-manes.versions") version "0.38.0"
     id("org.jmailen.kotlinter") version "3.3.0"
-    id("com.google.cloud.tools.jib") version "2.7.1"
+    id("com.google.cloud.tools.jib") version "2.8.0"
     id("com.github.johnrengelman.shadow") version "6.1.0"
     id("net.researchgate.release") version "2.8.1"
-    id("io.codearte.nexus-staging") version "0.22.0"
+    id("io.codearte.nexus-staging") version "0.30.0"
     id("de.marcphilipp.nexus-publish") version "0.4.0"
     `java-library`
     `maven-publish`
