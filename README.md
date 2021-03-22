@@ -188,11 +188,80 @@ The standalone server will default to port `8080` and can be started by invoking
 
 On Windows, it's easier to run the server in docker while specifying the host as localhost, e.g. `docker run -p 8080:8080 -h localhost $IMAGE_NAME`
 
-##### Debugger
 
-Point your browser to [http://localhost:8080/default/debugger](http://localhost:8080/default/debugger) to check it out
+#### Configuration
 
-##### Docker 
+The standalone server supports the following configuration by `ENV` variables:
+
+| Variable | Description |
+| --- | --- |
+| `SERVER_HOSTNAME`| Lets the standalone server bind to a specific hostname, by default it binds to `0.0.0.0` |
+| `SERVER_PORT`| The port that the standalone server will listen to, defaults to `8080` |
+| `JSON_CONFIG_PATH`| The absolute path to a json file containing configuration about the OAuth2 part of the server (`OAuth2Config`). More details on the format below. |
+| `JSON_CONFIG`| The actual JSON content of `OAuth2Config`, this ENV var takes precedence over the `JSON_CONFIG_PATH` var. More details on the format below.|
+
+##### JSON_CONFIG 
+
+The JSON_CONFIG lets you configure the contents of the [`OAuth2Config`](src/main/kotlin/no/nav/security/mock/oauth2/OAuth2Config.kt) class using JSON.
+
+
+Example:
+```json
+{
+    "interactiveLogin": true,
+    "httpServer": "NettyWrapper",
+    "tokenCallbacks": [
+        {
+            "issuerId": "issuer1",
+            "tokenExpiry": 120,
+            "requestMappings": [
+                {
+                    "requestParam": "scope",
+                    "match": "scope1",
+                    "claims": {
+                        "sub": "subByScope",
+                        "aud": [
+                            "audByScope"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "issuerId": "issuer2",
+            "requestMappings": [
+                {
+                    "requestParam": "someparam",
+                    "match": "somevalue",
+                    "claims": {
+                        "sub": "subBySomeParam",
+                        "aud": [
+                            "audBySomeParam"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+| Property | Description |
+| --- | --- |
+| `interactiveLogin` | `true` or `false`, enables login screen when redirecting to server `/authorize` endpoint |
+| `httpServer`| A string identifying the httpserver to use. Must match one of the following enum values: `MockWebServerWrapper` or `NettyWrapper`|
+| `tokenCallbacks` | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) that lets you specify which token claims to return when a token request matches the specified condition.|
+
+*From the JSON example above:* 
+
+A token request to `http://localhost:8080/issuer1/token` with parameter `scope` equal to `scope1` will match the first tokencallback, and return a token response containing a token with the following claims:
+
+```json
+
+```
+
+
+#### Docker 
 
 Build to local docker daemon
 
@@ -206,7 +275,7 @@ Run container
 docker run -p 8080:8080 $IMAGE_NAME
 ```
 
-##### Docker-Compose
+#### Docker-Compose
 
 In order to get container-to-container networking to work smoothly alongside browser interaction you must specify a host entry in your `hosts` file, `127.0.0.1 host.docker.internal` and set `hostname` in the **mock-oauth2-server** service in your `docker-compose.yaml` file:
 
@@ -223,6 +292,11 @@ services:
       - 8080:8080
     hostname: host.docker.internal
 ```
+
+#### Debugger
+
+The debugger is a OAuth2 client implementing the `authorization_code` flow with a UI for debugging (e.g. request parameters).
+Point your browser to [http://localhost:8080/default/debugger](http://localhost:8080/default/debugger) to check it out.
 
 ## 👥 Contact
 
