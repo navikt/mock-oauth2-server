@@ -10,6 +10,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.WellKnown
@@ -23,9 +24,11 @@ import no.nav.security.mock.oauth2.testutils.parse
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
+import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
 import java.time.Duration
 
@@ -166,6 +169,23 @@ class MockOAuth2ServerIntegrationTest {
         }
     }
 
+    @Test
+    fun `token request matching RequestMappingTokenCallback should return configured claims`(){
+        val server = MockOAuth2Server(OAuth2Config.fromJson(configJson)).apply { start() }
+        client.tokenRequest(
+            server.tokenEndpointUrl("issuer1"),
+            "client1" to "secret",
+            mapOf(
+                "grant_type" to "client_credentials",
+                "scope" to "scope1"
+            )
+        ).toTokenResponse().asClue {
+            // TODO
+        }
+    }
+
+
+
     private infix fun WellKnown.urlsShouldStartWith(url: String) {
         issuer shouldStartWith url
         authorizationEndpoint shouldStartWith url
@@ -173,4 +193,47 @@ class MockOAuth2ServerIntegrationTest {
         jwksUri shouldStartWith url
         endSessionEndpoint shouldStartWith url
     }
+
+
+    @Language("json")
+    private val configJson = """{
+      "interactiveLogin" : true,
+      "httpServer": "MockWebServerWrapper",
+      "tokenCallbacks": [
+        {
+          "issuerId": "issuer1",
+          "tokenExpiry": 120,
+          "requestMappings": [
+            {
+              "requestParam": "scope",
+              "match": "scope1",
+              "claims": {
+                "sub": "subByScope",
+                "aud": [
+                  "audByScope"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "issuerId": "issuer2",
+          "requestMappings": [
+            {
+              "requestParam": "someparam",
+              "match": "somevalue",
+              "claims": {
+                "sub": "subBySomeParam",
+                "aud": [
+                  "audBySomeParam"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+    """.trimIndent()
 }
+
+
