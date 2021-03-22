@@ -1,6 +1,9 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
+
+
+
 val assertjVersion = "3.19.0"
 val kotlinLoggingVersion = "2.0.4"
 val logbackVersion = "1.2.3"
@@ -12,6 +15,8 @@ val junitJupiterVersion = "5.7.1"
 val kotlinVersion = "1.4.30"
 val freemarkerVersion = "2.3.31"
 val kotestVersion = "4.4.1"
+val springBootVersion = "2.4.3"
+val reactorTestVersion = "3.4.3"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -67,6 +72,12 @@ dependencies {
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion") // for kotest core jvm assertions
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
+    //example use with different frameworks
+    testImplementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
+    testImplementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:$springBootVersion")
+    testImplementation("org.springframework.boot:spring-boot-starter-oauth2-client:$springBootVersion")
+    testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
+    testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
 }
 
 nexusStaging {
