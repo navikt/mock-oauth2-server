@@ -5,6 +5,7 @@ import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.id.Issuer
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.maps.shouldContainAll
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -170,7 +171,7 @@ class MockOAuth2ServerIntegrationTest {
     }
 
     @Test
-    fun `token request matching RequestMappingTokenCallback should return configured claims`(){
+    fun `token request matching RequestMappingTokenCallback should return configured claims`() {
         val server = MockOAuth2Server(OAuth2Config.fromJson(configJson)).apply { start() }
         client.tokenRequest(
             server.tokenEndpointUrl("issuer1"),
@@ -179,12 +180,15 @@ class MockOAuth2ServerIntegrationTest {
                 "grant_type" to "client_credentials",
                 "scope" to "scope1"
             )
-        ).toTokenResponse().asClue {
-            // TODO
+        ).toTokenResponse().accessToken.asClue {
+
+            it.shouldNotBeNull()
+            it.claims shouldContainAll mapOf(
+                "sub" to "subByScope",
+                "aud" to listOf("audByScope")
+            )
         }
     }
-
-
 
     private infix fun WellKnown.urlsShouldStartWith(url: String) {
         issuer shouldStartWith url
