@@ -198,7 +198,6 @@ class MockOAuth2ServerIntegrationTest {
         endSessionEndpoint shouldStartWith url
     }
 
-
     @Language("json")
     private val configJson = """{
       "interactiveLogin" : true,
@@ -239,5 +238,3 @@ class MockOAuth2ServerIntegrationTest {
     }
     """.trimIndent()
 }
-
-
