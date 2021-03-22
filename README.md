@@ -257,7 +257,15 @@ Example:
 A token request to `http://localhost:8080/issuer1/token` with parameter `scope` equal to `scope1` will match the first tokencallback, and return a token response containing a token with the following claims:
 
 ```json
-
+{
+  "sub": "subByScope",
+  "aud": "audByScope",
+  "nbf": 1616416942,
+  "iss": "http://localhost:54905/issuer1",
+  "exp": 1616417062,
+  "iat": 1616416942,
+  "jti": "28697333-6f25-4b1f-b2c2-409ce010933a"
+}
 ```
 
 
