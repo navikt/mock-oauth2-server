@@ -254,7 +254,30 @@ Example:
 
 *From the JSON example above:* 
 
-A token request to `http://localhost:8080/issuer1/token` with parameter `scope` equal to `scope1` will match the first tokencallback, and return a token response containing a token with the following claims:
+A token request to `http://localhost:8080/issuer1/token` with parameter `scope` equal to `scope1` will match the first tokencallback:
+
+```json
+....
+{
+    "issuerId": "issuer1",
+    "tokenExpiry": 120,
+    "requestMappings": [
+        {
+            "requestParam": "scope",
+            "match": "scope1",
+            "claims": {
+                "sub": "subByScope",
+                "aud": [
+                    "audByScope"
+                ]
+            }
+        }
+    ]
+}
+....
+```
+
+and return a token response containing a token with the following claims:
 
 ```json
 {
