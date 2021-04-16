@@ -1,8 +1,5 @@
-import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
-
-
-
+import java.time.Duration
 
 val assertjVersion = "3.19.0"
 val kotlinLoggingVersion = "2.0.4"
@@ -17,6 +14,7 @@ val freemarkerVersion = "2.3.31"
 val kotestVersion = "4.4.1"
 val springBootVersion = "2.4.3"
 val reactorTestVersion = "3.4.3"
+val ktorVersion = "1.5.3"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -78,6 +76,13 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-client:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
+    testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
+    testImplementation("io.ktor:ktor-auth:$ktorVersion")
+    testImplementation("io.ktor:ktor-auth-jwt:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-core:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-jackson:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }
 
 nexusStaging {
@@ -183,11 +188,10 @@ fun isNonStable(version: String): Boolean {
 }
 
 tasks.named("dependencyUpdates", DependencyUpdatesTask::class.java).configure {
-    this.
-    resolutionStrategy {
+    this.resolutionStrategy {
         componentSelection {
             all {
-                if (isNonStable(candidate.version) ) {
+                if (isNonStable(candidate.version)) {
                     reject("Release candidate")
                 }
             }
@@ -239,7 +243,7 @@ tasks {
     }
 
     "publish" {
-       dependsOn("initializeSonatypeStagingRepository")
+        dependsOn("initializeSonatypeStagingRepository")
     }
 
     "publishToSonatype" {
