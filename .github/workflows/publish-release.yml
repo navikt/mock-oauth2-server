@@ -5,7 +5,7 @@ on:
     types: [published]
 
 env:
-  IMAGE_BASE_NAME: docker.pkg.github.com/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
 
 jobs:
   publish-release:
@@ -39,8 +39,8 @@ jobs:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
-          registry: docker.pkg.github.com
-          username: ${{ github.repository_owner }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish artifact
@@ -57,9 +57,8 @@ jobs:
         run: |
           export GPG_TTY=$(tty) && echo "$GPG_KEYS" | gpg --fast-import --batch
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
-          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')
-          IMAGE=${IMAGE_BASE_NAME}/${REPO_NAME}:${NEW_VERSION}
-          echo "Releasing new version ${NEW_VERSION} of ${REPO_NAME} and docker image $IMAGE"
+          IMAGE=${IMAGE_NAME}:${NEW_VERSION}
+          echo "Releasing new version ${NEW_VERSION} of $IMAGE"
           ./gradlew -Pversion=${NEW_VERSION} publish closeAndReleaseRepository -Dorg.gradle.internal.publish.checksums.insecure=true --info
           ./gradlew jibDockerBuild --image="${IMAGE}"
           docker push "${IMAGE}"
