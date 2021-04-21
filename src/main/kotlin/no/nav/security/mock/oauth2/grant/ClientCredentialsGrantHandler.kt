@@ -26,7 +26,7 @@ internal class ClientCredentialsGrantHandler(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
             expiresIn = accessToken.expiresIn(),
-            scope = tokenRequest.scope.toString()
+            scope = tokenRequest.scope?.toString()
         )
     }
 }
