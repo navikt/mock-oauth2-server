@@ -1,6 +1,10 @@
-[![Build](https://github.com/navikt/mock-oauth2-server/workflows/Build%20master/badge.svg)](https://github.com/navikt/mock-oauth2-server/actions) [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server) [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/navikt/mock-oauth2-server?color=green&include_prereleases&label=GitHub%20Package%20Registry&logo=Docker)](https://github.com/navikt/mock-oauth2-server/packages/)
+[![Build](https://github.com/navikt/mock-oauth2-server/workflows/Build%20master/badge.svg)](https://github.com/navikt/mock-oauth2-server/actions) [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server) 
 
-:exclamation: As of version 0.3.3 the Docker image is published to the [GitHub Container Registry](https://docs.github.com/en/packages/guides/migrating-to-github-container-registry-for-docker-images#domain-changes) and thus can be pulled anonymously. Update your `docker pull` spells accordingly.
+:exclamation: 
+
+As of version 0.3.3 the Docker image is published to the [GitHub Container Registry](https://docs.github.com/en/packages/guides/migrating-to-github-container-registry-for-docker-images#domain-changes) and thus can be pulled anonymously from `ghcr.io/navikt/mock-oauth2-server:<version>`. Update your image pulling spells accordingly. 
+
+:exclamation:
 
 # mock-oauth2-server
 A scriptable/customizable web server for testing HTTP clients using OAuth2/OpenID Connect or applications with a dependency to a running OAuth2 server (i.e. APIs requiring signed JWTs from a known issuer).  The server also provides the neccessary endpoints for token validation (endpoint for JWKS) and ID Provider metadata discovery ("well-known" endpoints providing  server metadata)
@@ -63,7 +67,7 @@ Latest version [![Maven Central](https://img.shields.io/maven-central/v/no.nav.s
 Latest version [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/navikt/mock-oauth2-server?color=green&include_prereleases&label=GitHub%20Package%20Registry&logo=Docker)](https://github.com/navikt/mock-oauth2-server/packages/)
 
 ```
-docker pull docker.pkg.github.com/navikt/mock-oauth2-server/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+docker pull ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
 ```
 
 
@@ -319,7 +323,7 @@ services:
     ports:
       - 8080:8080
   mock-oauth2-server:
-    image: docker.pkg.github.com/navikt/mock-oauth2-server/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+    image: ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
     ports:
       - 8080:8080
     hostname: host.docker.internal
