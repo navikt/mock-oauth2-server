@@ -143,7 +143,7 @@ class MockOAuth2ServerIntegrationTest {
     @Test
     fun `anyToken should issue token with claims from input and be verifyable by servers keys`() {
         withMockOAuth2Server {
-            val customIssuer = "https://customissuer".toHttpUrl()
+            val customIssuer = "https://customissuer/default".toHttpUrl()
             val token = this.anyToken(
                 customIssuer,
                 mutableMapOf(
