@@ -2,7 +2,6 @@ package no.nav.security.mock.oauth2.http
 
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
-import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import no.nav.security.mock.oauth2.extensions.clientAuthentication
