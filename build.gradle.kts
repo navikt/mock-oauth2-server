@@ -63,6 +63,7 @@ dependencies {
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion") // for kotest framework
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion") // for kotest core jvm assertions
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")

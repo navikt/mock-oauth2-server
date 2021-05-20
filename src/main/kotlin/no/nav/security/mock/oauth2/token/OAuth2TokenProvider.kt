@@ -11,8 +11,8 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
+import no.nav.security.mock.oauth2.extensions.issuerId
 import okhttp3.HttpUrl
-import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
@@ -20,13 +20,14 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 class OAuth2TokenProvider {
-    private val jwkSet: JWKSet = generateJWKSet(DEFAULT_KEYID)
-    private val rsaKey: RSAKey = jwkSet.getKeyByKeyId(DEFAULT_KEYID) as RSAKey
+    private val signingKeys: ConcurrentHashMap<String, RSAKey> = ConcurrentHashMap()
 
-    fun publicJwkSet(): JWKSet {
-        return jwkSet.toPublicJWKSet()
+    @JvmOverloads
+    fun publicJwkSet(issuerId: String = "default"): JWKSet {
+        return JWKSet(rsaKey(issuerId)).toPublicJWKSet()
     }
 
     fun idToken(
@@ -34,32 +35,28 @@ class OAuth2TokenProvider {
         issuerUrl: HttpUrl,
         oAuth2TokenCallback: OAuth2TokenCallback,
         nonce: String? = null
-    ) = createSignedJWT(
-        defaultClaims(
-            issuerUrl,
-            oAuth2TokenCallback.subject(tokenRequest),
-            listOf(tokenRequest.clientIdAsString()),
-            nonce,
-            oAuth2TokenCallback.addClaims(tokenRequest),
-            oAuth2TokenCallback.tokenExpiry()
-        )
-    )
+    ) = defaultClaims(
+        issuerUrl,
+        oAuth2TokenCallback.subject(tokenRequest),
+        listOf(tokenRequest.clientIdAsString()),
+        nonce,
+        oAuth2TokenCallback.addClaims(tokenRequest),
+        oAuth2TokenCallback.tokenExpiry()
+    ).sign(issuerUrl.issuerId())
 
     fun accessToken(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
         oAuth2TokenCallback: OAuth2TokenCallback,
         nonce: String? = null
-    ) = createSignedJWT(
-        defaultClaims(
-            issuerUrl,
-            oAuth2TokenCallback.subject(tokenRequest),
-            oAuth2TokenCallback.audience(tokenRequest),
-            nonce,
-            oAuth2TokenCallback.addClaims(tokenRequest),
-            oAuth2TokenCallback.tokenExpiry()
-        )
-    )
+    ) = defaultClaims(
+        issuerUrl,
+        oAuth2TokenCallback.subject(tokenRequest),
+        oAuth2TokenCallback.audience(tokenRequest),
+        nonce,
+        oAuth2TokenCallback.addClaims(tokenRequest),
+        oAuth2TokenCallback.tokenExpiry()
+    ).sign(issuerUrl.issuerId())
 
     fun exchangeAccessToken(
         tokenRequest: TokenRequest,
@@ -67,20 +64,20 @@ class OAuth2TokenProvider {
         claimsSet: JWTClaimsSet,
         oAuth2TokenCallback: OAuth2TokenCallback
     ) = Instant.now().let { now ->
-        createSignedJWT(
-            JWTClaimsSet.Builder(claimsSet)
-                .issuer(issuerUrl.toString())
-                .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
-                .notBeforeTime(Date.from(now))
-                .issueTime(Date.from(now))
-                .jwtID(UUID.randomUUID().toString())
-                .audience(oAuth2TokenCallback.audience(tokenRequest))
-                .addClaims(oAuth2TokenCallback.addClaims(tokenRequest))
-                .build()
-        )
+        JWTClaimsSet.Builder(claimsSet)
+            .issuer(issuerUrl.toString())
+            .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
+            .notBeforeTime(Date.from(now))
+            .issueTime(Date.from(now))
+            .jwtID(UUID.randomUUID().toString())
+            .audience(oAuth2TokenCallback.audience(tokenRequest))
+            .addClaims(oAuth2TokenCallback.addClaims(tokenRequest))
+            .build()
+            .sign(issuerUrl.issuerId())
     }
 
-    fun jwt(claims: Map<String, Any>, expiry: Duration = Duration.ofHours(1)): SignedJWT =
+    @JvmOverloads
+    fun jwt(claims: Map<String, Any>, expiry: Duration = Duration.ofHours(1), issuerId: String = "default"): SignedJWT =
         JWTClaimsSet.Builder().let { builder ->
             val now = Instant.now()
             builder
@@ -89,18 +86,20 @@ class OAuth2TokenProvider {
                 .expirationTime(Date.from(now.plusSeconds(expiry.toSeconds())))
             builder.addClaims(claims)
             builder.build()
-        }.let {
-            createSignedJWT(it)
-        }
+        }.sign(issuerId)
 
-    private fun createSignedJWT(claimsSet: JWTClaimsSet): SignedJWT {
-        val header = JWSHeader.Builder(JWSAlgorithm.RS256)
-            .keyID(rsaKey.keyID)
-            .type(JOSEObjectType.JWT)
-        val signedJWT = SignedJWT(header.build(), claimsSet)
-        val signer = RSASSASigner(rsaKey.toPrivateKey())
-        signedJWT.sign(signer)
-        return signedJWT
+    private fun rsaKey(issuerId: String): RSAKey = signingKeys.computeIfAbsent(issuerId) { generateRSAKey(issuerId) }
+
+    private fun JWTClaimsSet.sign(issuerId: String): SignedJWT {
+        val key = rsaKey(issuerId)
+        return SignedJWT(
+            JWSHeader.Builder(JWSAlgorithm.RS256)
+                .keyID(key.keyID)
+                .type(JOSEObjectType.JWT).build(),
+            this
+        ).apply {
+            sign(RSASSASigner(key.toPrivateKey()))
+        }
     }
 
     private fun JWTClaimsSet.Builder.addClaims(claims: Map<String, Any> = emptyMap()) = apply {
@@ -130,21 +129,16 @@ class OAuth2TokenProvider {
     }
 
     companion object {
-        private const val DEFAULT_KEYID = "mock-oauth2-server-key"
-        private fun generateJWKSet(keyId: String) =
-            JWKSet(createRSAKey(keyId, generateKeyPair()))
-
-        private fun generateKeyPair(): KeyPair =
+        private fun generateRSAKey(keyId: String): RSAKey =
             KeyPairGenerator.getInstance("RSA").let {
                 it.initialize(2048)
                 it.generateKeyPair()
+            }.let {
+                RSAKey.Builder(it.public as RSAPublicKey)
+                    .privateKey(it.private as RSAPrivateKey)
+                    .keyUse(KeyUse.SIGNATURE)
+                    .keyID(keyId)
+                    .build()
             }
-
-        private fun createRSAKey(keyID: String, keyPair: KeyPair) =
-            RSAKey.Builder(keyPair.public as RSAPublicKey)
-                .privateKey(keyPair.private as RSAPrivateKey)
-                .keyUse(KeyUse.SIGNATURE)
-                .keyID(keyID)
-                .build()
     }
 }
