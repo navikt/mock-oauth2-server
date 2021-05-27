@@ -80,6 +80,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-sessions:$ktorVersion")
+    testImplementation("io.ktor:ktor-locations:$ktorVersion")
     testImplementation("io.ktor:ktor-auth:$ktorVersion")
     testImplementation("io.ktor:ktor-auth-jwt:$ktorVersion")
     testImplementation("io.ktor:ktor-client-core:$ktorVersion")
