@@ -1,6 +1,9 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
+
+
+
 val assertjVersion = "3.19.0"
 val kotlinLoggingVersion = "2.0.6"
 val logbackVersion = "1.2.3"
@@ -12,6 +15,7 @@ val junitJupiterVersion = "5.7.2"
 val kotlinVersion = "1.5.10"
 val freemarkerVersion = "2.3.31"
 val kotestVersion = "4.6.0"
+val bouncyCastleVersion = "1.68"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -61,6 +65,7 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
+    implementation("org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
