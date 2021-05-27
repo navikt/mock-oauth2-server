@@ -94,7 +94,9 @@ class MockWebServerWrapper : OAuth2HttpServer {
     }
 }
 
-class NettyWrapper : OAuth2HttpServer {
+class NettyWrapper @JvmOverloads constructor(
+    private val ssl: Ssl? = null
+) : OAuth2HttpServer {
     private val masterGroup = NioEventLoopGroup()
     private val workerGroup = NioEventLoopGroup()
     private var closeFuture: ChannelFuture? = null
@@ -109,6 +111,9 @@ class NettyWrapper : OAuth2HttpServer {
                 .childHandler(
                     object : ChannelInitializer<SocketChannel>() {
                         public override fun initChannel(ch: SocketChannel) {
+                            if (ssl != null) {
+                                ch.pipeline().addFirst("ssl", ssl.nettySslHandler())
+                            }
                             ch.pipeline().addLast("codec", HttpServerCodec())
                             ch.pipeline().addLast("keepAlive", HttpServerKeepAliveHandler())
                             ch.pipeline().addLast("aggregator", HttpObjectAggregator(Int.MAX_VALUE))
@@ -136,13 +141,20 @@ class NettyWrapper : OAuth2HttpServer {
     override fun port(): Int = if (port > 0) port else address.port
 
     override fun url(path: String): HttpUrl {
+        val scheme = if (ssl != null) {
+            "https"
+        } else {
+            "http"
+        }
         return HttpUrl.Builder()
-            .scheme("http")
+            .scheme(scheme)
             .host(address.address.canonicalHostName)
             .port(port())
             .build()
             .resolve(path)!!
     }
+
+    private fun Ssl.nettySslHandler(): SslHandler = SslHandler(sslEngine())
 
     internal class RouterChannelHandler(val requestHandler: RequestHandler) : SimpleChannelInboundHandler<FullHttpRequest>() {
 

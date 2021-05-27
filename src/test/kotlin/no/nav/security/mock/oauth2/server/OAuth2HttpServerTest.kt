@@ -2,24 +2,40 @@ package no.nav.security.mock.oauth2.server
 
 import io.kotest.matchers.shouldBe
 import mu.KotlinLogging
+import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.RequestHandler
 import no.nav.security.mock.oauth2.http.redirect
-import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
+import java.security.KeyStore
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 private val log = KotlinLogging.logger { }
 
 internal class OAuth2HttpServerTest {
 
-    val client: OkHttpClient = client()
+    private val httpsConfig = Ssl(
+        keystore = "src/test/resources/localhost.p12",
+        keystorePassword = "",
+        keystoreType = "PKCS12"
+    )
+
+    val client: OkHttpClient = OkHttpClient().newBuilder().apply {
+        followRedirects(false)
+        val keyStore: KeyStore = httpsConfig.keyStore()
+        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(keyStore) }
+        val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
+        sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
+    }.build()
 
     val requestHandler: RequestHandler = {
         log.debug("received request on url=${it.url}")
@@ -40,6 +56,12 @@ internal class OAuth2HttpServerTest {
     fun `Netty server should start and serve requests`() {
         NettyWrapper().start(requestHandler).shouldServeRequests().stop()
         NettyWrapper().start(port = 1234, requestHandler).shouldServeRequests().stop()
+    }
+
+    @Test
+    fun `Netty server should start and serve requests with HTTPS enabled`() {
+        NettyWrapper(httpsConfig).start(requestHandler).shouldServeRequests().stop()
+        NettyWrapper(httpsConfig).start(port = 1234, requestHandler).shouldServeRequests().stop()
     }
 
     @Test
