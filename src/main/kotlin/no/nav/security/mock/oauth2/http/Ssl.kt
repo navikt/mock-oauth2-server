@@ -43,7 +43,7 @@ class Ssl @JvmOverloads constructor(
         needClientAuth = false
     }
 
-    private fun sslContext(): SSLContext {
+    fun sslContext(): SSLContext {
         val keyManager = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply {
             init(sslKeystore.keyStore, sslKeystore.keyPassword.toCharArray())
         }
@@ -54,7 +54,7 @@ class Ssl @JvmOverloads constructor(
 }
 
 class SslKeystore @JvmOverloads constructor(
-    val keyPassword: String = "q",
+    val keyPassword: String = "",
     val keyStore: KeyStore = generate("localhost", keyPassword)
 ) {
     @JvmOverloads constructor(
