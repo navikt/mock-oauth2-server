@@ -2,18 +2,20 @@ package no.nav.security.mock.oauth2.server
 
 import io.kotest.matchers.shouldBe
 import mu.KotlinLogging
-import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.RequestHandler
+import no.nav.security.mock.oauth2.http.Ssl
+import no.nav.security.mock.oauth2.http.SslKeystore
 import no.nav.security.mock.oauth2.http.redirect
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
+import java.io.File
 import java.security.KeyStore
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
@@ -23,19 +25,7 @@ private val log = KotlinLogging.logger { }
 
 internal class OAuth2HttpServerTest {
 
-    private val httpsConfig = Ssl(
-        keystore = "src/test/resources/localhost.p12",
-        keystorePassword = "",
-        keystoreType = "PKCS12"
-    )
-
-    val client: OkHttpClient = OkHttpClient().newBuilder().apply {
-        followRedirects(false)
-        val keyStore: KeyStore = httpsConfig.keyStore()
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(keyStore) }
-        val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
-        sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
-    }.build()
+    val httpClient = OkHttpClient().newBuilder().followRedirects(false).build()
 
     val requestHandler: RequestHandler = {
         log.debug("received request on url=${it.url}")
@@ -59,9 +49,23 @@ internal class OAuth2HttpServerTest {
     }
 
     @Test
-    fun `Netty server should start and serve requests with HTTPS enabled`() {
-        NettyWrapper(httpsConfig).start(requestHandler).shouldServeRequests().stop()
-        NettyWrapper(httpsConfig).start(port = 1234, requestHandler).shouldServeRequests().stop()
+    fun `Netty server should start and serve requests with generated keystore and HTTPS enabled`() {
+        val ssl = Ssl()
+        NettyWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
+        NettyWrapper(ssl).start(port = 1234, requestHandler).shouldServeRequests(ssl).stop()
+    }
+
+    @Test
+    fun `Netty server should start and serve requests with provided keystore and HTTPS enabled`() {
+        val ssl = Ssl(
+            SslKeystore(
+                keyPassword = "",
+                keystoreFile = File("src/test/resources/localhost.p12"),
+                keystorePassword = "",
+                keystoreType = SslKeystore.KeyStoreType.PKCS12
+            )
+        )
+        NettyWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
     }
 
     @Test
@@ -70,7 +74,13 @@ internal class OAuth2HttpServerTest {
         MockWebServerWrapper().start(port = 1234, requestHandler).shouldServeRequests().stop()
     }
 
-    private fun OAuth2HttpServer.shouldServeRequests() = apply {
+    private fun OAuth2HttpServer.shouldServeRequests(ssl: Ssl? = null) = apply {
+        val client = if (ssl != null) {
+            httpClient.withTrustStore(ssl.sslKeystore.keyStore)
+        } else {
+            httpClient
+        }
+
         client.get(
             this.url("/header"),
             Headers.headersOf("header1", "headervalue1")
@@ -85,6 +95,14 @@ internal class OAuth2HttpServerTest {
             this.headers["Location"] shouldBe "http://someredirect"
         }
     }
+
+    private fun OkHttpClient.withTrustStore(keyStore: KeyStore): OkHttpClient =
+        newBuilder().apply {
+            followRedirects(false)
+            val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(keyStore) }
+            val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
+            sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
+        }.build()
 
     private fun ok(body: String) = OAuth2HttpResponse(
         status = 200,
