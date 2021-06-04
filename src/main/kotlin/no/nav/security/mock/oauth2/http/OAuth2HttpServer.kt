@@ -57,13 +57,18 @@ interface OAuth2HttpServer : AutoCloseable {
     fun url(path: String): HttpUrl
 }
 
-class MockWebServerWrapper : OAuth2HttpServer {
+class MockWebServerWrapper@JvmOverloads constructor(
+    private val ssl: Ssl? = null
+) : OAuth2HttpServer {
     val mockWebServer: MockWebServer = MockWebServer()
 
     override fun start(inetAddress: InetAddress, port: Int, requestHandler: RequestHandler): OAuth2HttpServer = apply {
         mockWebServer.start(inetAddress, port)
-        log.debug("started server on address=$inetAddress and port=${mockWebServer.port}")
         mockWebServer.dispatcher = MockWebServerDispatcher(requestHandler)
+        if (ssl != null) {
+            mockWebServer.useHttps(ssl.sslContext().socketFactory, false)
+        }
+        log.debug("started server on address=$inetAddress and port=${mockWebServer.port}, httpsEnabled=${ssl != null}")
     }
 
     override fun stop(): OAuth2HttpServer = apply {
