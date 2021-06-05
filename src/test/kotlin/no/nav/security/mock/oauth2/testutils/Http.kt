@@ -11,6 +11,10 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.security.KeyStore
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 fun Response.toTokenResponse(): ParsedTokenResponse = ParsedTokenResponse(
     this.code,
@@ -30,6 +34,14 @@ fun client(followRedirects: Boolean = false): OkHttpClient =
         .newBuilder()
         .followRedirects(followRedirects)
         .build()
+
+fun OkHttpClient.withTrustStore(keyStore: KeyStore, followRedirects: Boolean = false): OkHttpClient =
+    newBuilder().apply {
+        followRedirects(followRedirects)
+        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(keyStore) }
+        val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
+        sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
+    }.build()
 
 fun OkHttpClient.tokenRequest(url: HttpUrl, parameters: Map<String, String>): Response =
     tokenRequest(url, Headers.headersOf(), parameters)

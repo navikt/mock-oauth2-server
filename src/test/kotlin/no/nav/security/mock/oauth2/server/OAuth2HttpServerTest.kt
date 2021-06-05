@@ -12,14 +12,11 @@ import no.nav.security.mock.oauth2.http.SslKeystore
 import no.nav.security.mock.oauth2.http.redirect
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
+import no.nav.security.mock.oauth2.testutils.withTrustStore
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
 import java.io.File
-import java.security.KeyStore
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManagerFactory
-import javax.net.ssl.X509TrustManager
 
 private val log = KotlinLogging.logger { }
 
@@ -102,14 +99,6 @@ internal class OAuth2HttpServerTest {
             this.headers["Location"] shouldBe "http://someredirect"
         }
     }
-
-    private fun OkHttpClient.withTrustStore(keyStore: KeyStore): OkHttpClient =
-        newBuilder().apply {
-            followRedirects(false)
-            val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(keyStore) }
-            val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
-            sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
-        }.build()
 
     private fun ok(body: String) = OAuth2HttpResponse(
         status = 200,
