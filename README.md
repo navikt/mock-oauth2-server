@@ -336,7 +336,70 @@ Point your browser to [http://localhost:8080/default/debugger](http://localhost:
 
 ### Enabling HTTPS
 
-TODO
+In order to enable HTTPS you can either provide your own keystore or let the server generate one for you.
+
+#### Unit tests
+
+You need to supply the server with an SSL config, in order to do that you must specify your chosen server type in `OAuth2Config` and 
+pass in the SSL config to your server.
+
+*Generate keystore:*
+```kotlin
+val ssl = Ssl()
+val server = MockOAuth2Server(
+    OAuth2Config(httpServer = MockWebServerWrapper(ssl))
+)
+```
+*This will generate a SSL certificate for `localhost` and can be added to your client's truststore by getting the ssl config:
+`ssl.sslKeystore.keyStore`*
+
+*Bring your own:*
+```kotlin
+val ssl = Ssl(
+    SslKeystore(
+        keyPassword = "",
+        keystoreFile = File("src/test/resources/localhost.p12"),
+        keystorePassword = "",
+        keystoreType = SslKeystore.KeyStoreType.PKCS12
+    )
+)
+val server = MockOAuth2Server(
+    OAuth2Config(httpServer = MockWebServerWrapper(ssl))
+)
+```
+
+#### Docker / Standalone mode - JSON_CONFIG
+
+In order to enable HTTPS for the server in Docker or standalone mode
+you can either make the server generate the keystore or bring your own.
+
+*Generate keystore:*
+
+```json
+{
+  "httpServer" : {
+    "type" : "NettyWrapper",
+    "ssl" : {}
+  }
+}
+```
+
+*Bring your own:*
+
+```json
+
+{
+    "httpServer" : {
+        "type" : "NettyWrapper",
+        "ssl" : {
+            "keyPassword" : "",
+            "keystoreFile" : "src/test/resources/localhost.p12",
+            "keystoreType" : "PKCS12",
+            "keystorePassword" : "" 
+        }
+    }
+}
+```
 
 ## 👥 Contact
 
