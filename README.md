@@ -7,7 +7,7 @@ As of version 0.3.3 the Docker image is published to the [GitHub Container Regis
 :exclamation:
 
 # mock-oauth2-server
-A scriptable/customizable web server for testing HTTP clients using OAuth2/OpenID Connect or applications with a dependency to a running OAuth2 server (i.e. APIs requiring signed JWTs from a known issuer).  The server also provides the neccessary endpoints for token validation (endpoint for JWKS) and ID Provider metadata discovery ("well-known" endpoints providing  server metadata)
+A scriptable/customizable web server for testing HTTP clients using OAuth2/OpenID Connect or applications with a dependency to a running OAuth2 server (i.e. APIs requiring signed JWTs from a known issuer).  The server also provides the necessary endpoints for token validation (endpoint for JWKS) and ID Provider metadata discovery ("well-known" endpoints providing  server metadata)
 
 **mock-oauth2-server** is written in Kotlin using the great [OkHttp MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) as the underlying server library and can be used in unit/integration tests in both **Java** and **Kotlin** or in any language as a standalone server in e.g. docker-compose.
 
@@ -35,7 +35,7 @@ The motivation behind this library is to provide a setup such that application d
   * Verify expected requests made to the server
   * Customizable through exposure of underlying  [OkHttp MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) 
 * **Standalone support** - i.e. run as application in IDE, run inside your app, or as a Docker image (provided)
-* **OAuth2 Client Debugger** - e.g. support for triggering OIDC Auth Code Flow and receiving callback in debugger app, view token reponse from server (intended for standalone support)
+* **OAuth2 Client Debugger** - e.g. support for triggering OIDC Auth Code Flow and receiving callback in debugger app, view token response from server (intended for standalone support)
 
 
 
@@ -333,6 +333,10 @@ services:
 
 The debugger is a OAuth2 client implementing the `authorization_code` flow with a UI for debugging (e.g. request parameters).
 Point your browser to [http://localhost:8080/default/debugger](http://localhost:8080/default/debugger) to check it out.
+
+### Enabling HTTPS
+
+TODO
 
 ## 👥 Contact
 
