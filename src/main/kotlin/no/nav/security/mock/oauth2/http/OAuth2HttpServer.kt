@@ -58,7 +58,7 @@ interface OAuth2HttpServer : AutoCloseable {
 }
 
 class MockWebServerWrapper@JvmOverloads constructor(
-    private val ssl: Ssl? = null
+    val ssl: Ssl? = null
 ) : OAuth2HttpServer {
     val mockWebServer: MockWebServer = MockWebServer()
 
@@ -100,7 +100,7 @@ class MockWebServerWrapper@JvmOverloads constructor(
 }
 
 class NettyWrapper @JvmOverloads constructor(
-    private val ssl: Ssl? = null
+    val ssl: Ssl? = null
 ) : OAuth2HttpServer {
     private val masterGroup = NioEventLoopGroup()
     private val workerGroup = NioEventLoopGroup()
