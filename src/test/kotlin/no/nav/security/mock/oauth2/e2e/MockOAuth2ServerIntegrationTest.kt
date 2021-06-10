@@ -85,7 +85,7 @@ class MockOAuth2ServerIntegrationTest {
     }
 
     @Test
-    fun `welknown should include https addresses when MockWebServerWrapper is started with https enabled`() {
+    fun `wellknown should include https addresses when MockWebServerWrapper is started with https enabled`() {
         val ssl = Ssl()
         val server = MockOAuth2Server(
             OAuth2Config(httpServer = MockWebServerWrapper(ssl))
