@@ -32,8 +32,8 @@ import java.util.concurrent.TimeUnit
 private val log = KotlinLogging.logger { }
 
 fun main() {
-    //just some random values for this example, would get from environment in production,
-    //when testing you should provide a config that points to the mock-oauth2-server
+    // just some random values for this example, would get from environment in production,
+    // when testing you should provide a config that points to the mock-oauth2-server
     val authConfig = AuthConfig(
         mapOf(
             "provider1" to AuthConfig.TokenProvider(
@@ -56,7 +56,7 @@ fun main() {
 
 fun Application.module(authConfig: AuthConfig) {
     install(Authentication) {
-        //just to show how the MockOAuth2Server enables testing with multiple "token providers"/issuers at the same time
+        // just to show how the MockOAuth2Server enables testing with multiple "token providers"/issuers at the same time
         authConfig.providers.forEach { (shortName, provider) ->
             jwt(shortName) {
                 verifier(provider.jwkProvider, provider.wellKnown.issuer) {
@@ -94,7 +94,6 @@ fun JWTCredential.containsAll(claims: Map<String, Any>): Boolean =
         payload.contains(it.key, it.value)
     }.isEmpty()
 
-
 fun Payload.contains(name: String, value: Any): Boolean =
     try {
         if (value is Collection<*>) {
@@ -109,7 +108,7 @@ fun Payload.contains(name: String, value: Any): Boolean =
         false
     }
 
-//just to show how the MockOAuth2Server can support multiple "token providers"/issuers at the same time
+// just to show how the MockOAuth2Server can support multiple "token providers"/issuers at the same time
 class AuthConfig(
     val providers: Map<String, TokenProvider> = emptyMap()
 ) {
@@ -132,7 +131,6 @@ class AuthConfig(
             .cached(10, 24, TimeUnit.HOURS)
             .rateLimited(10, 1, TimeUnit.MINUTES)
             .build()
-
 
         data class WellKnown(
             val issuer: String,
