@@ -7,19 +7,22 @@ import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.RequestHandler
+import no.nav.security.mock.oauth2.http.Ssl
+import no.nav.security.mock.oauth2.http.SslKeystore
 import no.nav.security.mock.oauth2.http.redirect
-import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
+import no.nav.security.mock.oauth2.testutils.withTrustStore
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
+import java.io.File
 
 private val log = KotlinLogging.logger { }
 
 internal class OAuth2HttpServerTest {
 
-    val client: OkHttpClient = client()
+    val httpClient = OkHttpClient().newBuilder().followRedirects(false).build()
 
     val requestHandler: RequestHandler = {
         log.debug("received request on url=${it.url}")
@@ -43,12 +46,45 @@ internal class OAuth2HttpServerTest {
     }
 
     @Test
+    fun `Netty server should start and serve requests with generated keystore and HTTPS enabled`() {
+        val ssl = Ssl()
+        NettyWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
+        NettyWrapper(ssl).start(port = 1234, requestHandler).shouldServeRequests(ssl).stop()
+    }
+
+    @Test
+    fun `Netty server should start and serve requests with provided keystore and HTTPS enabled`() {
+        val ssl = Ssl(
+            SslKeystore(
+                keyPassword = "",
+                keystoreFile = File("src/test/resources/localhost.p12"),
+                keystorePassword = "",
+                keystoreType = SslKeystore.KeyStoreType.PKCS12
+            )
+        )
+        NettyWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
+    }
+
+    @Test
     fun `MockWebServer should start and serve requests`() {
         MockWebServerWrapper().start(requestHandler).shouldServeRequests().stop()
         MockWebServerWrapper().start(port = 1234, requestHandler).shouldServeRequests().stop()
     }
 
-    private fun OAuth2HttpServer.shouldServeRequests() = apply {
+    @Test
+    fun `MockWebServer should start and serve requests with generated keystore and HTTPS enabled`() {
+        val ssl = Ssl()
+        MockWebServerWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
+        MockWebServerWrapper(ssl).start(port = 1234, requestHandler).shouldServeRequests(ssl).stop()
+    }
+
+    private fun OAuth2HttpServer.shouldServeRequests(ssl: Ssl? = null) = apply {
+        val client = if (ssl != null) {
+            httpClient.withTrustStore(ssl.sslKeystore.keyStore)
+        } else {
+            httpClient
+        }
+
         client.get(
             this.url("/header"),
             Headers.headersOf("header1", "headervalue1")

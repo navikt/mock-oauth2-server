@@ -1,18 +1,21 @@
 package no.nav.security.mock.oauth2
 
 import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
+import no.nav.security.mock.oauth2.http.Ssl
+import no.nav.security.mock.oauth2.http.SslKeystore
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
+import java.io.File
 
 data class OAuth2Config @JvmOverloads constructor(
     val interactiveLogin: Boolean = false,
@@ -29,11 +32,34 @@ data class OAuth2Config @JvmOverloads constructor(
             NettyWrapper
         }
 
+        data class ServerConfig(
+            val type: ServerType,
+            val ssl: SslConfig? = null
+        )
+
+        data class SslConfig(
+            val keyPassword: String = "",
+            val keystoreFile: File? = null,
+            val keystoreType: SslKeystore.KeyStoreType = SslKeystore.KeyStoreType.PKCS12,
+            val keystorePassword: String = ""
+        ) {
+            fun ssl() = Ssl(sslKeyStore())
+
+            private fun sslKeyStore() =
+                if (keystoreFile == null) SslKeystore() else SslKeystore(keyPassword, keystoreFile, keystoreType, keystorePassword)
+        }
+
         override fun deserialize(p: JsonParser, ctxt: DeserializationContext): OAuth2HttpServer {
-            return when (p.readValueAs<ServerType>(object : TypeReference<ServerType>() {})) {
-                ServerType.NettyWrapper -> NettyWrapper()
-                ServerType.MockWebServerWrapper -> MockWebServerWrapper()
-                else -> throw IllegalArgumentException("unsupported httpServer specified in config")
+            val node: JsonNode = p.readValueAsTree()
+            val serverConfig: ServerConfig = if (node.isObject) {
+                p.codec.treeToValue(node, ServerConfig::class.java)
+            } else {
+                ServerConfig(ServerType.valueOf(node.textValue()))
+            }
+            val ssl: Ssl? = serverConfig.ssl?.ssl()
+            return when (serverConfig.type) {
+                ServerType.NettyWrapper -> NettyWrapper(ssl)
+                ServerType.MockWebServerWrapper -> MockWebServerWrapper(ssl)
             }
         }
     }
