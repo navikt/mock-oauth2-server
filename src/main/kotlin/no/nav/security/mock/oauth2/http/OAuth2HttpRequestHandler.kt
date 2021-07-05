@@ -70,7 +70,7 @@ class OAuth2HttpRequestHandler(
                 AUTHORIZATION -> handleAuthenticationRequest(request)
                 TOKEN -> handleTokenRequest(request)
                 END_SESSION -> handleEndSessionRequest(request)
-                JWKS -> json(config.tokenProvider.publicJwkSet().toJSONObject()).also { log.debug("handle jwks request") }
+                JWKS -> handleJwksRequest(request)
                 DEBUGGER -> debuggerRequestHandler.handleDebuggerForm(request).also { log.debug("handle debugger request") }
                 DEBUGGER_CALLBACK -> debuggerRequestHandler.handleDebuggerCallback(request).also { log.debug("handle debugger callback request") }
                 FAVICON -> OAuth2HttpResponse(status = 200)
@@ -83,6 +83,13 @@ class OAuth2HttpRequestHandler(
     }
 
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = tokenCallbackQueue.add(oAuth2TokenCallback)
+
+    private fun handleJwksRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
+        log.debug("handle jwks request on url=${request.url}")
+        val issuerId = request.url.issuerId()
+        val jwkSet = config.tokenProvider.publicJwkSet(issuerId)
+        return json(jwkSet.toJSONObject())
+    }
 
     private fun handleEndSessionRequest(request: OAuth2HttpRequest): OAuth2HttpResponse {
         log.debug("handle end session request $request")

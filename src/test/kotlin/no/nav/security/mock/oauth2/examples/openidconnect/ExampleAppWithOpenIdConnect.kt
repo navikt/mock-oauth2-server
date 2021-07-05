@@ -79,7 +79,7 @@ class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp
                 "response_type" to listOf("code"),
                 "redirect_uri" to listOf(exampleApp.url("/callback").toString()),
                 "response_mode" to listOf("query"),
-                "scope" to listOf("openid", "scope1"),
+                "scope" to listOf("openid scope1"),
                 "state" to listOf("1234"),
                 "nonce" to listOf("5678")
             )

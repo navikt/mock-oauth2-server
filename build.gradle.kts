@@ -1,17 +1,18 @@
-import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import java.time.Duration
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
 val assertjVersion = "3.19.0"
-val kotlinLoggingVersion = "2.0.4"
+val kotlinLoggingVersion = "2.0.6"
 val logbackVersion = "1.2.3"
-val nimbusSdkVersion = "8.36"
+val nimbusSdkVersion = "9.7"
 val mockWebServerVersion = "4.9.1"
-val jacksonVersion = "2.12.1"
-val nettyVersion = "4.1.59.Final"
-val junitJupiterVersion = "5.7.1"
-val kotlinVersion = "1.4.30"
+val jacksonVersion = "2.12.3"
+val nettyVersion = "4.1.65.Final"
+val junitJupiterVersion = "5.7.2"
+val kotlinVersion = "1.5.10"
 val freemarkerVersion = "2.3.31"
-val kotestVersion = "4.4.1"
+val kotestVersion = "4.6.0"
+val bouncyCastleVersion = "1.68"
 val springBootVersion = "2.4.3"
 val reactorTestVersion = "3.4.3"
 val ktorVersion = "1.5.3"
@@ -21,14 +22,14 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.4.30"
-    id("se.patrikerdes.use-latest-versions") version "0.2.15"
-    id("com.github.ben-manes.versions") version "0.36.0"
-    id("org.jmailen.kotlinter") version "3.3.0"
-    id("com.google.cloud.tools.jib") version "2.7.1"
+    kotlin("jvm") version "1.4.32"
+    id("se.patrikerdes.use-latest-versions") version "0.2.16"
+    id("com.github.ben-manes.versions") version "0.38.0"
+    id("org.jmailen.kotlinter") version "3.4.4"
+    id("com.google.cloud.tools.jib") version "2.8.0"
     id("com.github.johnrengelman.shadow") version "6.1.0"
     id("net.researchgate.release") version "2.8.1"
-    id("io.codearte.nexus-staging") version "0.22.0"
+    id("io.codearte.nexus-staging") version "0.30.0"
     id("de.marcphilipp.nexus-publish") version "0.4.0"
     `java-library`
     `maven-publish`
@@ -64,8 +65,10 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
+    implementation("org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion") // for kotest framework
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion") // for kotest core jvm assertions
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")

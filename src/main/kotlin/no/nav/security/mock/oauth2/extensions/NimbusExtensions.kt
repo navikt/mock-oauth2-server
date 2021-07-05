@@ -20,6 +20,7 @@ import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT
+import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.oauth2.sdk.id.Issuer
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue
@@ -78,6 +79,10 @@ fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet): JWTClaim
         throw OAuth2Exception("invalid signed JWT.", e)
     }
 }
+
+fun HTTPRequest.clientAuthentication() =
+    ClientAuthentication.parse(this)
+        ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain some form of ClientAuthentication.")
 
 fun ClientAuthentication.requirePrivateKeyJwt(requiredAudience: String, maxLifetimeSeconds: Long): PrivateKeyJWT =
     (this as? PrivateKeyJWT)

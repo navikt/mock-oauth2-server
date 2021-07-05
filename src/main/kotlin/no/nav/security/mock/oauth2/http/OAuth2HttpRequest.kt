@@ -2,9 +2,9 @@ package no.nav.security.mock.oauth2.http
 
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
-import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import no.nav.security.mock.oauth2.extensions.clientAuthentication
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
@@ -45,7 +45,7 @@ data class OAuth2HttpRequest(
 
     fun asTokenExchangeRequest(): TokenRequest {
         val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
-        val clientAuthentication = ClientAuthentication.parse(httpRequest).requirePrivateKeyJwt(this.url.toString(), 120)
+        val clientAuthentication = httpRequest.clientAuthentication().requirePrivateKeyJwt(this.url.toString(), 120)
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
 
         // TODO: add scope if present in request

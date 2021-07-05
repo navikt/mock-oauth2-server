@@ -13,7 +13,9 @@ import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
+import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
+import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.WellKnown
 import no.nav.security.mock.oauth2.http.route
 import no.nav.security.mock.oauth2.testutils.audience
@@ -26,6 +28,7 @@ import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.testutils.withTrustStore
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -79,6 +82,18 @@ class MockOAuth2ServerIntegrationTest {
                 it.parse<WellKnown>() urlsShouldStartWith "$baseUrl/path1/path2/path3"
             }
         }
+    }
+
+    @Test
+    fun `wellknown should include https addresses when MockWebServerWrapper is started with https enabled`() {
+        val ssl = Ssl()
+        val server = MockOAuth2Server(
+            OAuth2Config(httpServer = MockWebServerWrapper(ssl))
+        ).apply { start() }
+        client.withTrustStore(ssl.sslKeystore.keyStore).get(server.wellKnownUrl("issuer1")).parse<WellKnown>().asClue {
+            it urlsShouldStartWith "https"
+        }
+        server.shutdown()
     }
 
     @Test
@@ -143,7 +158,7 @@ class MockOAuth2ServerIntegrationTest {
     @Test
     fun `anyToken should issue token with claims from input and be verifyable by servers keys`() {
         withMockOAuth2Server {
-            val customIssuer = "https://customissuer".toHttpUrl()
+            val customIssuer = "https://customissuer/default".toHttpUrl()
             val token = this.anyToken(
                 customIssuer,
                 mutableMapOf(

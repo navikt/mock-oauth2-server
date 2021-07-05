@@ -89,12 +89,12 @@ class OAuth2ResourceServerAppTest {
                 "provider1" to AuthConfig.TokenProvider(
                     wellKnownUrl = wellKnownUrl("provider1").toString(),
                     acceptedAudience = "scopeFromProvider1",
-                    requiredClaims = mapOf("groups" to listOf("group3"))
+                    requiredClaims = mapOf("groups" to listOf("group2"))
                 ),
                 "provider2" to AuthConfig.TokenProvider(
                     wellKnownUrl = wellKnownUrl("provider2").toString(),
                     acceptedAudience = "scopeFromProvider2",
-                    requiredClaims = mapOf("stringClaim" to listOf("1"))
+                    requiredClaims = mapOf("stringClaim" to "1")
                 )
             )
         )

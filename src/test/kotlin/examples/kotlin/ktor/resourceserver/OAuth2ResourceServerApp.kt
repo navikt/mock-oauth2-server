@@ -44,7 +44,7 @@ fun main() {
             "provider2" to AuthConfig.TokenProvider(
                 wellKnownUrl = "https://provider2/.well-known/openid-configuration",
                 acceptedAudience = "thisAppClientId",
-                requiredClaims = mapOf("someClaim" to listOf("someClaim1"))
+                requiredClaims = mapOf("someClaim" to "someClaim1")
             )
         )
     )
@@ -89,25 +89,6 @@ fun Application.module(authConfig: AuthConfig) {
     }
 }
 
-fun JWTCredential.containsAll(claims: Map<String, Any>): Boolean =
-    claims.filterNot {
-        payload.contains(it.key, it.value)
-    }.isEmpty()
-
-fun Payload.contains(name: String, value: Any): Boolean =
-    try {
-        if (value is Collection<*>) {
-            value.firstOrNull()?.let {
-                getClaim(name)?.asList(it.javaClass)?.containsAll(value)
-            } == true
-        } else {
-            getClaim(name)?.`as`(value.javaClass) == value
-        }
-    } catch (t: Throwable) {
-        log.error("received exception when checking for required claim $name=$value", t)
-        false
-    }
-
 // just to show how the MockOAuth2Server can support multiple "token providers"/issuers at the same time
 class AuthConfig(
     val providers: Map<String, TokenProvider> = emptyMap()
@@ -115,7 +96,7 @@ class AuthConfig(
     class TokenProvider(
         val wellKnownUrl: String,
         val acceptedAudience: String,
-        val requiredClaims: Map<String, List<String>> = emptyMap()
+        val requiredClaims: Map<String, Any> = emptyMap()
     ) {
         private val httpClient = HttpClient(CIO) {
             install(JsonFeature) {
@@ -139,3 +120,27 @@ class AuthConfig(
         )
     }
 }
+
+internal fun JWTCredential.containsAll(claims: Map<String, Any>): Boolean =
+    claims.filterNot {
+        payload.contains(it.key, it.value)
+    }.isEmpty()
+
+internal fun Payload.contains(name: String, value: Any): Boolean =
+    try {
+        val type = if (value is Collection<*> && value.isNotEmpty()) {
+            value.firstOrNull()!!.javaClass
+        } else {
+            value.javaClass
+        }
+        getClaim(name).asList(type)?.let {
+            if (value is Collection<*>) {
+                it.containsAll(value)
+            } else {
+                it.contains(value)
+            }
+        } ?: (getClaim(name)?.`as`(type) == value)
+    } catch (t: Throwable) {
+        log.error("received exception when checking for required claim $name=$value", t)
+        false
+    }
