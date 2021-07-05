@@ -45,7 +45,7 @@ suspend fun HttpClient.tokenRequest(url: String, auth: Auth, params: Map<String,
             }
         }
     ) {
-        auth.headers.forEach { s, list -> header(s, list) }
+        auth.headers.forEach { s, list -> header(s, list.first()) }
     }
 
 suspend fun HttpClient.clientCredentialsGrant(url: String, auth: Auth, scope: String) =
