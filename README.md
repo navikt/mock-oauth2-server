@@ -1,13 +1,9 @@
-[![Build](https://github.com/navikt/mock-oauth2-server/workflows/Build%20master/badge.svg)](https://github.com/navikt/mock-oauth2-server/actions) [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server) 
+[![Build](https://github.com/navikt/mock-oauth2-server/workflows/Build%20master/badge.svg)](https://github.com/navikt/mock-oauth2-server/actions) [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server) [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/navikt/mock-oauth2-server?color=green&include_prereleases&label=GitHub%20Package%20Registry&logo=Docker)](https://github.com/navikt/mock-oauth2-server/packages/)
 
-:exclamation: 
-
-As of version 0.3.3 the Docker image is published to the [GitHub Container Registry](https://docs.github.com/en/packages/guides/migrating-to-github-container-registry-for-docker-images#domain-changes) and thus can be pulled anonymously from `ghcr.io/navikt/mock-oauth2-server:<version>`. Update your image pulling spells accordingly. 
-
-:exclamation:
+:exclamation: As of version 0.3.3 the Docker image is published to the [GitHub Container Registry](https://docs.github.com/en/packages/guides/migrating-to-github-container-registry-for-docker-images#domain-changes) and thus can be pulled anonymously. Update your `docker pull` spells accordingly.
 
 # mock-oauth2-server
-A scriptable/customizable web server for testing HTTP clients using OAuth2/OpenID Connect or applications with a dependency to a running OAuth2 server (i.e. APIs requiring signed JWTs from a known issuer).  The server also provides the necessary endpoints for token validation (endpoint for JWKS) and ID Provider metadata discovery ("well-known" endpoints providing  server metadata)
+A scriptable/customizable web server for testing HTTP clients using OAuth2/OpenID Connect or applications with a dependency to a running OAuth2 server (i.e. APIs requiring signed JWTs from a known issuer).  The server also provides the neccessary endpoints for token validation (endpoint for JWKS) and ID Provider metadata discovery ("well-known" endpoints providing  server metadata)
 
 **mock-oauth2-server** is written in Kotlin using the great [OkHttp MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) as the underlying server library and can be used in unit/integration tests in both **Java** and **Kotlin** or in any language as a standalone server in e.g. docker-compose.
 
@@ -35,7 +31,7 @@ The motivation behind this library is to provide a setup such that application d
   * Verify expected requests made to the server
   * Customizable through exposure of underlying  [OkHttp MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) 
 * **Standalone support** - i.e. run as application in IDE, run inside your app, or as a Docker image (provided)
-* **OAuth2 Client Debugger** - e.g. support for triggering OIDC Auth Code Flow and receiving callback in debugger app, view token response from server (intended for standalone support)
+* **OAuth2 Client Debugger** - e.g. support for triggering OIDC Auth Code Flow and receiving callback in debugger app, view token reponse from server (intended for standalone support)
 
 
 
@@ -67,7 +63,7 @@ Latest version [![Maven Central](https://img.shields.io/maven-central/v/no.nav.s
 Latest version [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/navikt/mock-oauth2-server?color=green&include_prereleases&label=GitHub%20Package%20Registry&logo=Docker)](https://github.com/navikt/mock-oauth2-server/packages/)
 
 ```
-docker pull ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+docker pull docker.pkg.github.com/navikt/mock-oauth2-server/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
 ```
 
 
@@ -323,7 +319,7 @@ services:
     ports:
       - 8080:8080
   mock-oauth2-server:
-    image: ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+    image: docker.pkg.github.com/navikt/mock-oauth2-server/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
     ports:
       - 8080:8080
     hostname: host.docker.internal
@@ -333,73 +329,6 @@ services:
 
 The debugger is a OAuth2 client implementing the `authorization_code` flow with a UI for debugging (e.g. request parameters).
 Point your browser to [http://localhost:8080/default/debugger](http://localhost:8080/default/debugger) to check it out.
-
-### Enabling HTTPS
-
-In order to enable HTTPS you can either provide your own keystore or let the server generate one for you.
-
-#### Unit tests
-
-You need to supply the server with an SSL config, in order to do that you must specify your chosen server type in `OAuth2Config` and 
-pass in the SSL config to your server.
-
-*Generate keystore:*
-```kotlin
-val ssl = Ssl()
-val server = MockOAuth2Server(
-    OAuth2Config(httpServer = MockWebServerWrapper(ssl))
-)
-```
-*This will generate a SSL certificate for `localhost` and can be added to your client's truststore by getting the ssl config:
-`ssl.sslKeystore.keyStore`*
-
-*Bring your own:*
-```kotlin
-val ssl = Ssl(
-    SslKeystore(
-        keyPassword = "",
-        keystoreFile = File("src/test/resources/localhost.p12"),
-        keystorePassword = "",
-        keystoreType = SslKeystore.KeyStoreType.PKCS12
-    )
-)
-val server = MockOAuth2Server(
-    OAuth2Config(httpServer = MockWebServerWrapper(ssl))
-)
-```
-
-#### Docker / Standalone mode - JSON_CONFIG
-
-In order to enable HTTPS for the server in Docker or standalone mode
-you can either make the server generate the keystore or bring your own.
-
-*Generate keystore:*
-
-```json
-{
-  "httpServer" : {
-    "type" : "NettyWrapper",
-    "ssl" : {}
-  }
-}
-```
-
-*Bring your own:*
-
-```json
-
-{
-    "httpServer" : {
-        "type" : "NettyWrapper",
-        "ssl" : {
-            "keyPassword" : "",
-            "keystoreFile" : "src/test/resources/localhost.p12",
-            "keystoreType" : "PKCS12",
-            "keystorePassword" : "" 
-        }
-    }
-}
-```
 
 ## 👥 Contact
 
