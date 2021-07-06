@@ -53,7 +53,6 @@ fun main() {
     }.start(true)
 }
 
-
 fun Application.module(authConfig: AuthConfig) {
 
     val idProviders = authConfig.providers.map { it.settings }.associateBy { it.name }
@@ -92,7 +91,6 @@ fun Application.module(authConfig: AuthConfig) {
     }
 }
 
-
 @Location("/login/{type?}")
 class Login(val type: String = "")
 
@@ -114,7 +112,7 @@ class AuthConfig(
 
 private fun ApplicationCall.subject(): String? {
     val idToken = authentication.principal<OAuthAccessTokenResponse.OAuth2>()?.extraParameters?.get("id_token")
-    //should verify id_token before use as ktor doesnt, however left out in the example
+    // should verify id_token before use as ktor doesnt, however left out in the example
     return if (idToken != null) {
         JWT.decode(idToken).subject
     } else {
@@ -122,7 +120,7 @@ private fun ApplicationCall.subject(): String? {
     }
 }
 
-private val httpClient = HttpClient(CIO) {
+internal val httpClient = HttpClient(CIO) {
     install(JsonFeature) {
         serializer = JacksonSerializer {
             configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
