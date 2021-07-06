@@ -173,7 +173,9 @@ request.addHeader("Authorization", "Bearer ${token.serialize()}")
 
 ##### More examples 
 
-Have a look at some kotlin examples in the src/test directory [examples](src/test/kotlin/no/nav/security/mock/oauth2/examples)
+Have a look at some examples in both Java and Kotlin in the src/test directory:
+* [Kotlin with the ktor framework](src/test/kotlin/examples/kotlin/ktor)
+* [Java with Spring Boot and Spring Security](src/test/java/examples/java/springboot/)
 
 ### API
 
