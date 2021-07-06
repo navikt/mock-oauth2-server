@@ -1,0 +1,16 @@
+#spring:
+#  security:
+#    oauth2:
+#      client:
+#        registration:
+#          aad:
+#            client-id: client1
+#            client-secret: secret
+#            authorization-grant-type: authorization_code
+#            redirect-uri: '{baseUrl}/login/oauth2/code/{registrationId}'
+#            scope: openid
+#        provider:
+#          aad:
+#            authorization-uri: http://localhost:1234/issuer1/authorize
+#            token-uri: http://localhost:1234/issuer1/token
+#            jwk-set-uri: http://localhost:1234/issuer1/jwks

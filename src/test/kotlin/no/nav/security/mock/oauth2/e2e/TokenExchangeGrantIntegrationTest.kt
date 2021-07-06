@@ -4,9 +4,6 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import java.time.Instant
-import java.util.Date
-import java.util.UUID
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
 import no.nav.security.mock.oauth2.testutils.ClientAssertionType
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
@@ -26,6 +23,9 @@ import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.util.Date
+import java.util.UUID
 
 class TokenExchangeGrantIntegrationTest {
 

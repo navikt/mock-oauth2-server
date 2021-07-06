@@ -18,7 +18,7 @@ interface OAuth2TokenCallback {
 }
 
 // TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
-open class DefaultOAuth2TokenCallback(
+open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
     private val issuerId: String = "default",
     private val subject: String = UUID.randomUUID().toString(),
     // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value

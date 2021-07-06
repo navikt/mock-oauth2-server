@@ -27,13 +27,6 @@ import io.kotest.matchers.MatcherResult
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import java.net.URL
-import java.security.KeyPairGenerator
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
-import java.time.Instant
-import java.util.Date
-import java.util.UUID
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
@@ -41,7 +34,14 @@ import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.net.URL
+import java.security.KeyPairGenerator
+import java.security.interfaces.RSAPrivateKey
+import java.security.interfaces.RSAPublicKey
+import java.time.Instant
 import java.util.Base64
+import java.util.Date
+import java.util.UUID
 
 object ClientAssertionType {
     const val JWT_BEARER = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
