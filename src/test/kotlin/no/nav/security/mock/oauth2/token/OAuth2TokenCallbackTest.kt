@@ -27,6 +27,16 @@ internal class OAuth2TokenCallbackTest {
                     )
                 ),
                 RequestMapping(
+                    requestParam = "scope",
+                    match = "scope2",
+                    type = "JWT2",
+                    claims = mapOf(
+                        "sub" to "subByScope2",
+                        "aud" to listOf("audByScope2"),
+                        "custom" to "custom2"
+                    )
+                ),
+                RequestMapping(
                     requestParam = "grant_type",
                     match = "*",
                     claims = mapOf(
@@ -39,7 +49,7 @@ internal class OAuth2TokenCallbackTest {
         )
 
         @Test
-        fun `token request with request params matching requestmapping should return specific claims from callback`() {
+        fun `token request with request params matching requestmapping should return specific claims from callback with default JWT type`() {
             val scopeShouldMatch = clientCredentialsRequest("scope" to "scope1")
             assertSoftly {
                 issuer1.subject(scopeShouldMatch) shouldBe "subByScope1"
@@ -50,12 +60,24 @@ internal class OAuth2TokenCallbackTest {
         }
 
         @Test
+        fun `token request with request params matching requestmapping should return specific claims from callback with non-default JWT type`() {
+            val scopeShouldMatch = clientCredentialsRequest("scope" to "scope2")
+            assertSoftly {
+                issuer1.subject(scopeShouldMatch) shouldBe "subByScope2"
+                issuer1.audience(scopeShouldMatch) shouldBe listOf("audByScope2")
+                issuer1.tokenExpiry() shouldBe 120
+                issuer1.type(scopeShouldMatch) shouldBe "JWT2"
+            }
+        }
+
+        @Test
         fun `token request with request params matching wildcard requestmapping should return default claims from callback`() {
             val shouldMatchAllGrantTypes = clientCredentialsRequest()
             assertSoftly {
                 issuer1.subject(shouldMatchAllGrantTypes) shouldBe "defaultSub"
                 issuer1.audience(shouldMatchAllGrantTypes) shouldBe listOf("defaultAud")
                 issuer1.tokenExpiry() shouldBe 120
+                issuer1.type(shouldMatchAllGrantTypes) shouldBe "JWT"
             }
         }
     }

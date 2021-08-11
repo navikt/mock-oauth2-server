@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.token
 
+import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
@@ -12,6 +13,7 @@ import java.util.UUID
 interface OAuth2TokenCallback {
     fun issuerId(): String
     fun subject(tokenRequest: TokenRequest): String?
+    fun type(tokenRequest: TokenRequest): String
     fun audience(tokenRequest: TokenRequest): List<String>
     fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
     fun tokenExpiry(): Long
@@ -21,6 +23,7 @@ interface OAuth2TokenCallback {
 open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
     private val issuerId: String = "default",
     private val subject: String = UUID.randomUUID().toString(),
+    private val type: String = JOSEObjectType.JWT.type,
     // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
     private val audience: List<String>? = null,
     private val claims: Map<String, Any> = emptyMap(),
@@ -34,6 +37,10 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
             tokenRequest.grantType() -> tokenRequest.clientIdAsString()
             else -> subject
         }
+    }
+
+    override fun type(tokenRequest: TokenRequest): String {
+        return type
     }
 
     override fun audience(tokenRequest: TokenRequest): List<String> {
@@ -65,8 +72,12 @@ data class RequestMappingTokenCallback(
     val tokenExpiry: Long = Duration.ofHours(1).toSeconds()
 ) : OAuth2TokenCallback {
     override fun issuerId(): String = issuerId
+
     override fun subject(tokenRequest: TokenRequest): String? =
         requestMappings.getClaimOrNull(tokenRequest, "sub")
+
+    override fun type(tokenRequest: TokenRequest): String =
+        requestMappings.getType(tokenRequest)
 
     override fun audience(tokenRequest: TokenRequest): List<String> =
         requestMappings.getClaimOrNull(tokenRequest, "aud") ?: emptyList()
@@ -81,12 +92,16 @@ data class RequestMappingTokenCallback(
 
     private inline fun <reified T> Set<RequestMapping>.getClaimOrNull(tokenRequest: TokenRequest, key: String): T? =
         getClaims(tokenRequest)[key] as? T
+
+    private fun Set<RequestMapping>.getType(tokenRequest: TokenRequest) =
+        firstOrNull { it.isMatch(tokenRequest) }?.type ?: JOSEObjectType.JWT.type
 }
 
 data class RequestMapping(
     private val requestParam: String,
     private val match: String = "*",
-    val claims: Map<String, Any> = emptyMap()
+    val claims: Map<String, Any> = emptyMap(),
+    val type: String = JOSEObjectType.JWT.type
 ) {
     fun isMatch(tokenRequest: TokenRequest): Boolean =
         tokenRequest.toHTTPRequest().queryParameters[requestParam]?.any {

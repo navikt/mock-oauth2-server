@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2
 
+import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
@@ -116,6 +117,7 @@ open class MockOAuth2Server(
         DefaultOAuth2TokenCallback(
             issuerId,
             subject,
+            JOSEObjectType.JWT.type,
             audience?.let { listOf(it) },
             claims,
             expiry
