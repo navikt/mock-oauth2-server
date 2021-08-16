@@ -22,7 +22,7 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.4.32"
+    kotlin("jvm") version "1.5.21"
     id("se.patrikerdes.use-latest-versions") version "0.2.16"
     id("com.github.ben-manes.versions") version "0.39.0"
     id("org.jmailen.kotlinter") version "3.4.4"
