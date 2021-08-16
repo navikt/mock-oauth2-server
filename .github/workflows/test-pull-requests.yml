@@ -13,6 +13,7 @@ jobs:
         uses: actions/setup-java@v2.2.0
         with:
           java-version: 11
+          distribution: 'zulu'
 
       - name: Setup build cache
         uses: actions/cache@v1
