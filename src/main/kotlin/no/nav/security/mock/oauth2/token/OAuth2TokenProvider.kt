@@ -90,7 +90,7 @@ class OAuth2TokenProvider {
 
     private fun rsaKey(issuerId: String): RSAKey = signingKeys.computeIfAbsent(issuerId) { generateRSAKey(issuerId) }
 
-    private fun JWTClaimsSet.sign(issuerId: String, type: String?): SignedJWT {
+    private fun JWTClaimsSet.sign(issuerId: String, type: String): SignedJWT {
         val key = rsaKey(issuerId)
         return SignedJWT(
             JWSHeader.Builder(JWSAlgorithm.RS256)
