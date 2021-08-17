@@ -16,6 +16,7 @@ val bouncyCastleVersion = "1.68"
 val springBootVersion = "2.5.3"
 val reactorTestVersion = "3.4.9"
 val ktorVersion = "1.6.2"
+val slf4jVersion = "1.7.32"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -63,8 +64,8 @@ configurations {
 dependencies {
     implementation(kotlin("reflect"))
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("org.slf4j:slf4j-api:1.7.32")
-    implementation("org.slf4j:slf4j-log4j12:1.7.32")
+    implementation("org.slf4j:slf4j-api:$slf4jVersion")
+    implementation("org.slf4j:slf4j-log4j12:$slf4jVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-all:$nettyVersion")
