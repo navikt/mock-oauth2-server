@@ -42,7 +42,7 @@ class OAuth2TokenProvider {
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
         oAuth2TokenCallback.tokenExpiry()
-    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.type(tokenRequest))
+    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.headerType(tokenRequest))
 
     fun accessToken(
         tokenRequest: TokenRequest,
@@ -56,7 +56,7 @@ class OAuth2TokenProvider {
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
         oAuth2TokenCallback.tokenExpiry()
-    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.type(tokenRequest))
+    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.headerType(tokenRequest))
 
     fun exchangeAccessToken(
         tokenRequest: TokenRequest,
@@ -73,7 +73,7 @@ class OAuth2TokenProvider {
             .audience(oAuth2TokenCallback.audience(tokenRequest))
             .addClaims(oAuth2TokenCallback.addClaims(tokenRequest))
             .build()
-            .sign(issuerUrl.issuerId(), oAuth2TokenCallback.type(tokenRequest))
+            .sign(issuerUrl.issuerId(), oAuth2TokenCallback.headerType(tokenRequest))
     }
 
     @JvmOverloads

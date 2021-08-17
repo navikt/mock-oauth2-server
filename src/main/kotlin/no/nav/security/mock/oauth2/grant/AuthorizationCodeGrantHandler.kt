@@ -93,7 +93,7 @@ internal class AuthorizationCodeHandler(
     private class LoginOAuth2TokenCallback(val login: Login, val OAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
         override fun issuerId(): String = OAuth2TokenCallback.issuerId()
         override fun subject(tokenRequest: TokenRequest): String = login.username
-        override fun type(tokenRequest: TokenRequest): String = OAuth2TokenCallback.type(tokenRequest)
+        override fun headerType(tokenRequest: TokenRequest): String = OAuth2TokenCallback.headerType(tokenRequest)
         override fun audience(tokenRequest: TokenRequest): List<String> = OAuth2TokenCallback.audience(tokenRequest)
         override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
             OAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
