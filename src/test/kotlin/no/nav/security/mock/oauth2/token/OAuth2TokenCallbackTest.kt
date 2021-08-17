@@ -29,7 +29,7 @@ internal class OAuth2TokenCallbackTest {
                 RequestMapping(
                     requestParam = "scope",
                     match = "scope2",
-                    headerType = "JWT2",
+                    typeHeader = "JWT2",
                     claims = mapOf(
                         "sub" to "subByScope2",
                         "aud" to listOf("audByScope2"),
@@ -66,7 +66,7 @@ internal class OAuth2TokenCallbackTest {
                 issuer1.subject(scopeShouldMatch) shouldBe "subByScope2"
                 issuer1.audience(scopeShouldMatch) shouldBe listOf("audByScope2")
                 issuer1.tokenExpiry() shouldBe 120
-                issuer1.headerType(scopeShouldMatch) shouldBe "JWT2"
+                issuer1.typeHeader(scopeShouldMatch) shouldBe "JWT2"
             }
         }
 
@@ -77,7 +77,7 @@ internal class OAuth2TokenCallbackTest {
                 issuer1.subject(shouldMatchAllGrantTypes) shouldBe "defaultSub"
                 issuer1.audience(shouldMatchAllGrantTypes) shouldBe listOf("defaultAud")
                 issuer1.tokenExpiry() shouldBe 120
-                issuer1.headerType(shouldMatchAllGrantTypes) shouldBe "JWT"
+                issuer1.typeHeader(shouldMatchAllGrantTypes) shouldBe "JWT"
             }
         }
     }
