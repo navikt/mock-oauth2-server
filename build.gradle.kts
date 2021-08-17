@@ -1,5 +1,5 @@
-import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import java.time.Duration
 
 val assertjVersion = "3.20.2"
 val kotlinLoggingVersion = "2.0.6"
@@ -52,6 +52,12 @@ apply(plugin = "org.jmailen.kotlinter")
 repositories {
     mavenCentral()
     jcenter()
+}
+
+configurations {
+    all {
+        exclude(group = "ch.qos.logback", module = "logback-classic")
+    }
 }
 
 dependencies {
