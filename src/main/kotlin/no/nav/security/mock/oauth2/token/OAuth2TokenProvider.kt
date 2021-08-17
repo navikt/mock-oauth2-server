@@ -42,7 +42,7 @@ class OAuth2TokenProvider {
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
         oAuth2TokenCallback.tokenExpiry()
-    ).sign(issuerUrl.issuerId())
+    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
 
     fun accessToken(
         tokenRequest: TokenRequest,
@@ -56,7 +56,7 @@ class OAuth2TokenProvider {
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
         oAuth2TokenCallback.tokenExpiry()
-    ).sign(issuerUrl.issuerId())
+    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
 
     fun exchangeAccessToken(
         tokenRequest: TokenRequest,
@@ -73,7 +73,7 @@ class OAuth2TokenProvider {
             .audience(oAuth2TokenCallback.audience(tokenRequest))
             .addClaims(oAuth2TokenCallback.addClaims(tokenRequest))
             .build()
-            .sign(issuerUrl.issuerId())
+            .sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
     }
 
     @JvmOverloads
@@ -86,16 +86,16 @@ class OAuth2TokenProvider {
                 .expirationTime(Date.from(now.plusSeconds(expiry.toSeconds())))
             builder.addClaims(claims)
             builder.build()
-        }.sign(issuerId)
+        }.sign(issuerId, JOSEObjectType.JWT.type)
 
     private fun rsaKey(issuerId: String): RSAKey = signingKeys.computeIfAbsent(issuerId) { generateRSAKey(issuerId) }
 
-    private fun JWTClaimsSet.sign(issuerId: String): SignedJWT {
+    private fun JWTClaimsSet.sign(issuerId: String, type: String): SignedJWT {
         val key = rsaKey(issuerId)
         return SignedJWT(
             JWSHeader.Builder(JWSAlgorithm.RS256)
                 .keyID(key.keyID)
-                .type(JOSEObjectType.JWT).build(),
+                .type(JOSEObjectType(type)).build(),
             this
         ).apply {
             sign(RSASSASigner(key.toPrivateKey()))
