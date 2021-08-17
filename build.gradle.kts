@@ -27,7 +27,7 @@ plugins {
     id("com.github.ben-manes.versions") version "0.39.0"
     id("org.jmailen.kotlinter") version "3.5.0"
     id("com.google.cloud.tools.jib") version "3.1.4"
-    id("com.github.johnrengelman.shadow") version "6.1.0"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
     id("net.researchgate.release") version "2.8.1"
     id("io.codearte.nexus-staging") version "0.30.0"
     id("de.marcphilipp.nexus-publish") version "0.4.0"
@@ -262,6 +262,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "6.8"
+        gradleVersion = "7.1.1"
     }
 }
