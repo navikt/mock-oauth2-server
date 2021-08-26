@@ -9,6 +9,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
+import no.nav.security.mock.oauth2.testutils.Pkce
 import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.client
@@ -101,5 +102,23 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             it.idToken?.subject shouldBe "foo"
         }
         server.shutdown()
+    }
+
+    @Test
+    fun `something pkce`() {
+
+        //@ Todo: if code challenge is received in authn req it should be enforced as required in token req, i.e. fail if code_verifier is not present
+
+        val pkce = Pkce()
+        client.get(
+            server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce)
+        ).asClue { response ->
+            response.code shouldBe 302
+            response.headers["location"]?.toHttpUrl().asClue {
+                it?.queryParameterNames shouldContainExactly setOf("code", "state")
+                it?.queryParameter("state") shouldBe "1234"
+                println("yolo: $it")
+            }
+        }
     }
 }
