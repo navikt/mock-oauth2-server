@@ -2,26 +2,22 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
-import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
-import com.nimbusds.oauth2.sdk.AuthorizationGrant
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
-import com.nimbusds.oauth2.sdk.pkce.CodeChallenge
-import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod
-import com.nimbusds.oauth2.sdk.pkce.CodeVerifier
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
-import kotlin.collections.set
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
+import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
+import kotlin.collections.set
 
 private val log = KotlinLogging.logger {}
 
@@ -69,7 +65,7 @@ internal class AuthorizationCodeHandler(
         val code = tokenRequest.authorizationCode()
         log.debug("issuing token for code=$code")
         val authenticationRequest = takeAuthenticationRequestFromCache(code)
-        tokenRequest.validatePkce(authenticationRequest)
+        authenticationRequest?.verifyPkce(tokenRequest)
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
@@ -85,15 +81,6 @@ internal class AuthorizationCodeHandler(
             expiresIn = idToken.expiresIn(),
             scope = scope
         )
-    }
-
-    // @TODO: fix nullables
-    private fun TokenRequest.validatePkce(authenticationRequest: AuthenticationRequest?) {
-        val grant = (authorizationGrant as AuthorizationCodeGrant)
-        val pkce = Pixy(grant.codeVerifier, authenticationRequest!!.codeChallengeMethod)
-        if (pkce.challenge != authenticationRequest.codeChallenge){
-            throw OAuth2Exception(OAuth2Error.INVALID_GRANT, "todo")
-        }
     }
 
     private fun getLoginTokenCallbackOrDefault(code: AuthorizationCode, OAuth2TokenCallback: OAuth2TokenCallback): OAuth2TokenCallback {
@@ -116,16 +103,5 @@ internal class AuthorizationCodeHandler(
             }
 
         override fun tokenExpiry(): Long = OAuth2TokenCallback.tokenExpiry()
-    }
-
-    class Pixy(
-        val verifier: CodeVerifier = CodeVerifier(),
-        val method: CodeChallengeMethod = CodeChallengeMethod.S256
-    ) {
-        val challenge: CodeChallenge = CodeChallenge.compute(method, verifier)
-
-        companion object{
-
-        }
     }
 }
