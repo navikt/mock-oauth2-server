@@ -5,29 +5,23 @@ import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.JWKSet
-import com.nimbusds.jose.jwk.KeyUse
-import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.issuerId
 import okhttp3.HttpUrl
-import java.security.KeyPairGenerator
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
 import java.time.Duration
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 
-class OAuth2TokenProvider {
-    private val signingKeys: ConcurrentHashMap<String, RSAKey> = ConcurrentHashMap()
-
+class OAuth2TokenProvider @JvmOverloads constructor(
+    private val keyProvider: KeyProvider = KeyProvider()
+) {
     @JvmOverloads
     fun publicJwkSet(issuerId: String = "default"): JWKSet {
-        return JWKSet(rsaKey(issuerId)).toPublicJWKSet()
+        return JWKSet(keyProvider.signingKey(issuerId)).toPublicJWKSet()
     }
 
     fun idToken(
@@ -88,10 +82,8 @@ class OAuth2TokenProvider {
             builder.build()
         }.sign(issuerId, JOSEObjectType.JWT.type)
 
-    private fun rsaKey(issuerId: String): RSAKey = signingKeys.computeIfAbsent(issuerId) { generateRSAKey(issuerId) }
-
     private fun JWTClaimsSet.sign(issuerId: String, type: String): SignedJWT {
-        val key = rsaKey(issuerId)
+        val key = keyProvider.signingKey(issuerId)
         return SignedJWT(
             JWSHeader.Builder(JWSAlgorithm.RS256)
                 .keyID(key.keyID)
@@ -126,19 +118,5 @@ class OAuth2TokenProvider {
         nonce?.also { builder.claim("nonce", it) }
         builder.addClaims(additionalClaims)
         builder.build()
-    }
-
-    companion object {
-        private fun generateRSAKey(keyId: String): RSAKey =
-            KeyPairGenerator.getInstance("RSA").let {
-                it.initialize(2048)
-                it.generateKeyPair()
-            }.let {
-                RSAKey.Builder(it.public as RSAPublicKey)
-                    .privateKey(it.private as RSAPrivateKey)
-                    .keyUse(KeyUse.SIGNATURE)
-                    .keyID(keyId)
-                    .build()
-            }
     }
 }
