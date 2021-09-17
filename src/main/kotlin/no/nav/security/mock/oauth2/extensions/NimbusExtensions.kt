@@ -36,7 +36,7 @@ import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.invalidRequest
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger { }
 
 fun AuthenticationRequest.isPrompt(): Boolean =
     this.prompt?.any {
@@ -45,8 +45,8 @@ fun AuthenticationRequest.isPrompt(): Boolean =
 
 fun AuthenticationRequest.verifyPkce(tokenRequest: TokenRequest) {
     val verifier: CodeVerifier? = tokenRequest.grant(AuthorizationCodeGrant::class.java).codeVerifier
-    if(verifier != null ){
-        if (CodeChallenge.compute(this.codeChallengeMethod, verifier) != this.codeChallenge){
+    if (verifier != null) {
+        if (CodeChallenge.compute(this.codeChallengeMethod, verifier) != this.codeChallenge) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT, "invalid_pkce: code_verifier does not compute to code_challenge from request")
         }
     } else {
@@ -71,9 +71,9 @@ fun TokenRequest.authorizationCode(): AuthorizationCode =
         ?.authorizationCode
         ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT, "code cannot be null")
 
-inline fun <reified T: AuthorizationGrant> TokenRequest.grant(type: Class<T>): T =
+inline fun <reified T : AuthorizationGrant> TokenRequest.grant(type: Class<T>): T =
     this.authorizationGrant as? T
-    ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT, "expected grant of type $type")
+        ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT, "expected grant of type $type")
 
 fun TokenRequest.clientIdAsString(): String =
     this.clientAuthentication?.clientID?.value ?: this.clientID?.value

@@ -23,7 +23,7 @@ fun HttpUrl.authenticationRequest(
     .addQueryParameter("state", state)
     .addQueryParameter("nonce", nonce)
     .apply {
-        if (pkce != null){
+        if (pkce != null) {
             addQueryParameter("code_challenge", pkce.challenge.value)
             addQueryParameter("code_challenge_method", pkce.method.value)
         }

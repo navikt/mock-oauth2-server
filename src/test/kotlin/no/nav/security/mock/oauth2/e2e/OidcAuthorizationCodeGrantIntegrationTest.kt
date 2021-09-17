@@ -107,7 +107,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     @Test
     fun `something pkce`() {
 
-        //@ Todo: if code challenge is received in authn req it should be enforced as required in token req, i.e. fail if code_verifier is not present
+        // @ Todo: if code challenge is received in authn req it should be enforced as required in token req, i.e. fail if code_verifier is not present
 
         val pkce = Pkce()
         client.get(
