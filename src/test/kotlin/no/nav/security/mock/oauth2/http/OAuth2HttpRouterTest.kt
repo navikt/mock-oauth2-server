@@ -22,6 +22,18 @@ internal class OAuth2HttpRouterTest {
         routes.invoke(get("http://localhost:1234/something/shouldmatch")).body shouldBe "GET"
     }
 
+    @Test
+    fun `routes from route builder should be matched`() {
+        val route = routes {
+            any("/foo") { OAuth2HttpResponse(status = 200, body = "foo") }
+            get("/bar") { OAuth2HttpResponse(status = 200, body = "get bar") }
+            post("/bar") {OAuth2HttpResponse(status = 200, body = "post bar") }
+        }
+        route.invoke(get("http://localhost/foo")).body shouldBe "foo"
+        route.invoke(get("http://localhost/bar")).body shouldBe "get bar"
+        route.invoke(post("http://localhost/bar")).body shouldBe "post bar"
+    }
+
     private fun get(url: String) = request(url, "GET")
     private fun post(url: String, body: String? = "na") = request(url, "POST", body)
 
