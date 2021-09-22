@@ -7,15 +7,12 @@ private val log = KotlinLogging.logger { }
 
 typealias RequestHandler = (OAuth2HttpRequest) -> OAuth2HttpResponse
 
+// @TODO: should a request with incorrect method fail with 400 bad request to a known URL instead of 404 not found (YES, but how generically)?
 interface Route : RequestHandler {
     fun match(request: OAuth2HttpRequest): Boolean
 
     class Builder {
         val routes: MutableList<Route> = mutableListOf()
-
-        fun append(routesToAppend: MutableList<Route>) = apply {
-            routes.addAll(routesToAppend)
-        }
 
         fun attach(vararg route: Route) = apply {
             route.forEach {
