@@ -123,6 +123,6 @@ fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
         body = objectMapper
             .enable(SerializationFeature.INDENT_OUTPUT)
             .writeValueAsString(error.toJSONObject())
-            .toLowerCase()
+            .lowercase()
     )
 }

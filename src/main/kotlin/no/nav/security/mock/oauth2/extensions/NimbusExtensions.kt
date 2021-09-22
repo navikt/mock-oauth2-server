@@ -47,7 +47,8 @@ fun AuthenticationRequest.verifyPkce(tokenRequest: TokenRequest) {
     val verifier: CodeVerifier? = tokenRequest.grant(AuthorizationCodeGrant::class.java).codeVerifier
     if (verifier != null) {
         if (CodeChallenge.compute(this.codeChallengeMethod, verifier) != this.codeChallenge) {
-            throw OAuth2Exception(OAuth2Error.INVALID_GRANT, "invalid_pkce: code_verifier does not compute to code_challenge from request")
+            val msg = "invalid_pkce: code_verifier does not compute to code_challenge from request"
+            throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(msg), msg)
         }
     } else {
         log.debug("no code_verifier found in token request, nothing to compare")

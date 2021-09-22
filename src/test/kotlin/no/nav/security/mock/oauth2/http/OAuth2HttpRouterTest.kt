@@ -27,7 +27,7 @@ internal class OAuth2HttpRouterTest {
         val route = routes {
             any("/foo") { OAuth2HttpResponse(status = 200, body = "foo") }
             get("/bar") { OAuth2HttpResponse(status = 200, body = "get bar") }
-            post("/bar") {OAuth2HttpResponse(status = 200, body = "post bar") }
+            post("/bar") { OAuth2HttpResponse(status = 200, body = "post bar") }
         }
         route.invoke(get("http://localhost/foo")).body shouldBe "foo"
         route.invoke(get("http://localhost/bar")).body shouldBe "get bar"
