@@ -29,12 +29,12 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue
 import com.nimbusds.openid.connect.sdk.Prompt
 import mu.KotlinLogging
-import java.time.Duration
-import java.time.Instant
-import java.util.HashSet
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.invalidRequest
+import java.time.Duration
+import java.time.Instant
+import java.util.HashSet
 
 private val log = KotlinLogging.logger { }
 
@@ -93,13 +93,9 @@ fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet): JWTClaim
     jwtProcessor.jwsKeySelector = keySelector
     jwtProcessor.jwtClaimsSetVerifier = DefaultJWTClaimsVerifier(
         JWTClaimsSet.Builder().issuer(issuer.toString()).build(),
-        HashSet(listOf("sub", "iat", "exp", "aud"))
+        HashSet(listOf("sub", "iat", "exp"))
     )
-    return try {
-        jwtProcessor.process(this, null)
-    } catch (e: Exception) {
-        throw OAuth2Exception("invalid signed JWT.", e)
-    }
+    return jwtProcessor.process(this, null)
 }
 
 fun HTTPRequest.clientAuthentication() =

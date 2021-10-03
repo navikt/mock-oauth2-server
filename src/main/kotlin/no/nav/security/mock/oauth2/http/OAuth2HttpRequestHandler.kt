@@ -36,6 +36,7 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
+import no.nav.security.mock.oauth2.userinfo.userInfo
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.util.concurrent.BlockingQueue
@@ -65,6 +66,7 @@ class OAuth2HttpRequestHandler(
         authorization()
         token()
         endSession()
+        userInfo(config.tokenProvider)
         debugger()
         get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
     }
@@ -118,13 +120,18 @@ class OAuth2HttpRequestHandler(
         } ?: html("logged out")
     }
 
-    private fun Route.Builder.token() = any(TOKEN) {
-        log.debug("handle token request $it")
-        val grantType = it.grantType()
-        val tokenCallback: OAuth2TokenCallback = tokenCallbackFromQueueOrDefault(it.url.issuerId())
-        val grantHandler: GrantHandler = grantHandlers[grantType] ?: invalidGrant(grantType)
-        val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
-        json(tokenResponse)
+    private fun Route.Builder.token() = apply {
+        get(TOKEN) {
+            OAuth2HttpResponse(status = 405, body = "unsupported method")
+        }
+        post(TOKEN) {
+            log.debug("handle token request $it")
+            val grantType = it.grantType()
+            val tokenCallback: OAuth2TokenCallback = tokenCallbackFromQueueOrDefault(it.url.issuerId())
+            val grantHandler: GrantHandler = grantHandlers[grantType] ?: invalidGrant(grantType)
+            val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
+            json(tokenResponse)
+        }
     }
 
     private fun Route.Builder.debugger() = apply {

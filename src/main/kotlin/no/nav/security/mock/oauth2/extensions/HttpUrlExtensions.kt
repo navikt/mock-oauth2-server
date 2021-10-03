@@ -10,6 +10,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.JWKS
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.USER_INFO
 import okhttp3.HttpUrl
 
 object OAuth2Endpoints {
@@ -19,6 +20,7 @@ object OAuth2Endpoints {
     const val TOKEN = "/token"
     const val END_SESSION = "/endsession"
     const val JWKS = "/jwks"
+    const val USER_INFO = "/userinfo"
     const val DEBUGGER = "/debugger"
     const val DEBUGGER_CALLBACK = "/debugger/callback"
 
@@ -29,6 +31,7 @@ object OAuth2Endpoints {
         TOKEN,
         END_SESSION,
         JWKS,
+        USER_INFO,
         DEBUGGER,
         DEBUGGER_CALLBACK
     )
@@ -39,6 +42,7 @@ fun HttpUrl.isAuthorizationEndpointUrl(): Boolean = this.endsWith(AUTHORIZATION)
 fun HttpUrl.isTokenEndpointUrl(): Boolean = this.endsWith(TOKEN)
 fun HttpUrl.isEndSessionEndpointUrl(): Boolean = this.endsWith(END_SESSION)
 fun HttpUrl.isJwksUrl(): Boolean = this.endsWith(JWKS)
+fun HttpUrl.isUserInfoUrl(): Boolean = this.endsWith(USER_INFO)
 fun HttpUrl.isDebuggerUrl(): Boolean = this.endsWith(DEBUGGER)
 fun HttpUrl.isDebuggerCallbackUrl(): Boolean = this.endsWith(DEBUGGER_CALLBACK)
 
@@ -49,6 +53,7 @@ fun HttpUrl.toEndSessionEndpointUrl(): HttpUrl = issuer(END_SESSION)
 fun HttpUrl.toTokenEndpointUrl(): HttpUrl = issuer(TOKEN)
 fun HttpUrl.toJwksUrl(): HttpUrl = issuer(JWKS)
 fun HttpUrl.toIssuerUrl(): HttpUrl = issuer()
+fun HttpUrl.toUserInfoUrl(): HttpUrl = issuer(USER_INFO)
 fun HttpUrl.toDebuggerUrl(): HttpUrl = issuer(DEBUGGER)
 fun HttpUrl.toDebuggerCallbackUrl(): HttpUrl = issuer(DEBUGGER_CALLBACK)
 

@@ -17,6 +17,7 @@ import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toOAuth2AuthorizationServerMetadataUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequestHandler
@@ -88,6 +89,7 @@ open class MockOAuth2Server(
     fun issuerUrl(issuerId: String): HttpUrl = url(issuerId)
     fun authorizationEndpointUrl(issuerId: String): HttpUrl = url(issuerId).toAuthorizationEndpointUrl()
     fun endSessionEndpointUrl(issuerId: String): HttpUrl = url(issuerId).toEndSessionEndpointUrl()
+    fun userInfoUrl(issuerId: String): HttpUrl = url(issuerId).toUserInfoUrl()
     fun baseUrl(): HttpUrl = url("")
 
     fun issueToken(issuerId: String, clientId: String, tokenCallback: OAuth2TokenCallback): SignedJWT {
