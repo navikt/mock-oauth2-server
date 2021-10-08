@@ -15,7 +15,7 @@ val objectMapper: ObjectMapper = jacksonObjectMapper()
 val templateMapper: TemplateMapper = TemplateMapper.create {}
 
 data class OAuth2HttpResponse(
-    val headers: Headers = Headers.headersOf(),
+    val headers: Headers = headersOf(),
     val status: Int,
     val body: String? = null
 ) {
@@ -63,7 +63,7 @@ data class OAuth2TokenResponse(
 )
 
 fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
-    headers = Headers.headersOf(
+    headers = headersOf(
         OAuth2HttpResponse.ContentType.HEADER,
         OAuth2HttpResponse.ContentType.JSON
     ),
@@ -78,7 +78,7 @@ fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
 )
 
 fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
-    headers = Headers.headersOf(
+    headers = headersOf(
         OAuth2HttpResponse.ContentType.HEADER,
         OAuth2HttpResponse.ContentType.HTML
     ),
@@ -86,8 +86,8 @@ fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
     body = content
 )
 
-fun redirect(location: String, headers: Headers = Headers.headersOf()): OAuth2HttpResponse = OAuth2HttpResponse(
-    headers = Headers.headersOf("Location", location).newBuilder().addAll(headers).build(),
+fun redirect(location: String, headers: Headers = headersOf()): OAuth2HttpResponse = OAuth2HttpResponse(
+    headers = headersOf("Location", location).newBuilder().addAll(headers).build(),
     status = 302
 )
 
@@ -106,7 +106,7 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
             )
         }
         else -> OAuth2HttpResponse(
-            headers = Headers.headersOf("Location", authenticationSuccessResponse.toURI().toString()),
+            headers = headersOf("Location", authenticationSuccessResponse.toURI().toString()),
             status = 302
         )
     }
@@ -115,7 +115,7 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
 fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
     val responseCode = error.httpStatusCode.takeUnless { it == 302 } ?: 400
     return OAuth2HttpResponse(
-        headers = Headers.headersOf(
+        headers = headersOf(
             OAuth2HttpResponse.ContentType.HEADER,
             OAuth2HttpResponse.ContentType.JSON
         ),

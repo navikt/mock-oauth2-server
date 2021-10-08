@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.http
 
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.endsWith
+import okhttp3.Headers
 
 private val log = KotlinLogging.logger { }
 
@@ -55,5 +56,10 @@ private fun routeFromPathAndMethod(path: String, method: String? = null, request
                 false
             }
 
-        override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse = requestHandler.invoke(request)
+        override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse {
+            if (request.method == "OPTIONS") {
+                return OAuth2HttpResponse(status = 200, headers = Headers.headersOf("Allow", "OPTIONS, GET, HEAD, POST"))
+            }
+            return requestHandler.invoke(request)
+        }
     }

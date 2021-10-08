@@ -168,7 +168,7 @@ class NettyWrapper @JvmOverloads constructor(
             val port = (ctx.channel().localAddress() as InetSocketAddress).port
             val scheme = if (ctx.pipeline().get(SslHandler::class.java) == null) "http" else "https"
             val (response, stream) = requestHandler(request.asOAuth2HttpRequest(scheme, address, port)).asNettyResponse()
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
+            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE).set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
 
             ctx.write(response)
             ctx.write(stream)
@@ -217,3 +217,5 @@ class NettyWrapper @JvmOverloads constructor(
         }
     }
 }
+
+fun headersOf(vararg namesAndValues: String) = Headers.headersOf(*namesAndValues, HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*")
