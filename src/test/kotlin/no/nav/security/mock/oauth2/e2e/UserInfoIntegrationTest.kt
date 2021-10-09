@@ -16,7 +16,7 @@ class UserInfoIntegrationTest {
     private val client = client()
 
     @Test
-    fun `userinfo should return claims from token`() {
+    fun `userinfo should return claims from token when valid bearer token is present`() {
         withMockOAuth2Server {
             val issuerId = "default"
             val token = this.issueToken(issuerId = issuerId, subject = "foo", claims = mapOf("extra" to "bar"))
