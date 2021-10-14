@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.grant
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -103,11 +104,16 @@ internal class AuthorizationCodeHandler(
         override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
             OAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
                 login.claims?.let {
-                    jsonMapper.readTree(it)
-                        .fields()
-                        .forEach { field ->
-                            put(field.key, jsonMapper.readValue(field.value.toString()))
-                        }
+                    try {
+                        jsonMapper.readTree(it)
+                            .fields()
+                            .forEach { field ->
+                                put(field.key, jsonMapper.readValue(field.value.toString()))
+                            }
+                    }
+                    catch (exception: JsonProcessingException) {
+                        log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
+                    }
                 }
             }
 
