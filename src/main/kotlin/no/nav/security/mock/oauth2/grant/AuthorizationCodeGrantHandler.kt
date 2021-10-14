@@ -1,5 +1,8 @@
 package no.nav.security.mock.oauth2.grant
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.OAuth2Error
@@ -91,13 +94,21 @@ internal class AuthorizationCodeHandler(
     private fun takeAuthenticationRequestFromCache(code: AuthorizationCode): AuthenticationRequest? = codeToAuthRequestCache.remove(code)
 
     private class LoginOAuth2TokenCallback(val login: Login, val OAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
+        private val jsonMapper: ObjectMapper = jacksonObjectMapper()
+
         override fun issuerId(): String = OAuth2TokenCallback.issuerId()
         override fun subject(tokenRequest: TokenRequest): String = login.username
         override fun typeHeader(tokenRequest: TokenRequest): String = OAuth2TokenCallback.typeHeader(tokenRequest)
         override fun audience(tokenRequest: TokenRequest): List<String> = OAuth2TokenCallback.audience(tokenRequest)
         override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
             OAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
-                login.acr?.let { put("acr", it) }
+                login.claims?.let {
+                    jsonMapper.readTree(it)
+                        .fields()
+                        .forEach { field ->
+                            put(field.key, jsonMapper.readValue(field.value.toString()))
+                        }
+                }
             }
 
         override fun tokenExpiry(): Long = OAuth2TokenCallback.tokenExpiry()
