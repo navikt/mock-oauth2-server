@@ -23,6 +23,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 
 private val log = KotlinLogging.logger {}
+private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
@@ -95,8 +96,6 @@ internal class AuthorizationCodeHandler(
     private fun takeAuthenticationRequestFromCache(code: AuthorizationCode): AuthenticationRequest? = codeToAuthRequestCache.remove(code)
 
     private class LoginOAuth2TokenCallback(val login: Login, val OAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
-        private val jsonMapper: ObjectMapper = jacksonObjectMapper()
-
         override fun issuerId(): String = OAuth2TokenCallback.issuerId()
         override fun subject(tokenRequest: TokenRequest): String = login.username
         override fun typeHeader(tokenRequest: TokenRequest): String = OAuth2TokenCallback.typeHeader(tokenRequest)
