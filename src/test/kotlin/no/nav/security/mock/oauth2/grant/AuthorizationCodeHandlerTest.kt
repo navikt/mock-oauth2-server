@@ -47,10 +47,7 @@ internal class AuthorizationCodeHandlerTest {
 
     @Test
     fun `token response with login should return id_token and access_token containing username from login as sub`() {
-        val code: String = handler.authorizationCodeResponse(
-            authenticationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
-            login = Login("foo")
-        ).authorizationCode.value
+        val code: String = handler.retrieveAuthorizationCode(Login("foo"))
 
         handler.tokenResponse(tokenRequest(code = code), "http://myissuer".toHttpUrl(), DefaultOAuth2TokenCallback()).asClue {
             SignedJWT.parse(it.idToken).subject shouldBe "foo"
@@ -60,10 +57,7 @@ internal class AuthorizationCodeHandlerTest {
     @ParameterizedTest
     @MethodSource("jsonClaimsProvider")
     fun `token response with login including claims should return access_token containing claims from login`(claims: String, expectedClaimKey: String, expectedClaimValue: String) {
-        val code: String = handler.authorizationCodeResponse(
-            authenticationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
-            login = Login("foo", claims)
-        ).authorizationCode.value
+        val code: String = handler.retrieveAuthorizationCode(Login("foo", claims))
 
         handler.tokenResponse(tokenRequest(code = code), "http://myissuer".toHttpUrl(), DefaultOAuth2TokenCallback()).asClue {
             val claim = SignedJWT.parse(it.idToken).claims[expectedClaimKey]
@@ -82,10 +76,7 @@ internal class AuthorizationCodeHandlerTest {
 
     @Test
     fun `token response with login including multiple claims should return access_token containing all claims from login`() {
-        val code: String = handler.authorizationCodeResponse(
-            authenticationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
-            login = Login("foo", "{ \"acr\": \"value1\", \"abc\": \"value2\" }")
-        ).authorizationCode.value
+        val code: String = handler.retrieveAuthorizationCode(Login("foo", "{ \"acr\": \"value1\", \"abc\": \"value2\" }"))
 
         handler.tokenResponse(tokenRequest(code = code), "http://myissuer".toHttpUrl(), DefaultOAuth2TokenCallback()).asClue {
             val claims = SignedJWT.parse(it.idToken).claims
@@ -97,15 +88,18 @@ internal class AuthorizationCodeHandlerTest {
     @ParameterizedTest
     @ValueSource(strings = ["{", "[]", "[\"claim\"]", "{}"])
     fun `token response with login including invalid JSON for claims parsing should return access_token containing no additional claims`(claimsValue: String) {
-        val code: String = handler.authorizationCodeResponse(
-            authenticationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
-            login = Login("foo", claimsValue)
-        ).authorizationCode.value
+        val code: String = handler.retrieveAuthorizationCode(Login("foo", claimsValue))
 
         handler.tokenResponse(tokenRequest(code = code), "http://myissuer".toHttpUrl(), DefaultOAuth2TokenCallback()).asClue {
             SignedJWT.parse(it.idToken).claims.count() shouldBe 10
         }
     }
+
+    private fun AuthorizationCodeHandler.retrieveAuthorizationCode(login: Login): String =
+        authorizationCodeResponse(
+            authenticationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
+            login = login
+        ).authorizationCode.value
 
     private fun HttpUrl.asNimbusAuthRequest(): AuthenticationRequest = AuthenticationRequest.parse(this.toUri())
 
