@@ -16,9 +16,11 @@
                                autofocus="on">
                     </label>
                     <label>
-                        <input class="u-full-width" required type="text" name="acr"
-                               placeholder="Optional 'acr' claim value"
-                               autofocus="on">
+                        <textarea class="u-full-width claims" name="claims" rows="15"
+                               placeholder="Optional claims JSON value, example:
+{
+  &quot;acr&quot;: &quot;reference&quot;
+}" autofocus="on"></textarea>
                     </label>
                     <input class="button-primary" type="submit" value="Sign-in">
                 </form>

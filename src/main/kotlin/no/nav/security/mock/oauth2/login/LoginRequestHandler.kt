@@ -10,11 +10,11 @@ class LoginRequestHandler(private val templateMapper: TemplateMapper) {
     fun loginSubmit(httpRequest: OAuth2HttpRequest): Login {
         val formParameters = httpRequest.formParameters
         val username = checkNotNull(formParameters.get("username"))
-        return Login(username, formParameters.get("acr"))
+        return Login(username, formParameters.get("claims"))
     }
 }
 
 data class Login(
     val username: String,
-    val acr: String? = null
+    val claims: String? = null
 )
