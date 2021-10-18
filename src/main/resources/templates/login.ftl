@@ -5,6 +5,7 @@
     <section class="header">
         <h2 class="title">Mock OAuth2 Server Sign-in</h2>
     </section>
+    <div>${header}</div>
     <div class="docs-section" id="sign-in">
         <div class="row">
             <div class="three columns">&nbsp;</div>
@@ -28,6 +29,7 @@
             <div class="three columns">&nbsp;</div>
         </div>
     </div>
+    <div>${footer}</div>
     <div class="docs-section">
 
         <div class="row">

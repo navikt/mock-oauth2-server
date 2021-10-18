@@ -106,7 +106,10 @@ class OAuth2HttpRequestHandler(
         return when (request.method) {
             "GET" -> {
                 if (config.interactiveLogin || authRequest.isPrompt())
-                    html(loginRequestHandler.loginHtml(request))
+                    html(loginRequestHandler.loginHtml(
+                        request,
+                        config.loginHeader.joinToString(System.lineSeparator()),
+                        config.loginFooter.joinToString(System.lineSeparator())))
                 else {
                     authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
                 }

@@ -15,13 +15,15 @@ class TemplateMapper(
     private val config: Configuration
 ) {
 
-    fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest): String =
+    fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest, header: String, footer: String): String =
         asString(
             HtmlContent(
                 "login.ftl",
                 mapOf(
                     "request_url" to oAuth2HttpRequest.url.newBuilder().query(null).build().toString(),
-                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map
+                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map,
+                    "header" to header,
+                    "footer" to footer
                 )
             )
         )

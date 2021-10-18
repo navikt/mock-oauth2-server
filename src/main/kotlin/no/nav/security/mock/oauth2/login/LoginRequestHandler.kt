@@ -5,7 +5,7 @@ import no.nav.security.mock.oauth2.templates.TemplateMapper
 
 class LoginRequestHandler(private val templateMapper: TemplateMapper) {
 
-    fun loginHtml(httpRequest: OAuth2HttpRequest): String = templateMapper.loginHtml(httpRequest)
+    fun loginHtml(httpRequest: OAuth2HttpRequest, header: String, footer: String): String = templateMapper.loginHtml(httpRequest, header, footer)
 
     fun loginSubmit(httpRequest: OAuth2HttpRequest): Login {
         val formParameters = httpRequest.formParameters
