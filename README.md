@@ -218,6 +218,8 @@ Example:
 ```json
 {
     "interactiveLogin": true,
+    "loginHeader": [ "<b>login form header<b>" ],
+    "loginFooter": [ "<b>login form footer<b>" ],
     "httpServer": "NettyWrapper",
     "tokenCallbacks": [
         {
@@ -258,6 +260,8 @@ Example:
 | Property | Description |
 | --- | --- |
 | `interactiveLogin` | `true` or `false`, enables login screen when redirecting to server `/authorize` endpoint |
+| `loginHeader` | A list of strings containing text or html that will be shown above the login form |
+| `loginFooter` | A list of strings containing text or html that will be shown below the login form |
 | `httpServer`| A string identifying the httpserver to use. Must match one of the following enum values: `MockWebServerWrapper` or `NettyWrapper`|
 | `tokenCallbacks` | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) that lets you specify which token claims to return when a token request matches the specified condition.|
 
