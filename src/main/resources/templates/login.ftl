@@ -12,12 +12,12 @@
             <div class="six columns">
                 <form method="post">
                     <label>
-                        <input class="u-full-width" required type="text" name="username"
+                        <input class="u-full-width" required type="text" id="username" name="username"
                                placeholder="Enter any user/subject"
                                autofocus="on">
                     </label>
                     <label>
-                        <textarea class="u-full-width claims" name="claims" rows="15"
+                        <textarea class="u-full-width claims" id="claims" name="claims" rows="15"
                                placeholder="Optional claims JSON value, example:
 {
   &quot;acr&quot;: &quot;reference&quot;
