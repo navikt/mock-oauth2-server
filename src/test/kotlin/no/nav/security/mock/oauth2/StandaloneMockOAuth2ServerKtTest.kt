@@ -26,6 +26,8 @@ internal class StandaloneMockOAuth2ServerKtTest {
         val config = oauth2Config()
         config.tokenCallbacks.size shouldBe 0
         config.interactiveLogin shouldBe true
+        config.loginHeader shouldBe listOf()
+        config.loginFooter shouldBe listOf()
         config.httpServer should beInstanceOf<NettyWrapper>()
         hostname() shouldBe InetSocketAddress(0).address
         port() shouldBe 8080
