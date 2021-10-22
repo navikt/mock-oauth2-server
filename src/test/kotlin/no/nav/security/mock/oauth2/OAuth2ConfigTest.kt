@@ -18,6 +18,8 @@ import no.nav.security.mock.oauth2.HttpServerConfig.withNettyHttpServer
 import no.nav.security.mock.oauth2.HttpServerConfig.withUnknownHttpServer
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
+import no.nav.security.mock.oauth2.testutils.subject
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -47,6 +49,39 @@ internal class OAuth2ConfigTest {
         config.tokenCallbacks.map {
             it.issuerId()
         }.toList() shouldContainAll listOf("issuer1", "issuer2")
+    }
+
+    @Test
+    fun `create full config from json with multiple presets`() {
+        val config = OAuth2Config.fromJson(configJson)
+        config.presets.size shouldBe 2
+        config.presets.map {
+            it.name
+        }.toList() shouldContainAll listOf("Preset 1", "Preset 2")
+    }
+
+    @Test
+    fun `claims from preset should be pretty printed when requested as string`() {
+        val config = OAuth2Config.fromJson(configJson)
+        config.presets[0].claimsAsString shouldBe """
+            {
+              "acr" : "reference"
+            }
+        """.trimIndent()
+    }
+
+    @Test
+    fun `claims from preset can be used when issuing a token`() {
+        val config = OAuth2Config.fromJson(configJson)
+
+        withMockOAuth2Server(config) {
+            val token1 = issueTokenWithClaimsFromPreset("Preset 1")
+            val token2 = anyTokenWithClaimsFromPreset("Preset 2", "http://someissuer/default".toHttpUrl())
+
+            token1.subject shouldBe "username1"
+            token1.jwtClaimsSet.claims["acr"] shouldBe "reference"
+            token2.jwtClaimsSet.claims["some_claim"] shouldBe "some_value"
+        }
     }
 
     @Test
@@ -106,6 +141,22 @@ object FullConfig {
     val configJson = """{
       "interactiveLogin" : true,
       "httpServer": "NettyWrapper",
+      "presets": [
+        {
+          "name": "Preset 1",
+          "username": "username1",
+          "claims": {
+            "acr": "reference"
+          }
+        },
+        {
+          "name": "Preset 2",
+          "username": "username2",
+          "claims": {
+            "some_claim": "some_value"
+          }
+        }
+      ],
       "tokenCallbacks": [
         {
           "issuerId": "issuer1",

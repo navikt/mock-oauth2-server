@@ -171,9 +171,10 @@ internal fun Map<String, Any>.toJwtClaimsSet(): JWTClaimsSet =
         }.build()
 
 fun <R> withMockOAuth2Server(
+    config: OAuth2Config = OAuth2Config(),
     test: MockOAuth2Server.() -> R
 ): R {
-    val server = MockOAuth2Server()
+    val server = MockOAuth2Server(config)
     server.start()
     try {
         return server.test()
