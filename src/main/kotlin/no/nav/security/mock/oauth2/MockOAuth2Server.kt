@@ -128,16 +128,17 @@ open class MockOAuth2Server(
     fun issueTokenWithClaimsFromPreset(
         presetName: String,
         issuerId: String = "default",
-        subject: String = UUID.randomUUID().toString(),
         audience: String? = "default",
         expiry: Long = 3600
-    ): SignedJWT = issueToken(
-        issuerId,
-        subject,
-        audience,
-        config.presetWithName(presetName).claims,
-        expiry
-    )
+    ): SignedJWT = config.presetWithName(presetName).let { preset ->
+        issueToken(
+            issuerId,
+            preset.username,
+            audience,
+            preset.claims,
+            expiry
+        )
+    }
 
     @JvmOverloads
     fun anyToken(issuerUrl: HttpUrl, claims: Map<String, Any>, expiry: Duration = Duration.ofHours(1)): SignedJWT {
