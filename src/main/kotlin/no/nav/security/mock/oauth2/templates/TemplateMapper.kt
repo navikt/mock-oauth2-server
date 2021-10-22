@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.templates
 
 import freemarker.cache.ClassTemplateLoader
 import freemarker.template.Configuration
+import no.nav.security.mock.oauth2.Preset
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import java.io.StringWriter
@@ -15,13 +16,14 @@ class TemplateMapper(
     private val config: Configuration
 ) {
 
-    fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest): String =
+    fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest, presets: List<Preset>): String =
         asString(
             HtmlContent(
                 "login.ftl",
                 mapOf(
                     "request_url" to oAuth2HttpRequest.url.newBuilder().query(null).build().toString(),
-                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map
+                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map,
+                    "presets" to presets
                 )
             )
         )

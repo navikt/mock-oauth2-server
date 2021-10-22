@@ -125,6 +125,21 @@ open class MockOAuth2Server(
     )
 
     @JvmOverloads
+    fun issueTokenWithClaimsFromPreset(
+        presetName: String,
+        issuerId: String = "default",
+        subject: String = UUID.randomUUID().toString(),
+        audience: String? = "default",
+        expiry: Long = 3600
+    ): SignedJWT = issueToken(
+        issuerId,
+        subject,
+        audience,
+        config.presetWithName(presetName).claims,
+        expiry
+    )
+
+    @JvmOverloads
     fun anyToken(issuerUrl: HttpUrl, claims: Map<String, Any>, expiry: Duration = Duration.ofHours(1)): SignedJWT {
         val jwtClaimsSet = claims.toJwtClaimsSet()
         val mockGrant: AuthorizationGrant = object : AuthorizationGrant(GrantType("MockGrant")) {
@@ -140,6 +155,10 @@ open class MockOAuth2Server(
             )
         )
     }
+
+    @JvmOverloads
+    fun anyTokenWithClaimsFromPreset(presetName: String, issuerUrl: HttpUrl, expiry: Duration = Duration.ofHours(1)): SignedJWT =
+        anyToken(issuerUrl, config.presetWithName(presetName).claims, expiry)
 }
 
 internal fun Map<String, Any>.toJwtClaimsSet(): JWTClaimsSet =

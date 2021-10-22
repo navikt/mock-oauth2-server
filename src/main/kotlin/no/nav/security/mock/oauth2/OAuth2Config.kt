@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -19,6 +20,7 @@ import java.io.File
 
 data class OAuth2Config @JvmOverloads constructor(
     val interactiveLogin: Boolean = false,
+    val presets: List<Preset> = emptyList(),
     @JsonDeserialize(using = OAuth2TokenProviderDeserializer::class)
     val tokenProvider: OAuth2TokenProvider = OAuth2TokenProvider(),
     @JsonDeserialize(contentAs = RequestMappingTokenCallback::class)
@@ -76,4 +78,16 @@ data class OAuth2Config @JvmOverloads constructor(
             return jacksonObjectMapper().readValue(json)
         }
     }
+
+    fun presetWithName(name: String): Preset =
+        presets.first { it.name == name }
+}
+
+data class Preset(
+    val name: String,
+    val username: String,
+    val claims: Map<String, Any>
+) {
+    val claimsAsString: String
+        get() = ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(claims)
 }

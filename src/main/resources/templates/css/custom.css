@@ -18,6 +18,12 @@ pre > code {
     text-align: center;
 }
 
+.presets-section {
+    margin: 0 auto;
+    width: min-content;
+    white-space: nowrap;
+}
+
 .value-prop {
     margin-top: 1rem;
 }
