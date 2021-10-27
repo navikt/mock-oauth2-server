@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
+import io.netty.handler.codec.http.HttpHeaderNames
 import no.nav.security.mock.oauth2.templates.TemplateMapper
 import okhttp3.Headers
 
@@ -18,13 +19,7 @@ data class OAuth2HttpResponse(
     val headers: Headers = Headers.headersOf(),
     val status: Int,
     val body: String? = null
-) {
-    object ContentType {
-        const val HEADER = "Content-Type"
-        const val JSON = "application/json;charset=UTF-8"
-        const val HTML = "text/html;charset=UTF-8"
-    }
-}
+)
 
 data class WellKnown(
     val issuer: String,
@@ -64,9 +59,8 @@ data class OAuth2TokenResponse(
 
 fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
-        OAuth2HttpResponse.ContentType.HEADER,
-        OAuth2HttpResponse.ContentType.JSON
-    ),
+        HttpHeaderNames.CONTENT_TYPE.toString(), "application/json;charset=UTF-8",
+        HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"),
     status = 200,
     body = when (anyObject) {
         is String -> anyObject
@@ -79,15 +73,14 @@ fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
 
 fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
-        OAuth2HttpResponse.ContentType.HEADER,
-        OAuth2HttpResponse.ContentType.HTML
-    ),
+        HttpHeaderNames.CONTENT_TYPE.toString(), "text/html;charset=UTF-8",
+        HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"),
     status = 200,
     body = content
 )
 
 fun redirect(location: String, headers: Headers = Headers.headersOf()): OAuth2HttpResponse = OAuth2HttpResponse(
-    headers = Headers.headersOf("Location", location).newBuilder().addAll(headers).build(),
+    headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), location).newBuilder().addAll(headers).build(),
     status = 302
 )
 
@@ -106,7 +99,7 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
             )
         }
         else -> OAuth2HttpResponse(
-            headers = Headers.headersOf("Location", authenticationSuccessResponse.toURI().toString()),
+            headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authenticationSuccessResponse.toURI().toString()),
             status = 302
         )
     }
@@ -116,9 +109,8 @@ fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
     val responseCode = error.httpStatusCode.takeUnless { it == 302 } ?: 400
     return OAuth2HttpResponse(
         headers = Headers.headersOf(
-            OAuth2HttpResponse.ContentType.HEADER,
-            OAuth2HttpResponse.ContentType.JSON
-        ),
+            HttpHeaderNames.CONTENT_TYPE.toString(), "application/json;charset=UTF-8",
+            HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"),
         status = responseCode,
         body = objectMapper
             .enable(SerializationFeature.INDENT_OUTPUT)

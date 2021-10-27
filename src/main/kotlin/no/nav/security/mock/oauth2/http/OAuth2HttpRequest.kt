@@ -26,6 +26,7 @@ import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER_CALLBACK
 import no.nav.security.mock.oauth2.http.RequestType.END_SESSION
 import no.nav.security.mock.oauth2.http.RequestType.FAVICON
 import no.nav.security.mock.oauth2.http.RequestType.JWKS
+import no.nav.security.mock.oauth2.http.RequestType.PREFLIGHT
 import no.nav.security.mock.oauth2.http.RequestType.TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.UNKNOWN
 import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
@@ -84,6 +85,7 @@ data class OAuth2HttpRequest(
         url.isDebuggerUrl() -> DEBUGGER
         url.isDebuggerCallbackUrl() -> DEBUGGER_CALLBACK
         url.encodedPath == "/favicon.ico" -> FAVICON
+        method == "OPTIONS" -> PREFLIGHT
         else -> UNKNOWN
     }
 
@@ -128,5 +130,5 @@ data class OAuth2HttpRequest(
 
 enum class RequestType {
     WELL_KNOWN, AUTHORIZATION, TOKEN, END_SESSION, JWKS,
-    DEBUGGER, DEBUGGER_CALLBACK, FAVICON, UNKNOWN
+    DEBUGGER, DEBUGGER_CALLBACK, FAVICON, PREFLIGHT, UNKNOWN
 }
