@@ -65,6 +65,59 @@ interface Route : RequestHandler {
     }
 }
 
+class Routes {
+    val pathToRoutes: MutableMap<String, MutableList<Route>> = mutableMapOf()
+
+    fun add(path: String, route: Route) {
+        pathToRoutes.merge(path, mutableListOf(route)) { old: MutableList<Route>, new: MutableList<Route> ->
+            old.apply {
+                addAll(new)
+            }
+        }
+    }
+
+    private fun routesFromPath(request: OAuth2HttpRequest): List<Route> =
+        pathToRoutes.filter { request.url.endsWith(it.key) }.map { it.value }.firstOrNull() ?: emptyList()
+
+    fun build(): Route = object : Route {
+
+        override fun match(request: OAuth2HttpRequest): Boolean = routesFromPath(request).isNotEmpty().also {
+            log.debug("TODO: route match invoked for request: ${request.url.encodedPath}, match=$it")
+            log.debug("TODO: searched through ${pathToRoutes.size} routes")
+        }
+
+        override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse  {
+
+        }
+
+            /*
+            firstOrNull { route ->
+                if (route.match(request)) {
+                    route.invoke(request)
+                } else {
+                    OAuth2HttpResponse(status = 405, body = "method not allowed")
+                }
+            } ?: OAuth2HttpResponse(status = 404, body = "no route found")
+                .also{ log.debug("no handler found returning 404") }*/
+
+
+        /*routes.also
+        {
+            log.debug("attempt to route request with url=${request.url}")
+        }.firstOrNull
+        { it.match(request) }?.invoke(request)
+        ?: OAuth2HttpResponse(status = 404, body = "no route found")
+        .also
+        { log.debug("no handler found returning 404") }*/
+
+        override fun toString(): String {
+            return routes.toString()
+        }
+    }
+
+
+}
+
 class OAuth2HttpRouter(
     private val routes: MutableList<Route> = mutableListOf()
 ) : Route {
