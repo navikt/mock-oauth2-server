@@ -7,14 +7,22 @@ private val log = KotlinLogging.logger { }
 
 typealias RequestHandler = (OAuth2HttpRequest) -> OAuth2HttpResponse
 
-// @TODO: should a request with incorrect method fail with 400 bad request to a known URL instead of 404 not found (YES, but how generically)?
 interface Route : RequestHandler {
     fun match(request: OAuth2HttpRequest): Boolean
+}
+
+interface PathRoute: Route {
+
+    fun matchPath(request: OAuth2HttpRequest): Boolean
+
+    override fun match(request: OAuth2HttpRequest): Boolean {
+        return matchPath(request)
+    }
 
     class Builder {
-        val routes: MutableList<Route> = mutableListOf()
+        private val routes: MutableList<PathRoute> = mutableListOf()
 
-        fun attach(vararg route: Route) = apply {
+        fun attach(vararg route: PathRoute) = apply {
             route.forEach {
                 routes.add(it)
             }
@@ -41,22 +49,36 @@ interface Route : RequestHandler {
         }
 
         private fun addRoute(path: String, method: String? = null, requestHandler: RequestHandler) {
-            routes.add(routeFromPathAndMethod(path, method, requestHandler))
+            routes.add(PathMethodRoute(path, method, requestHandler))
         }
 
-        fun build(): Route = object : Route {
+        fun build(): PathRoute = object : PathRoute {
 
-            override fun match(request: OAuth2HttpRequest): Boolean = (routes.firstOrNull { it.match(request) } != null).also {
-                log.debug("route match invoked for request: ${request.url.encodedPath}, match=$it")
-                log.debug("searched through ${routes.size} routes")
+            override fun matchPath(request: OAuth2HttpRequest): Boolean =
+                routes.any { it.matchPath(request) }
+
+            override fun match(request: OAuth2HttpRequest): Boolean {
+                val match = routes.firstOrNull { it.match(request) } != null
+                return match.also {
+                    log.debug("route match invoked for request: ${request.url.encodedPath}, match=$it")
+                    log.debug("searched through ${routes.size} routes")
+                }
             }
 
-            override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse =
-                routes.also {
-                    log.debug("attempt to route request with url=${request.url}")
-                }.firstOrNull { it.match(request) }?.invoke(request)
-                    ?: OAuth2HttpResponse(status = 404, body = "no route found")
-                        .also { log.debug("no handler found returning 404") }
+            override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse {
+                log.debug("attempt to route request with url=${request.url}")
+                return routes.firstOrNull { it.match(request) }?.invoke(request) ?: noMatch(request)
+            }
+
+            private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
+                log.debug("number of routes when in nomatch: ${routes.size}")
+                log.debug("all routes: $routes")
+                return if (matchPath(request)){
+                    OAuth2HttpResponse(status = 405, body = "method not allowed")
+                } else {
+                    OAuth2HttpResponse(status = 404, body = "no route found")
+                }
+            }
 
             override fun toString(): String {
                 return routes.toString()
@@ -65,57 +87,19 @@ interface Route : RequestHandler {
     }
 }
 
-class Routes {
-    val pathToRoutes: MutableMap<String, MutableList<Route>> = mutableMapOf()
+fun rou(config: PathRoute.Builder.() -> Unit): PathRoute = PathRoute.Builder().apply(config).build()
 
-    fun add(path: String, route: Route) {
-        pathToRoutes.merge(path, mutableListOf(route)) { old: MutableList<Route>, new: MutableList<Route> ->
-            old.apply {
-                addAll(new)
-            }
-        }
-    }
+class PathMethodRoute(
+    private val path: String,
+    private val method: String?,
+    private val requestHandler: RequestHandler
+): PathRoute {
+    override fun matchPath(request: OAuth2HttpRequest) = request.url.endsWith(path)
+    private fun matchMethod(request: OAuth2HttpRequest) = method?.let { it == request.method } ?: true
 
-    private fun routesFromPath(request: OAuth2HttpRequest): List<Route> =
-        pathToRoutes.filter { request.url.endsWith(it.key) }.map { it.value }.firstOrNull() ?: emptyList()
-
-    fun build(): Route = object : Route {
-
-        override fun match(request: OAuth2HttpRequest): Boolean = routesFromPath(request).isNotEmpty().also {
-            log.debug("TODO: route match invoked for request: ${request.url.encodedPath}, match=$it")
-            log.debug("TODO: searched through ${pathToRoutes.size} routes")
-        }
-
-        override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse  {
-
-        }
-
-            /*
-            firstOrNull { route ->
-                if (route.match(request)) {
-                    route.invoke(request)
-                } else {
-                    OAuth2HttpResponse(status = 405, body = "method not allowed")
-                }
-            } ?: OAuth2HttpResponse(status = 404, body = "no route found")
-                .also{ log.debug("no handler found returning 404") }*/
-
-
-        /*routes.also
-        {
-            log.debug("attempt to route request with url=${request.url}")
-        }.firstOrNull
-        { it.match(request) }?.invoke(request)
-        ?: OAuth2HttpResponse(status = 404, body = "no route found")
-        .also
-        { log.debug("no handler found returning 404") }*/
-
-        override fun toString(): String {
-            return routes.toString()
-        }
-    }
-
-
+    override fun match(request: OAuth2HttpRequest): Boolean = matchPath(request) && matchMethod(request)
+    override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse = requestHandler.invoke(request)
+    override fun toString(): String = "path=$path, method=$method"
 }
 
 class OAuth2HttpRouter(
