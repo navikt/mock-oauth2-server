@@ -46,6 +46,9 @@ fun post(path: String, requestHandler: RequestHandler): Route =
 fun get(path: String, requestHandler: RequestHandler): Route =
     routeFromPathAndMethod(path, "GET", requestHandler)
 
+fun options(path: String, requestHandler: RequestHandler): Route =
+    routeFromPathAndMethod(path, "OPTIONS", requestHandler)
+
 private fun routeFromPathAndMethod(path: String, method: String? = null, requestHandler: RequestHandler): Route =
     object : Route {
         override fun match(request: OAuth2HttpRequest): Boolean =

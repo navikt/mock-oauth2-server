@@ -10,6 +10,7 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import io.netty.handler.codec.http.HttpHeaderNames
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.util.concurrent.BlockingQueue
@@ -35,6 +36,7 @@ import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER_CALLBACK
 import no.nav.security.mock.oauth2.http.RequestType.END_SESSION
 import no.nav.security.mock.oauth2.http.RequestType.FAVICON
 import no.nav.security.mock.oauth2.http.RequestType.JWKS
+import no.nav.security.mock.oauth2.http.RequestType.PREFLIGHT
 import no.nav.security.mock.oauth2.http.RequestType.TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.invalidGrant
@@ -43,6 +45,7 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
+import okhttp3.Headers
 
 private val log = KotlinLogging.logger {}
 
@@ -74,6 +77,11 @@ class OAuth2HttpRequestHandler(
                 DEBUGGER -> debuggerRequestHandler.handleDebuggerForm(request).also { log.debug("handle debugger request") }
                 DEBUGGER_CALLBACK -> debuggerRequestHandler.handleDebuggerCallback(request).also { log.debug("handle debugger callback request") }
                 FAVICON -> OAuth2HttpResponse(status = 200)
+                PREFLIGHT -> OAuth2HttpResponse(status = 200, headers = Headers.headersOf(
+                    HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*",
+                    HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS.toString(), "*",
+                    HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS.toString(), "*"
+                ))
                 else -> notFound().also { log.error("path '${request.url}' not found") }
             }
         }.fold(
