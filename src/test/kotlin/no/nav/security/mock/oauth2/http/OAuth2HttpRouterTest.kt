@@ -2,7 +2,6 @@ package no.nav.security.mock.oauth2.http
 
 import io.kotest.matchers.shouldBe
 import mu.KotlinLogging
-import no.nav.security.mock.oauth2.http.OAuth2HttpRouter.Companion.routes
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
@@ -38,21 +37,21 @@ internal class OAuth2HttpRouterTest {
     }
 
     @Test
-    fun `todo merged routes something`() {
-        val firstRoutes = rou {
+    fun `routes with matching path but incorrect method should return 405`() {
+        val firstRoutes = routes {
             get("/first") { ok("firstget") }
             get("/first/second") { ok("second") }
             post("/first") { ok("firstpost") }
             get("/any") { ok("anyget") }
         }
-
-        val finalRoutes = rou {
+        val finalRoutes = routes {
             attach(firstRoutes)
             any("/any") { ok("any") }
         }
 
         finalRoutes.invoke(post("/any")).body shouldBe "any"
-        println("Responsearoo: " + finalRoutes.invoke(post("/first/second")))
+        finalRoutes.invoke(post("/first/second")).status shouldBe 405
+        finalRoutes.invoke(get("/notfound")).status shouldBe 404
     }
 
     private fun get(path: String) = request("http://localhost$path", "GET")
