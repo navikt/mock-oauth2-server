@@ -41,7 +41,6 @@ internal class UserInfoTest {
         val url = "http://localhost/default$USER_INFO"
 
         shouldThrow<OAuth2Exception> {
-
             routes {
                 userInfo(OAuth2TokenProvider())
             }.invoke(request(url, null))
