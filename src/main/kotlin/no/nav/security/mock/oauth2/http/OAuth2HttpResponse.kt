@@ -91,7 +91,8 @@ fun redirect(location: String, headers: Headers = Headers.headersOf()): OAuth2Ht
     status = 302
 )
 
-fun notFound(): OAuth2HttpResponse = OAuth2HttpResponse(status = 404)
+fun notFound(body: String? = null): OAuth2HttpResponse = OAuth2HttpResponse(status = 404, body = body)
+fun methodNotAllowed(): OAuth2HttpResponse = OAuth2HttpResponse(status = 405, body = "method not allowed")
 
 fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessResponse): OAuth2HttpResponse {
     return when (authenticationSuccessResponse.responseMode) {
