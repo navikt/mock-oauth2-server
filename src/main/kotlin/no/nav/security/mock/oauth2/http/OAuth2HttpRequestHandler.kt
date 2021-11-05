@@ -44,9 +44,8 @@ import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
 
-class OAuth2HttpRequestHandler(
-    private val config: OAuth2Config
-) : Route {
+class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
+
     private val loginRequestHandler = LoginRequestHandler(templateMapper)
     private val debuggerRequestHandler = DebuggerRequestHandler(templateMapper)
     private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
@@ -60,7 +59,20 @@ class OAuth2HttpRequestHandler(
         REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager)
     )
 
-    private val routes = routes {
+    private val exceptionHandler: ExceptionHandler = { request, error ->
+        log.error("received exception when handling request: ${request.url}.", error)
+        val msg = URLEncoder.encode(error.message, Charset.forName("UTF-8"))
+        val errorObject: ErrorObject = when (error) {
+            is OAuth2Exception -> error.errorObject
+            is ParseException -> error.errorObject ?: OAuth2Error.INVALID_REQUEST.setDescription("failed to parse request: $msg")
+            is GeneralException -> error.errorObject
+            else -> null
+        } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
+        oauth2Error(errorObject)
+    }
+
+    val authorizationServer: Route = routes {
+        exceptionHandler(exceptionHandler)
         wellKnown()
         jwks()
         authorization()
@@ -70,16 +82,6 @@ class OAuth2HttpRequestHandler(
         debugger()
         get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
     }
-
-    override fun match(request: OAuth2HttpRequest): Boolean = routes.match(request)
-
-    override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse = runCatching {
-        log.debug("received request on url=${request.url} with headers=${request.headers}")
-        routes.invoke(request)
-    }.fold(
-        onSuccess = { result -> result },
-        onFailure = { error -> handleException(error) }
-    )
 
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = tokenCallbackQueue.add(oAuth2TokenCallback)
 
@@ -145,16 +147,4 @@ class OAuth2HttpRequestHandler(
                 config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId } ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
             }
         }
-
-    private fun handleException(error: Throwable): OAuth2HttpResponse {
-        log.error("received exception when handling request.", error)
-        val msg = URLEncoder.encode(error.message, Charset.forName("UTF-8"))
-        val errorObject: ErrorObject = when (error) {
-            is OAuth2Exception -> error.errorObject
-            is ParseException -> error.errorObject ?: OAuth2Error.INVALID_REQUEST.setDescription("failed to parse request: $msg")
-            is GeneralException -> error.errorObject
-            else -> null
-        } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
-        return oauth2Error(errorObject)
-    }
 }

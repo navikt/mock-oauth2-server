@@ -49,7 +49,7 @@ open class MockOAuth2Server(
     private val defaultRequestHandler: OAuth2HttpRequestHandler = OAuth2HttpRequestHandler(config)
     private val router: RequestHandler = routes(
         *additionalRoutes,
-        defaultRequestHandler
+        defaultRequestHandler.authorizationServer
     )
 
     @JvmOverloads
