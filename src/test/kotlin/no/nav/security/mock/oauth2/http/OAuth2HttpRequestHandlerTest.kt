@@ -19,8 +19,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
 
-// TODO: maybe not here but: test and fix errorhandling when posting to authorize endpoint without params from form like username etc.
-// TODO: test with interactive login=true - authorization should return 200 on get instead of 302
 internal class OAuth2HttpRequestHandlerTest {
 
     @ParameterizedTest
@@ -45,7 +43,7 @@ internal class OAuth2HttpRequestHandlerTest {
             request(
                 path = "/issuer1$AUTHORIZATION_WITH_PARAMS",
                 method = "POST",
-                body = "username=foo&acr=bar",
+                body = "username=foo",
                 expectedResponse = OAuth2HttpResponse(status = 302)
             ),
             request(
