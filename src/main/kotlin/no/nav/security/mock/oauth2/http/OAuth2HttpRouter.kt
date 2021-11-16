@@ -14,7 +14,7 @@ interface Route : RequestHandler {
     class Builder {
         private val routes: MutableList<Route> = mutableListOf()
 
-        private var exceptionHandler: ExceptionHandler = { request, throwable ->
+        private var exceptionHandler: ExceptionHandler = { _, throwable ->
             throw throwable
         }
 
