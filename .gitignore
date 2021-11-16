@@ -12,3 +12,4 @@ build/
 /gradle/wrapper/dists/
 
 .DS_Store
+/compose/

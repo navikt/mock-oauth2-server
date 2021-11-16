@@ -19,12 +19,20 @@ import java.io.File
 
 data class OAuth2Config @JvmOverloads constructor(
     val interactiveLogin: Boolean = false,
+    val loginPagePath: String? = null,
+    @JsonDeserialize(using = OAuth2TokenProviderDeserializer::class)
     val tokenProvider: OAuth2TokenProvider = OAuth2TokenProvider(),
     @JsonDeserialize(contentAs = RequestMappingTokenCallback::class)
     val tokenCallbacks: Set<OAuth2TokenCallback> = emptySet(),
     @JsonDeserialize(using = OAuth2HttpServerDeserializer::class)
     val httpServer: OAuth2HttpServer = MockWebServerWrapper()
 ) {
+
+    class OAuth2TokenProviderDeserializer : JsonDeserializer<OAuth2TokenProvider>() {
+        override fun deserialize(p0: JsonParser?, p1: DeserializationContext?): OAuth2TokenProvider {
+            return OAuth2TokenProvider()
+        }
+    }
 
     class OAuth2HttpServerDeserializer : JsonDeserializer<OAuth2HttpServer>() {
         enum class ServerType {

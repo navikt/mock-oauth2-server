@@ -116,3 +116,7 @@ pre > code {
     }
 }
 
+.claims {
+    resize: vertical;
+    height: fit-content;
+}

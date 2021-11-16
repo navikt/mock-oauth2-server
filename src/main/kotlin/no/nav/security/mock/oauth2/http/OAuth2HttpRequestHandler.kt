@@ -80,6 +80,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         endSession()
         userInfo(config.tokenProvider)
         debugger()
+        preflight()
         get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
     }
 
@@ -138,6 +139,18 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
 
     private fun Route.Builder.debugger() = apply {
         attach(debuggerRequestHandler)
+    }
+
+    private fun Route.Builder.preflight() = apply {
+        // TODO
+
+        /*
+        * PREFLIGHT -> OAuth2HttpResponse(status = 200, headers = Headers.headersOf(
+                    HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*",
+                    HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS.toString(), "*",
+                    HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS.toString(), "*"
+                ))
+        * */
     }
 
     private fun tokenCallbackFromQueueOrDefault(issuerId: String): OAuth2TokenCallback =

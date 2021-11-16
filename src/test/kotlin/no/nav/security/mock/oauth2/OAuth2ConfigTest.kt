@@ -42,6 +42,7 @@ internal class OAuth2ConfigTest {
     fun `create full config from json with multiple tokenCallbacks`() {
         val config = OAuth2Config.fromJson(configJson)
         config.interactiveLogin shouldBe true
+        config.loginPagePath shouldBe "./login.html"
         config.httpServer should beInstanceOf<NettyWrapper>()
         config.tokenCallbacks.size shouldBe 2
         config.tokenCallbacks.map {
@@ -105,6 +106,7 @@ object FullConfig {
     @Language("json")
     val configJson = """{
       "interactiveLogin" : true,
+      "loginPagePath": "./login.html",
       "httpServer": "NettyWrapper",
       "tokenCallbacks": [
         {
