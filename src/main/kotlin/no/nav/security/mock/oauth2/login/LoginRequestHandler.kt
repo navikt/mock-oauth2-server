@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.login
 
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
+import no.nav.security.mock.oauth2.missingParameter
 import no.nav.security.mock.oauth2.notFound
 import no.nav.security.mock.oauth2.templates.TemplateMapper
 import java.io.File
@@ -22,7 +23,7 @@ class LoginRequestHandler(private val templateMapper: TemplateMapper, private va
 
     fun loginSubmit(httpRequest: OAuth2HttpRequest): Login {
         val formParameters = httpRequest.formParameters
-        val username = checkNotNull(formParameters.get("username"))
+        val username = formParameters.get("username") ?: missingParameter("username")
         return Login(username, formParameters.get("claims"))
     }
 }
