@@ -112,8 +112,7 @@ internal class AuthorizationCodeHandler(
                             .forEach { field ->
                                 put(field.key, jsonMapper.readValue(field.value.toString()))
                             }
-                    }
-                    catch (exception: JsonProcessingException) {
+                    } catch (exception: JsonProcessingException) {
                         log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
                     }
                 }

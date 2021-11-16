@@ -60,7 +60,8 @@ data class OAuth2TokenResponse(
 fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
         HttpHeaderNames.CONTENT_TYPE.toString(), "application/json;charset=UTF-8",
-        HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"),
+        HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"
+    ),
     status = 200,
     body = when (anyObject) {
         is String -> anyObject
@@ -74,7 +75,8 @@ fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
 fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
         HttpHeaderNames.CONTENT_TYPE.toString(), "text/html;charset=UTF-8",
-        HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"),
+        HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"
+    ),
     status = 200,
     body = content
 )
@@ -111,7 +113,8 @@ fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
     return OAuth2HttpResponse(
         headers = Headers.headersOf(
             HttpHeaderNames.CONTENT_TYPE.toString(), "application/json;charset=UTF-8",
-            HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"),
+            HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"
+        ),
         status = responseCode,
         body = objectMapper
             .enable(SerializationFeature.INDENT_OUTPUT)

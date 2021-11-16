@@ -1,7 +1,6 @@
 package no.nav.security.mock.oauth2.http
 
 import io.kotest.matchers.shouldBe
-import no.nav.security.mock.oauth2.http.OAuth2HttpRouter.Companion.routes
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
@@ -66,5 +65,5 @@ internal class OAuth2HttpRouterTest {
             body
         )
 
-    private fun ok(body: String? = null) = OAuth2HttpResponse(status = 200, body = body).also { log.debug("responding ok with body=$body") }
+    private fun ok(body: String? = null) = OAuth2HttpResponse(status = 200, body = body)
 }

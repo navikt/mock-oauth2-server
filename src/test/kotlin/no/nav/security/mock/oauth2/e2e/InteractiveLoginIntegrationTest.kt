@@ -51,7 +51,7 @@ class InteractiveLoginIntegrationTest {
                     )
                 ),
 
-                ),
+            ),
             Arguments.of(
                 User(
                     username = "user2",

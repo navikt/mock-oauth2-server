@@ -30,6 +30,10 @@ interface Route : RequestHandler {
             }
         }
 
+        fun options(requestHandler: RequestHandler) = apply {
+            addRoute("", "OPTIONS", requestHandler)
+        }
+
         fun get(vararg path: String, requestHandler: RequestHandler) = apply {
             path.forEach {
                 addRoute(it, "GET", requestHandler)

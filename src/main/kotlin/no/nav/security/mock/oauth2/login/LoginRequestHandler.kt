@@ -7,9 +7,9 @@ import no.nav.security.mock.oauth2.templates.TemplateMapper
 import java.io.File
 import java.io.FileNotFoundException
 
-class LoginRequestHandler(private val templateMapper: TemplateMapper) {
+class LoginRequestHandler(private val templateMapper: TemplateMapper, private val config: OAuth2Config) {
 
-    fun loginHtml(httpRequest: OAuth2HttpRequest, config: OAuth2Config): String =
+    fun loginHtml(httpRequest: OAuth2HttpRequest): String =
         config.loginPagePath
             ?.let {
                 try {

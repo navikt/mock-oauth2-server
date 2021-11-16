@@ -10,6 +10,7 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import io.netty.handler.codec.http.HttpHeaderNames
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -37,6 +38,7 @@ import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.userinfo.userInfo
+import okhttp3.Headers
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.util.concurrent.BlockingQueue
@@ -46,7 +48,7 @@ private val log = KotlinLogging.logger {}
 
 class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
 
-    private val loginRequestHandler = LoginRequestHandler(templateMapper)
+    private val loginRequestHandler = LoginRequestHandler(templateMapper, config)
     private val debuggerRequestHandler = DebuggerRequestHandler(templateMapper)
     private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
     private val refreshTokenManager = RefreshTokenManager()
@@ -141,16 +143,15 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         attach(debuggerRequestHandler)
     }
 
-    private fun Route.Builder.preflight() = apply {
-        // TODO
-
-        /*
-        * PREFLIGHT -> OAuth2HttpResponse(status = 200, headers = Headers.headersOf(
-                    HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*",
-                    HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS.toString(), "*",
-                    HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS.toString(), "*"
-                ))
-        * */
+    private fun Route.Builder.preflight() = options {
+        OAuth2HttpResponse(
+            status = 200,
+            headers = Headers.headersOf(
+                HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*",
+                HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS.toString(), "*",
+                HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS.toString(), "*"
+            )
+        )
     }
 
     private fun tokenCallbackFromQueueOrDefault(issuerId: String): OAuth2TokenCallback =
