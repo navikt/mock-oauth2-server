@@ -30,7 +30,7 @@ class InteractiveLoginIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("testUsers")
-    internal fun `todo name`(user: User) {
+    internal fun `interactive login with a supplied username should result in id_token containing sub and claims from input`(user: User) {
         val code = loginForCode(user)
 
         val response = tokenRequest(code)
