@@ -49,7 +49,7 @@ private val log = KotlinLogging.logger {}
 class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
 
     private val loginRequestHandler = LoginRequestHandler(templateMapper, config)
-    private val debuggerRequestHandler = DebuggerRequestHandler(templateMapper)
+    private val debuggerRequestHandler = DebuggerRequestHandler()
     private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
     private val refreshTokenManager = RefreshTokenManager()
 
@@ -81,9 +81,9 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         token()
         endSession()
         userInfo(config.tokenProvider)
-        debugger()
         preflight()
         get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
+        attach(debuggerRequestHandler)
     }
 
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = tokenCallbackQueue.add(oAuth2TokenCallback)
@@ -137,10 +137,6 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
             val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
             json(tokenResponse)
         }
-    }
-
-    private fun Route.Builder.debugger() = apply {
-        attach(debuggerRequestHandler)
     }
 
     private fun Route.Builder.preflight() = options {
