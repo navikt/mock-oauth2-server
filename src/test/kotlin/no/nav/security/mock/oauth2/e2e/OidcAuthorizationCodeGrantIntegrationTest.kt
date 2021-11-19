@@ -6,9 +6,11 @@ import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
+import no.nav.security.mock.oauth2.testutils.Pkce
 import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.client
@@ -18,6 +20,7 @@ import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
 
 class OidcAuthorizationCodeGrantIntegrationTest {
@@ -69,7 +72,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
-    fun `complete authorization code flow with interactivelogin enable should return tokens with sub=username posted to login`() {
+    fun `complete authorization code flow with interactivelogin enabled should return tokens with sub=username posted to login`() {
         val server = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
         // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
         val code = client.post(
@@ -102,4 +105,56 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         }
         server.shutdown()
     }
+
+    @Test
+    fun `authorization code flow should return tokens on token request when valid PKCE code_verifier is used`() {
+        val pkce = Pkce()
+        val code = client.get(
+            server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce)
+        ).let { authResponse ->
+            authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+        }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code, pkce).asClue {
+            it.code shouldBe 200
+            it.body?.string() shouldContain "id_token"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should return 400 bad request on token request when invalid PKCE code_verifier is used`() {
+        val pkce = Pkce()
+        val code = client.get(
+            server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce)
+        ).let { authResponse ->
+            authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+        }
+
+        code.shouldNotBeNull()
+
+        val invalidPkce = Pkce()
+        client.tokenRequest(code, invalidPkce).asClue {
+            it.code shouldBe 400
+            it.body?.string() shouldContain "code_verifier does not compute to code_challenge from request"
+        }
+    }
+
+    private fun OkHttpClient.tokenRequest(code: String, pkce: Pkce? = null) =
+        tokenRequest(
+            server.tokenEndpointUrl("default"),
+            mutableMapOf(
+                "client_id" to "client1",
+                "client_secret" to "secret",
+                "grant_type" to "authorization_code",
+                "scope" to "openid scope1",
+                "redirect_uri" to "http://mycallback",
+                "code" to code
+            ).apply {
+                if (pkce != null) {
+                    put("code_verifier", pkce.verifier.value)
+                }
+            }
+        )
 }

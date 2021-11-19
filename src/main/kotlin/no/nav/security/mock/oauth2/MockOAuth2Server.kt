@@ -11,30 +11,30 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
-import java.io.IOException
-import java.net.InetAddress
-import java.net.URI
-import java.time.Duration
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toOAuth2AuthorizationServerMetadataUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequestHandler
-import no.nav.security.mock.oauth2.http.OAuth2HttpRouter
-import no.nav.security.mock.oauth2.http.OAuth2HttpRouter.Companion.routes
+import no.nav.security.mock.oauth2.http.RequestHandler
 import no.nav.security.mock.oauth2.http.Route
-import no.nav.security.mock.oauth2.http.route
+import no.nav.security.mock.oauth2.http.routes
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
+import java.io.IOException
+import java.net.InetAddress
+import java.net.URI
+import java.time.Duration
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger { }
 
@@ -47,11 +47,9 @@ open class MockOAuth2Server(
 
     private val httpServer = config.httpServer
     private val defaultRequestHandler: OAuth2HttpRequestHandler = OAuth2HttpRequestHandler(config)
-    private val router: OAuth2HttpRouter = routes(
+    private val router: RequestHandler = routes(
         *additionalRoutes,
-        route("") {
-            defaultRequestHandler.handleRequest(it)
-        }
+        defaultRequestHandler.authorizationServer
     )
 
     @JvmOverloads
@@ -91,6 +89,7 @@ open class MockOAuth2Server(
     fun issuerUrl(issuerId: String): HttpUrl = url(issuerId)
     fun authorizationEndpointUrl(issuerId: String): HttpUrl = url(issuerId).toAuthorizationEndpointUrl()
     fun endSessionEndpointUrl(issuerId: String): HttpUrl = url(issuerId).toEndSessionEndpointUrl()
+    fun userInfoUrl(issuerId: String): HttpUrl = url(issuerId).toUserInfoUrl()
     fun baseUrl(): HttpUrl = url("")
 
     fun issueToken(issuerId: String, clientId: String, tokenCallback: OAuth2TokenCallback): SignedJWT {

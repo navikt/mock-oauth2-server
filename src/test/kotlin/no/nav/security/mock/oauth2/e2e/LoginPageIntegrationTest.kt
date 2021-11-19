@@ -27,9 +27,12 @@ class LoginPageIntegrationTest {
 
     @Test
     fun `authorization with interactive login and login page path set should return external login page`() {
-        val server = MockOAuth2Server(OAuth2Config(
-            interactiveLogin = true,
-            loginPagePath = "./src/test/resources/login.example.html")).apply { start() }
+        val server = MockOAuth2Server(
+            OAuth2Config(
+                interactiveLogin = true,
+                loginPagePath = "./src/test/resources/login.example.html"
+            )
+        ).apply { start() }
         val body = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).body?.string()
 
         body shouldNotBe null
@@ -39,9 +42,12 @@ class LoginPageIntegrationTest {
     @ParameterizedTest
     @ValueSource(strings = ["./src/test/resources/does-not-exists.html", "./src/test/resources/", ""])
     fun `authorization with interactive login and login page path set to invalid path should return 404`(path: String) {
-        val server = MockOAuth2Server(OAuth2Config(
-            interactiveLogin = true,
-            loginPagePath = path)).apply { start() }
+        val server = MockOAuth2Server(
+            OAuth2Config(
+                interactiveLogin = true,
+                loginPagePath = path
+            )
+        ).apply { start() }
         val code = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).code
 
         code shouldBe 404

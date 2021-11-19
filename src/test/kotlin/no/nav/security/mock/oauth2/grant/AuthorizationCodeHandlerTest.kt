@@ -56,7 +56,11 @@ internal class AuthorizationCodeHandlerTest {
 
     @ParameterizedTest
     @MethodSource("jsonClaimsProvider")
-    fun `token response with login including claims should return access_token containing claims from login`(claims: String, expectedClaimKey: String, expectedClaimValue: String) {
+    fun `token response with login including claims should return access_token containing claims from login`(
+        claims: String,
+        expectedClaimKey: String,
+        expectedClaimValue: String
+    ) {
         val code: String = handler.retrieveAuthorizationCode(Login("foo", claims))
 
         handler.tokenResponse(tokenRequest(code = code), "http://myissuer".toHttpUrl(), DefaultOAuth2TokenCallback()).asClue {

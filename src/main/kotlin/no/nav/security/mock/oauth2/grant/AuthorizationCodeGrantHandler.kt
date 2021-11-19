@@ -15,12 +15,14 @@ import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
+import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
+import kotlin.collections.set
 
 private val log = KotlinLogging.logger {}
 private val jsonMapper: ObjectMapper = jacksonObjectMapper()
@@ -69,6 +71,7 @@ internal class AuthorizationCodeHandler(
         val code = tokenRequest.authorizationCode()
         log.debug("issuing token for code=$code")
         val authenticationRequest = takeAuthenticationRequestFromCache(code)
+        authenticationRequest?.verifyPkce(tokenRequest)
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
@@ -95,13 +98,13 @@ internal class AuthorizationCodeHandler(
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
     private fun takeAuthenticationRequestFromCache(code: AuthorizationCode): AuthenticationRequest? = codeToAuthRequestCache.remove(code)
 
-    private class LoginOAuth2TokenCallback(val login: Login, val OAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
-        override fun issuerId(): String = OAuth2TokenCallback.issuerId()
+    private class LoginOAuth2TokenCallback(val login: Login, val oAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
+        override fun issuerId(): String = oAuth2TokenCallback.issuerId()
         override fun subject(tokenRequest: TokenRequest): String = login.username
-        override fun typeHeader(tokenRequest: TokenRequest): String = OAuth2TokenCallback.typeHeader(tokenRequest)
-        override fun audience(tokenRequest: TokenRequest): List<String> = OAuth2TokenCallback.audience(tokenRequest)
+        override fun typeHeader(tokenRequest: TokenRequest): String = oAuth2TokenCallback.typeHeader(tokenRequest)
+        override fun audience(tokenRequest: TokenRequest): List<String> = oAuth2TokenCallback.audience(tokenRequest)
         override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-            OAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
+            oAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
                 login.claims?.let {
                     try {
                         jsonMapper.readTree(it)
@@ -109,13 +112,12 @@ internal class AuthorizationCodeHandler(
                             .forEach { field ->
                                 put(field.key, jsonMapper.readValue(field.value.toString()))
                             }
-                    }
-                    catch (exception: JsonProcessingException) {
+                    } catch (exception: JsonProcessingException) {
                         log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
                     }
                 }
             }
 
-        override fun tokenExpiry(): Long = OAuth2TokenCallback.tokenExpiry()
+        override fun tokenExpiry(): Long = oAuth2TokenCallback.tokenExpiry()
     }
 }

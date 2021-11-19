@@ -4,6 +4,7 @@ import freemarker.cache.ClassTemplateLoader
 import freemarker.template.Configuration
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
+import okhttp3.HttpUrl
 import java.io.StringWriter
 
 data class HtmlContent(
@@ -38,15 +39,26 @@ class TemplateMapper(
         )
     }
 
-    fun debuggerFormHtml(oAuth2HttpRequest: OAuth2HttpRequest, clientAuthMethod: String): String {
-        val urlWithoutQuery = oAuth2HttpRequest.url.newBuilder().query(null)
+    fun debuggerErrorHtml(debuggerUrl: HttpUrl, stacktrace: String) =
+        asString(
+            HtmlContent(
+                "error.ftl",
+                mapOf(
+                    "debugger_url" to debuggerUrl,
+                    "stacktrace" to stacktrace
+                )
+            )
+        )
+
+    fun debuggerFormHtml(url: HttpUrl, clientAuthMethod: String): String {
+        val urlWithoutQuery = url.newBuilder().query(null)
         return asString(
             HtmlContent(
                 "debugger.ftl",
                 mapOf(
                     "url" to urlWithoutQuery,
-                    "token_url" to oAuth2HttpRequest.url.toTokenEndpointUrl(),
-                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map,
+                    "token_url" to url.toTokenEndpointUrl(),
+                    "query" to OAuth2HttpRequest.Parameters(url.query).map,
                     "client_auth_method" to clientAuthMethod
                 )
             )

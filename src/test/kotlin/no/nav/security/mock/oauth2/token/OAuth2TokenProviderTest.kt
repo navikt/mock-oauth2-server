@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.token
 
 import com.nimbusds.jose.jwk.KeyType
 import com.nimbusds.jose.jwk.KeyUse
+import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.id.Issuer
@@ -9,7 +10,6 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.testutils.nimbusTokenRequest
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -86,7 +86,7 @@ internal class OAuth2TokenProviderTest {
         val issuer = Issuer("http://localhost/$issuerId")
         idToken(issuer.toString()).verifySignatureAndIssuer(issuer, tokenProvider.publicJwkSet(issuerId))
 
-        shouldThrow<OAuth2Exception> {
+        shouldThrow<BadJOSEException> {
             idToken(issuer.toString()).verifySignatureAndIssuer(issuer, tokenProvider.publicJwkSet("shouldfail"))
         }
     }

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 internal class OAuth2HttpRequestTest {
 
     @Test
-    fun `proxyAwareUrl should use host header and x-forwarded-for-* `() {
+    fun `proxyAwareUrl should use host header and x-forwarded-for- `() {
         val req1 = OAuth2HttpRequest(
             headers = Headers.headersOf(),
             method = "GET",
