@@ -11,27 +11,48 @@ import no.nav.security.mock.oauth2.token.KeyProvider.Companion.INITIAL_KEYS_FILE
 import org.junit.jupiter.api.Test
 import java.io.File
 import java.security.KeyPairGenerator
+import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 
 internal class KeyProviderTest {
 
-    private val initialKeysFile = File("src/main/resources$INITIAL_KEYS_FILE")
+    private val initialRSAKeysFile = File("src/main/resources$INITIAL_KEYS_FILE")
+
+    private val initialECKeysFile = File("src/main/resources/mock-oauth2-server-keys-ec.json")
 
     @Test
-    fun `signingKey should return a key from initial keys file until deque is empty`() {
+    fun `signingKey should return a RSA key from initial keys file until deque is empty`() {
         val provider = KeyProvider()
-        val initialPublicKeys = initialPublicKeys()
+        val initialPublicKeys = initialRsaPublicKeys()
 
         for (i in initialPublicKeys.indices) {
             provider.signingKey("issuer$i").asClue {
-                it.toRSAPublicKey() shouldBeIn initialPublicKeys
+                it.toRSAKey().toRSAPublicKey() shouldBeIn initialPublicKeys
                 it.keyID shouldBe "issuer$i"
             }
         }
 
         provider.signingKey("shouldBeGeneratedOnTheFly").asClue {
-            it.toRSAPublicKey() shouldNotBeIn initialPublicKeys
+            it.toRSAKey().toRSAPublicKey() shouldNotBeIn initialPublicKeys
+            it.keyID shouldBe "shouldBeGeneratedOnTheFly"
+        }
+    }
+
+    @Test
+    fun `signingKey should return a EC key from initial keys file until deque is empty`() {
+        val provider = KeyProvider(KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"), EC_KEY_TYPE to 256)
+        val initialPublicKeys = initialEcPublicKeys()
+
+        for (i in initialPublicKeys.indices) {
+            provider.signingKey("issuer$i").asClue {
+                it.toECKey().toECPublicKey() shouldBeIn initialPublicKeys
+                it.keyID shouldBe "issuer$i"
+            }
+        }
+
+        provider.signingKey("shouldBeGeneratedOnTheFly").asClue {
+            it.toECKey().toECPublicKey() shouldNotBeIn initialPublicKeys
             it.keyID shouldBe "shouldBeGeneratedOnTheFly"
         }
     }
@@ -44,27 +65,34 @@ internal class KeyProviderTest {
 
         for (i in initialPublicKeys.indices) {
             provider.signingKey("issuer$i").asClue {
-                it.toRSAPublicKey() shouldBeIn initialPublicKeys
+                it.toRSAKey().toRSAPublicKey() shouldBeIn initialPublicKeys
                 it.keyID shouldBe "issuer$i"
             }
         }
 
         provider.signingKey("shouldBeGeneratedOnTheFly").asClue {
-            it.toRSAPublicKey() shouldNotBeIn initialPublicKeys
+            it.toRSAKey().toRSAPublicKey() shouldNotBeIn initialPublicKeys
             it.keyID shouldBe "shouldBeGeneratedOnTheFly"
         }
     }
 
-    private fun initialPublicKeys(): List<RSAPublicKey> =
-        initialKeysFile.readText().let {
+    private fun initialRsaPublicKeys(): List<RSAPublicKey> =
+        initialRSAKeysFile.readText().let {
             JWKSet.parse(it).keys
         }.map {
             it.toRSAKey().toRSAPublicKey()
         }
 
+    private fun initialEcPublicKeys(): List<ECPublicKey> =
+        initialECKeysFile.readText().let {
+            JWKSet.parse(it).keys
+        }.map {
+            it.toECKey().toECPublicKey()
+        }
+
     private fun writeInitialKeysFile() {
         val list = generateKeys(5)
-        initialKeysFile.writeText(JWKSet(list).toString(false))
+        initialRSAKeysFile.writeText(JWKSet(list).toString(false))
     }
 
     private fun generateKeys(numKeys: Int): List<RSAKey> {

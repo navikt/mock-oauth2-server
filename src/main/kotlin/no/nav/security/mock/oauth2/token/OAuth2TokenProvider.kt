@@ -3,6 +3,7 @@ package no.nav.security.mock.oauth2.token
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
@@ -36,7 +37,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
         oAuth2TokenCallback.tokenExpiry()
-    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
+    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest), oAuth2TokenCallback.algorithm())
 
     fun accessToken(
         tokenRequest: TokenRequest,
@@ -50,7 +51,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
         oAuth2TokenCallback.tokenExpiry()
-    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
+    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest), oAuth2TokenCallback.algorithm())
 
     fun exchangeAccessToken(
         tokenRequest: TokenRequest,
@@ -67,7 +68,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
             .audience(oAuth2TokenCallback.audience(tokenRequest))
             .addClaims(oAuth2TokenCallback.addClaims(tokenRequest))
             .build()
-            .sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
+            .sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest), oAuth2TokenCallback.algorithm())
     }
 
     @JvmOverloads
@@ -80,17 +81,50 @@ class OAuth2TokenProvider @JvmOverloads constructor(
                 .expirationTime(Date.from(now.plusSeconds(expiry.toSeconds())))
             builder.addClaims(claims)
             builder.build()
-        }.sign(issuerId, JOSEObjectType.JWT.type)
+        }.sign(issuerId, JOSEObjectType.JWT.type, JWSAlgorithm.RS256.name)
 
-    private fun JWTClaimsSet.sign(issuerId: String, type: String): SignedJWT {
+    private fun JWTClaimsSet.sign(issuerId: String, type: String, algorithm: String): SignedJWT {
         val key = keyProvider.signingKey(issuerId)
-        return SignedJWT(
-            JWSHeader.Builder(JWSAlgorithm.RS256)
-                .keyID(key.keyID)
-                .type(JOSEObjectType(type)).build(),
-            this
-        ).apply {
-            sign(RSASSASigner(key.toPrivateKey()))
+        when (key.keyType.value) {
+            RSA_KEY_TYPE -> {
+                return SignedJWT(
+                    jwsHeader(key.keyID, type, algorithm),
+                    this
+                ).apply {
+                    sign(RSASSASigner(key.toRSAKey().toPrivateKey()))
+                }
+            }
+            EC_KEY_TYPE -> {
+                return SignedJWT(
+                    jwsHeader(key.keyID, type, JWSAlgorithm.ES256.name),
+                    this
+                ).apply {
+                    sign(ECDSASigner(key.toECKey().toECPrivateKey()))
+                }
+            }
+            else -> {
+                throw UnsupportedEncodingException()
+            }
+        }
+    }
+
+    private fun jwsHeader(keyId: String, type: String, algorithm: String): JWSHeader {
+        return when (algorithm) {
+            "RS512" -> {
+                JWSHeader.Builder(JWSAlgorithm.RS512)
+                    .keyID(keyId)
+                    .type(JOSEObjectType(type)).build()
+            }
+            "ES256" -> {
+                JWSHeader.Builder(JWSAlgorithm.ES256)
+                    .keyID(keyId)
+                    .type(JOSEObjectType(type)).build()
+            }
+            else -> {
+                JWSHeader.Builder(JWSAlgorithm.RS256)
+                    .keyID(keyId)
+                    .type(JOSEObjectType(type)).build()
+            }
         }
     }
 

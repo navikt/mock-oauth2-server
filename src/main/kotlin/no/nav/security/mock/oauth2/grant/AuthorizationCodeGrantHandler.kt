@@ -62,6 +62,7 @@ internal class AuthorizationCodeHandler(
         }
     }
 
+    // TODO add algorithm
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
@@ -103,6 +104,7 @@ internal class AuthorizationCodeHandler(
         override fun subject(tokenRequest: TokenRequest): String = login.username
         override fun typeHeader(tokenRequest: TokenRequest): String = oAuth2TokenCallback.typeHeader(tokenRequest)
         override fun audience(tokenRequest: TokenRequest): List<String> = oAuth2TokenCallback.audience(tokenRequest)
+        override fun algorithm(): String = oAuth2TokenCallback.algorithm()
         override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
             oAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
                 login.claims?.let {

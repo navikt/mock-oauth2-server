@@ -1,6 +1,7 @@
 package no.nav.security.mock.oauth2.token
 
 import com.nimbusds.jose.JOSEObjectType
+import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
@@ -17,6 +18,7 @@ interface OAuth2TokenCallback {
     fun audience(tokenRequest: TokenRequest): List<String>
     fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
     fun tokenExpiry(): Long
+    fun algorithm(): String
 }
 
 // TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
@@ -27,7 +29,8 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
     // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
     private val audience: List<String>? = null,
     private val claims: Map<String, Any> = emptyMap(),
-    private val expiry: Long = 3600
+    private val expiry: Long = 3600,
+    private val algorithm: String = JWSAlgorithm.RS256.name
 ) : OAuth2TokenCallback {
 
     override fun issuerId(): String = issuerId
@@ -64,12 +67,15 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
         }
 
     override fun tokenExpiry(): Long = expiry
+
+    override fun algorithm(): String = algorithm
 }
 
 data class RequestMappingTokenCallback(
     val issuerId: String,
     val requestMappings: Set<RequestMapping>,
-    val tokenExpiry: Long = Duration.ofHours(1).toSeconds()
+    val tokenExpiry: Long = Duration.ofHours(1).toSeconds(),
+    val algorithm: String = JWSAlgorithm.RS256.name
 ) : OAuth2TokenCallback {
     override fun issuerId(): String = issuerId
 
@@ -86,6 +92,8 @@ data class RequestMappingTokenCallback(
         requestMappings.getClaims(tokenRequest)
 
     override fun tokenExpiry(): Long = tokenExpiry
+
+    override fun algorithm(): String = algorithm
 
     private fun Set<RequestMapping>.getClaims(tokenRequest: TokenRequest) =
         firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
