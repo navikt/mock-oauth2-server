@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.extensions
 
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet
 import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier
@@ -34,7 +35,6 @@ import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.invalidRequest
 import java.time.Duration
 import java.time.Instant
-import java.util.HashSet
 
 private val log = KotlinLogging.logger { }
 
@@ -78,7 +78,7 @@ inline fun <reified T : AuthorizationGrant> TokenRequest.grant(type: Class<T>): 
 
 fun TokenRequest.clientIdAsString(): String =
     this.clientAuthentication?.clientID?.value ?: this.clientID?.value
-        ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
+    ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
 
 fun SignedJWT.expiresIn(): Int =
     Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
@@ -115,3 +115,12 @@ fun ClientAuthentication.requirePrivateKeyJwt(requiredAudience: String, maxLifet
                 else -> it
             }
         } ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain a valid client_assertion.")
+
+
+fun SignedJWT.with(keyId: String, type: String, algorithm: JWSAlgorithm, claimsSet: JWTClaimsSet): SignedJWT =
+    SignedJWT(
+        JWSHeader.Builder(algorithm)
+            .keyID(keyId)
+            .type(JOSEObjectType(type)).build(),
+        claimsSet
+    )

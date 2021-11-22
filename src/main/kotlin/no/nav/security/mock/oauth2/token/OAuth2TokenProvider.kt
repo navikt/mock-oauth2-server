@@ -5,6 +5,7 @@ import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.crypto.RSASSASigner
+import com.nimbusds.jose.jwk.Curve
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
@@ -84,48 +85,44 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         }.sign(issuerId, JOSEObjectType.JWT.type, JWSAlgorithm.RS256.name)
 
     private fun JWTClaimsSet.sign(issuerId: String, type: String, algorithm: String): SignedJWT {
-        val key = keyProvider.signingKey(issuerId)
-        when (key.keyType.value) {
-            RSA_KEY_TYPE -> {
+        val algo = JWSAlgorithm.parse(algorithm)
+        when {
+            algorithm == "RS256" -> {
+                val key = keyProvider.signingKey(issuerId)
                 return SignedJWT(
-                    jwsHeader(key.keyID, type, algorithm),
+                    jwsHeader(key.keyID, type, algo),
                     this
                 ).apply {
                     sign(RSASSASigner(key.toRSAKey().toPrivateKey()))
                 }
             }
-            EC_KEY_TYPE -> {
+            algorithm.startsWith("RS") -> {
+                keyProvider.regenerate(algorithm)
+                val key = keyProvider.signingKey(issuerId)
                 return SignedJWT(
-                    jwsHeader(key.keyID, type, JWSAlgorithm.ES256.name),
+                    jwsHeader(key.keyID, type, algo),
+                    this
+                ).apply {
+                    sign(RSASSASigner(key.toRSAKey().toPrivateKey()))
+                }
+            }
+            else -> {
+                keyProvider.regenerate(algorithm)
+                val key = keyProvider.signingKey(issuerId)
+                return SignedJWT(
+                    jwsHeader(key.keyID, type, algo),
                     this
                 ).apply {
                     sign(ECDSASigner(key.toECKey().toECPrivateKey()))
                 }
             }
-            else -> {
-                throw UnsupportedEncodingException()
-            }
         }
     }
 
-    private fun jwsHeader(keyId: String, type: String, algorithm: String): JWSHeader {
-        return when (algorithm) {
-            "RS512" -> {
-                JWSHeader.Builder(JWSAlgorithm.RS512)
-                    .keyID(keyId)
-                    .type(JOSEObjectType(type)).build()
-            }
-            "ES256" -> {
-                JWSHeader.Builder(JWSAlgorithm.ES256)
-                    .keyID(keyId)
-                    .type(JOSEObjectType(type)).build()
-            }
-            else -> {
-                JWSHeader.Builder(JWSAlgorithm.RS256)
-                    .keyID(keyId)
-                    .type(JOSEObjectType(type)).build()
-            }
-        }
+    private fun jwsHeader(keyId: String, type: String, algorithm: JWSAlgorithm): JWSHeader {
+        return JWSHeader.Builder(algorithm)
+            .keyID(keyId)
+            .type(JOSEObjectType(type)).build()
     }
 
     private fun JWTClaimsSet.Builder.addClaims(claims: Map<String, Any> = emptyMap()) = apply {
