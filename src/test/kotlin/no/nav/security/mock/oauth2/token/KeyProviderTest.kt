@@ -4,9 +4,11 @@ import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.KeyUse
 import com.nimbusds.jose.jwk.RSAKey
 import io.kotest.assertions.asClue
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.shouldBe
+import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.token.KeyProvider.Companion.INITIAL_KEYS_FILE
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -41,8 +43,10 @@ internal class KeyProviderTest {
 
     @Test
     fun `signingKey should return a EC key from initial keys file until deque is empty`() {
-        val provider = KeyProvider(KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"))
-        provider.regenerate("ES256")
+        val provider = KeyProvider(
+            initialKeys = KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"),
+            algorithm = "ES256"
+        )
         val initialPublicKeys = initialEcPublicKeys()
 
         for (i in initialPublicKeys.indices) {
@@ -56,6 +60,14 @@ internal class KeyProviderTest {
             it.toECKey().toECPublicKey() shouldNotBeIn initialPublicKeys
             it.keyID shouldBe "shouldBeGeneratedOnTheFly"
         }
+    }
+
+    @Test
+    fun `unsupported signingKey algorithm should throw an error message`() {
+        val provider = KeyProvider(KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"))
+        shouldThrow<OAuth2Exception> {
+            provider.generate("ET256")
+        }.message shouldBe "Unsupported algorithm: ET256"
     }
 
     @Test

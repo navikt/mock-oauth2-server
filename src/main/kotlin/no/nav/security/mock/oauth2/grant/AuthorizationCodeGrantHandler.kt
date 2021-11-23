@@ -10,7 +10,6 @@ import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
-import kotlin.collections.set
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
@@ -104,7 +103,6 @@ internal class AuthorizationCodeHandler(
         override fun subject(tokenRequest: TokenRequest): String = login.username
         override fun typeHeader(tokenRequest: TokenRequest): String = oAuth2TokenCallback.typeHeader(tokenRequest)
         override fun audience(tokenRequest: TokenRequest): List<String> = oAuth2TokenCallback.audience(tokenRequest)
-        override fun algorithm(): String = oAuth2TokenCallback.algorithm()
         override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
             oAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
                 login.claims?.let {
