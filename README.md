@@ -264,6 +264,19 @@ Example:
 }
 ```
 
+A token provider can support different `signing` algorithms. Configure your token provider and
+add this to your config with preferred `JWS algorithm`:
+
+```json
+{
+  "tokenProvider" : {
+    "keyProvider" : {
+      "algorithm" : "ES256"
+    }
+  }
+}
+```
+
 | Property | Description |
 | --- | --- |
 | `interactiveLogin` | `true` or `false`, enables login screen when redirecting to server `/authorize` endpoint |
