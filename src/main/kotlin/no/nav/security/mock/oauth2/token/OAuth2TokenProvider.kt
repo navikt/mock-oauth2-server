@@ -6,9 +6,11 @@ import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jose.jwk.KeyType
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
+import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.issuerId
 import okhttp3.HttpUrl
@@ -37,7 +39,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
         oAuth2TokenCallback.tokenExpiry()
-    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest), oAuth2TokenCallback.algorithm())
+    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
 
     fun accessToken(
         tokenRequest: TokenRequest,
@@ -51,7 +53,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
         oAuth2TokenCallback.tokenExpiry()
-    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest), oAuth2TokenCallback.algorithm())
+    ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
 
     fun exchangeAccessToken(
         tokenRequest: TokenRequest,
@@ -68,7 +70,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
             .audience(oAuth2TokenCallback.audience(tokenRequest))
             .addClaims(oAuth2TokenCallback.addClaims(tokenRequest))
             .build()
-            .sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest), oAuth2TokenCallback.algorithm())
+            .sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
     }
 
     @JvmOverloads
@@ -81,39 +83,33 @@ class OAuth2TokenProvider @JvmOverloads constructor(
                 .expirationTime(Date.from(now.plusSeconds(expiry.toSeconds())))
             builder.addClaims(claims)
             builder.build()
-        }.sign(issuerId, JOSEObjectType.JWT.type, JWSAlgorithm.RS256.name)
+        }.sign(issuerId, JOSEObjectType.JWT.type)
 
-    private fun JWTClaimsSet.sign(issuerId: String, type: String, algorithm: String): SignedJWT {
-        val algo = JWSAlgorithm.parse(algorithm)
-        when {
-            algorithm == "RS256" -> {
-                val key = keyProvider.signingKey(issuerId)
-                return SignedJWT(
-                    jwsHeader(key.keyID, type, algo),
+    private fun JWTClaimsSet.sign(issuerId: String, type: String): SignedJWT {
+        val key = keyProvider.signingKey(issuerId)
+        val algorithm = keyProvider.algorithm()
+        val keyType = keyProvider.keyType()
+        val supported = KeyGenerator.isSupported(algorithm)
+
+        return when {
+            supported && keyType == KeyType.RSA.value -> {
+                SignedJWT(
+                    jwsHeader(key.keyID, type, algorithm),
                     this
                 ).apply {
                     sign(RSASSASigner(key.toRSAKey().toPrivateKey()))
                 }
             }
-            algorithm.startsWith("RS") -> {
-                keyProvider.regenerate(algorithm)
-                val key = keyProvider.signingKey(issuerId)
-                return SignedJWT(
-                    jwsHeader(key.keyID, type, algo),
-                    this
-                ).apply {
-                    sign(RSASSASigner(key.toRSAKey().toPrivateKey()))
-                }
-            }
-            else -> {
-                keyProvider.regenerate(algorithm)
-                val key = keyProvider.signingKey(issuerId)
-                return SignedJWT(
-                    jwsHeader(key.keyID, type, algo),
+            supported && keyType == KeyType.EC.value -> {
+                SignedJWT(
+                    jwsHeader(key.keyID, type, algorithm),
                     this
                 ).apply {
                     sign(ECDSASigner(key.toECKey().toECPrivateKey()))
                 }
+            }
+            else -> {
+                throw OAuth2Exception("Unsupported algorithm: ${algorithm.name}")
             }
         }
     }

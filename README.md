@@ -95,7 +95,16 @@ A request to `http://localhost:8080/default/.well-known/openid-configuration` wi
       "public"
    ],
    "id_token_signing_alg_values_supported":[
-      "RS256"
+     "ES256",
+     "ES256K",
+     "ES384",
+     "ES512",
+     "RS256",
+     "RS384",
+     "RS512",
+     "PS256",
+     "PS384",
+     "PS512"
    ]
 }
 ```

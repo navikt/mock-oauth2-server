@@ -18,7 +18,7 @@ interface OAuth2TokenCallback {
     fun audience(tokenRequest: TokenRequest): List<String>
     fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
     fun tokenExpiry(): Long
-    fun algorithm(): String
+    // fun algorithm(): String
 }
 
 // TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
@@ -30,7 +30,6 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
     private val audience: List<String>? = null,
     private val claims: Map<String, Any> = emptyMap(),
     private val expiry: Long = 3600,
-    private val algorithm: String = JWSAlgorithm.RS256.name
 ) : OAuth2TokenCallback {
 
     override fun issuerId(): String = issuerId
@@ -67,8 +66,6 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
         }
 
     override fun tokenExpiry(): Long = expiry
-
-    override fun algorithm(): String = algorithm
 }
 
 data class RequestMappingTokenCallback(
@@ -92,8 +89,6 @@ data class RequestMappingTokenCallback(
         requestMappings.getClaims(tokenRequest)
 
     override fun tokenExpiry(): Long = tokenExpiry
-
-    override fun algorithm(): String = algorithm
 
     private fun Set<RequestMapping>.getClaims(tokenRequest: TokenRequest) =
         firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
