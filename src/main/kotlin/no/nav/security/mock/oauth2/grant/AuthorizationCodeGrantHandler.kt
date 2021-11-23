@@ -61,7 +61,6 @@ internal class AuthorizationCodeHandler(
         }
     }
 
-    // TODO add algorithm
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
