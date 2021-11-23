@@ -1,7 +1,6 @@
 package no.nav.security.mock.oauth2.token
 
 import com.nimbusds.jose.JOSEObjectType
-import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
@@ -18,7 +17,6 @@ interface OAuth2TokenCallback {
     fun audience(tokenRequest: TokenRequest): List<String>
     fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
     fun tokenExpiry(): Long
-    // fun algorithm(): String
 }
 
 // TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
@@ -72,7 +70,6 @@ data class RequestMappingTokenCallback(
     val issuerId: String,
     val requestMappings: Set<RequestMapping>,
     val tokenExpiry: Long = Duration.ofHours(1).toSeconds(),
-    val algorithm: String = JWSAlgorithm.RS256.name
 ) : OAuth2TokenCallback {
     override fun issuerId(): String = issuerId
 
