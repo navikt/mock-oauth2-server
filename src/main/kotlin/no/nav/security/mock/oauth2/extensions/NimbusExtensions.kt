@@ -78,16 +78,16 @@ inline fun <reified T : AuthorizationGrant> TokenRequest.grant(type: Class<T>): 
 
 fun TokenRequest.clientIdAsString(): String =
     this.clientAuthentication?.clientID?.value ?: this.clientID?.value
-    ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
+        ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
 
 fun SignedJWT.expiresIn(): Int =
     Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
 
-fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet): JWTClaimsSet {
+fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet, jwsAlgorithm: JWSAlgorithm = JWSAlgorithm.RS256): JWTClaimsSet {
     val jwtProcessor: ConfigurableJWTProcessor<SecurityContext?> = DefaultJWTProcessor()
     jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
     val keySelector: JWSKeySelector<SecurityContext?> = JWSVerificationKeySelector(
-        JWSAlgorithm.RS256,
+        jwsAlgorithm,
         ImmutableJWKSet(jwkSet)
     )
     jwtProcessor.jwsKeySelector = keySelector
@@ -115,7 +115,6 @@ fun ClientAuthentication.requirePrivateKeyJwt(requiredAudience: String, maxLifet
                 else -> it
             }
         } ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain a valid client_assertion.")
-
 
 fun SignedJWT.with(keyId: String, type: String, algorithm: JWSAlgorithm, claimsSet: JWTClaimsSet): SignedJWT =
     SignedJWT(

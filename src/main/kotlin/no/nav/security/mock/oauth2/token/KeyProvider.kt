@@ -42,7 +42,7 @@ open class KeyProvider @JvmOverloads constructor(
 
     fun algorithm(): JWSAlgorithm = JWSAlgorithm.parse(algorithm)
 
-    fun keyType()  = generator.keyGenerator.algorithm
+    fun keyType(): String = generator.keyGenerator.algorithm
 
     fun generate(algorithm: String) {
         generator = KeyGenerator(JWSAlgorithm.parse(algorithm))
