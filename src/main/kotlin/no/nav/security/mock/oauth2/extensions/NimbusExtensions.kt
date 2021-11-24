@@ -2,7 +2,6 @@ package no.nav.security.mock.oauth2.extensions
 
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet
 import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier
@@ -115,11 +114,3 @@ fun ClientAuthentication.requirePrivateKeyJwt(requiredAudience: String, maxLifet
                 else -> it
             }
         } ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain a valid client_assertion.")
-
-fun SignedJWT.with(keyId: String, type: String, algorithm: JWSAlgorithm, claimsSet: JWTClaimsSet): SignedJWT =
-    SignedJWT(
-        JWSHeader.Builder(algorithm)
-            .keyID(keyId)
-            .type(JOSEObjectType(type)).build(),
-        claimsSet
-    )

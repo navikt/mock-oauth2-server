@@ -56,9 +56,16 @@ data class KeyGenerator(
 
     companion object {
 
+        val rsaAlgorithmFamily = JWSAlgorithm.Family.RSA.toList()
+        val ecAlgorithmFamily = JWSAlgorithm.Family.EC.filterNot {
+            // ES256K is not a public used algorithm
+            // ES512 is counted as "legacy" and is not supported
+            it.name == "ES256K" || it.name == "ES512"
+        }
+
         private val supportedAlgorithms = listOf(
-            Algorithm(JWSAlgorithm.Family.RSA, KeyType.RSA),
-            Algorithm(JWSAlgorithm.Family.EC, KeyType.EC)
+            Algorithm(rsaAlgorithmFamily, KeyType.RSA),
+            Algorithm(ecAlgorithmFamily, KeyType.EC)
         )
 
         fun isSupported(algorithm: JWSAlgorithm) = supportedAlgorithms.flatMap { it.family }.contains(algorithm)
@@ -82,7 +89,7 @@ data class KeyGenerator(
         }
 
         data class Algorithm(
-            val family: JWSAlgorithm.Family,
+            val family: List<JWSAlgorithm>,
             val keyType: KeyType
         )
     }
