@@ -29,6 +29,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
+import okio.Buffer
 import java.io.IOException
 import java.net.InetAddress
 import java.net.URI
@@ -138,6 +139,29 @@ open class MockOAuth2Server(
                 expiry = expiry.toMillis()
             )
         )
+    }
+
+    companion object {
+        /**
+         * This attempts to reference a method that does not exist in com.squareup.okio:okio < 2.4.0,
+         * and incidentally also com.squareup.okhttp3:mockwebserver < 4.3.0.
+         *
+         * The method is required by mock-oauth2-server, see [no.nav.security.mock.oauth2.extensions.RecordedRequest.asOAuth2HttpRequest()].
+         *
+         * If the block throws a RuntimeException, an incompatible version of the okio library was included in the classpath.
+         *
+         * This is true for e.g. Spring Boot projects, which as of version 2.6.1 still uses mockwebserver 3.14.9 as the
+         * [default managed dependency version](https://docs.spring.io/spring-boot/docs/2.6.1/reference/html/dependency-versions.html).
+         *
+         * We recommend that users of this library use a matching version of mockwebserver.
+         */
+        init {
+            try {
+                Buffer().copy()
+            } catch (e: NoSuchMethodError) {
+                throw RuntimeException("Unsupported version of com.squareup.okhttp3:mockwebserver in classpath. Version should be >= 4.9.2", e)
+            }
+        }
     }
 }
 
