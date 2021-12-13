@@ -64,7 +64,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         null,
         mapOf("acr" to "value1", "abc" to "value2"),
         3600
-    ).sign("default", JOSEObjectType.JWT.type)
+    ).sign(issuerUrl.issuerId(), JOSEObjectType.JWT.type)
 
     fun exchangeAccessToken(
         tokenRequest: TokenRequest,

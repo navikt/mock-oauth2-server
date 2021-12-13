@@ -4,8 +4,10 @@ import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.ResponseMode
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
+import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.testutils.claims
+import no.nav.security.mock.oauth2.testutils.issuer
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
@@ -18,10 +20,14 @@ internal class ImplicitHandlerTest {
     @Test
     fun `authorization implicit response should contain required parameters`() {
         oauth2HttpRequest().also { request ->
-            val accessToken = handler.tokenResponse(request, "http://myissuer".toHttpUrl(), DefaultOAuth2TokenCallback()).apply {
-                val claims = SignedJWT.parse(this.accessToken).claims
+
+            val accessToken = handler.tokenResponse(request, request.url.toIssuerUrl(), DefaultOAuth2TokenCallback()).apply {
+                println(this.accessToken)
+                val signedJwt = SignedJWT.parse(this.accessToken)
+                val claims = signedJwt.claims
                 claims["acr"] shouldBe "value1"
                 claims["abc"] shouldBe "value2"
+                signedJwt.issuer shouldBe "http://myissuer/issuer1"
             }
             handler.implicitResponse(request.asAuthorizationRequest(), accessToken).asClue {
                 it.impliedResponseType().impliesImplicitFlow() shouldBe true
@@ -40,7 +46,7 @@ internal class ImplicitHandlerTest {
         return OAuth2HttpRequest(
             headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
             method = "GET",
-            originalUrl = ("http://authorize?" +
+            originalUrl = ("http://myissuer/issuer1/authorize?" +
                 "response_type=token&" +
                 "client_id=client1&" +
                 "state=mystate&" +
