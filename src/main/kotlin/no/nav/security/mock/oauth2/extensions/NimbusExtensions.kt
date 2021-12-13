@@ -16,6 +16,7 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.AuthorizationGrant
+import com.nimbusds.oauth2.sdk.AuthorizationRequest
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
@@ -38,7 +39,7 @@ import java.util.HashSet
 
 private val log = KotlinLogging.logger { }
 
-fun AuthenticationRequest.isPrompt(): Boolean =
+fun AuthorizationRequest.isPrompt(): Boolean =
     this.prompt?.any {
         it == Prompt.Type.LOGIN || it == Prompt.Type.CONSENT || it == Prompt.Type.SELECT_ACCOUNT
     } ?: false

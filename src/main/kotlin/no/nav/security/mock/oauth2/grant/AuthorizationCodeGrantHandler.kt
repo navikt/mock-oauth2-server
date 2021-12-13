@@ -6,13 +6,11 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
-import com.nimbusds.oauth2.sdk.OAuth2Error
+import com.nimbusds.oauth2.sdk.AuthorizationRequest
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
-import kotlin.collections.set
 import mu.KotlinLogging
-import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.verifyPkce
@@ -35,31 +33,26 @@ internal class AuthorizationCodeHandler(
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = HashMap()
 
-    fun authorizationCodeResponse(authenticationRequest: AuthenticationRequest, login: Login? = null): AuthenticationSuccessResponse {
-        when {
-            authenticationRequest.responseType.impliesCodeFlow() -> {
-                val code = AuthorizationCode()
-                log.debug("issuing authorization code $code")
-                codeToAuthRequestCache[code] = authenticationRequest
-                login?.also {
-                    log.debug("adding user with username ${it.username} to cache")
-                    codeToLoginCache[code] = login
-                }
-                return AuthenticationSuccessResponse(
-                    authenticationRequest.redirectionURI,
-                    code,
-                    null,
-                    null,
-                    authenticationRequest.state,
-                    null,
-                    authenticationRequest.responseMode
-                )
-            }
-            else -> throw OAuth2Exception(
-                OAuth2Error.INVALID_GRANT,
-                "hybrid og implicit flow not supported (yet)."
-            )
+    fun authorizationCodeResponse(
+        authorizationRequest: AuthorizationRequest, login: Login? = null
+    ): AuthenticationSuccessResponse {
+        val authenticationRequest = authorizationRequest as AuthenticationRequest
+        val code = AuthorizationCode()
+        log.debug("issuing authorization code $code")
+        codeToAuthRequestCache[code] = authenticationRequest
+        login?.also {
+            log.debug("adding user with username ${it.username} to cache")
+            codeToLoginCache[code] = login
         }
+        return AuthenticationSuccessResponse(
+            authenticationRequest.redirectionURI,
+            code,
+            null,
+            null,
+            authenticationRequest.state,
+            null,
+            authenticationRequest.responseMode
+        )
     }
 
     override fun tokenResponse(

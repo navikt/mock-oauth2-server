@@ -1,10 +1,12 @@
 package no.nav.security.mock.oauth2.http
 
+import com.nimbusds.oauth2.sdk.AuthorizationRequest
 import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.GeneralException
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.GrantType.AUTHORIZATION_CODE
 import com.nimbusds.oauth2.sdk.GrantType.CLIENT_CREDENTIALS
+import com.nimbusds.oauth2.sdk.GrantType.IMPLICIT
 import com.nimbusds.oauth2.sdk.GrantType.JWT_BEARER
 import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.OAuth2Error
@@ -27,6 +29,7 @@ import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
+import no.nav.security.mock.oauth2.grant.ImplicitGrantHandler
 import no.nav.security.mock.oauth2.grant.JwtBearerGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
@@ -55,6 +58,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
 
     private val grantHandlers: Map<GrantType, GrantHandler> = mapOf(
         AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider, refreshTokenManager),
+        IMPLICIT to ImplicitGrantHandler(config.tokenProvider),
         CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(config.tokenProvider),
         JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
         TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),
@@ -103,18 +107,41 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
     private fun Route.Builder.authorization() = apply {
         val authorizationCodeHandler = grantHandlers[AUTHORIZATION_CODE] as AuthorizationCodeHandler
         get(AUTHORIZATION) {
-            val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
+            val authRequest = it.authRequestType()
             if (config.interactiveLogin || authRequest.isPrompt())
                 html(loginRequestHandler.loginHtml(it))
             else {
-                authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
+                when {
+                    authRequest.responseType.impliesCodeFlow() -> {
+                        authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
+                    }
+                    authRequest.responseType.impliesImplicitFlow() -> {
+                        val implicitGrantHandler = grantHandlers[IMPLICIT] as ImplicitGrantHandler
+                        val tokenCallback: OAuth2TokenCallback = tokenCallbackFromQueueOrDefault(it.url.issuerId())
+                        val accessToken = implicitGrantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
+                        authenticationSuccess(implicitGrantHandler.implicitResponse(authRequest, accessToken))
+                    }
+                    else ->
+                        throw OAuth2Exception(
+                            OAuth2Error.INVALID_GRANT,
+                            "hybrid flow not supported (yet)."
+                        )
+                }
             }
         }
-        post(AUTHORIZATION) {
+        post(AUTHORIZATION)
+        {
             val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
             val login: Login = loginRequestHandler.loginSubmit(it)
             authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
         }
+    }
+
+    private fun OAuth2HttpRequest.authRequestType(): AuthorizationRequest {
+        if (this.url.queryParameter("response_type").toString() == "token") {
+            return this.asAuthorizationRequest()
+        }
+        return this.asAuthenticationRequest()
     }
 
     private fun Route.Builder.endSession() = any(END_SESSION) {

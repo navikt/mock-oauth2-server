@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse
 import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.ResponseMode
-import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
 import io.netty.handler.codec.http.HttpHeaderNames
 import no.nav.security.mock.oauth2.templates.TemplateMapper
 import okhttp3.Headers
@@ -89,20 +89,20 @@ fun redirect(location: String, headers: Headers = Headers.headersOf()): OAuth2Ht
 fun notFound(body: String? = null): OAuth2HttpResponse = OAuth2HttpResponse(status = 404, body = body)
 fun methodNotAllowed(): OAuth2HttpResponse = OAuth2HttpResponse(status = 405, body = "method not allowed")
 
-fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessResponse): OAuth2HttpResponse {
-    return when (authenticationSuccessResponse.responseMode) {
+fun authenticationSuccess(authorizationSuccessResponse: AuthorizationSuccessResponse): OAuth2HttpResponse {
+    return when (authorizationSuccessResponse.responseMode) {
         ResponseMode.FORM_POST -> {
             OAuth2HttpResponse(
                 status = 200,
                 body = templateMapper.authorizationCodeResponseHtml(
-                    authenticationSuccessResponse.redirectionURI.toString(),
-                    authenticationSuccessResponse.authorizationCode.value,
-                    authenticationSuccessResponse.state.value
+                    authorizationSuccessResponse.redirectionURI.toString(),
+                    authorizationSuccessResponse.authorizationCode.value,
+                    authorizationSuccessResponse.state.value
                 )
             )
         }
         else -> OAuth2HttpResponse(
-            headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authenticationSuccessResponse.toURI().toString()),
+            headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authorizationSuccessResponse.toURI().toString()),
             status = 302
         )
     }

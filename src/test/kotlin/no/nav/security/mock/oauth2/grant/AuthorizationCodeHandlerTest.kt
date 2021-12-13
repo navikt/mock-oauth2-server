@@ -101,7 +101,7 @@ internal class AuthorizationCodeHandlerTest {
 
     private fun AuthorizationCodeHandler.retrieveAuthorizationCode(login: Login): String =
         authorizationCodeResponse(
-            authenticationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
+            authorizationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
             login = login
         ).authorizationCode.value
 

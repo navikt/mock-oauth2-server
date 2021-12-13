@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.http
 
+import com.nimbusds.oauth2.sdk.AuthorizationRequest
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
@@ -75,6 +76,8 @@ data class OAuth2HttpRequest(
         )
 
     fun asAuthenticationRequest(): AuthenticationRequest = AuthenticationRequest.parse(this.url.toUri())
+
+    fun asAuthorizationRequest(): AuthorizationRequest = AuthorizationRequest.parse(this.url.toUri())
 
     fun type() = when {
         url.isWellKnownUrl() -> WELL_KNOWN
