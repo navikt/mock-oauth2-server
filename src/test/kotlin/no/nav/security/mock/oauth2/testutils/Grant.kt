@@ -36,3 +36,17 @@ data class Pkce(
 ) {
     val challenge: CodeChallenge = CodeChallenge.compute(method, verifier)
 }
+
+fun HttpUrl.authorizationRequest(
+    clientId: String = "defautlClient",
+    redirectUri: String = "http://defaultRedirectUri",
+    scope: List<String> = listOf("some-scope"),
+    responseType: String = "token",
+    state: String = "1234",
+): HttpUrl = newBuilder()
+    .addQueryParameter("client_id", clientId)
+    .addQueryParameter("response_type", responseType)
+    .addQueryParameter("redirect_uri", redirectUri)
+    .addQueryParameter("scope", scope.joinToString(" "))
+    .addQueryParameter("state", state)
+    .build()

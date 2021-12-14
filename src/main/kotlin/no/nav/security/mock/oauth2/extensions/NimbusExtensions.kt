@@ -26,12 +26,15 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.oauth2.sdk.id.Issuer
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier
+import com.nimbusds.oauth2.sdk.token.AccessToken
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue
 import com.nimbusds.openid.connect.sdk.Prompt
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
+import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.invalidRequest
 import java.time.Duration
 import java.time.Instant
@@ -116,3 +119,6 @@ fun ClientAuthentication.requirePrivateKeyJwt(requiredAudience: String, maxLifet
                 else -> it
             }
         } ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain a valid client_assertion.")
+
+fun OAuth2TokenResponse.toAccessToken(): AccessToken =
+    BearerAccessToken.parse("${this.tokenType} ${this.accessToken}")

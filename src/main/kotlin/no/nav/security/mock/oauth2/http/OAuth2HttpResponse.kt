@@ -101,10 +101,11 @@ fun authenticationSuccess(authorizationSuccessResponse: AuthorizationSuccessResp
                 )
             )
         }
-        else -> OAuth2HttpResponse(
-            headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authorizationSuccessResponse.toURI().toString()),
-            status = 302
-        )
+        else ->
+            OAuth2HttpResponse(
+                headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authorizationSuccessResponse.toURI().toString()),
+                status = 302
+            )
     }
 }
 

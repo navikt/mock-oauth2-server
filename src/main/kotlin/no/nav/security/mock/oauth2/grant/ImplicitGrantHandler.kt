@@ -1,12 +1,9 @@
 package no.nav.security.mock.oauth2.grant
 
-import com.nimbusds.oauth2.sdk.AuthorizationGrant
 import com.nimbusds.oauth2.sdk.AuthorizationRequest
 import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse
-import com.nimbusds.oauth2.sdk.GrantType.IMPLICIT
-import com.nimbusds.oauth2.sdk.TokenRequest
-import com.nimbusds.oauth2.sdk.token.BearerAccessToken
 import no.nav.security.mock.oauth2.extensions.expiresIn
+import no.nav.security.mock.oauth2.extensions.toAccessToken
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
@@ -18,14 +15,10 @@ internal class ImplicitGrantHandler(
 ) : GrantHandler {
 
     fun implicitResponse(authorizationRequest: AuthorizationRequest, tokenResponse: OAuth2TokenResponse): AuthorizationSuccessResponse {
-        val accessToken = tokenResponse.toAccessToken()
-        return AuthorizationSuccessResponse(
-            authorizationRequest.redirectionURI,
-            null,
-            accessToken,
-            authorizationRequest.state,
-            null,
-            authorizationRequest.impliedResponseMode()
+        return ConfigurableAuthorizationResponse(
+            authorizationRequest,
+            tokenResponse.toAccessToken(),
+            tokenResponse.expiresIn
         )
     }
 
@@ -36,7 +29,7 @@ internal class ImplicitGrantHandler(
     ): OAuth2TokenResponse {
         val authorizationRequest = request.asAuthorizationRequest()
         val accessToken = tokenProvider.accessToken(
-            asTokenRequest(request.url, authorizationRequest),
+            ImplicitGrant.asTokenRequest(request.url, authorizationRequest),
             issuerUrl,
             oAuth2TokenCallback
         )
@@ -46,21 +39,5 @@ internal class ImplicitGrantHandler(
             expiresIn = accessToken.expiresIn(),
             scope = request.asAuthorizationRequest().scope.toString()
         )
-    }
-
-    private fun OAuth2TokenResponse.toAccessToken() =
-        BearerAccessToken.parse("${this.tokenType} ${this.accessToken}")
-
-    private fun asTokenRequest(url: HttpUrl, authorizationRequest: AuthorizationRequest): TokenRequest = TokenRequest(
-        url.toUri(),
-        authorizationRequest.clientID,
-        ImplicitGrant(),
-        authorizationRequest.scope
-    )
-
-    internal class ImplicitGrant : AuthorizationGrant(IMPLICIT) {
-        override fun toParameters(): MutableMap<String, MutableList<String>> {
-            return mutableMapOf()
-        }
     }
 }

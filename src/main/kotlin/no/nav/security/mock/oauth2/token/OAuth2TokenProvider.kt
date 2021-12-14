@@ -7,7 +7,6 @@ import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
-import com.nimbusds.oauth2.sdk.AuthorizationRequest
 import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.issuerId
@@ -52,19 +51,6 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         oAuth2TokenCallback.addClaims(tokenRequest),
         oAuth2TokenCallback.tokenExpiry()
     ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
-
-    fun implicitAccessToken(
-        authorizationRequest: AuthorizationRequest,
-        issuerUrl: HttpUrl,
-        oAuth2TokenCallback: OAuth2TokenCallback
-    ) = defaultClaims(
-        issuerUrl,
-        "subject",
-        listOf("aud"),
-        null,
-        mapOf("acr" to "value1", "abc" to "value2"),
-        3600
-    ).sign(issuerUrl.issuerId(), JOSEObjectType.JWT.type)
 
     fun exchangeAccessToken(
         tokenRequest: TokenRequest,
