@@ -41,7 +41,7 @@ internal class ImplicitGrantHandler(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
             expiresIn = accessToken.expiresIn(),
-            scope = request.asAuthorizationRequest().scope.toString()
+            scope = authorizationRequest.scope?.toString()
         )
     }
 }

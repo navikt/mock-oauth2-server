@@ -25,11 +25,16 @@ class ImplicitGrantIntegrationTest {
             response.headers["location"]?.toHttpUrl().asClue {
                 it?.toString() shouldStartWith "http://defaultredirecturi/#"
                 val fragments = it?.encodedFragment
+                // params
                 fragments.shouldContain("access_token")
                 fragments.shouldContain("state")
                 fragments.shouldContain("token_type")
-                fragments?.shouldContain("expires_in")
-                fragments?.shouldContain("scope")
+                fragments.shouldContain("expires_in")
+                fragments.shouldContain("scope")
+                // values
+                fragments.shouldContain("Bearer")
+                fragments.shouldContain("some-scope")
+                fragments.shouldContain("1234")
             }
         }
     }
