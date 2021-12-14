@@ -3,6 +3,7 @@ package no.nav.security.mock.oauth2.e2e
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.testutils.authorizationRequest
@@ -35,6 +36,23 @@ class ImplicitGrantIntegrationTest {
                 fragments.shouldContain("Bearer")
                 fragments.shouldContain("some-scope")
                 fragments.shouldContain("1234")
+            }
+        }
+    }
+
+    @Test
+    fun `authorized request should return 302 with redirectUri as location and fragment without optional param scope`() {
+        client.get(
+            server.authorizationEndpointUrl("default").authorizationRequest(scope = null)
+        ).asClue { response ->
+            response.code shouldBe 302
+            response.headers["location"]?.toHttpUrl().asClue {
+                it?.toString() shouldStartWith "http://defaultredirecturi/#"
+                val fragments = it?.encodedFragment
+                // params
+                fragments.shouldNotContain("scope")
+                // values
+                fragments.shouldNotContain("some-scope")
             }
         }
     }
