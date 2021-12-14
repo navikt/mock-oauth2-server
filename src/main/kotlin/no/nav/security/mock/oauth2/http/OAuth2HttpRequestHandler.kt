@@ -121,16 +121,16 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
                         val accessToken = implicitGrantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
                         authenticationSuccess(implicitGrantHandler.implicitResponse(authRequest, accessToken))
                     }
-                    else ->
+                    else -> {
+                        val msg = "hybrid grant not supported (yet)"
                         throw OAuth2Exception(
-                            OAuth2Error.INVALID_GRANT,
-                            "hybrid flow not supported (yet)."
+                            OAuth2Error.INVALID_GRANT.setDescription(msg), msg
                         )
+                    }
                 }
             }
         }
-        post(AUTHORIZATION)
-        {
+        post(AUTHORIZATION) {
             val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
             val login: Login = loginRequestHandler.loginSubmit(it)
             authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
@@ -138,10 +138,15 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
     }
 
     private fun OAuth2HttpRequest.authRequestType(): AuthorizationRequest {
-        if (this.url.queryParameter("response_type").toString() == "token") {
-            return this.asAuthorizationRequest()
+        val req = this.asAuthorizationRequest()
+        return when (req.responseType.impliesCodeFlow()) {
+            true -> {
+                this.asAuthenticationRequest()
+            }
+            else -> {
+                this.asAuthorizationRequest()
+            }
         }
-        return this.asAuthenticationRequest()
     }
 
     private fun Route.Builder.endSession() = any(END_SESSION) {

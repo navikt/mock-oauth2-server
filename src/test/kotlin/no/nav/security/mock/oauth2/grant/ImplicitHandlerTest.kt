@@ -21,8 +21,12 @@ internal class ImplicitHandlerTest {
     fun `authorization implicit response should contain required parameters`() {
         oauth2HttpRequest().also { request ->
 
-            val accessToken = handler.tokenResponse(request, request.url.toIssuerUrl(), DefaultOAuth2TokenCallback()).apply {
-                println(this.accessToken)
+            val accessToken = handler.tokenResponse(
+                request, request.url.toIssuerUrl(),
+                DefaultOAuth2TokenCallback(
+                    claims = mapOf("acr" to "value1", "abc" to "value2")
+                )
+            ).apply {
                 val signedJwt = SignedJWT.parse(this.accessToken)
                 val claims = signedJwt.claims
                 claims["acr"] shouldBe "value1"
@@ -41,17 +45,19 @@ internal class ImplicitHandlerTest {
 
     private fun oauth2HttpRequest(
         redirectUri: String = "http://redirect",
-        scope: String = "openid"
+        scope: String = "some-scope"
     ): OAuth2HttpRequest {
         return OAuth2HttpRequest(
             headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
             method = "GET",
-            originalUrl = ("http://myissuer/issuer1/authorize?" +
-                "response_type=token&" +
-                "client_id=client1&" +
-                "state=mystate&" +
-                "redirect_uri=$redirectUri&" +
-                "scope=$scope").toHttpUrl()
+            originalUrl = (
+                "http://myissuer/issuer1/authorize?" +
+                    "response_type=token&" +
+                    "client_id=client1&" +
+                    "state=mystate&" +
+                    "redirect_uri=$redirectUri&" +
+                    "scope=$scope"
+                ).toHttpUrl()
 
         )
     }
