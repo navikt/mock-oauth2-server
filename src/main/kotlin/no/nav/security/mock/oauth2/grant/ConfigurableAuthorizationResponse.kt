@@ -20,9 +20,9 @@ class ConfigurableAuthorizationResponse(
             .with("access_token", accessToken.value)
             .with("state", authorizationRequest.state.value)
             .with("token_type", accessToken.type.value)
-            .with("expires_in", expiresIn.toString()).also { fragments ->
+            .with("expires_in", expiresIn.toString()).also { params ->
                 authorizationRequest.scope?.let {
-                    fragments["scope"] = mutableListOf(it.toString())
+                    params.with("scope", it.toString())
                 }
             }
     }
