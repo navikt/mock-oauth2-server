@@ -4,6 +4,7 @@ import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.ResponseMode
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.testutils.claims
@@ -34,6 +35,7 @@ internal class ImplicitHandlerTest {
                 signedJwt.issuer shouldBe "http://myissuer/issuer1"
             }
             handler.implicitResponse(request.asAuthorizationRequest(), accessToken).asClue {
+                it.accessToken shouldNotBe null
                 it.impliedResponseType().impliesImplicitFlow() shouldBe true
                 it.impliedResponseMode() shouldBe ResponseMode.FRAGMENT
                 it.state.toString() shouldBe "mystate"
