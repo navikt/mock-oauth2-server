@@ -71,29 +71,31 @@ internal class KeyProviderTest {
     }
 
     @Test
-    fun `reading premapped issuer jwks config file behaves as expected`(){
+    fun `reading premapped issuer jwks config file behaves as expected`() {
         val jsonFile = "./src/test/resources/" + "premapped_issuer_jwks_testfile.json"
         System.setProperty("PREDEFINED_ISSUER_JWKS", jsonFile)
 
         val jsonObj = jacksonObjectMapper().readValue(File(jsonFile), ObjectNode::class.java)
 
         val keyProvider = KeyProvider()
-        val issuers = listOf("aad","other3")
-        for(iss in issuers){
+        val issuers = listOf("aad", "other3")
+        for (iss in issuers) {
             val actual = keyProvider.signingKey(iss)
             val expected = JWK.parse(jsonObj.get(iss).toString()).toRSAKey()
-            assertEquals(expected,actual)
+            assertEquals(expected, actual)
         }
+        System.clearProperty("PREDEFINED_ISSUER_JWKS")
     }
 
     @Test
-    fun `reading invalid premapped issuer jwks config file fails`(){
+    fun `reading invalid premapped issuer jwks config file fails`() {
         val jsonFile = "./src/test/resources/" + "premapped_issuer_jwks_testfile_invalid.json"
         System.setProperty("PREDEFINED_ISSUER_JWKS", jsonFile)
 
-        shouldThrow<IllegalStateException>{
+        shouldThrow<IllegalStateException> {
             KeyProvider()
         }
+        System.clearProperty("PREDEFINED_ISSUER_JWKS")
     }
 
     private fun initialPublicKeys(): List<RSAPublicKey> =
