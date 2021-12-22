@@ -76,14 +76,18 @@ open class KeyProvider @JvmOverloads constructor(
                     val jwkString = it.value
                     if (!jwkString.isNull) {
                         try {
-                            out.put(issuerName, JWK.parse(jwkString.toString()).toRSAKey())
-                        } catch(ex: Exception){
-                            throw RuntimeException("Error when parsing JWK for issuer '${issuerName}'",ex)
+                            val parsedJWK = JWK.parse(jwkString.toString()).toRSAKey()
+                            if(!parsedJWK.keyID.equals(issuerName)){
+                                throw RuntimeException("Error when parsing JWK for issuer '$issuerName'. kid must match issuer name")
+                            }
+                            out[issuerName] = parsedJWK
+                        } catch (ex: Exception) {
+                            throw RuntimeException("Error when parsing JWK for issuer '$issuerName'", ex)
                         }
                     } else {
                         val generated = generator.generateRSAKey(issuerName).apply {
                             val prettyJson = om.writerWithDefaultPrettyPrinter().writeValueAsString(this.toJSONObject())
-                            log.debug("Created JWK for issuer '${issuerName}' => \n${prettyJson}\n")
+                            log.debug("Created JWK for issuer '$issuerName' => \n${prettyJson}\n")
                         }
                         out.put(issuerName, generated)
                     }
