@@ -1,18 +1,24 @@
 package no.nav.security.mock.oauth2.token
 
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.nimbusds.jose.jwk.JWK
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.KeyUse
 import com.nimbusds.jose.jwk.RSAKey
 import io.kotest.assertions.asClue
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.shouldBe
 import no.nav.security.mock.oauth2.token.KeyProvider.Companion.INITIAL_KEYS_FILE
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.lang.IllegalStateException
 import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
+import kotlin.test.assertEquals
 
 internal class KeyProviderTest {
 
@@ -55,12 +61,57 @@ internal class KeyProviderTest {
         }
     }
 
+    @Test
+    fun `premapped Issuer JWKs are stored`() {
+        val initialMappedKeys = initialPremappedKeys()
+        val provider = KeyProvider(initialMappedKeys = initialMappedKeys)
+        initialMappedKeys.keys.forEach {
+            assert(provider.signingKey(it).equals(initialMappedKeys[it]))
+        }
+    }
+
+    @Test
+    fun `reading premapped issuer jwks config file behaves as expected`(){
+        val jsonFile = "./src/test/resources/" + "premapped_issuer_jwks_testfile.json"
+        System.setProperty("PREDEFINED_ISSUER_JWKS", jsonFile)
+
+        val jsonObj = jacksonObjectMapper().readValue(File(jsonFile), ObjectNode::class.java)
+
+        val keyProvider = KeyProvider()
+        val issuers = listOf("aad","other3")
+        for(iss in issuers){
+            val actual = keyProvider.signingKey(iss)
+            val expected = JWK.parse(jsonObj.get(iss).toString()).toRSAKey()
+            assertEquals(expected,actual)
+        }
+    }
+
+    @Test
+    fun `reading invalid premapped issuer jwks config file fails`(){
+        val jsonFile = "./src/test/resources/" + "premapped_issuer_jwks_testfile_invalid.json"
+        System.setProperty("PREDEFINED_ISSUER_JWKS", jsonFile)
+
+        shouldThrow<IllegalStateException>{
+            KeyProvider()
+        }
+    }
+
     private fun initialPublicKeys(): List<RSAPublicKey> =
         initialKeysFile.readText().let {
             JWKSet.parse(it).keys
         }.map {
             it.toRSAKey().toRSAPublicKey()
         }
+
+    private fun initialPremappedKeys(): Map<String, RSAKey> {
+        val out = mutableMapOf<String, RSAKey>()
+        val issuerNames = listOf("iss1", "iss2", "iss3")
+        val keys = generateKeys(3).map { it.toRSAKey() }
+        issuerNames.indices.forEach {
+            out[issuerNames[it]] = keys[it]
+        }
+        return out.toMap()
+    }
 
     private fun writeInitialKeysFile() {
         val list = generateKeys(5)
