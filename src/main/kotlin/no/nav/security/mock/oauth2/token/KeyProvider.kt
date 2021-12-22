@@ -77,7 +77,7 @@ open class KeyProvider @JvmOverloads constructor(
                     if (!jwkString.isNull) {
                         try {
                             val parsedJWK = JWK.parse(jwkString.toString()).toRSAKey()
-                            if(!parsedJWK.keyID.equals(issuerName)){
+                            if (!parsedJWK.keyID.equals(issuerName)) {
                                 throw RuntimeException("Error when parsing JWK for issuer '$issuerName'. kid must match issuer name")
                             }
                             out[issuerName] = parsedJWK
