@@ -145,4 +145,9 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         builder.addClaims(additionalClaims)
         builder.build()
     }
+
+    fun fullJwkSet(issuerId: String): JWKSet {
+        val jwk = keyProvider.signingKey(issuerId)
+        return JWKSet(jwk)
+    }
 }

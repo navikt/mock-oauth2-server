@@ -23,6 +23,8 @@ object OAuth2Endpoints {
     const val USER_INFO = "/userinfo"
     const val DEBUGGER = "/debugger"
     const val DEBUGGER_CALLBACK = "/debugger/callback"
+    const val TESTUTILS_JWKS = "/testutils/fulljwkssecret"
+    const val TESTUTILS_SIGN = "/testutils/signclaims"
 
     val all = listOf(
         OAUTH2_WELL_KNOWN,
@@ -33,7 +35,9 @@ object OAuth2Endpoints {
         JWKS,
         USER_INFO,
         DEBUGGER,
-        DEBUGGER_CALLBACK
+        DEBUGGER_CALLBACK,
+        TESTUTILS_JWKS,
+        TESTUTILS_SIGN
     )
 }
 

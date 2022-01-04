@@ -1,5 +1,8 @@
 package no.nav.security.mock.oauth2.http
 
+import com.fasterxml.jackson.core.JacksonException
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.GeneralException
 import com.nimbusds.oauth2.sdk.GrantType
@@ -20,6 +23,8 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.END_SESSION
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.JWKS
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TESTUTILS_JWKS
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TESTUTILS_SIGN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
@@ -82,6 +87,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         endSession()
         userInfo(config.tokenProvider)
         preflight()
+        testutils()
         get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
         attach(debuggerRequestHandler)
     }
@@ -157,4 +163,52 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
                 config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId } ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
             }
         }
+
+    private fun Route.Builder.testutils() = apply {
+
+        get(TESTUTILS_JWKS) {
+            val jwk = config.tokenProvider.fullJwkSet(it.url.issuerId())
+            json(jwk.toJSONObject(false))
+        }
+        post(TESTUTILS_SIGN) {
+            val issuerId = it.url.issuerId()
+            val om = jacksonObjectMapper()
+            try {
+                val parsedbody = om.readValue(it.body, ObjectNode::class.java)
+
+                val claimsMap = when {
+                    parsedbody.has("claims") -> {
+                        val claims = mutableMapOf<String, String>()
+                        parsedbody.get("claims").fields().forEach {
+                            claims[it.key] = it.value.toString()
+                        }
+                        claims.toMap()
+                    }
+                    else -> mapOf()
+                }
+                val expiryDuration = when {
+                    parsedbody.has("expiry") -> {
+                        val expirytxt = parsedbody.get("expiry").asText("PT1H")
+                        java.time.Duration.parse(expirytxt)
+                    }
+                    else -> java.time.Duration.parse("PT1H")
+                }
+                val signedJwt = config.tokenProvider.jwt(claimsMap, expiryDuration, issuerId)
+
+                OAuth2HttpResponse(status = 200, body = (signedJwt.serialize()))
+
+            } catch (ex: JacksonException) {
+                OAuth2HttpResponse(status = 400, body = ex.message.toString())
+            } catch (ex: java.time.format.DateTimeParseException) {
+                val outputStr = ex.message.toString() + listOf(
+                    "\n" + "`" + ex.parsedString + "`",
+                    "\nExamples of java.time.Duration string format:\n",
+                    "P1D (1 day), ",
+                    "PT1H (1 hour), ",
+                    "P0DT0H10M30S (0 days, 0 hours, 10 minutes, 30 seconds)",
+                ).joinToString("")
+                OAuth2HttpResponse(status = 400, body = outputStr)
+            }
+        }
+    }
 }

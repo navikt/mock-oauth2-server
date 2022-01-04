@@ -1,5 +1,8 @@
 package no.nav.security.mock.oauth2.http
 
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
 import no.nav.security.mock.oauth2.OAuth2Config
@@ -9,6 +12,8 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.END_SESSION
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.JWKS
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TESTUTILS_JWKS
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TESTUTILS_SIGN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.USER_INFO
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
@@ -64,6 +69,21 @@ internal class OAuth2HttpRequestHandlerTest {
                 expectedResponse = OAuth2HttpResponse(status = 302)
             ),
             request(path = "/favicon.ico", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+            request(path= "/issuer1$TESTUTILS_JWKS", method="GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+            request(
+                path= "/issuer1$TESTUTILS_SIGN",
+                method="POST",
+                body= (jacksonObjectMapper().createObjectNode().apply {
+                    this.put("expiry","PT1H")
+                    this.set<ObjectNode>("claims", jacksonObjectMapper().createObjectNode().apply {
+                        this.set<ArrayNode>("groups", jacksonObjectMapper().createArrayNode().apply{
+                            this.add("grp1")
+                            this.add("grp2")
+                        })
+                    })
+                }).toString(),
+                expectedResponse = OAuth2HttpResponse(status = 200)
+            )
         )
 
         private fun request(path: String, method: String, headers: Headers = Headers.headersOf(), body: String? = null, expectedResponse: OAuth2HttpResponse) =
