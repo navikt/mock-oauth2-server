@@ -13,7 +13,7 @@ val kotlinVersion = "1.6.10"
 val freemarkerVersion = "2.3.31"
 val kotestVersion = "4.6.3"
 val bouncyCastleVersion = "1.70"
-val springBootVersion = "2.5.6"
+val springBootVersion = "2.6.2"
 val reactorTestVersion = "3.4.13"
 val ktorVersion = "1.6.7"
 
