@@ -115,8 +115,10 @@ internal class OAuth2ConfigTest {
             val withSkew = value.toInstant().plus(skew)
             return MatcherResult(
                 withSkew.isAfter(now),
-                "Date $withSkew should be after $now",
-                "Date $withSkew should not be after $now"
+                { "Date $withSkew should be after $now" },
+                {
+                    "Date $withSkew should not be after $now"
+                }
             )
         }
     }
