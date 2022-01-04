@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.token
 
+import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.KeyType
 import com.nimbusds.jose.jwk.KeyUse
 import com.nimbusds.jose.proc.BadJOSEException
@@ -17,8 +18,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 
-internal class OAuth2TokenProviderTest {
-    private val tokenProvider = OAuth2TokenProvider()
+internal class OAuth2TokenProviderECTest {
+    private val tokenProvider = OAuth2TokenProvider(
+        KeyProvider(
+            emptyList(),
+            JWSAlgorithm.ES256.name
+        )
+    )
 
     @Test
     fun `public jwks returns public part of JWKs`() {
@@ -31,7 +37,7 @@ internal class OAuth2TokenProviderTest {
         val jwkSet = tokenProvider.publicJwkSet()
         jwkSet.keys.forEach {
             it.keyID shouldNotBe null
-            it.keyType shouldBe KeyType.RSA
+            it.keyType shouldBe KeyType.EC
             it.keyUse shouldBe KeyUse.SIGNATURE
         }
     }
@@ -84,10 +90,10 @@ internal class OAuth2TokenProviderTest {
     fun `ensure idToken is signed with same key as returned from public jwks`(issuerId: String) {
 
         val issuer = Issuer("http://localhost/$issuerId")
-        idToken(issuer.toString()).verifySignatureAndIssuer(issuer, tokenProvider.publicJwkSet(issuerId))
+        idToken(issuer.toString()).verifySignatureAndIssuer(issuer, tokenProvider.publicJwkSet(issuerId), JWSAlgorithm.ES256)
 
         shouldThrow<BadJOSEException> {
-            idToken(issuer.toString()).verifySignatureAndIssuer(issuer, tokenProvider.publicJwkSet("shouldfail"))
+            idToken(issuer.toString()).verifySignatureAndIssuer(issuer, tokenProvider.publicJwkSet("shouldfail"), JWSAlgorithm.ES256)
         }
     }
 

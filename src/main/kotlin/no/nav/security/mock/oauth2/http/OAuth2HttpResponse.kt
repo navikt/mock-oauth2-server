@@ -10,6 +10,7 @@ import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
 import io.netty.handler.codec.http.HttpHeaderNames
 import no.nav.security.mock.oauth2.templates.TemplateMapper
+import no.nav.security.mock.oauth2.token.KeyGenerator
 import okhttp3.Headers
 
 val objectMapper: ObjectMapper = jacksonObjectMapper()
@@ -36,7 +37,7 @@ data class WellKnown(
     @JsonProperty("subject_types_supported")
     val subjectTypesSupported: List<String> = listOf("public"),
     @JsonProperty("id_token_signing_alg_values_supported")
-    val idTokenSigningAlgValuesSupported: List<String> = listOf("RS256")
+    val idTokenSigningAlgValuesSupported: List<String> = (KeyGenerator.ecAlgorithmFamily + KeyGenerator.rsaAlgorithmFamily).map { it.name }.toList()
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

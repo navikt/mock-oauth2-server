@@ -34,7 +34,6 @@ import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.invalidRequest
 import java.time.Duration
 import java.time.Instant
-import java.util.HashSet
 
 private val log = KotlinLogging.logger { }
 
@@ -83,11 +82,11 @@ fun TokenRequest.clientIdAsString(): String =
 fun SignedJWT.expiresIn(): Int =
     Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
 
-fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet): JWTClaimsSet {
+fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet, jwsAlgorithm: JWSAlgorithm = JWSAlgorithm.RS256): JWTClaimsSet {
     val jwtProcessor: ConfigurableJWTProcessor<SecurityContext?> = DefaultJWTProcessor()
     jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
     val keySelector: JWSKeySelector<SecurityContext?> = JWSVerificationKeySelector(
-        JWSAlgorithm.RS256,
+        jwsAlgorithm,
         ImmutableJWKSet(jwkSet)
     )
     jwtProcessor.jwsKeySelector = keySelector
