@@ -6,12 +6,12 @@ val kotlinLoggingVersion = "2.1.21"
 val logbackVersion = "1.2.10"
 val nimbusSdkVersion = "9.20.1"
 val mockWebServerVersion = "4.9.3"
-val jacksonVersion = "2.13.0"
+val jacksonVersion = "2.13.1"
 val nettyVersion = "4.1.72.Final"
 val junitJupiterVersion = "5.8.2"
 val kotlinVersion = "1.6.10"
 val freemarkerVersion = "2.3.31"
-val kotestVersion = "4.6.3"
+val kotestVersion = "5.0.3"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "2.6.2"
 val reactorTestVersion = "3.4.13"
@@ -262,6 +262,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "7.1.1"
+        gradleVersion = "7.3.3"
     }
 }
