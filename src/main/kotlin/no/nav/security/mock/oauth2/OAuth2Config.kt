@@ -7,11 +7,14 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.jwk.JWK
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.SslKeystore
+import no.nav.security.mock.oauth2.token.KeyProvider
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
@@ -29,8 +32,32 @@ data class OAuth2Config @JvmOverloads constructor(
 ) {
 
     class OAuth2TokenProviderDeserializer : JsonDeserializer<OAuth2TokenProvider>() {
-        override fun deserialize(p0: JsonParser?, p1: DeserializationContext?): OAuth2TokenProvider {
-            return OAuth2TokenProvider()
+
+        data class ProviderConfig(
+            val keyProvider: KeyProviderConfig?
+        )
+
+        data class KeyProviderConfig(
+            val initialKeys: String?,
+            val algorithm: String
+        )
+
+        override fun deserialize(p: JsonParser, ctxt: DeserializationContext?): OAuth2TokenProvider {
+            val node: JsonNode = p.readValueAsTree()
+            val config: ProviderConfig = if (!node.isObject) {
+                return OAuth2TokenProvider()
+            } else {
+                p.codec.treeToValue(node, ProviderConfig::class.java)
+            }
+            val jwks = config.keyProvider?.initialKeys?.let {
+                listOf(JWK.parse(it))
+            } ?: emptyList()
+
+            return OAuth2TokenProvider(
+                KeyProvider(
+                    jwks, config.keyProvider?.algorithm ?: JWSAlgorithm.RS256.name
+                )
+            )
         }
     }
 

@@ -1,33 +1,33 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
-val assertjVersion = "3.21.0"
-val kotlinLoggingVersion = "2.0.11"
-val logbackVersion = "1.2.6"
-val nimbusSdkVersion = "9.19"
-val mockWebServerVersion = "4.9.2"
-val jacksonVersion = "2.13.0"
-val nettyVersion = "4.1.69.Final"
-val junitJupiterVersion = "5.8.1"
-val kotlinVersion = "1.5.31"
+val assertjVersion = "3.22.0"
+val kotlinLoggingVersion = "2.1.21"
+val logbackVersion = "1.2.10"
+val nimbusSdkVersion = "9.20.1"
+val mockWebServerVersion = "4.9.3"
+val jacksonVersion = "2.13.1"
+val nettyVersion = "4.1.72.Final"
+val junitJupiterVersion = "5.8.2"
+val kotlinVersion = "1.6.10"
 val freemarkerVersion = "2.3.31"
-val kotestVersion = "4.6.3"
-val bouncyCastleVersion = "1.69"
-val springBootVersion = "2.5.6"
-val reactorTestVersion = "3.4.11"
-val ktorVersion = "1.6.4"
+val kotestVersion = "5.0.3"
+val bouncyCastleVersion = "1.70"
+val springBootVersion = "2.6.2"
+val reactorTestVersion = "3.4.13"
+val ktorVersion = "1.6.7"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.5.31"
+    kotlin("jvm") version "1.6.10"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
-    id("com.github.ben-manes.versions") version "0.39.0"
-    id("org.jmailen.kotlinter") version "3.6.0"
+    id("com.github.ben-manes.versions") version "0.40.0"
+    id("org.jmailen.kotlinter") version "3.8.0"
     id("com.google.cloud.tools.jib") version "3.1.4"
-    id("com.github.johnrengelman.shadow") version "7.1.0"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
     id("net.researchgate.release") version "2.8.1"
     id("io.codearte.nexus-staging") version "0.30.0"
     id("de.marcphilipp.nexus-publish") version "0.4.0"
@@ -262,6 +262,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "7.1.1"
+        gradleVersion = "7.3.3"
     }
 }

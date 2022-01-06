@@ -95,7 +95,14 @@ A request to `http://localhost:8080/default/.well-known/openid-configuration` wi
       "public"
    ],
    "id_token_signing_alg_values_supported":[
-      "RS256"
+     "ES256",
+     "ES384",
+     "RS256",
+     "RS384",
+     "RS512",
+     "PS256",
+     "PS384",
+     "PS512"
    ]
 }
 ```
@@ -252,6 +259,19 @@ Example:
             ]
         }
     ]
+}
+```
+
+A token provider can support different `signing` algorithms. Configure your token provider and
+add this to your config with preferred `JWS algorithm`:
+
+```json
+{
+  "tokenProvider" : {
+    "keyProvider" : {
+      "algorithm" : "ES256"
+    }
+  }
 }
 ```
 

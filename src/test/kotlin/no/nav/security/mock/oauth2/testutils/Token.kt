@@ -94,14 +94,18 @@ fun verifyWith(
             value.verifyWith(server.issuerUrl(issuerId), server.jwksUrl(issuerId), requiredClaims)
             MatcherResult(
                 true,
-                "should not happen, famous last words",
-                "JWT should not verify, expected exception."
+                { "should not happen, famous last words" },
+                {
+                    "JWT should not verify, expected exception."
+                }
             )
         } catch (e: Exception) {
             MatcherResult(
                 false,
-                "${e.message}",
-                "JWT should not verify, expected exception."
+                { "${e.message}" },
+                {
+                    "JWT should not verify, expected exception."
+                }
             )
         }
     }

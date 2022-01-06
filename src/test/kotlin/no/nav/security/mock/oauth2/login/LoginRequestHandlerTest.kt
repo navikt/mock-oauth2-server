@@ -17,7 +17,7 @@ internal class LoginRequestHandlerTest {
     private val handler = LoginRequestHandler(templateMapper, OAuth2Config())
 
     @Test
-    fun `loginSubmit should return login with username and claims from form params`(){
+    fun `loginSubmit should return login with username and claims from form params`() {
         handler.loginSubmit(request("username=foo&claims=someJsonString")).asClue {
             it shouldBe Login("foo", claims = "someJsonString")
         }
@@ -39,5 +39,4 @@ internal class LoginRequestHandlerTest {
             method = "POST",
             body = body
         )
-
 }
