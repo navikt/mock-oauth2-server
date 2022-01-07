@@ -30,7 +30,7 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - uses: actions/github-script@v3
+      - uses: actions/github-script@v5
         id: fetch-branch-names
         name: Fetch branch names
         with:
@@ -131,7 +131,7 @@ jobs:
           script: |
             const prString = process.env.PRS_STRING;
             const body = 'This PR was created by the Combine PRs action by combining the following PRs:\n' + prString;
-            pr = await github.pulls.create({
+            pr = await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: 'Combined PR',
@@ -139,8 +139,8 @@ jobs:
               base: '${{ steps.fetch-branch-names.outputs.base-branch }}',
               body: body
             });
-            await github.issues.addLabels({
-              issue_number: pr['id'],
+            await github.rest.issues.addLabels({
+              issue_number: pr.id,
               owner: context.repo.owner,
               repo: context.repo.repo,
               labels: ['dependecies']
