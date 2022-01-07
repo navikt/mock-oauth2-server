@@ -36,9 +36,18 @@ The motivation behind this library is to provide a setup such that application d
   * Customizable through exposure of underlying  [OkHttp MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) 
 * **Standalone support** - i.e. run as application in IDE, run inside your app, or as a Docker image (provided)
 * **OAuth2 Client Debugger** - e.g. support for triggering OIDC Auth Code Flow and receiving callback in debugger app, view token response from server (intended for standalone support)
-
-
-
+* **Supports several JWS signing algorithms** - e.g. used to authenticate the client at the token endpoint for the `private_key_jwt`
+  * ES256
+  * ES384
+  * RS256
+  * RS384
+  * RS512
+  * PS256
+  * PS384
+  * PS512
+* **Customize http routes**
+  * Add endpoints and functionality to match your authorization provider.
+  
 ## 📦 Install
 
 **Gradle Kotlin DSL**
@@ -69,8 +78,6 @@ Latest version [![GitHub release (latest SemVer including pre-releases)](https:/
 ```
 docker pull ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
 ```
-
-
 
 ## ⌨️ Usage
 
@@ -198,6 +205,25 @@ val wellKnownUrl = server.wellKnownUrl("yourissuer")
 // http://localhost:<a random port>/yourissuer/.well-known/openid-configuration
 ```
 
+##### Routes
+
+You can add and customize http routs for your authorization server.
+
+````kotlin
+fun main() {
+    MockOAuth2Server(
+        oauth2Config(),
+        route("/isalive") {
+            OAuth2HttpResponse(status = 200, body = "alive and well")
+        }
+    ).apply {
+        start(hostname(), port())
+    }
+}
+// Will result in addition to already default http routes:
+// A new endpoint will be available: http://localhost:<a random port>/default/isalive
+````
+
 ### Standalone server
 
 The standalone server will default to port `8080` and can be started by invoking `main()` in  `StandaloneMockOAuth2Server.kt` (in kotlin) or `StandaloneMockOAuth2ServerKt` (in Java)
@@ -262,19 +288,6 @@ Example:
 }
 ```
 
-A token provider can support different `signing` algorithms. Configure your token provider and
-add this to your config with preferred `JWS algorithm`:
-
-```json
-{
-  "tokenProvider" : {
-    "keyProvider" : {
-      "algorithm" : "ES256"
-    }
-  }
-}
-```
-
 | Property | Description |
 | --- | --- |
 | `interactiveLogin` | `true` or `false`, enables login screen when redirecting to server `/authorize` endpoint |
@@ -318,6 +331,44 @@ and return a token response containing a token with the following claims:
   "jti": "28697333-6f25-4b1f-b2c2-409ce010933a"
 }
 ```
+
+A token provider can support different `signing` algorithms. Configure your token provider and
+add this to your config with preferred `JWS algorithm` with preferrd `first` token callback:
+
+```json
+{
+  "tokenProvider": {
+    "keyProvider": {
+      "initialKeys": "{\"kty\": \"EC\",\"d\": \"o9INzHyU_I97djF36YQRpHCJxFTgDTbS1OtwUnHc34U\",\"use\":\"sig\",\"crv\": \"P-256\",\"kid\": \"issuer0\",\"x\": \"umybCYzE-VX_UAIJaX3wc-GTOgB7WDp7A3JJAKW_hqU\",\"y\": \"m_sCzuMjiBSQ7At9yNktMQvE1cCKq68jO7wnRczwKw8\"}",
+      "algorithm": "ES256"
+    }
+  },
+  "tokenCallbacks": [
+    {
+      "issuerId": "issuer0",
+      "tokenExpiry": 120,
+      "requestMappings": [
+        {
+          "requestParam": "scope",
+          "match": "scope1",
+          "claims": {
+            "sub": "subByScope",
+            "aud": [
+              "audByScope"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+| Property                       | Description                                                             |
+|--------------------------------|-------------------------------------------------------------------------|
+| `tokenProvider.keyprovider.initialKeys` | Private keys authorization server should use to sign, should match the `tokenProvider.keyprovider.algorithm` |
+| `tokenProvider.keyprovider.algorithm` | Specified JWS algorithm                                                 |
+
 
 
 #### Docker 
