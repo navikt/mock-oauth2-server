@@ -47,3 +47,16 @@ jobs:
           description: 'Passed'
           state: 'success'
           sha: ${{github.event.pull_request.head.sha || github.sha}}
+
+  add_labels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-ecosystem/action-add-labels@v1
+      - name: Adding to
+        run: |
+        echo add lable to ${GITHUB_REF##*/}
+        startsWith(${GITHUB_REF##*/}, 'dependabot')
+        if: ${{ startsWith(${GITHUB_REF##*/}, 'dependabot') }}
+        with:
+          labels: dependencies
