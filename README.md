@@ -207,7 +207,7 @@ val wellKnownUrl = server.wellKnownUrl("yourissuer")
 
 ##### Routes
 
-You can add and customize http routs for your authorization server.
+You can add and customize http routes for your authorization server.
 
 ````kotlin
 fun main() {
