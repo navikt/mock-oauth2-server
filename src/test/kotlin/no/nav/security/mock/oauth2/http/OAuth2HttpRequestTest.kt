@@ -28,6 +28,34 @@ internal class OAuth2HttpRequestTest {
             originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
         )
         req2.proxyAwareUrl().toString() shouldBe "https://fakedings.nais.io:444/mypath?query=1"
+
+        // host header has host:port and x-forwarded-port is set
+        val req3 = OAuth2HttpRequest(
+            headers = Headers.headersOf(
+                "host",
+                "fakedings.nais.io:666",
+                "x-forwarded-proto",
+                "https",
+                "x-forwarded-port",
+                "444"
+            ),
+            method = "GET",
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+        )
+        req3.proxyAwareUrl().toString() shouldBe "https://fakedings.nais.io:444/mypath?query=1"
+
+        // host header has host:port and no x-forwarded-port
+        val req4 = OAuth2HttpRequest(
+            headers = Headers.headersOf(
+                "host",
+                "fakedings.nais.io:666",
+                "x-forwarded-proto",
+                "https"
+            ),
+            method = "GET",
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+        )
+        req4.proxyAwareUrl().toString() shouldBe "https://fakedings.nais.io:666/mypath?query=1"
     }
 
     @Test

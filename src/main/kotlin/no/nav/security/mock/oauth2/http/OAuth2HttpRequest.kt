@@ -33,6 +33,7 @@ import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import java.net.URI
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -109,11 +110,15 @@ data class OAuth2HttpRequest(
         val proto = this.headers["x-forwarded-proto"]
         val port = this.headers["x-forwarded-port"]
         return if (hostheader != null && proto != null) {
+            val hostUri = URI(null, hostheader, null, null, null).parseServerAuthority()
+            val hostFromHostHeader = hostUri.host
+            val portFromHostHeader = hostUri.port
+
             HttpUrl.Builder()
                 .scheme(proto)
-                .host(hostheader)
+                .host(hostFromHostHeader)
                 .apply {
-                    port?.toInt()?.let { port(it) }
+                    port?.toInt()?.let { port(it) } ?: port(portFromHostHeader)
                 }
                 .encodedPath(originalUrl.encodedPath)
                 .query(originalUrl.query).build()
