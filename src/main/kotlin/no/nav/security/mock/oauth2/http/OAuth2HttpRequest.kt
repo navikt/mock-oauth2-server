@@ -11,6 +11,7 @@ import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
 import no.nav.security.mock.oauth2.extensions.isEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
 import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
+import no.nav.security.mock.oauth2.extensions.isUserInfoUrl
 import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
 import no.nav.security.mock.oauth2.extensions.keyValuesToMap
 import no.nav.security.mock.oauth2.extensions.requirePrivateKeyJwt
@@ -19,6 +20,7 @@ import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.http.RequestType.AUTHORIZATION
 import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER
@@ -30,6 +32,7 @@ import no.nav.security.mock.oauth2.http.RequestType.PREFLIGHT
 import no.nav.security.mock.oauth2.http.RequestType.TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.UNKNOWN
 import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
+import no.nav.security.mock.oauth2.http.RequestType.USER_INFO
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -82,6 +85,7 @@ data class OAuth2HttpRequest(
         url.isAuthorizationEndpointUrl() -> AUTHORIZATION
         url.isTokenEndpointUrl() -> TOKEN
         url.isEndSessionEndpointUrl() -> END_SESSION
+        url.isUserInfoUrl() -> USER_INFO
         url.isJwksUrl() -> JWKS
         url.isDebuggerUrl() -> DEBUGGER
         url.isDebuggerCallbackUrl() -> DEBUGGER_CALLBACK
@@ -102,7 +106,8 @@ data class OAuth2HttpRequest(
             authorizationEndpoint = this.proxyAwareUrl().toAuthorizationEndpointUrl().toString(),
             tokenEndpoint = this.proxyAwareUrl().toTokenEndpointUrl().toString(),
             endSessionEndpoint = this.proxyAwareUrl().toEndSessionEndpointUrl().toString(),
-            jwksUri = this.proxyAwareUrl().toJwksUrl().toString()
+            jwksUri = this.proxyAwareUrl().toJwksUrl().toString(),
+            userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString()
         )
 
     internal fun proxyAwareUrl(): HttpUrl {
@@ -135,5 +140,5 @@ data class OAuth2HttpRequest(
 
 enum class RequestType {
     WELL_KNOWN, AUTHORIZATION, TOKEN, END_SESSION, JWKS,
-    DEBUGGER, DEBUGGER_CALLBACK, FAVICON, PREFLIGHT, UNKNOWN
+    DEBUGGER, DEBUGGER_CALLBACK, FAVICON, PREFLIGHT, UNKNOWN, USER_INFO
 }
