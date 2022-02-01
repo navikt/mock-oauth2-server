@@ -77,4 +77,4 @@ internal fun OkHttpClient.post(tokenRequest: TokenRequest): String =
             .url(tokenRequest.url)
             .post(tokenRequest.body.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
             .build()
-    ).execute().body?.string() ?: throw RuntimeException("could not get responsebody from url=${tokenRequest.url}")
+    ).execute().body?.string() ?: throw RuntimeException("could not get response body from url=${tokenRequest.url}")
