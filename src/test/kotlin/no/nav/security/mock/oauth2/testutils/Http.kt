@@ -35,6 +35,21 @@ fun client(followRedirects: Boolean = false): OkHttpClient =
         .followRedirects(followRedirects)
         .build()
 
+fun OkHttpClient.withHeaders(headers: Map<String, String>): OkHttpClient =
+    newBuilder().apply {
+        addInterceptor { chain ->
+            chain.request().newBuilder()
+                .headers(
+                    headers
+                        .flatMap { listOf(it.key, it.value) }
+                        .toTypedArray()
+                        .let { Headers.headersOf(*it) }
+                )
+                .build()
+                .let(chain::proceed)
+        }
+    }.build()
+
 fun OkHttpClient.withTrustStore(keyStore: KeyStore, followRedirects: Boolean = false): OkHttpClient =
     newBuilder().apply {
         followRedirects(followRedirects)

@@ -4,6 +4,7 @@ import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import io.netty.handler.codec.http.HttpHeaderNames
 import no.nav.security.mock.oauth2.extensions.clientAuthentication
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
@@ -109,6 +110,8 @@ data class OAuth2HttpRequest(
             jwksUri = this.proxyAwareUrl().toJwksUrl().toString(),
             userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString()
         )
+
+    fun origin() = this.headers[HttpHeaderNames.ORIGIN.toString()]
 
     internal fun proxyAwareUrl(): HttpUrl {
         val hostheader = this.headers["host"]

@@ -60,11 +60,13 @@ data class OAuth2TokenResponse(
     val scope: String? = null
 )
 
-fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
-    headers = Headers.headersOf(
-        HttpHeaderNames.CONTENT_TYPE.toString(), "application/json;charset=UTF-8",
-        HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"
-    ),
+fun empty(origin: String?) = OAuth2HttpResponse(
+    headers = headers(origin = origin),
+    status = 200
+)
+
+fun json(anyObject: Any, origin: String?): OAuth2HttpResponse = OAuth2HttpResponse(
+    headers = headers("application/json;charset=UTF-8", origin),
     status = 200,
     body = when (anyObject) {
         is String -> anyObject
@@ -75,11 +77,8 @@ fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
     }
 )
 
-fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
-    headers = Headers.headersOf(
-        HttpHeaderNames.CONTENT_TYPE.toString(), "text/html;charset=UTF-8",
-        HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"
-    ),
+fun html(content: String, origin: String? = null): OAuth2HttpResponse = OAuth2HttpResponse(
+    headers = headers("text/html;charset=UTF-8", origin),
     status = 200,
     body = content
 )
@@ -111,17 +110,32 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
     }
 }
 
-fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
+fun oauth2Error(error: ErrorObject, origin: String?): OAuth2HttpResponse {
     val responseCode = error.httpStatusCode.takeUnless { it == 302 } ?: 400
     return OAuth2HttpResponse(
-        headers = Headers.headersOf(
-            HttpHeaderNames.CONTENT_TYPE.toString(), "application/json;charset=UTF-8",
-            HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*"
-        ),
+        headers = headers("application/json;charset=UTF-8", origin),
         status = responseCode,
         body = objectMapper
             .enable(SerializationFeature.INDENT_OUTPUT)
             .writeValueAsString(error.toJSONObject())
             .lowercase()
     )
+}
+
+private fun headers(contentType: String? = null, origin: String? = null): Headers {
+    val headers = mutableMapOf<String, String>()
+    if (contentType != null)
+        headers[HttpHeaderNames.CONTENT_TYPE.toString()] = contentType
+
+    if (origin != null) {
+        headers[HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString()] = origin
+        headers[HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS.toString()] = "*"
+        headers[HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS.toString()] = "*"
+        headers[HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS.toString()] = "true"
+    }
+
+    return headers
+        .flatMap { listOf(it.key, it.value) }
+        .toTypedArray()
+        .let { Headers.headersOf(*it) }
 }

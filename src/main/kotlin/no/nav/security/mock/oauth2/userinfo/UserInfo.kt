@@ -23,7 +23,7 @@ internal fun Route.Builder.userInfo(tokenProvider: OAuth2TokenProvider) =
     get(USER_INFO) {
         log.debug("received request to userinfo endpoint, returning claims from token")
         val claims = it.verifyBearerToken(tokenProvider).claims
-        json(claims)
+        json(claims, it.origin())
     }
 
 private fun OAuth2HttpRequest.verifyBearerToken(tokenProvider: OAuth2TokenProvider): JWTClaimsSet {

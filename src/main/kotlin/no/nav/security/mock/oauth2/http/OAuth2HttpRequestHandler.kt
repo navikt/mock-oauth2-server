@@ -10,7 +10,6 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
-import io.netty.handler.codec.http.HttpHeaderNames
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -38,7 +37,6 @@ import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.userinfo.userInfo
-import okhttp3.Headers
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.util.concurrent.BlockingQueue
@@ -70,7 +68,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
             is GeneralException -> error.errorObject
             else -> null
         } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
-        oauth2Error(errorObject)
+        oauth2Error(errorObject, request.origin())
     }
 
     val authorizationServer: Route = routes {
@@ -90,14 +88,14 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
 
     private fun Route.Builder.wellKnown() = get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) {
         log.debug("returning well-known json data for url=${it.url}")
-        json(it.toWellKnown())
+        json(it.toWellKnown(), it.origin())
     }
 
     private fun Route.Builder.jwks() = get(JWKS) {
         log.debug("handle jwks request on url=${it.url}")
         val issuerId = it.url.issuerId()
         val jwkSet = config.tokenProvider.publicJwkSet(issuerId)
-        json(jwkSet.toJSONObject())
+        json(jwkSet.toJSONObject(), it.origin())
     }
 
     private fun Route.Builder.authorization() = apply {
@@ -105,7 +103,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         get(AUTHORIZATION) {
             val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
             if (config.interactiveLogin || authRequest.isPrompt())
-                html(loginRequestHandler.loginHtml(it))
+                html(loginRequestHandler.loginHtml(it), it.origin())
             else {
                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
             }
@@ -122,7 +120,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         val postLogoutRedirectUri = it.url.queryParameter("post_logout_redirect_uri")
         postLogoutRedirectUri?.let {
             redirect(postLogoutRedirectUri)
-        } ?: html("logged out")
+        } ?: html("logged out", it.origin())
     }
 
     private fun Route.Builder.token() = apply {
@@ -135,20 +133,11 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
             val tokenCallback: OAuth2TokenCallback = tokenCallbackFromQueueOrDefault(it.url.issuerId())
             val grantHandler: GrantHandler = grantHandlers[grantType] ?: invalidGrant(grantType)
             val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
-            json(tokenResponse)
+            json(tokenResponse, it.origin())
         }
     }
 
-    private fun Route.Builder.preflight() = options {
-        OAuth2HttpResponse(
-            status = 200,
-            headers = Headers.headersOf(
-                HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*",
-                HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS.toString(), "*",
-                HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS.toString(), "*"
-            )
-        )
-    }
+    private fun Route.Builder.preflight() = options { empty(it.origin()) }
 
     private fun tokenCallbackFromQueueOrDefault(issuerId: String): OAuth2TokenCallback =
         when (issuerId) {
