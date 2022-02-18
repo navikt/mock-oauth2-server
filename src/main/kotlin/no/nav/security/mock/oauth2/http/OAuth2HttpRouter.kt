@@ -105,12 +105,12 @@ internal class PathRouter(
 
     private fun RequestHandler.with(interceptors: MutableList<Interceptor>): RequestHandler {
         return { request ->
-            val filteredRequest = interceptors.filterIsInstance<RequestInterceptor>().fold(request) { initial, interceptor ->
-                interceptor.intercept(initial)
+            val filteredRequest = interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
+                interceptor.intercept(next)
             }
             val res = this.invoke(filteredRequest)
-            interceptors.filterIsInstance<ResponseInterceptor>().fold(res) { initial, interceptor ->
-                interceptor.intercept(request, initial)
+            interceptors.filterIsInstance<ResponseInterceptor>().fold(res) { next, interceptor ->
+                interceptor.intercept(request, next)
             }
         }
     }

@@ -14,6 +14,7 @@ import io.ktor.client.request.header
 import io.ktor.http.Headers
 import io.ktor.http.Parameters
 import io.ktor.http.headersOf
+import io.ktor.util.InternalAPI
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
 import java.security.interfaces.RSAPrivateKey
@@ -33,6 +34,7 @@ val httpClient = HttpClient(CIO) {
     }
 }
 
+@OptIn(InternalAPI::class)
 suspend fun HttpClient.tokenRequest(url: String, auth: Auth, params: Map<String, String>) =
     submitForm<TokenResponse>(
         url = url,
