@@ -1,5 +1,9 @@
 package no.nav.security.mock.oauth2.http
 
+import mu.KotlinLogging
+
+private val log = KotlinLogging.logger{}
+
 class CorsInterceptor(
     private val allowedMethods: List<String> = listOf("POST", "GET", "OPTIONS")
 ) : ResponseInterceptor {
@@ -15,21 +19,22 @@ class CorsInterceptor(
 
     override fun intercept(request: OAuth2HttpRequest, response: OAuth2HttpResponse): OAuth2HttpResponse {
         val origin = request.headers[ORIGIN]
+        log.debug("intercept response if request origin header is set: $origin")
         return if (origin != null) {
-            val headers = request.headers.newBuilder()
+            val headers = response.headers.newBuilder()
             if (request.method == "OPTIONS") {
-                val reqHeader = headers[ACCESS_CONTROL_REQUEST_HEADERS]
+                val reqHeader = request.headers[ACCESS_CONTROL_REQUEST_HEADERS]
                 if (reqHeader != null) {
-                    headers.add(ACCESS_CONTROL_ALLOW_HEADERS, reqHeader)
+                    headers[ACCESS_CONTROL_ALLOW_HEADERS] = reqHeader
                 }
-                headers.add(ACCESS_CONTROL_ALLOW_METHODS, allowedMethods.joinToString(", "))
+                headers[ACCESS_CONTROL_ALLOW_METHODS] = allowedMethods.joinToString(", ")
             }
-            headers.add(ACCESS_CONTROL_ALLOW_ORIGIN, origin)
-            headers.add(ACCESS_CONTROL_ALLOW_CREDENTIALS, "true")
-
+            headers[ACCESS_CONTROL_ALLOW_ORIGIN] = origin
+            headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] = "true"
+            log.debug("adding CORS response headers")
             response.copy(headers = headers.build())
         } else {
-            return response
+            response
         }
     }
 }
