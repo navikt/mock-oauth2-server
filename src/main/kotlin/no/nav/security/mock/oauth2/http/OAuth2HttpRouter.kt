@@ -93,7 +93,7 @@ internal class PathRouter(
     override fun match(request: OAuth2HttpRequest): Boolean = routes.firstOrNull { it.match(request) } != null
 
     override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse = runCatching {
-        routes.findHandler(request).with(interceptors).invoke(request)
+        routes.findHandler(request).invokeWith(request, interceptors)
     }.getOrElse {
         exceptionHandler(request, it)
     }
@@ -103,15 +103,19 @@ internal class PathRouter(
     private fun MutableList<Route>.findHandler(request: OAuth2HttpRequest): RequestHandler =
         this.firstOrNull { it.match(request) } ?: { req -> noMatch(req) }
 
-    private fun RequestHandler.with(interceptors: MutableList<Interceptor>): RequestHandler {
-        return { request ->
+    private fun RequestHandler.invokeWith(request: OAuth2HttpRequest, interceptors: MutableList<Interceptor>): OAuth2HttpResponse {
+        return if (interceptors.size > 0) {
+
             val filteredRequest = interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
                 interceptor.intercept(next)
             }
             val res = this.invoke(filteredRequest)
-            interceptors.filterIsInstance<ResponseInterceptor>().fold(res) { next, interceptor ->
+            val filteredResponse = interceptors.filterIsInstance<ResponseInterceptor>().fold(res.copy()) { next, interceptor ->
                 interceptor.intercept(request, next)
             }
+            filteredResponse
+        } else {
+            this.invoke(request)
         }
     }
 

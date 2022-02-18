@@ -2,7 +2,7 @@ package no.nav.security.mock.oauth2.http
 
 import mu.KotlinLogging
 
-private val log = KotlinLogging.logger{}
+private val log = KotlinLogging.logger {}
 
 class CorsInterceptor(
     private val allowedMethods: List<String> = listOf("POST", "GET", "OPTIONS")

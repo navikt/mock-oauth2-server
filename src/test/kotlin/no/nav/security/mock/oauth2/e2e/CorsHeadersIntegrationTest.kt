@@ -7,6 +7,7 @@ import no.nav.security.mock.oauth2.http.CorsInterceptor.HeaderNames.ACCESS_CONTR
 import no.nav.security.mock.oauth2.http.CorsInterceptor.HeaderNames.ACCESS_CONTROL_ALLOW_HEADERS
 import no.nav.security.mock.oauth2.http.CorsInterceptor.HeaderNames.ACCESS_CONTROL_ALLOW_METHODS
 import no.nav.security.mock.oauth2.http.CorsInterceptor.HeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN
+import no.nav.security.mock.oauth2.http.CorsInterceptor.HeaderNames.ACCESS_CONTROL_REQUEST_HEADERS
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.options
@@ -28,7 +29,7 @@ class CorsHeadersIntegrationTest {
                 this.baseUrl(),
                 Headers.headersOf(
                     "origin", origin,
-                    "access-control-allow-headers", "X-MY-HEADER"
+                    ACCESS_CONTROL_REQUEST_HEADERS, "X-MY-HEADER"
                 )
             ).asClue {
                 it.code shouldBe 204

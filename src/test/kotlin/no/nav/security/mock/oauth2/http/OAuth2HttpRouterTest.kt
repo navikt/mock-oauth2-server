@@ -86,12 +86,14 @@ internal class OAuth2HttpRouterTest {
                 "Content-Type" to "text/plain",
                 "fromInterceptor" to "fromInterceptor"
             )
+            it.body shouldBe "1"
         }
         routes.invoke(get("/2")).asClue {
             it.headers shouldContainAll listOf(
                 "Content-Type" to "text/plain",
                 "fromInterceptor" to "fromInterceptor"
             )
+            it.body shouldBe "2"
         }
     }
 
