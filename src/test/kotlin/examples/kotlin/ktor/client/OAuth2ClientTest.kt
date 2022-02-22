@@ -40,6 +40,27 @@ internal class OAuth2ClientTest {
     }
 
     @Test
+    fun `password token`() {
+        runBlocking {
+            server.enqueueCallback(DefaultOAuth2TokenCallback(subject = "client1", audience = listOf("targetScope")))
+
+            val passwordTokenUrl = server.passwordTokenUrl("default").toString()
+
+            val tokenResponse = httpClient.passwordToken(
+                url = passwordTokenUrl,
+                username = "testuser",
+                password = "password1",
+                scope = "targetScope"
+            )
+
+            tokenResponse.asClue {
+                it.accessToken.asDecodedJWT().subject shouldBe "client1"
+                it.accessToken.asDecodedJWT().audience.shouldContainExactly("targetScope")
+            }
+        }
+    }
+
+    @Test
     fun `onbehalfof grant`() {
         runBlocking {
             val initialToken = server.issueToken(subject = "enduser")

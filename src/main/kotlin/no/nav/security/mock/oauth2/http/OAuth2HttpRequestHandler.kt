@@ -7,6 +7,7 @@ import com.nimbusds.oauth2.sdk.GrantType.AUTHORIZATION_CODE
 import com.nimbusds.oauth2.sdk.GrantType.CLIENT_CREDENTIALS
 import com.nimbusds.oauth2.sdk.GrantType.JWT_BEARER
 import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
+import com.nimbusds.oauth2.sdk.GrantType.PASSWORD
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
@@ -20,6 +21,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.END_SESSION
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.JWKS
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.PASSWORD_TOKEN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
@@ -28,6 +30,7 @@ import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
 import no.nav.security.mock.oauth2.grant.JwtBearerGrantHandler
+import no.nav.security.mock.oauth2.grant.PasswordGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
@@ -58,7 +61,8 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(config.tokenProvider),
         JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
         TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),
-        REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager)
+        REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager),
+        PASSWORD to PasswordGrantHandler(config.tokenProvider)
     )
 
     private val exceptionHandler: ExceptionHandler = { request, error ->
@@ -78,6 +82,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         wellKnown()
         jwks()
         authorization()
+        password()
         token()
         endSession()
         userInfo(config.tokenProvider)
@@ -98,6 +103,19 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         val issuerId = it.url.issuerId()
         val jwkSet = config.tokenProvider.publicJwkSet(issuerId)
         json(jwkSet.toJSONObject())
+    }
+
+    private fun Route.Builder.password() = apply {
+        get(PASSWORD_TOKEN) {
+            OAuth2HttpResponse(status = 405, body = "unsupported method")
+        }
+        post(PASSWORD_TOKEN) {
+            val grantType = it.grantType()
+            val tokenCallback: OAuth2TokenCallback = tokenCallbackFromQueueOrDefault(it.url.issuerId())
+            val grantHandler: GrantHandler = grantHandlers[grantType] ?: invalidGrant(grantType)
+            val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
+            json(tokenResponse)
+        }
     }
 
     private fun Route.Builder.authorization() = apply {

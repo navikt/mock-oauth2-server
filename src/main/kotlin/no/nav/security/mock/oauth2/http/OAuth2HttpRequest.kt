@@ -10,6 +10,7 @@ import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
 import no.nav.security.mock.oauth2.extensions.isEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
+import no.nav.security.mock.oauth2.extensions.isPasswordTokenUrl
 import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isUserInfoUrl
 import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
@@ -28,6 +29,7 @@ import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER_CALLBACK
 import no.nav.security.mock.oauth2.http.RequestType.END_SESSION
 import no.nav.security.mock.oauth2.http.RequestType.FAVICON
 import no.nav.security.mock.oauth2.http.RequestType.JWKS
+import no.nav.security.mock.oauth2.http.RequestType.PASSWORD_TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.PREFLIGHT
 import no.nav.security.mock.oauth2.http.RequestType.TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.UNKNOWN
@@ -87,6 +89,7 @@ data class OAuth2HttpRequest(
         url.isEndSessionEndpointUrl() -> END_SESSION
         url.isUserInfoUrl() -> USER_INFO
         url.isJwksUrl() -> JWKS
+        url.isPasswordTokenUrl() -> PASSWORD_TOKEN
         url.isDebuggerUrl() -> DEBUGGER
         url.isDebuggerCallbackUrl() -> DEBUGGER_CALLBACK
         url.encodedPath == "/favicon.ico" -> FAVICON
@@ -139,6 +142,6 @@ data class OAuth2HttpRequest(
 }
 
 enum class RequestType {
-    WELL_KNOWN, AUTHORIZATION, TOKEN, END_SESSION, JWKS,
+    WELL_KNOWN, AUTHORIZATION, TOKEN, END_SESSION, JWKS, PASSWORD_TOKEN,
     DEBUGGER, DEBUGGER_CALLBACK, FAVICON, PREFLIGHT, UNKNOWN, USER_INFO
 }
