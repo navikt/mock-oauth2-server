@@ -9,6 +9,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.beInstanceOf
 import no.nav.security.mock.oauth2.StandaloneConfig.JSON_CONFIG
 import no.nav.security.mock.oauth2.StandaloneConfig.JSON_CONFIG_PATH
+import no.nav.security.mock.oauth2.StandaloneConfig.SERVER_PORT
+import no.nav.security.mock.oauth2.StandaloneConfig.PORT
 import no.nav.security.mock.oauth2.StandaloneConfig.hostname
 import no.nav.security.mock.oauth2.StandaloneConfig.oauth2Config
 import no.nav.security.mock.oauth2.StandaloneConfig.port
@@ -30,6 +32,28 @@ internal class StandaloneMockOAuth2ServerKtTest {
         hostname() shouldBe InetSocketAddress(0).address
         port() shouldBe 8080
     }
+
+    @Test
+    fun `with the environment variable SERVER_PORT set`() {
+        withEnvironment(SERVER_PORT to "9292") {
+            port() shouldBe 9292
+        }
+    }
+
+    @Test
+    fun `with the environment variable PORT set`() {
+        withEnvironment(PORT to "9292") {
+            port() shouldBe 9292
+        }
+    }
+
+    @Test
+    fun `with the environment variables SERVER_PORT and PORT set`() {
+        withEnvironment(mapOf(SERVER_PORT to "9292", PORT to "9393")) {
+            port() shouldBe 9292
+        }
+    }
+
 
     @Test
     fun `load oauth2Config from file`() {
