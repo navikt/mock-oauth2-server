@@ -5,19 +5,24 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.DeserializationFeature
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.features.json.*
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.features.json.JacksonSerializer
+import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.request.forms.submitForm
+import io.ktor.client.request.header
+import io.ktor.http.Headers
+import io.ktor.http.Parameters
+import io.ktor.http.headersOf
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.Base64
+import java.util.Date
+import java.util.UUID
 
 val httpClient = HttpClient(CIO) {
     install(JsonFeature) {
