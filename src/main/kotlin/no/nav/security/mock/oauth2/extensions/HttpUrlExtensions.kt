@@ -21,7 +21,7 @@ object OAuth2Endpoints {
     const val TOKEN = "/token"
     const val END_SESSION = "/endsession"
     const val JWKS = "/jwks"
-    const val PASSWORD_TOKEN  = "/password"
+    const val PASSWORD_TOKEN = "/password"
     const val USER_INFO = "/userinfo"
     const val DEBUGGER = "/debugger"
     const val DEBUGGER_CALLBACK = "/debugger/callback"

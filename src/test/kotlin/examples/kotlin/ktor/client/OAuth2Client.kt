@@ -63,7 +63,6 @@ suspend fun HttpClient.passwordToken(url: String, username: String, password: St
         )
     )
 
-
 suspend fun HttpClient.onBehalfOfGrant(url: String, auth: Auth, token: String, scope: String) =
     tokenRequest(
         url = url,

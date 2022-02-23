@@ -9,9 +9,10 @@ import okhttp3.HttpUrl
 
 internal class PasswordGrantHandler(private val tokenProvider: OAuth2TokenProvider) : GrantHandler {
 
-    override fun tokenResponse(request: OAuth2HttpRequest,
-                               issuerUrl: HttpUrl,
-                               oAuth2TokenCallback: OAuth2TokenCallback
+    override fun tokenResponse(
+        request: OAuth2HttpRequest,
+        issuerUrl: HttpUrl,
+        oAuth2TokenCallback: OAuth2TokenCallback
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val accessToken = tokenProvider.accessToken(
