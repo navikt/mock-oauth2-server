@@ -213,7 +213,7 @@ The standalone server supports the following configuration by `ENV` variables:
 | Variable | Description |
 | --- | --- |
 | `SERVER_HOSTNAME`| Lets the standalone server bind to a specific hostname, by default it binds to `0.0.0.0` |
-| `SERVER_PORT`| The port that the standalone server will listen to, defaults to `8080` |
+| `SERVER_PORT` or `PORT` | The port that the standalone server will listen to, defaults to `8080`. The `PORT` environment variable may be used to [run the Docker image on Heroku](https://devcenter.heroku.com/articles/container-registry-and-runtime#pushing-an-existing-image) as per the documentation [here](https://devcenter.heroku.com/articles/setting-the-http-port-for-java-applications). |
 | `JSON_CONFIG_PATH`| The absolute path to a json file containing configuration about the OAuth2 part of the server (`OAuth2Config`). More details on the format below. |
 | `JSON_CONFIG`| The actual JSON content of `OAuth2Config`, this ENV var takes precedence over the `JSON_CONFIG_PATH` var. More details on the format below.|
 
