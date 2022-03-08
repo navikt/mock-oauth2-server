@@ -1,5 +1,8 @@
 package no.nav.security.mock.oauth2.http
 
+import io.kotest.assertions.asClue
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.shouldBe
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -24,6 +27,7 @@ internal class OAuth2HttpRouterTest {
         routes.invoke(options("/something/shouldmatch")).body shouldBe "OPTIONS"
         routes.invoke(get("/something/shouldmatch")).body shouldBe "GET"
     }
+
     @Test
     fun `routes from route builder should be matched`() {
         val route = routes {
@@ -53,6 +57,46 @@ internal class OAuth2HttpRouterTest {
         finalRoutes.invoke(post("/first/second")).status shouldBe 405
         finalRoutes.invoke(get("/notfound")).status shouldBe 404
     }
+
+    @Test
+    fun `request and response interceptors should be applied on every route`() {
+
+        val routes = routes {
+            interceptors(
+                RequestInterceptor {
+                    val headers = it.headers.newBuilder().add("yolo", "forever").build()
+                    it.copy(headers = headers)
+                },
+                ResponseInterceptor { _, response ->
+                    val headers = response.headers.newBuilder().add("fromInterceptor", "fromInterceptor").build()
+                    response.copy(headers = headers)
+                }
+            )
+            get("/1") {
+                it.headers shouldContain ("yolo" to "forever")
+                ok("1")
+            }
+            get("/2") {
+                it.headers shouldContain ("yolo" to "forever")
+                ok("2")
+            }
+        }
+        routes.invoke(get("/1")).asClue {
+            it.headers shouldContainAll listOf(
+                "Content-Type" to "text/plain",
+                "fromInterceptor" to "fromInterceptor"
+            )
+            it.body shouldBe "1"
+        }
+        routes.invoke(get("/2")).asClue {
+            it.headers shouldContainAll listOf(
+                "Content-Type" to "text/plain",
+                "fromInterceptor" to "fromInterceptor"
+            )
+            it.body shouldBe "2"
+        }
+    }
+
     private fun get(path: String) = request("http://localhost$path", "GET")
     private fun post(path: String, body: String? = "na") = request("http://localhost$path", "POST", body)
     private fun options(path: String, body: String? = "na") = request("http://localhost$path", "OPTIONS", body)
@@ -65,5 +109,9 @@ internal class OAuth2HttpRouterTest {
             body
         )
 
-    private fun ok(body: String? = null) = OAuth2HttpResponse(status = 200, body = body)
+    private fun ok(body: String? = null) = OAuth2HttpResponse(
+        headers = Headers.headersOf("Content-Type", "text/plain"),
+        status = 200,
+        body = body
+    )
 }
