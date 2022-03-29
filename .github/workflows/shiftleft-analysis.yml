@@ -19,7 +19,7 @@ jobs:
       # 3. Invoke Scan with the github token. Leave the workspace empty to use relative url
 
       - name: Perform Scan
-        uses: ShiftLeftSecurity/scan-action@master
+        uses: ShiftLeftSecurity/scan-action@v1
         env:
           WORKSPACE: ""
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
