@@ -126,7 +126,13 @@ data class OAuth2HttpRequest(
                 .scheme(proto)
                 .host(hostFromHostHeader)
                 .apply {
-                    port?.toInt()?.let { port(it) } ?: port(portFromHostHeader)
+                    port?.toInt()?.let {
+                        port(it)
+                    } ?: run {
+                        if (portFromHostHeader != -1) {
+                            port(portFromHostHeader)
+                        }
+                    }
                 }
                 .encodedPath(originalUrl.encodedPath)
                 .query(originalUrl.query).build()

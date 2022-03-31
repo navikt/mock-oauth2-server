@@ -6,16 +6,33 @@ import no.nav.security.mock.oauth2.extensions.endsWith
 private val log = KotlinLogging.logger { }
 
 typealias RequestHandler = (OAuth2HttpRequest) -> OAuth2HttpResponse
-internal typealias ExceptionHandler = (OAuth2HttpRequest, Throwable) -> OAuth2HttpResponse
+
+interface Interceptor
+
+fun interface RequestInterceptor : Interceptor {
+    fun intercept(request: OAuth2HttpRequest): OAuth2HttpRequest
+}
+
+fun interface ResponseInterceptor : Interceptor {
+    fun intercept(request: OAuth2HttpRequest, response: OAuth2HttpResponse): OAuth2HttpResponse
+}
 
 interface Route : RequestHandler {
+
     fun match(request: OAuth2HttpRequest): Boolean
 
     class Builder {
         private val routes: MutableList<Route> = mutableListOf()
+        private val interceptors: MutableList<Interceptor> = mutableListOf()
 
         private var exceptionHandler: ExceptionHandler = { _, throwable ->
             throw throwable
+        }
+
+        fun interceptors(vararg interceptor: Interceptor) = apply {
+            interceptor.forEach {
+                interceptors.add(it)
+            }
         }
 
         fun attach(vararg route: Route) = apply {
@@ -56,38 +73,62 @@ interface Route : RequestHandler {
             routes.add(routeFromPathAndMethod(path, method, requestHandler))
         }
 
-        fun build(): Route = object : PathRoute {
-            override fun matchPath(request: OAuth2HttpRequest): Boolean =
-                routes.any { it.matchPath(request) }
-
-            override fun match(request: OAuth2HttpRequest): Boolean =
-                routes.firstOrNull { it.match(request) } != null
-
-            override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse =
-                try {
-                    routes.firstOrNull { it.match(request) }?.invoke(request) ?: noMatch(request)
-                } catch (t: Throwable) {
-                    exceptionHandler(request, t)
-                }
-
-            override fun toString(): String = routes.toString()
-
-            private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
-                log.debug("no route matching url=${request.url} with method=${request.method}")
-                return if (matchPath(request)) {
-                    methodNotAllowed()
-                } else {
-                    notFound("no routes found")
-                }
-            }
-
-            private fun Route.matchPath(request: OAuth2HttpRequest): Boolean = (this as? PathRoute)?.matchPath(request) ?: false
-        }
+        fun build(): Route = PathRouter(routes, interceptors, exceptionHandler)
     }
 }
 
+internal typealias ExceptionHandler = (OAuth2HttpRequest, Throwable) -> OAuth2HttpResponse
+
 internal interface PathRoute : Route {
     fun matchPath(request: OAuth2HttpRequest): Boolean
+}
+
+internal class PathRouter(
+    private val routes: MutableList<Route>,
+    private val interceptors: MutableList<Interceptor>,
+    private val exceptionHandler: ExceptionHandler,
+) : PathRoute {
+
+    override fun matchPath(request: OAuth2HttpRequest): Boolean = routes.any { it.matchPath(request) }
+    override fun match(request: OAuth2HttpRequest): Boolean = routes.firstOrNull { it.match(request) } != null
+
+    override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse = runCatching {
+        routes.findHandler(request).invokeWith(request, interceptors)
+    }.getOrElse {
+        exceptionHandler(request, it)
+    }
+
+    override fun toString(): String = routes.toString()
+
+    private fun MutableList<Route>.findHandler(request: OAuth2HttpRequest): RequestHandler =
+        this.firstOrNull { it.match(request) } ?: { req -> noMatch(req) }
+
+    private fun RequestHandler.invokeWith(request: OAuth2HttpRequest, interceptors: MutableList<Interceptor>): OAuth2HttpResponse {
+        return if (interceptors.size > 0) {
+
+            val filteredRequest = interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
+                interceptor.intercept(next)
+            }
+            val res = this.invoke(filteredRequest)
+            val filteredResponse = interceptors.filterIsInstance<ResponseInterceptor>().fold(res.copy()) { next, interceptor ->
+                interceptor.intercept(request, next)
+            }
+            filteredResponse
+        } else {
+            this.invoke(request)
+        }
+    }
+
+    private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
+        log.debug("no route matching url=${request.url} with method=${request.method}")
+        return if (matchPath(request)) {
+            methodNotAllowed()
+        } else {
+            notFound("no routes found")
+        }
+    }
+
+    private fun Route.matchPath(request: OAuth2HttpRequest): Boolean = (this as? PathRoute)?.matchPath(request) ?: false
 }
 
 fun routes(vararg route: Route): Route = routes {

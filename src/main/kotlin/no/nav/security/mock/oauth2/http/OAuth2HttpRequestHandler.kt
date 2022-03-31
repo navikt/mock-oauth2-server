@@ -11,7 +11,6 @@ import com.nimbusds.oauth2.sdk.GrantType.PASSWORD
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
-import io.netty.handler.codec.http.HttpHeaderNames
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -41,7 +40,6 @@ import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.userinfo.userInfo
-import okhttp3.Headers
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.util.concurrent.BlockingQueue
@@ -79,6 +77,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
 
     val authorizationServer: Route = routes {
         exceptionHandler(exceptionHandler)
+        interceptors(CorsInterceptor())
         wellKnown()
         jwks()
         authorization()
@@ -157,16 +156,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         }
     }
 
-    private fun Route.Builder.preflight() = options {
-        OAuth2HttpResponse(
-            status = 200,
-            headers = Headers.headersOf(
-                HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), "*",
-                HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS.toString(), "*",
-                HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS.toString(), "*"
-            )
-        )
-    }
+    private fun Route.Builder.preflight() = options { OAuth2HttpResponse(status = 204) }
 
     private fun tokenCallbackFromQueueOrDefault(issuerId: String): OAuth2TokenCallback =
         when (issuerId) {

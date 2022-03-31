@@ -96,11 +96,13 @@ fun OkHttpClient.get(
     ).execute()
 
 fun OkHttpClient.options(
-    url: HttpUrl
+    url: HttpUrl,
+    headers: Headers = Headers.headersOf(),
 ): Response =
     this.newCall(
         Request.Builder().options(
-            url
+            url,
+            headers
         )
     ).execute()
 
@@ -121,8 +123,9 @@ fun Request.Builder.post(url: HttpUrl, headers: Headers, parameters: Map<String,
         .post(FormBody.Builder().of(parameters))
         .build()
 
-fun Request.Builder.options(url: HttpUrl) =
+fun Request.Builder.options(url: HttpUrl, headers: Headers = Headers.headersOf()) =
     this.url(url)
+        .headers(headers)
         .method("OPTIONS", null)
         .build()
 
