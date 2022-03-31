@@ -26,7 +26,7 @@ plugins {
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.42.0"
     id("org.jmailen.kotlinter") version "3.9.0"
-    id("com.google.cloud.tools.jib") version "3.2.0"
+    id("com.google.cloud.tools.jib") version "3.2.1"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("net.researchgate.release") version "2.8.1"
     id("io.codearte.nexus-staging") version "0.30.0"
