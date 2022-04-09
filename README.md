@@ -26,6 +26,8 @@ The motivation behind this library is to provide a setup such that application d
   * OAuth2 JWT Bearer Grant (On-Behalf-Of flow)
   * OAuth2 Token Exchange Grant
   * OAuth2 Refresh Token Grant
+  * OAuth2 Resource Owner Password Credentials (Password Grant)
+    * *usage should be avoided if possible as this grant is considered insecure and [removed in its entirety](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-13#section-3.4) from OAuth 2.1*
 * **Issued JWT tokens are verifiable** through standard mechanisms with OpenID Connect Discovery / OAuth2 Authorization Server Metadata
 * **Unit/Integration test support**
   * Start and stop server for each test
