@@ -19,6 +19,7 @@ import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.GrantType.AUTHORIZATION_CODE
 import com.nimbusds.oauth2.sdk.GrantType.CLIENT_CREDENTIALS
 import com.nimbusds.oauth2.sdk.GrantType.JWT_BEARER
+import com.nimbusds.oauth2.sdk.GrantType.PASSWORD
 import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.TokenRequest
 import io.kotest.assertions.assertSoftly
@@ -76,7 +77,7 @@ infix fun ParsedTokenResponse.shouldBeValidFor(type: GrantType) {
                 idToken shouldNotBe null
                 refreshToken shouldNotBe null
             }
-            TOKEN_EXCHANGE, JWT_BEARER, CLIENT_CREDENTIALS -> {
+            TOKEN_EXCHANGE, JWT_BEARER, CLIENT_CREDENTIALS, PASSWORD -> {
                 idToken shouldBe null
                 refreshToken shouldBe null
             }
