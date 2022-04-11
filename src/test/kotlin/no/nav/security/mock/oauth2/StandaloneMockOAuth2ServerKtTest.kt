@@ -54,7 +54,6 @@ internal class StandaloneMockOAuth2ServerKtTest {
         }
     }
 
-
     @Test
     fun `load oauth2Config from file`() {
         withEnvironment(JSON_CONFIG_PATH to configFile) {
