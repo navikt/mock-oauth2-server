@@ -60,7 +60,7 @@ jobs:
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
           IMAGE=${IMAGE_NAME}:${NEW_VERSION}
           echo "Releasing new version ${NEW_VERSION} of $IMAGE"
-          ./gradlew -Pversion=${NEW_VERSION} publish closeAndReleaseRepository -Dorg.gradle.internal.publish.checksums.insecure=true --info
+          ./gradlew -Pversion=${NEW_VERSION} publish publishToSonatype closeAndReleaseStagingRepository -Dorg.gradle.internal.publish.checksums.insecure=true --info
           ./gradlew jibDockerBuild --image="${IMAGE}"
           docker push "${IMAGE}"
 
