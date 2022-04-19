@@ -248,14 +248,6 @@ tasks {
         dependsOn("shadowJar")
     }
 
-    "publish" {
-        dependsOn("initializeSonatypeStagingRepository")
-    }
-
-    "publishToSonatype" {
-        dependsOn("publish")
-    }
-
     withType<Sign>().configureEach {
         onlyIf {
             System.getenv("GPG_KEYS") != null
