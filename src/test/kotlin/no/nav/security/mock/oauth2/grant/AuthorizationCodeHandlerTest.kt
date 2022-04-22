@@ -1,6 +1,7 @@
 package no.nav.security.mock.oauth2.grant
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.nimbusds.jwt.PlainJWT
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
@@ -96,6 +97,16 @@ internal class AuthorizationCodeHandlerTest {
 
         handler.tokenResponse(tokenRequest(code = code), "http://myissuer".toHttpUrl(), DefaultOAuth2TokenCallback()).asClue {
             SignedJWT.parse(it.idToken).claims.count() shouldBe 10
+        }
+    }
+
+    @Test
+    fun `auth request with nonce should result in a token response with refresh token as a JWT containing the nonce`() {
+        val code: String = handler.retrieveAuthorizationCode(Login("foo"))
+
+        handler.tokenResponse(tokenRequest(code = code), "http://myissuer".toHttpUrl(), DefaultOAuth2TokenCallback()).asClue {
+            val claims = PlainJWT.parse(it.refreshToken).jwtClaimsSet.claims
+            claims["nonce"] shouldBe "5678"
         }
     }
 
