@@ -76,7 +76,7 @@ internal class AuthorizationCodeHandler(
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault)
+        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
