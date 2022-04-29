@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
 
+  IMAGE_NAME: ttl.sh/${{ github.repository }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
         # The GITHUB_REF tag comes in the format 'refs/tags/xxx'.
         # So if we split on '/' and take the 3rd value, we can get the release name.
         run: |
-          NEW_VERSION=$(git rev-parse --short HEAD)
+          NEW_VERSION=1h
           IMAGE=${IMAGE_NAME}:${NEW_VERSION}
           echo "Building new version ${NEW_VERSION} of $IMAGE"
-          ./gradlew jibDockerBuild --image="${IMAGE}"
+          ./gradlew jib --image="${IMAGE}"
