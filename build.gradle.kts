@@ -4,17 +4,17 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 val assertjVersion = "3.22.0"
 val kotlinLoggingVersion = "2.1.21"
 val logbackVersion = "1.2.11"
-val nimbusSdkVersion = "9.32"
+val nimbusSdkVersion = "9.35"
 val mockWebServerVersion = "4.9.3"
 val jacksonVersion = "2.13.2"
-val nettyVersion = "4.1.75.Final"
+val nettyVersion = "4.1.76.Final"
 val junitJupiterVersion = "5.8.2"
-val kotlinVersion = "1.6.20"
+val kotlinVersion = "1.6.21"
 val freemarkerVersion = "2.3.31"
-val kotestVersion = "5.2.2"
+val kotestVersion = "5.2.3"
 val bouncyCastleVersion = "1.70"
-val springBootVersion = "2.6.6"
-val reactorTestVersion = "3.4.16"
+val springBootVersion = "2.6.7"
+val reactorTestVersion = "3.4.17"
 val ktorVersion = "1.6.8"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
@@ -22,15 +22,14 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.6.20"
+    kotlin("jvm") version "1.6.21"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.42.0"
-    id("org.jmailen.kotlinter") version "3.9.0"
+    id("org.jmailen.kotlinter") version "3.10.0"
     id("com.google.cloud.tools.jib") version "3.2.1"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("net.researchgate.release") version "2.8.1"
-    id("io.codearte.nexus-staging") version "0.30.0"
-    id("de.marcphilipp.nexus-publish") version "0.4.0"
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
     `java-library`
     `maven-publish`
     signing
@@ -90,17 +89,19 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }
 
-nexusStaging {
-    username = System.getenv("SONATYPE_USERNAME")
-    password = System.getenv("SONATYPE_PASSWORD")
-    packageGroup = "no.nav"
-    delayBetweenRetriesInMillis = 5000
-}
-
 nexusPublishing {
+    packageGroup.set("no.nav")
     clientTimeout.set(Duration.ofMinutes(2))
     repositories {
-        sonatype()
+        sonatype {
+            username.set(System.getenv("SONATYPE_USERNAME"))
+            password.set(System.getenv("SONATYPE_PASSWORD"))
+        }
+    }
+
+    transitionCheckOptions {
+        maxRetries.set(40)
+        delayBetween.set(Duration.ofMillis(5000))
     }
 }
 
@@ -255,14 +256,6 @@ tasks {
 
     "jibDockerBuild" {
         dependsOn("shadowJar")
-    }
-
-    "publish" {
-        dependsOn("initializeSonatypeStagingRepository")
-    }
-
-    "publishToSonatype" {
-        dependsOn("publish")
     }
 
     withType<Sign>().configureEach {
