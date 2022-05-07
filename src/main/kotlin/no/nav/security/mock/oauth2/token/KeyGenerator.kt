@@ -23,7 +23,7 @@ data class KeyGenerator(
         if (keyGenerator.algorithm != KeyType.RSA.value) {
             return keyGenerator.generateECKey(keyId, algorithm)
         }
-        return keyGenerator.generateRSAKey(keyId)
+        return keyGenerator.generateRSAKey(keyId, algorithm)
     }
 
     private fun KeyPairGenerator.generateECKey(keyId: String, algorithm: JWSAlgorithm): JWK =
@@ -33,6 +33,7 @@ data class KeyGenerator(
                     .privateKey(it.private as ECPrivateKey)
                     .keyUse(KeyUse.SIGNATURE)
                     .keyID(keyId)
+                    .algorithm(algorithm)
                     .build()
             }
 
@@ -44,13 +45,14 @@ data class KeyGenerator(
         }
     }
 
-    private fun KeyPairGenerator.generateRSAKey(keyId: String): JWK =
+    private fun KeyPairGenerator.generateRSAKey(keyId: String, algorithm: JWSAlgorithm): JWK =
         generateKeyPair()
             .let {
                 RSAKey.Builder(it.public as RSAPublicKey)
                     .privateKey(it.private as RSAPrivateKey)
                     .keyUse(KeyUse.SIGNATURE)
                     .keyID(keyId)
+                    .algorithm(algorithm)
                     .build()
             }
 
