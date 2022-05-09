@@ -11,6 +11,7 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.id.Issuer
 import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.token.KeyGenerator.Companion.ecAlgorithmFamily
@@ -34,6 +35,7 @@ class KeyGeneratorTest {
             keys.keyID shouldBe keyId
             keys.keyType.toString() shouldBe KeyType.RSA.value
             keys.keyUse.toString() shouldBe "sig"
+            keys.algorithm shouldBeIn rsaAlgorithmFamily
 
             val issuer = Issuer("issuer$index")
             val jwt = jwtWith(issuer.value, keyId, JOSEObjectType.JWT.type, jwsAlgorithm)
@@ -61,6 +63,7 @@ class KeyGeneratorTest {
             keys.keyID shouldBe keyId
             keys.keyType.toString() shouldBe KeyType.EC.value
             keys.keyUse.toString() shouldBe "sig"
+            keys.algorithm shouldBeIn ecAlgorithmFamily
 
             val issuer = Issuer("issuer$index")
             val jwt = jwtWith(issuer.value, keyId, JOSEObjectType.JWT.type, jwsAlgorithm)
