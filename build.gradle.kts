@@ -15,7 +15,7 @@ val kotestVersion = "5.3.0"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "2.6.7"
 val reactorTestVersion = "3.4.17"
-val ktorVersion = "1.6.8"
+val ktorVersion = "2.0.1"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -80,11 +80,13 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
     testImplementation("io.ktor:ktor-server-sessions:$ktorVersion")
-    testImplementation("io.ktor:ktor-locations:$ktorVersion")
-    testImplementation("io.ktor:ktor-auth:$ktorVersion")
-    testImplementation("io.ktor:ktor-auth-jwt:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-locations:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-auth:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-client-core:$ktorVersion")
-    testImplementation("io.ktor:ktor-client-jackson:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    testImplementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }

@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import io.ktor.client.call.body
 import kotlinx.coroutines.runBlocking
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
@@ -33,8 +34,8 @@ internal class OAuth2ClientTest {
             )
 
             tokenResponse.asClue {
-                it.accessToken.asDecodedJWT().subject shouldBe "client1"
-                it.accessToken.asDecodedJWT().audience.shouldContainExactly("targetScope")
+                it.body<TokenResponse>().accessToken.asDecodedJWT().subject shouldBe "client1"
+                it.body<TokenResponse>().accessToken.asDecodedJWT().audience.shouldContainExactly("targetScope")
             }
         }
     }
@@ -56,8 +57,8 @@ internal class OAuth2ClientTest {
             )
 
             tokenResponse.asClue {
-                it.accessToken.asDecodedJWT().subject shouldBe "enduser"
-                it.accessToken.asDecodedJWT().audience.shouldContainExactly("targetScope")
+                it.body<TokenResponse>().accessToken.asDecodedJWT().subject shouldBe "enduser"
+                it.body<TokenResponse>().accessToken.asDecodedJWT().audience.shouldContainExactly("targetScope")
             }
         }
     }

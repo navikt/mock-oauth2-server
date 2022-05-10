@@ -3,34 +3,35 @@ package examples.kotlin.ktor.login
 import com.auth0.jwt.JWT
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.DeserializationFeature
-import io.ktor.application.Application
-import io.ktor.application.ApplicationCall
-import io.ktor.application.call
-import io.ktor.application.install
-import io.ktor.auth.Authentication
-import io.ktor.auth.OAuthAccessTokenResponse
-import io.ktor.auth.OAuthServerSettings
-import io.ktor.auth.authenticate
-import io.ktor.auth.authentication
-import io.ktor.auth.oauth
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
-import io.ktor.client.features.json.JacksonSerializer
-import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.locations.Location
-import io.ktor.locations.Locations
-import io.ktor.locations.location
-import io.ktor.locations.locations
-import io.ktor.locations.url
-import io.ktor.response.respondText
-import io.ktor.routing.get
-import io.ktor.routing.param
-import io.ktor.routing.routing
+import io.ktor.serialization.jackson.jackson
+import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.OAuthAccessTokenResponse
+import io.ktor.server.auth.OAuthServerSettings
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.authentication
+import io.ktor.server.auth.oauth
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.locations.KtorExperimentalLocationsAPI
+import io.ktor.server.locations.Location
+import io.ktor.server.locations.Locations
+import io.ktor.server.locations.location
+import io.ktor.server.locations.locations
+import io.ktor.server.locations.url
 import io.ktor.server.netty.Netty
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.param
+import io.ktor.server.routing.routing
 
 fun main() {
     embeddedServer(Netty, port = 8080) {
@@ -53,6 +54,7 @@ fun main() {
     }.start(true)
 }
 
+@OptIn(KtorExperimentalLocationsAPI::class)
 fun Application.module(authConfig: AuthConfig) {
 
     val idProviders = authConfig.providers.map { it.settings }.associateBy { it.name }
@@ -121,8 +123,8 @@ private fun ApplicationCall.subject(): String? {
 }
 
 internal val httpClient = HttpClient(CIO) {
-    install(JsonFeature) {
-        serializer = JacksonSerializer {
+    install(ContentNegotiation) {
+        jackson {
             configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             setSerializationInclusion(JsonInclude.Include.NON_NULL)
         }

@@ -2,8 +2,8 @@ package examples.kotlin.ktor.login
 
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
-import io.ktor.application.Application
-import io.ktor.client.request.get
+import io.ktor.client.request.prepareGet
+import io.ktor.server.application.Application
 import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -46,7 +46,7 @@ internal class OAuth2LoginAppTest {
         }
     }
 
-    private inline fun <reified R> get(url: String): R = runBlocking { httpClient.get(url) }
+    private inline fun <reified R> get(url: String): R = runBlocking { httpClient.prepareGet(url).body() }
 
     private fun <R> withEmbeddedServer(
         moduleFunction: Application.() -> Unit,

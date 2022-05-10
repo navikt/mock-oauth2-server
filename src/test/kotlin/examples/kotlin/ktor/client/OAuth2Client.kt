@@ -7,14 +7,13 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.DeserializationFeature
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
-import io.ktor.client.features.json.JacksonSerializer
-import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.header
 import io.ktor.http.Headers
 import io.ktor.http.Parameters
 import io.ktor.http.headersOf
-import io.ktor.util.InternalAPI
+import io.ktor.serialization.jackson.jackson
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
 import java.security.interfaces.RSAPrivateKey
@@ -26,17 +25,16 @@ import java.util.Date
 import java.util.UUID
 
 val httpClient = HttpClient(CIO) {
-    install(JsonFeature) {
-        serializer = JacksonSerializer {
+    install(ContentNegotiation) {
+        jackson {
             configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             setSerializationInclusion(JsonInclude.Include.NON_NULL)
         }
     }
 }
 
-@OptIn(InternalAPI::class)
 suspend fun HttpClient.tokenRequest(url: String, auth: Auth, params: Map<String, String>) =
-    submitForm<TokenResponse>(
+    submitForm(
         url = url,
         formParameters = Parameters.build {
             auth.parameters.forEach {
