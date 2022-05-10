@@ -36,8 +36,8 @@ class OAuth2ResourceServerAppTest {
                 this.application {
                     module(authConfig)
                 }
-                val response = client.get("/hello1"){
-                header("Authorization", "Bearer ${mockOAuth2Server.tokenFromProvider1()}")
+                val response = client.get("/hello1") {
+                    header("Authorization", "Bearer ${mockOAuth2Server.tokenFromProvider1()}")
                 }
 
                 response.status shouldBe HttpStatusCode.OK
@@ -56,7 +56,7 @@ class OAuth2ResourceServerAppTest {
                     module(authConfig)
                 }
 
-                val response = client.get("/hello2"){
+                val response = client.get("/hello2") {
                     header("Authorization", "Bearer ${mockOAuth2Server.tokenFromProvider2()}")
                 }
                 response.status shouldBe HttpStatusCode.OK
