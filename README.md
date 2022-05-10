@@ -427,6 +427,15 @@ you can either make the server generate the keystore or bring your own.
 }
 ```
 
+## Upgrading the gradle wrapper
+Find the newest version of gradle here: https://gradle.org/releases/
+Then run this command:
+```./gradlew wrapper --gradle-version $gradleVersion```
+
+Remeber to also update the gradle version in the build.gradle.kts file
+``` gradleVersion = "$gradleVersion"```
+
+
 ## 👥 Contact
 
 This project is currently maintained by the organisation [@navikt](https://github.com/navikt).
