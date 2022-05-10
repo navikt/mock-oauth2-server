@@ -1,10 +1,11 @@
 package examples.kotlin.ktor.resourceserver
 
 import io.kotest.matchers.shouldBe
-import io.ktor.http.HttpMethod
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.testing.handleRequest
-import io.ktor.server.testing.withTestApplication
+import io.ktor.server.testing.testApplication
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import org.junit.jupiter.api.Test
@@ -15,14 +16,13 @@ class OAuth2ResourceServerAppTest {
     fun `http get to secured endpoint without token should return 401`() {
         withMockOAuth2Server {
             val authConfig = authConfig()
-            withTestApplication({
-                module(authConfig)
-            }) {
-                with(
-                    handleRequest(HttpMethod.Get, "/hello1")
-                ) {
-                    response.status() shouldBe HttpStatusCode.Unauthorized
+
+            testApplication {
+                this.application {
+                    module(authConfig)
                 }
+                val response = client.get("/hello1")
+                response.status shouldBe HttpStatusCode.Unauthorized
             }
         }
     }
@@ -32,17 +32,16 @@ class OAuth2ResourceServerAppTest {
         withMockOAuth2Server {
             val mockOAuth2Server = this
             val authConfig = authConfig()
-            withTestApplication({
-                module(authConfig)
-            }) {
-                with(
-                    handleRequest(HttpMethod.Get, "/hello1") {
-                        addHeader("Authorization", "Bearer ${mockOAuth2Server.tokenFromProvider1()}")
-                    }
-                ) {
-                    response.status() shouldBe HttpStatusCode.OK
-                    response.content shouldBe "hello1 foo from issuer ${mockOAuth2Server.issuerUrl("provider1")}"
+            testApplication {
+                this.application {
+                    module(authConfig)
                 }
+                val response = client.get("/hello1") {
+                    header("Authorization", "Bearer ${mockOAuth2Server.tokenFromProvider1()}")
+                }
+
+                response.status shouldBe HttpStatusCode.OK
+                response.bodyAsText() shouldBe "hello1 foo from issuer ${mockOAuth2Server.issuerUrl("provider1")}"
             }
         }
     }
@@ -52,17 +51,16 @@ class OAuth2ResourceServerAppTest {
         withMockOAuth2Server {
             val mockOAuth2Server = this
             val authConfig = authConfig()
-            withTestApplication({
-                module(authConfig)
-            }) {
-                with(
-                    handleRequest(HttpMethod.Get, "/hello2") {
-                        addHeader("Authorization", "Bearer ${mockOAuth2Server.tokenFromProvider2()}")
-                    }
-                ) {
-                    response.status() shouldBe HttpStatusCode.OK
-                    response.content shouldBe "hello2 foo from issuer ${mockOAuth2Server.issuerUrl("provider2")}"
+            testApplication {
+                this.application {
+                    module(authConfig)
                 }
+
+                val response = client.get("/hello2") {
+                    header("Authorization", "Bearer ${mockOAuth2Server.tokenFromProvider2()}")
+                }
+                response.status shouldBe HttpStatusCode.OK
+                response.bodyAsText() shouldBe "hello2 foo from issuer ${mockOAuth2Server.issuerUrl("provider2")}"
             }
         }
     }
