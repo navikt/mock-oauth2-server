@@ -39,7 +39,8 @@ data class OAuth2Config @JvmOverloads constructor(
 
         data class KeyProviderConfig(
             val initialKeys: String?,
-            val algorithm: String
+            val algorithm: String?,
+            val x5cCertificateChain: Boolean?,
         )
 
         override fun deserialize(p: JsonParser, ctxt: DeserializationContext?): OAuth2TokenProvider {
@@ -55,7 +56,9 @@ data class OAuth2Config @JvmOverloads constructor(
 
             return OAuth2TokenProvider(
                 KeyProvider(
-                    jwks, config.keyProvider?.algorithm ?: JWSAlgorithm.RS256.name
+                    x5cCertificateChain = config.keyProvider?.x5cCertificateChain ?: false,
+                    initialKeys = jwks,
+                    algorithm = config.keyProvider?.algorithm ?: JWSAlgorithm.RS256.name,
                 )
             )
         }

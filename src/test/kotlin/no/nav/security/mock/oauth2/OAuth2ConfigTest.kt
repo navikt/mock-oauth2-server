@@ -8,6 +8,7 @@ import io.kotest.matchers.MatcherResult
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.beInstanceOf
 import no.nav.security.mock.oauth2.FullConfig.configJson
@@ -21,6 +22,7 @@ import no.nav.security.mock.oauth2.HttpServerConfig.withUnknownHttpServer
 import no.nav.security.mock.oauth2.SigningKey.signingJsonGenerated
 import no.nav.security.mock.oauth2.SigningKey.signingJsonSpecified
 import no.nav.security.mock.oauth2.SigningKey.signingJsonUnsupported
+import no.nav.security.mock.oauth2.SigningKey.signingJsonWithX5cGenerated
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import org.intellij.lang.annotations.Language
@@ -107,6 +109,13 @@ internal class OAuth2ConfigTest {
         val actualKeyStore = server.ssl?.sslKeystore?.keyStore
         val actualCert = actualKeyStore?.getCertificate("localhost") as X509Certificate
         actualCert.notBefore should beAroundNow()
+    }
+
+    @Test
+    fun `create tokenProvider with generated signing algorithm RSA and x5c certificate cain`() {
+        val config = OAuth2Config.fromJson(signingJsonWithX5cGenerated)
+        config.tokenProvider.publicJwkSet().keys[0].keyType.value shouldBe KeyType.RSA.value
+        config.tokenProvider.publicJwkSet().keys[0].x509CertChain shouldNotBe null
     }
 
     private fun beAroundNow(skew: Duration = Duration.ofSeconds(2)) = object : Matcher<Date> {
@@ -202,6 +211,18 @@ object SigningKey {
         "tokenProvider" : {
             "keyProvider" : {
                "algorithm" : "EdDSA"
+            }
+          }
+        }
+    """.trimIndent()
+
+    @Language("json")
+    val signingJsonWithX5cGenerated = """
+        {
+        "tokenProvider" : {
+            "keyProvider" : {
+               "algorithm" : "RS256",
+               "x5cCertificateChain": true
             }
           }
         }

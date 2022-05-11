@@ -21,8 +21,8 @@ import org.junit.jupiter.params.provider.ValueSource
 internal class OAuth2TokenProviderECTest {
     private val tokenProvider = OAuth2TokenProvider(
         KeyProvider(
-            emptyList(),
-            JWSAlgorithm.ES256.name
+            initialKeys = emptyList(),
+            algorithm = JWSAlgorithm.ES256.name
         )
     )
 

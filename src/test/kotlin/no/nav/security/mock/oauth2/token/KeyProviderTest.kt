@@ -25,7 +25,7 @@ internal class KeyProviderTest {
 
     @Test
     fun `signingKey should return a RSA key from initial keys file until deque is empty`() {
-        val provider = KeyProvider()
+        val provider = KeyProvider(x5cCertificateChain = false)
         val initialPublicKeys = initialRsaPublicKeys()
 
         for (i in initialPublicKeys.indices) {
@@ -45,7 +45,8 @@ internal class KeyProviderTest {
     fun `signingKey should return a EC key from initial keys file until deque is empty`() {
         val provider = KeyProvider(
             initialKeys = KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"),
-            algorithm = "ES256"
+            algorithm = "ES256",
+            x5cCertificateChain = false
         )
         val initialPublicKeys = initialEcPublicKeys()
 
@@ -64,7 +65,7 @@ internal class KeyProviderTest {
 
     @Test
     fun `unsupported signingKey algorithm should throw an error message`() {
-        val provider = KeyProvider(KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"))
+        val provider = KeyProvider(initialKeys = KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"))
         shouldThrow<OAuth2Exception> {
             provider.generate("ET256")
         }.message shouldBe "Unsupported algorithm: ET256"
@@ -73,7 +74,7 @@ internal class KeyProviderTest {
     @Test
     fun `signingKey should return a RSA key from provided constructor arg until deque is empty`() {
         val initialKeys = generateKeys(2)
-        val provider = KeyProvider(initialKeys)
+        val provider = KeyProvider(initialKeys = initialKeys)
         val initialPublicKeys = initialKeys.map { it.toRSAPublicKey() }
 
         for (i in initialPublicKeys.indices) {
@@ -102,11 +103,6 @@ internal class KeyProviderTest {
         }.map {
             it.toECKey().toECPublicKey()
         }
-
-    private fun writeInitialKeysFile() {
-        val list = generateKeys(5)
-        initialRSAKeysFile.writeText(JWKSet(list).toString(false))
-    }
 
     private fun generateKeys(numKeys: Int): List<RSAKey> {
         val list = mutableListOf<RSAKey>()
