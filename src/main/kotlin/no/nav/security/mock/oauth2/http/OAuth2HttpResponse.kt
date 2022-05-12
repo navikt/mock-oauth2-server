@@ -34,6 +34,8 @@ data class WellKnown(
     val userInfoEndpoint: String,
     @JsonProperty("jwks_uri")
     val jwksUri: String,
+    @JsonProperty("introspection_endpoint")
+    val introspectionEndpoint: String,
     @JsonProperty("response_types_supported")
     val responseTypesSupported: List<String> = listOf("query", "fragment", "form_post"),
     @JsonProperty("subject_types_supported")

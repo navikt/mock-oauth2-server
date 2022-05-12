@@ -9,6 +9,7 @@ import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
 import no.nav.security.mock.oauth2.extensions.isEndSessionEndpointUrl
+import no.nav.security.mock.oauth2.extensions.isIntrospectUrl
 import no.nav.security.mock.oauth2.extensions.isJwksUrl
 import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isUserInfoUrl
@@ -17,6 +18,7 @@ import no.nav.security.mock.oauth2.extensions.keyValuesToMap
 import no.nav.security.mock.oauth2.extensions.requirePrivateKeyJwt
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toIntrospectUrl
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
@@ -27,12 +29,13 @@ import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER
 import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER_CALLBACK
 import no.nav.security.mock.oauth2.http.RequestType.END_SESSION
 import no.nav.security.mock.oauth2.http.RequestType.FAVICON
+import no.nav.security.mock.oauth2.http.RequestType.INTROSPECT
 import no.nav.security.mock.oauth2.http.RequestType.JWKS
 import no.nav.security.mock.oauth2.http.RequestType.PREFLIGHT
 import no.nav.security.mock.oauth2.http.RequestType.TOKEN
 import no.nav.security.mock.oauth2.http.RequestType.UNKNOWN
-import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.http.RequestType.USER_INFO
+import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -86,6 +89,7 @@ data class OAuth2HttpRequest(
         url.isTokenEndpointUrl() -> TOKEN
         url.isEndSessionEndpointUrl() -> END_SESSION
         url.isUserInfoUrl() -> USER_INFO
+        url.isIntrospectUrl() -> INTROSPECT
         url.isJwksUrl() -> JWKS
         url.isDebuggerUrl() -> DEBUGGER
         url.isDebuggerCallbackUrl() -> DEBUGGER_CALLBACK
@@ -106,8 +110,9 @@ data class OAuth2HttpRequest(
             authorizationEndpoint = this.proxyAwareUrl().toAuthorizationEndpointUrl().toString(),
             tokenEndpoint = this.proxyAwareUrl().toTokenEndpointUrl().toString(),
             endSessionEndpoint = this.proxyAwareUrl().toEndSessionEndpointUrl().toString(),
+            introspectionEndpoint = this.proxyAwareUrl().toIntrospectUrl().toString(),
             jwksUri = this.proxyAwareUrl().toJwksUrl().toString(),
-            userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString()
+            userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString(),
         )
 
     internal fun proxyAwareUrl(): HttpUrl {
@@ -145,6 +150,7 @@ data class OAuth2HttpRequest(
 }
 
 enum class RequestType {
-    WELL_KNOWN, AUTHORIZATION, TOKEN, END_SESSION, JWKS,
-    DEBUGGER, DEBUGGER_CALLBACK, FAVICON, PREFLIGHT, UNKNOWN, USER_INFO
+    WELL_KNOWN, AUTHORIZATION, TOKEN, END_SESSION,
+    JWKS, DEBUGGER, DEBUGGER_CALLBACK, FAVICON,
+    PREFLIGHT, UNKNOWN, USER_INFO, INTROSPECT
 }

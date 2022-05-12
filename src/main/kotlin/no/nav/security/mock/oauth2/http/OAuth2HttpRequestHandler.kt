@@ -33,6 +33,7 @@ import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
+import no.nav.security.mock.oauth2.introspect.introspect
 import no.nav.security.mock.oauth2.invalidGrant
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
@@ -83,6 +84,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         token()
         endSession()
         userInfo(config.tokenProvider)
+        introspect(config.tokenProvider)
         preflight()
         get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
         attach(debuggerRequestHandler)
