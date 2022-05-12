@@ -48,7 +48,7 @@ internal class IntrospectTest {
             introspect(OAuth2TokenProvider())
         }.invoke(request(url, null)).asClue {
             it.status shouldBe 200
-            it.parse<Map<String, Any>>() shouldContainAll mapOf("active" to false)
+            it.parse<Map<String, Any>>() shouldContainExactly mapOf("active" to false)
         }
     }
 
