@@ -31,7 +31,7 @@ class KeyGeneratorTest {
             generator.algorithm.toString() shouldBe jwsAlgorithm.name
 
             val keyId = "test$index"
-            val keys = generator.generateKey(keyId, false)
+            val keys = generator.generateKey(keyId)
 
             keys.keyID shouldBe keyId
             keys.keyType.toString() shouldBe KeyType.RSA.value
@@ -59,7 +59,7 @@ class KeyGeneratorTest {
             generator.algorithm.toString() shouldBe jwsAlgorithm.name
 
             val keyId = "test$index"
-            val keys = generator.generateKey(keyId, false)
+            val keys = generator.generateKey(keyId)
 
             keys.keyID shouldBe keyId
             keys.keyType.toString() shouldBe KeyType.EC.value
@@ -87,7 +87,7 @@ class KeyGeneratorTest {
             generator.algorithm.toString() shouldBe jwsAlgorithm.name
 
             val keyId = "test$index"
-            val keys = generator.generateKey(keyId, true)
+            val keys = generator.generateKey(keyId, Certificate(x5cChain = true))
 
             keys.keyID shouldBe keyId
             keys.keyType.toString() shouldBe KeyType.RSA.value
@@ -116,7 +116,7 @@ class KeyGeneratorTest {
             generator.algorithm.toString() shouldBe jwsAlgorithm.name
 
             val keyId = "test$index"
-            val keys = generator.generateKey(keyId, true)
+            val keys = generator.generateKey(keyId, Certificate(x5cChain = true))
 
             keys.keyID shouldBe keyId
             keys.keyType.toString() shouldBe KeyType.EC.value

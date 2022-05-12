@@ -14,7 +14,10 @@ import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.SslKeystore
+import no.nav.security.mock.oauth2.token.Certificate
+import no.nav.security.mock.oauth2.token.DAYS_TO_EXPIRE
 import no.nav.security.mock.oauth2.token.KeyProvider
+import no.nav.security.mock.oauth2.token.MOCK_OAUTH2_SERVER_NAME
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
@@ -40,7 +43,13 @@ data class OAuth2Config @JvmOverloads constructor(
         data class KeyProviderConfig(
             val initialKeys: String?,
             val algorithm: String?,
-            val x5cCertificateChain: Boolean?,
+            val certificate: CertificateConfig?
+        )
+
+        data class CertificateConfig(
+            val x5cChain: Boolean?,
+            val expiresInDays: Int?,
+            val cn: String?
         )
 
         override fun deserialize(p: JsonParser, ctxt: DeserializationContext?): OAuth2TokenProvider {
@@ -56,7 +65,11 @@ data class OAuth2Config @JvmOverloads constructor(
 
             return OAuth2TokenProvider(
                 KeyProvider(
-                    x5cCertificateChain = config.keyProvider?.x5cCertificateChain ?: false,
+                    certificate = Certificate(
+                        x5cChain = config.keyProvider?.certificate?.x5cChain ?: false,
+                        expiresInDays = config.keyProvider?.certificate?.expiresInDays ?: DAYS_TO_EXPIRE,
+                        cn = config.keyProvider?.certificate?.cn ?: MOCK_OAUTH2_SERVER_NAME
+                    ),
                     initialKeys = jwks,
                     algorithm = config.keyProvider?.algorithm ?: JWSAlgorithm.RS256.name,
                 )

@@ -25,7 +25,7 @@ internal class KeyProviderTest {
 
     @Test
     fun `signingKey should return a RSA key from initial keys file until deque is empty`() {
-        val provider = KeyProvider(x5cCertificateChain = false)
+        val provider = KeyProvider()
         val initialPublicKeys = initialRsaPublicKeys()
 
         for (i in initialPublicKeys.indices) {
@@ -45,8 +45,7 @@ internal class KeyProviderTest {
     fun `signingKey should return a EC key from initial keys file until deque is empty`() {
         val provider = KeyProvider(
             initialKeys = KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"),
-            algorithm = "ES256",
-            x5cCertificateChain = false
+            algorithm = "ES256"
         )
         val initialPublicKeys = initialEcPublicKeys()
 

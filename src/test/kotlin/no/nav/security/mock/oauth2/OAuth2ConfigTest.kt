@@ -2,6 +2,8 @@ package no.nav.security.mock.oauth2
 
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.nimbusds.jose.jwk.KeyType
+import com.nimbusds.jose.util.X509CertUtils
+import io.kotest.assertions.asClue
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
@@ -22,11 +24,14 @@ import no.nav.security.mock.oauth2.HttpServerConfig.withUnknownHttpServer
 import no.nav.security.mock.oauth2.SigningKey.signingJsonGenerated
 import no.nav.security.mock.oauth2.SigningKey.signingJsonSpecified
 import no.nav.security.mock.oauth2.SigningKey.signingJsonUnsupported
+import no.nav.security.mock.oauth2.SigningKey.signingJsonWithCommonNameX5cAndSignatureAlgorithmGenerated
+import no.nav.security.mock.oauth2.SigningKey.signingJsonWithX5cAndSignatureAlgorithmGenerated
 import no.nav.security.mock.oauth2.SigningKey.signingJsonWithX5cGenerated
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import java.io.File
 import java.security.KeyStore
 import java.security.cert.X509Certificate
@@ -112,10 +117,35 @@ internal class OAuth2ConfigTest {
     }
 
     @Test
-    fun `create tokenProvider with generated signing algorithm RSA and x5c certificate cain`() {
+    fun `create tokenProvider with generated signing algorithm RSA256 and x5c certificate cain`() {
         val config = OAuth2Config.fromJson(signingJsonWithX5cGenerated)
         config.tokenProvider.publicJwkSet().keys[0].keyType.value shouldBe KeyType.RSA.value
         config.tokenProvider.publicJwkSet().keys[0].x509CertChain shouldNotBe null
+    }
+
+    @Test
+    fun `create tokenProvider with generated and specified signing algorithm RSA512 and x5c certificate cain`() {
+        val config = OAuth2Config.fromJson(signingJsonWithX5cAndSignatureAlgorithmGenerated)
+        config.tokenProvider.publicJwkSet().keys[0].keyType.value shouldBe KeyType.RSA.value
+        config.tokenProvider.publicJwkSet().keys[0].algorithm.toString() shouldBe "RS512"
+        config.tokenProvider.publicJwkSet().keys[0].x509CertChain shouldNotBe null
+    }
+
+    @Test
+    fun `create tokenProvider with generated and specified common name with signing algorithm ES512 and x5c certificate cain`() {
+        val config = OAuth2Config.fromJson(signingJsonWithCommonNameX5cAndSignatureAlgorithmGenerated)
+        config.tokenProvider.publicJwkSet().keys[0].keyType.value shouldBe KeyType.EC.value
+        config.tokenProvider.publicJwkSet().keys[0].algorithm.toString() shouldBe "ES384"
+        config.tokenProvider.publicJwkSet().keys[0].x509CertChain shouldNotBe null
+        X509CertUtils.parse(
+            "-----BEGIN CERTIFICATE-----${config.tokenProvider.publicJwkSet().keys[0].x509CertChain}-----END CERTIFICATE-----"
+        ).asClue {
+            assertDoesNotThrow {
+                it.checkValidity()
+            }
+
+            it.subjectX500Principal.name shouldBe "CN=my-sweet-name"
+        }
     }
 
     private fun beAroundNow(skew: Duration = Duration.ofSeconds(2)) = object : Matcher<Date> {
@@ -221,8 +251,40 @@ object SigningKey {
         {
         "tokenProvider" : {
             "keyProvider" : {
-               "algorithm" : "RS256",
-               "x5cCertificateChain": true
+            "algorithm" : "RS256",
+            "certificate": {
+               "x5cChain": true
+               }
+            }
+          }
+        }
+    """.trimIndent()
+
+    @Language("json")
+    val signingJsonWithX5cAndSignatureAlgorithmGenerated = """
+        {
+        "tokenProvider" : {
+            "keyProvider" : {
+               "algorithm" : "RS512",
+               "certificate": {
+                  "x5cChain": true
+               }
+            }
+          }
+        }
+    """.trimIndent()
+
+    @Language("json")
+    val signingJsonWithCommonNameX5cAndSignatureAlgorithmGenerated = """
+        {
+        "tokenProvider" : {
+            "keyProvider" : {
+               "algorithm" : "ES384",
+               "certificate": {
+                  "x5cChain": true,
+                  "cn": "my-sweet-name",
+                  "expiresInDays": "20"
+               }
             }
           }
         }

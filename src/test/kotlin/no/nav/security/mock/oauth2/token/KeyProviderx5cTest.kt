@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.token
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.KeyType
+import com.nimbusds.jose.util.X509CertUtils
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
@@ -9,6 +10,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import no.nav.security.mock.oauth2.token.KeyProvider.Companion.keysFromFile
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import java.io.File
 import java.security.interfaces.RSAPublicKey
 
@@ -19,24 +21,39 @@ class KeyProviderx5cTest {
     @Test
     fun `signingKey should return a RSA key from initial x5c certificate until deque is empty`() {
         val keys = keysFromFile(filename = "/mock-oauth2-server-x5c-keys.json")
-        val provider = KeyProvider(x5cCertificateChain = true, initialKeys = keys)
+        val provider = KeyProvider(certificate = Certificate(x5cChain = true), initialKeys = keys)
         val initialPublicKeys = initialRsaX5cPublicKeys()
 
-        provider.signingKey(KeyGenerator.MOCK_OAUTH2_SERVER_NAME).asClue {
-            it.toRSAKey().toRSAPublicKey() shouldBeIn initialPublicKeys
-            it.keyID shouldBe "mock-oauth2-server"
-            it.keyType shouldBe KeyType.RSA
-            it.isPrivate shouldBe true
-            it.x509CertChain shouldNotBe null
-            it.computeThumbprint().toString() shouldBe "XI_0_o7bgCzz3atyVifjZfEeAztOy-DrIdWFXTiLhng"
+        provider.signingKey(MOCK_OAUTH2_SERVER_NAME).asClue { jwk ->
+            jwk.toRSAKey().toRSAPublicKey() shouldBeIn initialPublicKeys
+            jwk.keyID shouldBe "mock-oauth2-server"
+            jwk.keyType shouldBe KeyType.RSA
+            jwk.isPrivate shouldBe true
+            jwk.x509CertChain shouldNotBe null
+            X509CertUtils.parse("-----BEGIN CERTIFICATE-----${jwk.x509CertChain}-----END CERTIFICATE-----").asClue {
+                assertDoesNotThrow {
+                    it.checkValidity()
+                }
+                it.subjectX500Principal.name shouldBe "CN=mock-oauth2-server"
+                it.sigAlgName.toString() shouldBe "SHA256withRSA"
+                it.notAfter.time shouldBe 1715375571000L
+                it.notBefore.time shouldBe 1652303571000L
+                it.sigAlgOID.toString() shouldBe "1.2.840.113549.1.1.11"
+            }
         }
 
-        provider.signingKey("shouldBeGeneratedOnTheFly").asClue {
-            it.toRSAKey().toRSAPublicKey() shouldNotBeIn initialPublicKeys
-            it.keyType shouldBe KeyType.RSA
-            it.x509CertChain shouldNotBe null
-            it.keyID shouldBe "shouldBeGeneratedOnTheFly"
-            it.isPrivate shouldBe true
+        provider.signingKey("shouldBeGeneratedOnTheFly").asClue { jwk ->
+            jwk.toRSAKey().toRSAPublicKey() shouldNotBeIn initialPublicKeys
+            jwk.keyType shouldBe KeyType.RSA
+            jwk.x509CertChain shouldNotBe null
+            X509CertUtils.parse("-----BEGIN CERTIFICATE-----${jwk.x509CertChain}-----END CERTIFICATE-----").asClue {
+                assertDoesNotThrow {
+                    it.checkValidity()
+                }
+                it.subjectX500Principal.name shouldBe "CN=mock-oauth2-server"
+            }
+            jwk.keyID shouldBe "shouldBeGeneratedOnTheFly"
+            jwk.isPrivate shouldBe true
         }
     }
 
