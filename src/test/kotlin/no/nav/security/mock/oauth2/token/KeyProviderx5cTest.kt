@@ -2,12 +2,12 @@ package no.nav.security.mock.oauth2.token
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.KeyType
-import com.nimbusds.jose.util.X509CertUtils
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import no.nav.security.mock.oauth2.testutils.toCertObject
 import no.nav.security.mock.oauth2.token.KeyProvider.Companion.keysFromFile
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -21,7 +21,7 @@ class KeyProviderx5cTest {
     @Test
     fun `signingKey should return a RSA key from initial x5c certificate until deque is empty`() {
         val keys = keysFromFile(filename = "/mock-oauth2-server-x5c-keys.json")
-        val provider = KeyProvider(certificate = Certificate(x5cChain = true), initialKeys = keys)
+        val provider = KeyProvider(certCfg = CertificateConfig(x509CertChain = true), initialKeys = keys)
         val initialPublicKeys = initialRsaX5cPublicKeys()
 
         provider.signingKey(MOCK_OAUTH2_SERVER_NAME).asClue { jwk ->
@@ -30,7 +30,7 @@ class KeyProviderx5cTest {
             jwk.keyType shouldBe KeyType.RSA
             jwk.isPrivate shouldBe true
             jwk.x509CertChain shouldNotBe null
-            X509CertUtils.parse("-----BEGIN CERTIFICATE-----${jwk.x509CertChain}-----END CERTIFICATE-----").asClue {
+            jwk.x509CertChain.toCertObject().asClue {
                 assertDoesNotThrow {
                     it.checkValidity()
                 }
@@ -46,7 +46,7 @@ class KeyProviderx5cTest {
             jwk.toRSAKey().toRSAPublicKey() shouldNotBeIn initialPublicKeys
             jwk.keyType shouldBe KeyType.RSA
             jwk.x509CertChain shouldNotBe null
-            X509CertUtils.parse("-----BEGIN CERTIFICATE-----${jwk.x509CertChain}-----END CERTIFICATE-----").asClue {
+            jwk.x509CertChain.toCertObject().asClue {
                 assertDoesNotThrow {
                     it.checkValidity()
                 }

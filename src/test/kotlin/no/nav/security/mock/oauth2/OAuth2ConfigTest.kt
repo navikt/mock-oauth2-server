@@ -2,7 +2,6 @@ package no.nav.security.mock.oauth2
 
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.nimbusds.jose.jwk.KeyType
-import com.nimbusds.jose.util.X509CertUtils
 import io.kotest.assertions.asClue
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.Matcher
@@ -29,6 +28,7 @@ import no.nav.security.mock.oauth2.SigningKey.signingJsonWithX5cAndSignatureAlgo
 import no.nav.security.mock.oauth2.SigningKey.signingJsonWithX5cGenerated
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
+import no.nav.security.mock.oauth2.testutils.toCertObject
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -137,13 +137,10 @@ internal class OAuth2ConfigTest {
         config.tokenProvider.publicJwkSet().keys[0].keyType.value shouldBe KeyType.EC.value
         config.tokenProvider.publicJwkSet().keys[0].algorithm.toString() shouldBe "ES384"
         config.tokenProvider.publicJwkSet().keys[0].x509CertChain shouldNotBe null
-        X509CertUtils.parse(
-            "-----BEGIN CERTIFICATE-----${config.tokenProvider.publicJwkSet().keys[0].x509CertChain}-----END CERTIFICATE-----"
-        ).asClue {
+        config.tokenProvider.publicJwkSet().keys[0].x509CertChain.toCertObject().asClue {
             assertDoesNotThrow {
                 it.checkValidity()
             }
-
             it.subjectX500Principal.name shouldBe "CN=my-sweet-name"
         }
     }
@@ -253,7 +250,7 @@ object SigningKey {
             "keyProvider" : {
             "algorithm" : "RS256",
             "certificate": {
-               "x5cChain": true
+               "x509CertChain": true
                }
             }
           }
@@ -267,7 +264,7 @@ object SigningKey {
             "keyProvider" : {
                "algorithm" : "RS512",
                "certificate": {
-                  "x5cChain": true
+                  "x509CertChain": true
                }
             }
           }
@@ -281,7 +278,7 @@ object SigningKey {
             "keyProvider" : {
                "algorithm" : "ES384",
                "certificate": {
-                  "x5cChain": true,
+                  "x509CertChain": true,
                   "cn": "my-sweet-name",
                   "expiresInDays": "20"
                }

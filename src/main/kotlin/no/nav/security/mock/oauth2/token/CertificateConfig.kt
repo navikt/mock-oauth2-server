@@ -8,11 +8,11 @@ import no.nav.security.mock.oauth2.token.KeyGenerator.Companion.rsaAlgorithmFami
 const val MOCK_OAUTH2_SERVER_NAME = "mock-oauth2-server"
 const val DAYS_TO_EXPIRE = 730
 const val PREFIX_SHA = "SHA"
-const val SUFFIX_RSA = "WITHRSA"
-const val SUFFIX_ECDSA = "WITHECDSA"
+const val SUFFIX_RSA = "withRSA"
+const val SUFFIX_ECDSA = "withECDSA"
 
-class Certificate(
-    val x5cChain: Boolean = false,
+class CertificateConfig(
+    val x509CertChain: Boolean = false,
     val expiresInDays: Int = DAYS_TO_EXPIRE,
     val cn: String = MOCK_OAUTH2_SERVER_NAME
 ) {

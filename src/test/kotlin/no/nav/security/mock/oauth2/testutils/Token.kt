@@ -11,6 +11,7 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.jwk.source.RemoteJWKSet
 import com.nimbusds.jose.proc.JWSVerificationKeySelector
 import com.nimbusds.jose.proc.SecurityContext
+import com.nimbusds.jose.util.X509CertUtils
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
@@ -37,6 +38,7 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.net.URL
 import java.security.KeyPairGenerator
+import java.security.cert.X509Certificate
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 import java.time.Instant
@@ -187,3 +189,6 @@ fun generateRsaKey(keyId: String = UUID.randomUUID().toString(), keySize: Int = 
                 .keyUse(KeyUse.SIGNATURE)
                 .build()
         }
+
+fun List<com.nimbusds.jose.util.Base64>.toCertObject(): X509Certificate =
+    X509CertUtils.parse("-----BEGIN CERTIFICATE-----$this-----END CERTIFICATE-----")

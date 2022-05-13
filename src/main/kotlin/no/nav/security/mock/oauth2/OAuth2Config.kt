@@ -14,7 +14,6 @@ import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.SslKeystore
-import no.nav.security.mock.oauth2.token.Certificate
 import no.nav.security.mock.oauth2.token.DAYS_TO_EXPIRE
 import no.nav.security.mock.oauth2.token.KeyProvider
 import no.nav.security.mock.oauth2.token.MOCK_OAUTH2_SERVER_NAME
@@ -47,7 +46,7 @@ data class OAuth2Config @JvmOverloads constructor(
         )
 
         data class CertificateConfig(
-            val x5cChain: Boolean?,
+            val x509CertChain: Boolean?,
             val expiresInDays: Int?,
             val cn: String?
         )
@@ -65,8 +64,8 @@ data class OAuth2Config @JvmOverloads constructor(
 
             return OAuth2TokenProvider(
                 KeyProvider(
-                    certificate = Certificate(
-                        x5cChain = config.keyProvider?.certificate?.x5cChain ?: false,
+                    certCfg = no.nav.security.mock.oauth2.token.CertificateConfig(
+                        x509CertChain = config.keyProvider?.certificate?.x509CertChain ?: false,
                         expiresInDays = config.keyProvider?.certificate?.expiresInDays ?: DAYS_TO_EXPIRE,
                         cn = config.keyProvider?.certificate?.cn ?: MOCK_OAUTH2_SERVER_NAME
                     ),

@@ -10,14 +10,17 @@ import com.nimbusds.jose.jwk.KeyType
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.id.Issuer
+import io.kotest.assertions.asClue
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
+import no.nav.security.mock.oauth2.testutils.toCertObject
 import no.nav.security.mock.oauth2.token.KeyGenerator.Companion.ecAlgorithmFamily
 import no.nav.security.mock.oauth2.token.KeyGenerator.Companion.rsaAlgorithmFamily
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import java.time.Instant
 import java.util.Date
 
@@ -37,6 +40,7 @@ class KeyGeneratorTest {
             keys.keyType.toString() shouldBe KeyType.RSA.value
             keys.keyUse.toString() shouldBe "sig"
             keys.algorithm shouldBeIn rsaAlgorithmFamily
+            keys.x509CertChain shouldBe null
 
             val issuer = Issuer("issuer$index")
             val jwt = jwtWith(issuer.value, keyId, JOSEObjectType.JWT.type, jwsAlgorithm)
@@ -65,6 +69,7 @@ class KeyGeneratorTest {
             keys.keyType.toString() shouldBe KeyType.EC.value
             keys.keyUse.toString() shouldBe "sig"
             keys.algorithm shouldBeIn ecAlgorithmFamily
+            keys.x509CertChain shouldBe null
 
             val issuer = Issuer("issuer$index")
             val jwt = jwtWith(issuer.value, keyId, JOSEObjectType.JWT.type, jwsAlgorithm)
@@ -87,12 +92,20 @@ class KeyGeneratorTest {
             generator.algorithm.toString() shouldBe jwsAlgorithm.name
 
             val keyId = "test$index"
-            val keys = generator.generateKey(keyId, Certificate(x5cChain = true))
+            val certCfg = CertificateConfig(x509CertChain = true)
+            val keys = generator.generateKey(keyId, certCfg)
 
             keys.keyID shouldBe keyId
             keys.keyType.toString() shouldBe KeyType.RSA.value
             keys.keyUse.toString() shouldBe "sig"
             keys.x509CertChain shouldNotBe null
+            keys.x509CertChain.toCertObject().asClue {
+                assertDoesNotThrow {
+                    it.checkValidity()
+                }
+                it.subjectX500Principal.name shouldBe "CN=mock-oauth2-server"
+                it.sigAlgName.toString() shouldBe certCfg.findSignature(jwsAlgorithm)
+            }
             keys.algorithm shouldBeIn rsaAlgorithmFamily
 
             val issuer = Issuer("issuer$index")
@@ -116,12 +129,20 @@ class KeyGeneratorTest {
             generator.algorithm.toString() shouldBe jwsAlgorithm.name
 
             val keyId = "test$index"
-            val keys = generator.generateKey(keyId, Certificate(x5cChain = true))
+            val certCfg = CertificateConfig(x509CertChain = true)
+            val keys = generator.generateKey(keyId, certCfg)
 
             keys.keyID shouldBe keyId
             keys.keyType.toString() shouldBe KeyType.EC.value
             keys.keyUse.toString() shouldBe "sig"
             keys.x509CertChain shouldNotBe null
+            keys.x509CertChain.toCertObject().asClue {
+                assertDoesNotThrow {
+                    it.checkValidity()
+                }
+                it.subjectX500Principal.name shouldBe "CN=mock-oauth2-server"
+                it.sigAlgName.toString() shouldBe certCfg.findSignature(jwsAlgorithm)
+            }
             keys.algorithm shouldBeIn ecAlgorithmFamily
 
             val issuer = Issuer("issuer$index")

@@ -21,14 +21,14 @@ data class KeyGenerator(
     val algorithm: JWSAlgorithm = JWSAlgorithm.RS256,
     var keyGenerator: KeyPairGenerator = generate(algorithm.name)
 ) {
-    fun generateKey(keyId: String, certificate: Certificate? = Certificate()): JWK {
+    fun generateKey(keyId: String, certCfg: CertificateConfig? = CertificateConfig()): JWK {
         if (keyGenerator.algorithm != KeyType.RSA.value) {
-            return keyGenerator.generateECKey(keyId, algorithm, certificate)
+            return keyGenerator.generateECKey(keyId, algorithm, certCfg)
         }
-        return keyGenerator.generateRSAKey(keyId, algorithm, certificate)
+        return keyGenerator.generateRSAKey(keyId, algorithm, certCfg)
     }
 
-    private fun KeyPairGenerator.generateECKey(keyId: String, algorithm: JWSAlgorithm, certificate: Certificate?): JWK =
+    private fun KeyPairGenerator.generateECKey(keyId: String, algorithm: JWSAlgorithm, certCfg: CertificateConfig?): JWK =
         generateKeyPair()
             .let { keyPair ->
                 ECKey.Builder(toCurve(algorithm), keyPair.public as ECPublicKey)
@@ -37,7 +37,7 @@ data class KeyGenerator(
                     .keyID(keyId)
                     .algorithm(algorithm)
                     .apply {
-                        this.addEcCertificate(keyPair, certificate)
+                        this.addEcCertificate(keyPair, certCfg)
                     }.build()
             }
 
@@ -49,7 +49,7 @@ data class KeyGenerator(
         }
     }
 
-    private fun KeyPairGenerator.generateRSAKey(keyId: String, algorithm: JWSAlgorithm, certificate: Certificate?): JWK =
+    private fun KeyPairGenerator.generateRSAKey(keyId: String, algorithm: JWSAlgorithm, certCfg: CertificateConfig?): JWK =
         generateKeyPair().let { keyPair ->
             RSAKey.Builder(keyPair.public as RSAPublicKey)
                 .privateKey(keyPair.private as RSAPrivateKey)
@@ -57,7 +57,7 @@ data class KeyGenerator(
                 .keyID(keyId)
                 .algorithm(algorithm)
                 .apply {
-                    this.addRsaCertificate(keyPair, certificate)
+                    this.addRsaCertificate(keyPair, certCfg)
                 }.build()
         }
 
@@ -71,35 +71,35 @@ data class KeyGenerator(
         )
     )
 
-    private fun RSAKey.Builder.addRsaCertificate(keyPair: KeyPair, certificate: Certificate?): RSAKey.Builder? {
-        certificate?.let {
-            if (!certificate.x5cChain) {
+    private fun RSAKey.Builder.addRsaCertificate(keyPair: KeyPair, certCfg: CertificateConfig?): RSAKey.Builder? {
+        certCfg?.let {
+            if (!certCfg.x509CertChain) {
                 return null
             }
 
             return this.x509CertChain(
                 generateX509Certificate(
                     keyPair,
-                    certificate.findSignature(algorithm),
-                    certificate.cn,
-                    certificate.expiresInDays
+                    certCfg.findSignature(algorithm),
+                    certCfg.cn,
+                    certCfg.expiresInDays
                 )
             )
         } ?: return null
     }
 
-    private fun ECKey.Builder.addEcCertificate(keyPair: KeyPair, certificate: Certificate?): ECKey.Builder? {
-        certificate?.let {
-            if (!certificate.x5cChain) {
+    private fun ECKey.Builder.addEcCertificate(keyPair: KeyPair, certCfg: CertificateConfig?): ECKey.Builder? {
+        certCfg?.let {
+            if (!certCfg.x509CertChain) {
                 return null
             }
 
             return this.x509CertChain(
                 generateX509Certificate(
                     keyPair,
-                    certificate.findSignature(algorithm),
-                    certificate.cn,
-                    certificate.expiresInDays
+                    certCfg.findSignature(algorithm),
+                    certCfg.cn,
+                    certCfg.expiresInDays
                 )
             )
         } ?: return null

@@ -15,14 +15,15 @@ class CertificateGeneratorTest {
     @Test
     fun `using an unknown signature should throw error for not supported`() {
         assertThrows<OAuth2Exception> {
-            Certificate().findSignature(JWSAlgorithm.parse("RS1010"))
+            CertificateConfig().findSignature(JWSAlgorithm.parse("RS1010"))
         }
     }
 
     @Test
     fun `generate certificate and validate metadata`() {
         val keypair = KeyPairGenerator.getInstance(KeyType.RSA.value).generateKeyPair()
-        val signature = Certificate().findSignature(JWSAlgorithm.RS256)
+        val certConfig = CertificateConfig()
+        val signature = certConfig.findSignature(JWSAlgorithm.RS256)
         val cert = CertificateGenerator.make(keypair, signature, "test", 10)
 
         cert shouldNotBe null

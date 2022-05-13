@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
 
 open class KeyProvider @JvmOverloads constructor(
-    private val certificate: Certificate? = Certificate(),
+    private val certCfg: CertificateConfig? = CertificateConfig(),
     private val initialKeys: List<JWK> = keysFromFile(INITIAL_KEYS_FILE),
     private val algorithm: String = JWSAlgorithm.RS256.name
 ) {
@@ -39,7 +39,7 @@ open class KeyProvider @JvmOverloads constructor(
                 throw OAuth2Exception("Unsupported key type: ${polledJwk.keyType.value}")
             }
         }
-    } ?: generator.generateKey(keyId, certificate)
+    } ?: generator.generateKey(keyId, certCfg)
 
     fun algorithm(): JWSAlgorithm = JWSAlgorithm.parse(algorithm)
 
