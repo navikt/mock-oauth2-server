@@ -371,6 +371,8 @@ your provider. The mock-oauth2-server will add the `x5c` to the jwks_uri.
 }
 ```
 
+Request the [jwks_uri](src/main/resources/mock-oauth2-server-x5c-keys.json) to see a sample of the output.
+
 ##### Supported algorithms
 
 * ECDSA
