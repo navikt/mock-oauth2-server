@@ -82,11 +82,12 @@ internal class IntrospectTest {
     private inline fun <reified T> OAuth2HttpResponse.parse(): T = jacksonObjectMapper().readValue(checkNotNull(body))
 
     private fun request(url: String, bearerToken: String?, auth: String = "Basic user=password"): OAuth2HttpRequest {
-        return OAuth2HttpRequest(Headers.headersOf(
-            "Authorization", auth,
-            "Accept", "application/json",
-            "Content-Type", "application/x-www-form-urlencoded"
-        ),
+        return OAuth2HttpRequest(
+            Headers.headersOf(
+                "Authorization", auth,
+                "Accept", "application/json",
+                "Content-Type", "application/x-www-form-urlencoded"
+            ),
             method = "POST",
             url.toHttpUrl(),
             body = bearerToken?.let { "token=$it&token_type_hint=access_token" }
