@@ -52,12 +52,12 @@ internal fun Route.Builder.introspect(tokenProvider: OAuth2TokenProvider) =
 
 private fun OAuth2HttpRequest.verifyBearerToken(tokenProvider: OAuth2TokenProvider): JWTClaimsSet? {
     val tokenString = this.getToken()
-    val issuer = url.toIssuerUrl()
-    val jwkSet = tokenProvider.publicJwkSet(issuer.issuerId())
-
     if (tokenString.isNullOrEmpty()) {
         return null
     }
+
+    val issuer = url.toIssuerUrl()
+    val jwkSet = tokenProvider.publicJwkSet(issuer.issuerId())
 
     return try {
         SignedJWT.parse(tokenString).verifySignatureAndIssuer(Issuer(issuer.toString()), jwkSet)
