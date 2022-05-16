@@ -29,7 +29,7 @@ internal fun Route.Builder.introspect(tokenProvider: OAuth2TokenProvider) =
             throw OAuth2Exception(OAuth2Error.INVALID_CLIENT.setDescription(msg), msg)
         }
 
-        request.verifyBearerToken(tokenProvider)?.let {
+        request.verifyToken(tokenProvider)?.let {
             val claims = it.claims
             json(
                 IntrospectResponse(
@@ -38,9 +38,9 @@ internal fun Route.Builder.introspect(tokenProvider: OAuth2TokenProvider) =
                     claims["client_id"].toString(),
                     claims["username"].toString(),
                     claims["token_type"].toString(),
-                    claims["exp"].toString(),
-                    claims["iat"].toString(),
-                    claims["nbf"].toString(),
+                    claims["exp"] as? Long,
+                    claims["iat"] as? Long,
+                    claims["nbf"] as? Long,
                     claims["sub"].toString(),
                     claims["aud"].toString(),
                     claims["iss"].toString(),
@@ -50,18 +50,14 @@ internal fun Route.Builder.introspect(tokenProvider: OAuth2TokenProvider) =
         } ?: json(IntrospectResponse(false))
     }
 
-private fun OAuth2HttpRequest.verifyBearerToken(tokenProvider: OAuth2TokenProvider): JWTClaimsSet? {
-    val tokenString = this.getToken()
-    if (tokenString.isNullOrEmpty()) {
-        return null
-    }
-
+private fun OAuth2HttpRequest.verifyToken(tokenProvider: OAuth2TokenProvider): JWTClaimsSet? {
+    val tokenString = this.formParameters.get("token")
     val issuer = url.toIssuerUrl()
     val jwkSet = tokenProvider.publicJwkSet(issuer.issuerId())
-
     return try {
         SignedJWT.parse(tokenString).verifySignatureAndIssuer(Issuer(issuer.toString()), jwkSet)
     } catch (e: Exception) {
+        log.debug("token_introspection: failed signature validation")
         return null
     }
 }
@@ -80,14 +76,6 @@ private fun String.auth(method: String): String? {
         ?.last()
 }
 
-private fun OAuth2HttpRequest.getToken(): String? {
-    val tokenParams = this.formParameters
-    if (tokenParams.map.isEmpty()) {
-        return null
-    }
-    return tokenParams.get("token")
-}
-
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class IntrospectResponse(
     @JsonProperty("active")
@@ -101,11 +89,11 @@ data class IntrospectResponse(
     @JsonProperty("token_type")
     val tokenType: String? = null,
     @JsonProperty("exp")
-    val exp: String? = null,
+    val exp: Long? = null,
     @JsonProperty("iat")
-    val iat: String? = null,
+    val iat: Long? = null,
     @JsonProperty("nbf")
-    val nbf: String? = null,
+    val nbf: Long? = null,
     @JsonProperty("sub")
     val sub: String? = null,
     @JsonProperty("aud")

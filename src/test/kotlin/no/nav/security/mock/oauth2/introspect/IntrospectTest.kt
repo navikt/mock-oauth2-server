@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.assertions.asClue
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldContainAll
 import io.kotest.matchers.maps.shouldContainExactly
 import io.kotest.matchers.shouldBe
@@ -24,24 +25,25 @@ internal class IntrospectTest {
         val issuerUrl = "http://localhost/default"
         val tokenProvider = OAuth2TokenProvider()
         val claims = mapOf(
-            "active" to true,
             "iss" to issuerUrl,
             "client_id" to "yolo",
             "token_type" to "token",
             "sub" to "foo"
         )
-        val bearerToken = tokenProvider.jwt(claims)
-        val request = request("$issuerUrl$INTROSPECT", bearerToken.serialize())
+        val token = tokenProvider.jwt(claims)
+        println("token: " + token.jwtClaimsSet.toJSONObject())
+        val request = request("$issuerUrl$INTROSPECT", token.serialize())
 
         routes { introspect(tokenProvider) }.invoke(request).asClue {
-            println(it.parse<Map<String, Any>>())
             it.status shouldBe 200
-            it.parse<Map<String, Any>>() shouldContainAll claims
+            val response = it.parse<Map<String, Any>>()
+            response shouldContainAll claims
+            response shouldContain ("active" to true)
         }
     }
 
     @Test
-    fun `introspect should return active false when bearer token is missing`() {
+    fun `introspect should return active false when token is missing`() {
         val url = "http://localhost/default$INTROSPECT"
 
         routes {
@@ -53,7 +55,7 @@ internal class IntrospectTest {
     }
 
     @Test
-    fun `introspect should return active false when bearer token is invalid`() {
+    fun `introspect should return active false when token is invalid`() {
         val url = "http://localhost/default$INTROSPECT"
 
         routes {
@@ -81,7 +83,7 @@ internal class IntrospectTest {
 
     private inline fun <reified T> OAuth2HttpResponse.parse(): T = jacksonObjectMapper().readValue(checkNotNull(body))
 
-    private fun request(url: String, bearerToken: String?, auth: String = "Basic user=password"): OAuth2HttpRequest {
+    private fun request(url: String, token: String?, auth: String = "Basic user=password"): OAuth2HttpRequest {
         return OAuth2HttpRequest(
             Headers.headersOf(
                 "Authorization", auth,
@@ -90,7 +92,7 @@ internal class IntrospectTest {
             ),
             method = "POST",
             url.toHttpUrl(),
-            body = bearerToken?.let { "token=$it&token_type_hint=access_token" }
+            body = token?.let { "token=$it&token_type_hint=access_token" }
         )
     }
 }
