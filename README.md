@@ -89,6 +89,7 @@ A request to `http://localhost:8080/default/.well-known/openid-configuration` wi
    "token_endpoint":"http://localhost:8080/default/token",
    "userinfo_endpoint":"http://localhost:8080/default/userinfo",
    "jwks_uri":"http://localhost:8080/default/jwks",
+   "introspection_endpoint":"http://localhost:8080/default/introspect",
    "response_types_supported":[
       "query",
       "fragment",
