@@ -329,7 +329,7 @@ and return a token response containing a token with the following claims:
 Build to local docker daemon
 
 ```gradle
-./gradlew jibDockerBuild
+./gradlew -Djib.from.platforms=linux/amd64 jibDockerBuild # or alternatively -Djib.from.platforms=linux/arm64 for ARM64
 ```
 
 Run container
