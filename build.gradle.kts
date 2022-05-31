@@ -1,7 +1,7 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
-val assertjVersion = "3.22.0"
+val assertjVersion = "3.23.0"
 val kotlinLoggingVersion = "2.1.23"
 val logbackVersion = "1.2.11"
 val nimbusSdkVersion = "9.36"
