@@ -26,14 +26,10 @@ public class MockOAuth2ServerInitializer implements ApplicationContextInitialize
     }
 
     private MockOAuth2Server registerMockOAuth2Server(ConfigurableApplicationContext applicationContext) {
-        try {
-            var server = new MockOAuth2Server();
-            server.start();
-            ((GenericApplicationContext) applicationContext).registerBean(MockOAuth2Server.class, () -> server);
-            return server;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        var server = new MockOAuth2Server();
+        server.start();
+        ((GenericApplicationContext) applicationContext).registerBean(MockOAuth2Server.class, () -> server);
+        return server;
     }
 }
 
