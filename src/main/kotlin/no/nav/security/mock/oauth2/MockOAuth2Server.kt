@@ -57,7 +57,7 @@ open class MockOAuth2Server(
     fun start(port: Int = 0) = try {
         start(InetAddress.getByName("localhost"), port)
     } catch (ex: IOException) {
-        throw OAuth2Exception("start server", ex)
+        throw OAuth2Exception("unable to start server: ${ex.message}", ex)
     }
 
     fun start(inetAddress: InetAddress, port: Int) {
@@ -69,7 +69,7 @@ open class MockOAuth2Server(
         try {
             httpServer.stop()
         } catch (ex: IOException) {
-            throw OAuth2Exception("shutdown server", ex)
+            throw OAuth2Exception("unable to shutdown server: ${ex.message}", ex)
         }
     }
 
