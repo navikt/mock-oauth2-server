@@ -54,18 +54,23 @@ open class MockOAuth2Server(
     )
 
     @JvmOverloads
-    @Throws(IOException::class)
-    fun start(port: Int = 0) = start(InetAddress.getByName("localhost"), port)
+    fun start(port: Int = 0) = try {
+        start(InetAddress.getByName("localhost"), port)
+    } catch (ex: IOException) {
+        throw OAuth2Exception("start server", ex)
+    }
 
-    @Throws(IOException::class)
     fun start(inetAddress: InetAddress, port: Int) {
         log.debug("attempt to start server on port=$port")
         httpServer.start(inetAddress, port, router)
     }
 
-    @Throws(IOException::class)
     fun shutdown() {
-        httpServer.stop()
+        try {
+            httpServer.stop()
+        } catch (ex: IOException) {
+            throw OAuth2Exception("shutdown server", ex)
+        }
     }
 
     fun url(path: String): HttpUrl = httpServer.url(path)
