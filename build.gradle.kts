@@ -224,6 +224,11 @@ tasks.named("useLatestVersions", se.patrikerdes.UseLatestVersionsTask::class.jav
     )
 }
 
+// This task is added by Gradle when we use java.withJavadocJar()
+tasks.named<Jar>("javadocJar") {
+    from(tasks.named("dokkaJavadoc"))
+}
+
 buildscript {
     dependencies {
         configurations.classpath.get().exclude("xerces", "xercesImpl")
