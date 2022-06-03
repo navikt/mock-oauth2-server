@@ -53,6 +53,13 @@ open class MockOAuth2Server(
         defaultRequestHandler.authorizationServer
     )
 
+    /**
+     * Starts a mock-oauth2-server.
+     *
+     * @param port specified port or 0 for a random one.
+     *
+     * @exception OAuth2Exception Runtime error if unable to start server.
+     */
     @JvmOverloads
     fun start(port: Int = 0) = try {
         start(InetAddress.getByName("localhost"), port)
@@ -60,11 +67,24 @@ open class MockOAuth2Server(
         throw OAuth2Exception("unable to start server: ${ex.message}", ex)
     }
 
+    /**
+     * Starts a mock-oauth2-server.
+     *
+     * @param port specified port or 0 for a random one.
+     * @param inetAddress specify an ip address if other than localhost.
+     *
+     * @exception OAuth2Exception Runtime error if unable to start server.
+     */
     fun start(inetAddress: InetAddress, port: Int) {
         log.debug("attempt to start server on port=$port")
         httpServer.start(inetAddress, port, router)
     }
 
+    /**
+     * Shutdowns the running mock-oauth2-server
+     *
+     *  @exception OAuth2Exception Runtime error if unable to shut down server
+     */
     fun shutdown() {
         try {
             httpServer.stop()
@@ -73,6 +93,11 @@ open class MockOAuth2Server(
         }
     }
 
+    /**
+     * Get issuers server url.
+     *
+     *  @param path actual issuer you want to get the url for.
+     */
     fun url(path: String): HttpUrl = httpServer.url(path)
 
     @Deprecated("Use MockWebServer method/function instead", ReplaceWith("MockWebServer.enqueue()"))
