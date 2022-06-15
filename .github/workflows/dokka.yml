@@ -31,7 +31,6 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
           branch: master
-          folder: build/dokka/gfm
+          folder: build/dokka/html
           target-folder: docs
-          force: false
           commit-message: "doc: Add documentation for latest release: ${{ env.VERSION }}"
