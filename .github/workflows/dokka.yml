@@ -33,4 +33,5 @@ jobs:
           branch: master
           folder: build/dokka/gfm
           target-folder: docs
+          force: false
           commit-message: "doc: Add documentation for latest release: ${{ env.VERSION }}"
