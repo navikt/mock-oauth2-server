@@ -25,13 +25,12 @@ jobs:
         run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
 
       - name: Build Dokka
-        run: ./gradlew dokkaGfm -Pversion=${{ env.VERSION }}
+        run: ./gradlew dokkaHtm -Pversion=${{ env.VERSION }}
 
       - name: Publish documentation
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
-          branch: master
-          folder: build/dokka/gfm
+          branch: gh-pages
+          folder: build/dokka/html
           target-folder: docs
-          force: false
           commit-message: "doc: Add documentation for latest release: ${{ env.VERSION }}"

@@ -39,7 +39,9 @@ The motivation behind this library is to provide a setup such that application d
 * **Standalone support** - i.e. run as application in IDE, run inside your app, or as a Docker image (provided)
 * **OAuth2 Client Debugger** - e.g. support for triggering OIDC Auth Code Flow and receiving callback in debugger app, view token response from server (intended for standalone support)
 
+## API Documentation
 
+[mock-oauth2-server](https://navikt.github.io/mock-oauth2-server/)
 
 ## 📦 Install
 
