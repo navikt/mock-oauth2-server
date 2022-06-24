@@ -64,7 +64,8 @@ data class OAuth2TokenResponse(
 
 fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
-        HttpHeaderNames.CONTENT_TYPE.toString(), "application/json;charset=UTF-8",
+        HttpHeaderNames.CONTENT_TYPE.toString(),
+        "application/json;charset=UTF-8"
     ),
     status = 200,
     body = when (anyObject) {
@@ -78,7 +79,8 @@ fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
 
 fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
-        HttpHeaderNames.CONTENT_TYPE.toString(), "text/html;charset=UTF-8",
+        HttpHeaderNames.CONTENT_TYPE.toString(),
+        "text/html;charset=UTF-8"
     ),
     status = 200,
     body = content
@@ -115,7 +117,8 @@ fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
     val responseCode = error.httpStatusCode.takeUnless { it == 302 } ?: 400
     return OAuth2HttpResponse(
         headers = Headers.headersOf(
-            HttpHeaderNames.CONTENT_TYPE.toString(), "application/json;charset=UTF-8",
+            HttpHeaderNames.CONTENT_TYPE.toString(),
+            "application/json;charset=UTF-8"
         ),
         status = responseCode,
         body = objectMapper

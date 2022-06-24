@@ -112,7 +112,7 @@ data class OAuth2HttpRequest(
             endSessionEndpoint = this.proxyAwareUrl().toEndSessionEndpointUrl().toString(),
             introspectionEndpoint = this.proxyAwareUrl().toIntrospectUrl().toString(),
             jwksUri = this.proxyAwareUrl().toJwksUrl().toString(),
-            userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString(),
+            userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString()
         )
 
     internal fun proxyAwareUrl(): HttpUrl {

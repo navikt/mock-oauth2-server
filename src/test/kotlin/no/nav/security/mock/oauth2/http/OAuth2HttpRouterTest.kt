@@ -60,7 +60,6 @@ internal class OAuth2HttpRouterTest {
 
     @Test
     fun `request and response interceptors should be applied on every route`() {
-
         val routes = routes {
             interceptors(
                 RequestInterceptor {

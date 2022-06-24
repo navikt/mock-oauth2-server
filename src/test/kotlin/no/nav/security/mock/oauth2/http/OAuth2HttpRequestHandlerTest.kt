@@ -63,7 +63,7 @@ internal class OAuth2HttpRequestHandlerTest {
                 body = "authorize_url=http://url",
                 expectedResponse = OAuth2HttpResponse(status = 302)
             ),
-            request(path = "/favicon.ico", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+            request(path = "/favicon.ico", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200))
         )
 
         private fun request(path: String, method: String, headers: Headers = Headers.headersOf(), body: String? = null, expectedResponse: OAuth2HttpResponse) =
@@ -81,7 +81,7 @@ internal class OAuth2HttpRequestHandlerTest {
             val claims = mapOf(
                 "iss" to "http://localhost/$issuerId",
                 "sub" to "foo",
-                "extra" to "bar",
+                "extra" to "bar"
             )
             val bearerToken = tokenProvider.jwt(claims = claims, issuerId = issuerId).serialize()
             return Headers.headersOf("Authorization", "Bearer $bearerToken")

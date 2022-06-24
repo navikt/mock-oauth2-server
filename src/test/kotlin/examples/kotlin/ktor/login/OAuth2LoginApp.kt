@@ -56,7 +56,6 @@ fun main() {
 
 @OptIn(KtorExperimentalLocationsAPI::class)
 fun Application.module(authConfig: AuthConfig) {
-
     val idProviders = authConfig.providers.map { it.settings }.associateBy { it.name }
 
     install(Locations)

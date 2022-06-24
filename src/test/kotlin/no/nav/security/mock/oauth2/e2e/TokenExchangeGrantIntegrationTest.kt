@@ -46,7 +46,7 @@ class TokenExchangeGrantIntegrationTest {
                     subject = initialSubject,
                     claims = mapOf(
                         "claim1" to "value1",
-                        "claim2" to "value2",
+                        "claim2" to "value2"
                     )
                 )
             )

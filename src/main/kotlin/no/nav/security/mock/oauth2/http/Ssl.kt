@@ -61,7 +61,7 @@ class SslKeystore @JvmOverloads constructor(
         keyPassword: String,
         keystoreFile: File,
         keystoreType: KeyStoreType = KeyStoreType.PKCS12,
-        keystorePassword: String = "",
+        keystorePassword: String = ""
     ) : this(keyPassword, keyStore(keystoreFile, keystoreType, keystorePassword))
 
     enum class KeyStoreType {
@@ -86,7 +86,7 @@ class SslKeystore @JvmOverloads constructor(
         private fun keyStore(
             keystoreFile: File,
             keystoreType: KeyStoreType = KeyStoreType.PKCS12,
-            keystorePassword: String = "",
+            keystorePassword: String = ""
         ) = KeyStore.getInstance(keystoreType.name).apply {
             keystoreFile.inputStream().use {
                 load(it, keystorePassword.toCharArray())

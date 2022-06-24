@@ -49,7 +49,7 @@ class InteractiveLoginIntegrationTest {
                     claims = mapOf(
                         "claim1" to "claim1value"
                     )
-                ),
+                )
 
             ),
             Arguments.of(

@@ -108,9 +108,9 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         val authorizationCodeHandler = grantHandlers[AUTHORIZATION_CODE] as AuthorizationCodeHandler
         get(AUTHORIZATION) {
             val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
-            if (config.interactiveLogin || authRequest.isPrompt())
+            if (config.interactiveLogin || authRequest.isPrompt()) {
                 html(loginRequestHandler.loginHtml(it))
-            else {
+            } else {
                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
             }
         }

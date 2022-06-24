@@ -82,7 +82,6 @@ internal class OAuth2TokenProviderRSATest {
     @ParameterizedTest
     @ValueSource(strings = ["issuer1", "issuer2"])
     fun `ensure idToken is signed with same key as returned from public jwks`(issuerId: String) {
-
         val issuer = Issuer("http://localhost/$issuerId")
         idToken(issuer.toString()).verifySignatureAndIssuer(issuer, tokenProvider.publicJwkSet(issuerId))
 

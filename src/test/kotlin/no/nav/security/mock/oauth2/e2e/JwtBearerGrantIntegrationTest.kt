@@ -36,7 +36,7 @@ class JwtBearerGrantIntegrationTest {
                     subject = initialSubject,
                     claims = mapOf(
                         "claim1" to "value1",
-                        "claim2" to "value2",
+                        "claim2" to "value2"
                     )
                 )
             )
@@ -78,7 +78,7 @@ class JwtBearerGrantIntegrationTest {
                         "claim1" to "value1",
                         "claim2" to "value2",
                         "scope" to "ascope",
-                        "resource" to "aud1",
+                        "resource" to "aud1"
                     )
                 )
             )
