@@ -86,9 +86,12 @@ internal class IntrospectTest {
     private fun request(url: String, token: String?, auth: String = "Basic user=password"): OAuth2HttpRequest {
         return OAuth2HttpRequest(
             Headers.headersOf(
-                "Authorization", auth,
-                "Accept", "application/json",
-                "Content-Type", "application/x-www-form-urlencoded"
+                "Authorization",
+                auth,
+                "Accept",
+                "application/json",
+                "Content-Type",
+                "application/x-www-form-urlencoded"
             ),
             method = "POST",
             url.toHttpUrl(),

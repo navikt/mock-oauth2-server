@@ -27,7 +27,7 @@ class UserInfoIntegrationTest {
                 it.parse<Map<String, Any>>() shouldContainAll mapOf(
                     "sub" to token.claims["sub"],
                     "iss" to token.claims["iss"],
-                    "extra" to token.claims["extra"],
+                    "extra" to token.claims["extra"]
                 )
             }
         }

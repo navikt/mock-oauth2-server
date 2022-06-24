@@ -86,7 +86,7 @@ internal interface PathRoute : Route {
 internal class PathRouter(
     private val routes: MutableList<Route>,
     private val interceptors: MutableList<Interceptor>,
-    private val exceptionHandler: ExceptionHandler,
+    private val exceptionHandler: ExceptionHandler
 ) : PathRoute {
 
     override fun matchPath(request: OAuth2HttpRequest): Boolean = routes.any { it.matchPath(request) }
@@ -105,7 +105,6 @@ internal class PathRouter(
 
     private fun RequestHandler.invokeWith(request: OAuth2HttpRequest, interceptors: MutableList<Interceptor>): OAuth2HttpResponse {
         return if (interceptors.size > 0) {
-
             val filteredRequest = interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
                 interceptor.intercept(next)
             }

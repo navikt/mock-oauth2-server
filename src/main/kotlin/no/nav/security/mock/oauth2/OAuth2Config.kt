@@ -55,7 +55,8 @@ data class OAuth2Config @JvmOverloads constructor(
 
             return OAuth2TokenProvider(
                 KeyProvider(
-                    jwks, config.keyProvider?.algorithm ?: JWSAlgorithm.RS256.name
+                    jwks,
+                    config.keyProvider?.algorithm ?: JWSAlgorithm.RS256.name
                 )
             )
         }

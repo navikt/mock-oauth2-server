@@ -31,7 +31,7 @@ class PasswordGrantIntegrationTest {
                     "grant_type" to GrantType.PASSWORD.value,
                     "scope" to "scope1",
                     "username" to "foo",
-                    "password" to "bar",
+                    "password" to "bar"
                 )
             ).toTokenResponse()
 

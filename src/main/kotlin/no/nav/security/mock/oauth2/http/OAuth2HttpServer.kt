@@ -178,7 +178,7 @@ class NettyWrapper @JvmOverloads constructor(
         private fun OAuth2HttpResponse.asNettyResponse(): Pair<DefaultHttpResponse, ChunkedStream> =
             DefaultHttpResponse(
                 HttpVersion.HTTP_1_1,
-                HttpResponseStatus(this.status, ""),
+                HttpResponseStatus(this.status, "")
             ).apply {
                 this@asNettyResponse.headers.forEach { (key, values) -> headers().set(key, values) }
             } to ChunkedStream(this.body?.byteInputStream() ?: "".byteInputStream())

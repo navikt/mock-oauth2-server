@@ -101,5 +101,5 @@ data class IntrospectResponse(
     @JsonProperty("iss")
     val iss: String? = null,
     @JsonProperty("jti")
-    val jti: String? = null,
+    val jti: String? = null
 )
