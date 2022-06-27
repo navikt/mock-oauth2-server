@@ -13,7 +13,7 @@ val kotlinVersion = "1.7.0"
 val freemarkerVersion = "2.3.31"
 val kotestVersion = "5.3.1"
 val bouncyCastleVersion = "1.70"
-val springBootVersion = "2.7.0"
+val springBootVersion = "2.7.1"
 val reactorTestVersion = "3.4.19"
 val ktorVersion = "2.0.2"
 
@@ -25,12 +25,12 @@ plugins {
     kotlin("jvm") version "1.7.0"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.42.0"
-    id("org.jmailen.kotlinter") version "3.10.0"
+    id("org.jmailen.kotlinter") version "3.11.0"
     id("com.google.cloud.tools.jib") version "3.2.1"
     id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("net.researchgate.release") version "2.8.1"
+    id("net.researchgate.release") version "3.0.0"
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
-    id("org.jetbrains.dokka") version "1.6.21"
+    id("org.jetbrains.dokka") version "1.7.0"
     `java-library`
     `maven-publish`
     signing

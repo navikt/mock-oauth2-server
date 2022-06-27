@@ -28,8 +28,10 @@ class CorsHeadersIntegrationTest {
             client.options(
                 this.baseUrl(),
                 Headers.headersOf(
-                    "origin", origin,
-                    ACCESS_CONTROL_REQUEST_HEADERS, "X-MY-HEADER"
+                    "origin",
+                    origin,
+                    ACCESS_CONTROL_REQUEST_HEADERS,
+                    "X-MY-HEADER"
                 )
             ).asClue {
                 it.code shouldBe 204

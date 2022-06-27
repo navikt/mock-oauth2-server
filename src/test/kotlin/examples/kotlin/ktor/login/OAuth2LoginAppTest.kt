@@ -75,12 +75,12 @@ internal class OAuth2LoginAppTest {
             AuthConfig.IdProvider(
                 name = "google",
                 authorizationEndpoint = mockOAuth2Server.authorizationEndpointUrl("google").toString(),
-                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("google").toString(),
+                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("google").toString()
             ),
             AuthConfig.IdProvider(
                 name = "github",
                 authorizationEndpoint = mockOAuth2Server.authorizationEndpointUrl("github").toString(),
-                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("github").toString(),
+                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("github").toString()
             )
         )
     )

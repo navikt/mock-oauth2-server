@@ -41,7 +41,7 @@ internal class OAuth2TokenCallbackTest {
                     match = "*",
                     claims = mapOf(
                         "sub" to "defaultSub",
-                        "aud" to listOf("defaultAud"),
+                        "aud" to listOf("defaultAud")
                     )
                 )
             ),

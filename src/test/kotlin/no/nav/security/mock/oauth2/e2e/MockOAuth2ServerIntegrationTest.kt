@@ -196,7 +196,6 @@ class MockOAuth2ServerIntegrationTest {
                 "scope" to "scope1"
             )
         ).toTokenResponse().accessToken.asClue {
-
             it.shouldNotBeNull()
             it.claims shouldContainAll mapOf(
                 "sub" to "subByScope",

@@ -115,8 +115,10 @@ fun verifyWith(
 fun nimbusTokenRequest(clientId: String, vararg formParams: Pair<String, String>): TokenRequest =
     OAuth2HttpRequest(
         Headers.headersOf(
-            "Content-Type", "application/x-www-form-urlencoded",
-            "Authorization", "Basic ${Base64.getEncoder().encodeToString("$clientId:clientSecret".toByteArray())}"
+            "Content-Type",
+            "application/x-www-form-urlencoded",
+            "Authorization",
+            "Basic ${Base64.getEncoder().encodeToString("$clientId:clientSecret".toByteArray())}"
         ),
         "POST",
         "http://localhost/token".toHttpUrl(),

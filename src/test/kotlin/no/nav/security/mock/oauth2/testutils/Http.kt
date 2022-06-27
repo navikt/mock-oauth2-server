@@ -97,7 +97,7 @@ fun OkHttpClient.get(
 
 fun OkHttpClient.options(
     url: HttpUrl,
-    headers: Headers = Headers.headersOf(),
+    headers: Headers = Headers.headersOf()
 ): Response =
     this.newCall(
         Request.Builder().options(

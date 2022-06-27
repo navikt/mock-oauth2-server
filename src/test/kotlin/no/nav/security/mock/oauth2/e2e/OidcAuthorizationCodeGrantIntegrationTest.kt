@@ -30,7 +30,6 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     @Test
     fun `authentication request should return 302 with redirectUri as location and query params state and code`() {
-
         client.get(
             server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = "http://mycallback", state = "mystate")
         ).asClue { response ->

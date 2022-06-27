@@ -27,7 +27,7 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
     // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
     private val audience: List<String>? = null,
     private val claims: Map<String, Any> = emptyMap(),
-    private val expiry: Long = 3600,
+    private val expiry: Long = 3600
 ) : OAuth2TokenCallback {
 
     override fun issuerId(): String = issuerId
@@ -69,7 +69,7 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
 data class RequestMappingTokenCallback(
     val issuerId: String,
     val requestMappings: Set<RequestMapping>,
-    val tokenExpiry: Long = Duration.ofHours(1).toSeconds(),
+    val tokenExpiry: Long = Duration.ofHours(1).toSeconds()
 ) : OAuth2TokenCallback {
     override fun issuerId(): String = issuerId
 
