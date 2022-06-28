@@ -25,7 +25,7 @@ plugins {
     kotlin("jvm") version "1.7.0"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.42.0"
-    id("org.jmailen.kotlinter") version "3.11.0"
+    id("org.jmailen.kotlinter") version "3.11.1"
     id("com.google.cloud.tools.jib") version "3.2.1"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("net.researchgate.release") version "3.0.0"
