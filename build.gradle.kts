@@ -9,12 +9,12 @@ val mockWebServerVersion = "4.10.0"
 val jacksonVersion = "2.13.3"
 val nettyVersion = "4.1.78.Final"
 val junitJupiterVersion = "5.8.2"
-val kotlinVersion = "1.7.0"
+val kotlinVersion = "1.7.10"
 val freemarkerVersion = "2.3.31"
 val kotestVersion = "5.3.2"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "2.7.1"
-val reactorTestVersion = "3.4.19"
+val reactorTestVersion = "3.4.21"
 val ktorVersion = "2.0.3"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
@@ -41,8 +41,8 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     withJavadocJar()
     withSourcesJar()
 }
@@ -187,7 +187,7 @@ jib {
                 os = "linux"
             }
         }
-        image = "gcr.io/distroless/java11-debian11"
+        image = "gcr.io/distroless/java17-debian11"
     }
     container {
         ports = listOf("8080")
@@ -254,7 +254,7 @@ tasks {
 
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
-            jvmTarget = "11"
+            jvmTarget = "17"
         }
     }
 
