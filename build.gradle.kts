@@ -14,7 +14,7 @@ val freemarkerVersion = "2.3.31"
 val kotestVersion = "5.3.2"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "2.7.1"
-val reactorTestVersion = "3.4.19"
+val reactorTestVersion = "3.4.21"
 val ktorVersion = "2.0.3"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
@@ -22,7 +22,7 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.7.0"
+    kotlin("jvm") version "1.7.10"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.42.0"
     id("org.jmailen.kotlinter") version "3.11.1"
@@ -41,8 +41,8 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     withJavadocJar()
     withSourcesJar()
 }
@@ -187,7 +187,7 @@ jib {
                 os = "linux"
             }
         }
-        image = "gcr.io/distroless/java11-debian11"
+        image = "gcr.io/distroless/java17-debian11"
     }
     container {
         ports = listOf("8080")
@@ -254,7 +254,7 @@ tasks {
 
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
-            jvmTarget = "11"
+            jvmTarget = "17"
         }
     }
 
