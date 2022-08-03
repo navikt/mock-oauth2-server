@@ -210,6 +210,8 @@ The standalone server will default to port `8080` and can be started by invoking
 
 On Windows, it's easier to run the server in docker while specifying the host as localhost, e.g. `docker run -p 8080:8080 -h localhost $IMAGE_NAME`
 
+> **Note**
+> If you want to check if the server is up and running you can visit `/isalive` and see if you get a 200 in return.
 
 #### Configuration
 
