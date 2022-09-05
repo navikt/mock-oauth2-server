@@ -37,7 +37,6 @@ plugins {
 }
 
 application {
-    applicationDefaultJvmArgs = mutableListOf("--add-opens", "java.base/jdk.internal.loader=ALL-UNNAMED")
     mainClassName = mainClassKt
 }
 
