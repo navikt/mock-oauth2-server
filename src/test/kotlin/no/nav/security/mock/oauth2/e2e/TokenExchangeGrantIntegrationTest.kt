@@ -121,38 +121,6 @@ class TokenExchangeGrantIntegrationTest {
         }
     }
 
-    @AnnotationSpec.Ignore
-    fun `token request with client_assertion containing unequal iss and sub should fail`() {
-        withMockOAuth2Server {
-            val tokenEndpointUrl = this.tokenEndpointUrl("tokenx")
-
-            val clientAssertion = JWTClaimsSet.Builder()
-                .issuer("someissuer")
-                .subject("anothersubject")
-                .audience(tokenEndpointUrl.toString())
-                .issueTime(Date.from(Instant.now()))
-                .expirationTime(Date.from(Instant.now().plusSeconds(120)))
-                .notBeforeTime(Date.from(Instant.now()))
-                .jwtID(UUID.randomUUID().toString())
-                .build()
-                .sign(generateRsaKey())
-                .serialize()
-
-            val response: Response = client.tokenRequest(
-                url = tokenEndpointUrl,
-                parameters = mapOf(
-                    "grant_type" to TOKEN_EXCHANGE.value,
-                    "client_assertion_type" to ClientAssertionType.JWT_BEARER,
-                    "client_assertion" to clientAssertion,
-                    "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
-                    "subject_token" to "na",
-                    "audience" to "na"
-                )
-            )
-            response.code shouldBe 400
-        }
-    }
-
     @Test
     fun `token request with client_assertion containing invalid aud should fail`() {
         withMockOAuth2Server {
