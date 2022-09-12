@@ -28,7 +28,7 @@ plugins {
     id("org.jmailen.kotlinter") version "3.11.1"
     id("com.google.cloud.tools.jib") version "3.3.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("net.researchgate.release") version "3.0.1"
+    id("net.researchgate.release") version "3.0.2"
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
     id("org.jetbrains.dokka") version "1.7.10"
     `java-library`
