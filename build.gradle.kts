@@ -3,7 +3,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
 val assertjVersion = "3.23.1"
 val kotlinLoggingVersion = "2.1.23"
-val logbackVersion = "1.2.11"
+val logbackVersion = "1.4.1"
 val nimbusSdkVersion = "9.43.1"
 val mockWebServerVersion = "4.10.0"
 val jacksonVersion = "2.13.4"
@@ -25,7 +25,7 @@ plugins {
     kotlin("jvm") version "1.7.10"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.42.0"
-    id("org.jmailen.kotlinter") version "3.11.1"
+    id("org.jmailen.kotlinter") version "3.12.0"
     id("com.google.cloud.tools.jib") version "3.3.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("net.researchgate.release") version "3.0.2"
