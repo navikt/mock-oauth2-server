@@ -147,7 +147,7 @@ data class OAuth2HttpRequest(
                     .port(hostUri.port)
                     .encodedPath(originalUrl.encodedPath)
                     .query(originalUrl.query)
-                    .build().also { println(it) }
+                    .build()
             } ?: originalUrl
 
         }
