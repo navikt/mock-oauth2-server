@@ -139,7 +139,17 @@ data class OAuth2HttpRequest(
                 .encodedPath(originalUrl.encodedPath)
                 .query(originalUrl.query).build()
         } else {
-            originalUrl
+            hostheader?.let {
+                val hostUri = URI(originalUrl.scheme, hostheader, null, null, null).parseServerAuthority()
+                HttpUrl.Builder()
+                    .scheme(hostUri.scheme)
+                    .host(hostUri.host)
+                    .port(hostUri.port)
+                    .encodedPath(originalUrl.encodedPath)
+                    .query(originalUrl.query)
+                    .build()
+            } ?: originalUrl
+
         }
     }
 
