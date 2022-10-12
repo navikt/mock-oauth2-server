@@ -27,6 +27,10 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         return JWKSet(keyProvider.signingKey(issuerId)).toPublicJWKSet()
     }
 
+    fun getAlgorithm(): JWSAlgorithm {
+        return keyProvider.algorithm()
+    }
+
     fun idToken(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
