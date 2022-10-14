@@ -149,7 +149,6 @@ data class OAuth2HttpRequest(
                     .query(originalUrl.query)
                     .build()
             } ?: originalUrl
-
         }
     }
 
