@@ -194,7 +194,7 @@ Have a look at some examples in both Java and Kotlin in the src/test directory:
 
 ##### Server URLs
 
-You can retrieve URLs from the server with the correct port and issuerId etc by invoking one of the ` fun *Url(issuerId: String): HttpUrl` functions/methods: 
+You can retrieve URLs from the server with the correct port and issuerId etc. by invoking one of the ` fun *Url(issuerId: String): HttpUrl` functions/methods: 
 
 ```kotlin
 val server = MockOAuth2Server()
@@ -293,7 +293,7 @@ add this to your config with preferred `JWS algorithm`:
 
 *From the JSON example above:* 
 
-A token request to `http://localhost:8080/issuer1/token` with parameter `scope` equal to `scope1` will match the first tokencallback:
+A token request to `http://localhost:8080/issuer1/token` with parameter `scope` equal to `scope1` will match the first `tokenCallback`:
 
 ```json
 {
@@ -448,7 +448,7 @@ This project is currently maintained by the organisation [@navikt](https://githu
 
 If you need to raise an issue or question about this library, please create an issue here and tag it with the appropriate label.
 
-For contact requests within the [@navikt](https://github.com/navikt) org, you can use the slack channel #pig_sikkerhet
+For contact requests within the [@navikt](https://github.com/navikt) org, you can use the Slack channel #pig_sikkerhet
 
 If you need to contact anyone directly, please see contributors.
 
