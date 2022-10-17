@@ -34,7 +34,6 @@ internal class IntrospectTest {
             "sub" to "foo"
         )
         val token = tokenProvider.jwt(claims)
-        println("token: " + token.jwtClaimsSet.toJSONObject())
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
 
         routes { introspect(tokenProvider) }.invoke(request).asClue {
@@ -55,7 +54,6 @@ internal class IntrospectTest {
             "sub" to "foo"
         )
         val token = rs384TokenProvider.jwt(claims)
-        println("token: " + token.jwtClaimsSet.toJSONObject())
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
 
         routes { introspect(rs384TokenProvider) }.invoke(request).asClue {
@@ -100,7 +98,6 @@ internal class IntrospectTest {
             "sub" to "foo"
         )
         val token = rs384TokenProvider.jwt(claims)
-        println("token: " + token.jwtClaimsSet.toJSONObject())
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
 
         routes {
