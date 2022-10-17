@@ -45,6 +45,7 @@ open class MockOAuth2Server(
     vararg additionalRoutes: Route
 ) {
     constructor(vararg additionalRoutes: Route) : this(config = OAuth2Config(), additionalRoutes = additionalRoutes)
+    constructor(config: OAuth2Config) : this(config = config, additionalRoutes = emptyArray())
 
     private val httpServer = config.httpServer
     private val defaultRequestHandler: OAuth2HttpRequestHandler = OAuth2HttpRequestHandler(config)
@@ -304,9 +305,10 @@ internal fun Map<String, Any>.toJwtClaimsSet(): JWTClaimsSet =
         }.build()
 
 fun <R> withMockOAuth2Server(
+    config: OAuth2Config = OAuth2Config(),
     test: MockOAuth2Server.() -> R
 ): R {
-    val server = MockOAuth2Server()
+    val server = MockOAuth2Server(config)
     server.start()
     try {
         return server.test()

@@ -86,7 +86,9 @@ data class KeyGenerator(
                             }
                         }
                     ).keyGenerator
-                } else null
+                } else {
+                    null
+                }
             }.singleOrNull() ?: throw OAuth2Exception("Unsupported algorithm: $algorithm")
         }
 

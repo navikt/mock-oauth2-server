@@ -54,8 +54,9 @@ private fun OAuth2HttpRequest.verifyToken(tokenProvider: OAuth2TokenProvider): J
     val tokenString = this.formParameters.get("token")
     val issuer = url.toIssuerUrl()
     val jwkSet = tokenProvider.publicJwkSet(issuer.issuerId())
+    val algorithm = tokenProvider.getAlgorithm()
     return try {
-        SignedJWT.parse(tokenString).verifySignatureAndIssuer(Issuer(issuer.toString()), jwkSet)
+        SignedJWT.parse(tokenString).verifySignatureAndIssuer(Issuer(issuer.toString()), jwkSet, algorithm)
     } catch (e: Exception) {
         log.debug("token_introspection: failed signature validation")
         return null

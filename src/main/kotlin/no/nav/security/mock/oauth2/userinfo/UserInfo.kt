@@ -30,8 +30,9 @@ private fun OAuth2HttpRequest.verifyBearerToken(tokenProvider: OAuth2TokenProvid
     val tokenString = this.headers.bearerToken()
     val issuer = url.toIssuerUrl()
     val jwkSet = tokenProvider.publicJwkSet(issuer.issuerId())
+    val algorithm = tokenProvider.getAlgorithm()
     return try {
-        SignedJWT.parse(tokenString).verifySignatureAndIssuer(Issuer(issuer.toString()), jwkSet)
+        SignedJWT.parse(tokenString).verifySignatureAndIssuer(Issuer(issuer.toString()), jwkSet, algorithm)
     } catch (e: Exception) {
         throw invalidToken(e.message ?: "could not verify bearer token")
     }
