@@ -93,6 +93,7 @@ fun Application.module(authConfig: AuthConfig) {
 }
 
 @Location("/login/{type?}")
+@OptIn(KtorExperimentalLocationsAPI::class)
 class Login(val type: String = "")
 
 class AuthConfig(

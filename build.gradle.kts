@@ -78,6 +78,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-client:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
+    testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
     testImplementation("io.ktor:ktor-server-sessions:$ktorVersion")

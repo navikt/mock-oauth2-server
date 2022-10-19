@@ -103,7 +103,7 @@ open class MockOAuth2Server(
     fun url(path: String): HttpUrl = httpServer.url(path)
 
     @Deprecated("Use MockWebServer method/function instead", ReplaceWith("MockWebServer.enqueue()"))
-    fun enqueueResponse(response: MockResponse) {
+    fun enqueueResponse(@Suppress("UNUSED_PARAMETER") response: MockResponse) {
         throw UnsupportedOperationException("cannot enqueue MockResponse, please use the MockWebServer directly with QueueDispatcher")
     }
 
