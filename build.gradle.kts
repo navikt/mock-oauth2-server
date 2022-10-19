@@ -41,8 +41,8 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
     withJavadocJar()
     withSourcesJar()
 }
@@ -73,7 +73,7 @@ dependencies {
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion") // for kotest core jvm assertions
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
-    //example use with different frameworks
+    // example use with different frameworks
     testImplementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-client:$springBootVersion")
@@ -188,7 +188,7 @@ jib {
                 os = "linux"
             }
         }
-        image = "gcr.io/distroless/java17-debian11"
+        image = "gcr.io/distroless/java11-debian11"
     }
     container {
         ports = listOf("8080")
@@ -255,7 +255,7 @@ tasks {
 
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
-            jvmTarget = "17"
+            jvmTarget = JavaVersion.VERSION_11.toString()
         }
     }
 
@@ -274,6 +274,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "7.5.1"
+        gradleVersion = "7.4.2"
     }
 }
