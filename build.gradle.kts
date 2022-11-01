@@ -51,7 +51,6 @@ apply(plugin = "org.jmailen.kotlinter")
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 dependencies {
