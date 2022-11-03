@@ -2,7 +2,7 @@ import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
 val assertjVersion = "3.23.1"
-val kotlinLoggingVersion = "3.0.3"
+val kotlinLoggingVersion = "3.0.4"
 val logbackVersion = "1.2.11"
 val nimbusSdkVersion = "10.1"
 val mockWebServerVersion = "4.10.0"
