@@ -144,7 +144,11 @@ data class OAuth2HttpRequest(
                 HttpUrl.Builder()
                     .scheme(hostUri.scheme)
                     .host(hostUri.host)
-                    .port(hostUri.port)
+                    .apply {
+                        if (hostUri.port != -1) {
+                            this.port(hostUri.port)
+                        }
+                    }
                     .encodedPath(originalUrl.encodedPath)
                     .query(originalUrl.query)
                     .build()

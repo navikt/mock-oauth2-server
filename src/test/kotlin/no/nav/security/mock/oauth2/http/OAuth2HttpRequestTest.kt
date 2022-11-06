@@ -109,4 +109,27 @@ internal class OAuth2HttpRequestTest {
         req1.toWellKnown().tokenEndpoint shouldBe "http://localhost:8080/mypath/token"
         req1.toWellKnown().jwksUri shouldBe "http://localhost:8080/mypath/jwks"
     }
+
+    @Test
+    fun `proxyAwareUrl should return the requested host header`() {
+        val req = OAuth2HttpRequest(
+            headers = Headers.headersOf(
+                "host",
+                "oauth2",
+            ),
+            method = "GET",
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+        )
+        req.proxyAwareUrl().toString() shouldBe "http://oauth2/mypath?query=1"
+
+        val req2 = OAuth2HttpRequest(
+            headers = Headers.headersOf(
+                "host",
+                "oauth2:8080",
+            ),
+            method = "GET",
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+        )
+        req2.proxyAwareUrl().toString() shouldBe "http://oauth2:8080/mypath?query=1"
+    }
 }
