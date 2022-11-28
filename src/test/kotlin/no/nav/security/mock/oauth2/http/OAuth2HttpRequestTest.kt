@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.http
 
 import io.kotest.extensions.system.withEnvironment
 import io.kotest.matchers.shouldBe
+import no.nav.security.mock.oauth2.StandaloneConfig
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
@@ -79,7 +80,7 @@ internal class OAuth2HttpRequestTest {
             method = "GET",
             originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
         )
-        req6.proxyAwareUrl().toString() shouldBe "http://oauth2/mypath?query=1"
+        req6.proxyAwareUrl().toString() shouldBe "http://oauth2:8080/mypath?query=1"
 
         val req7 = OAuth2HttpRequest(
             headers = Headers.headersOf(
@@ -90,6 +91,16 @@ internal class OAuth2HttpRequestTest {
             originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
         )
         req7.proxyAwareUrl().toString() shouldBe "http://oauth2:8080/mypath?query=1"
+
+        val req8 = OAuth2HttpRequest(
+            headers = Headers.headersOf(
+                "host",
+                "oauth2",
+            ),
+            method = "GET",
+            originalUrl = "https://somehost/mypath?query=1".toHttpUrl()
+        )
+        req8.proxyAwareUrl().toString() shouldBe "https://oauth2/mypath?query=1"
     }
 
     @Test
@@ -133,7 +144,7 @@ internal class OAuth2HttpRequestTest {
 
     @Test
     fun `wellKnown localhost should with 'WELL_KNOWN_METADATA' return specified metadata`() {
-        withEnvironment(WELL_KNOWN_METADATA to "yolo") {
+        withEnvironment(StandaloneConfig.SERVER_HOSTNAME to "yolo") {
             val req1 = OAuth2HttpRequest(
                 headers = Headers.headersOf(),
                 method = "GET",
@@ -150,20 +161,75 @@ internal class OAuth2HttpRequestTest {
     }
 
     @Test
-    fun `wellKnown https should with 'WELL_KNOWN_METADATA' return specified metadata`() {
-        withEnvironment(WELL_KNOWN_METADATA to "yolo") {
-            val req1 = OAuth2HttpRequest(
+    fun `wellKnown should with 'SERVER_HOSTNAME' set return specified metadata url -`() {
+        withEnvironment(StandaloneConfig.SERVER_HOSTNAME to "yolo") {
+            val req = OAuth2HttpRequest(
                 headers = Headers.headersOf(),
                 method = "GET",
                 originalUrl = "https://some-host/mypath?query=1".toHttpUrl()
             )
 
-            req1.toWellKnown().issuer shouldBe "https://yolo/mypath"
-            req1.toWellKnown().userInfoEndpoint shouldBe "https://yolo/mypath/userinfo"
-            req1.toWellKnown().authorizationEndpoint shouldBe "https://yolo/mypath/authorize"
-            req1.toWellKnown().endSessionEndpoint shouldBe "https://yolo/mypath/endsession"
-            req1.toWellKnown().tokenEndpoint shouldBe "https://yolo/mypath/token"
-            req1.toWellKnown().jwksUri shouldBe "https://yolo/mypath/jwks"
+            req.toWellKnown().issuer shouldBe "https://yolo:8080/mypath"
+            req.toWellKnown().userInfoEndpoint shouldBe "https://yolo:8080/mypath/userinfo"
+            req.toWellKnown().authorizationEndpoint shouldBe "https://yolo:8080/mypath/authorize"
+            req.toWellKnown().endSessionEndpoint shouldBe "https://yolo:8080/mypath/endsession"
+            req.toWellKnown().tokenEndpoint shouldBe "https://yolo:8080/mypath/token"
+            req.toWellKnown().jwksUri shouldBe "https://yolo:8080/mypath/jwks"
+        }
+
+        withEnvironment(
+            mapOf(
+                StandaloneConfig.SERVER_HOSTNAME to "yolo",
+                StandaloneConfig.PORT to "771"
+            )
+        ) {
+            val req = OAuth2HttpRequest(
+                headers = Headers.headersOf(),
+                method = "GET",
+                originalUrl = "https://some-host/mypath?query=1".toHttpUrl()
+            )
+
+            req.toWellKnown().issuer shouldBe "https://yolo:771/mypath"
+            req.toWellKnown().userInfoEndpoint shouldBe "https://yolo:771/mypath/userinfo"
+            req.toWellKnown().authorizationEndpoint shouldBe "https://yolo:771/mypath/authorize"
+            req.toWellKnown().endSessionEndpoint shouldBe "https://yolo:771/mypath/endsession"
+            req.toWellKnown().tokenEndpoint shouldBe "https://yolo:771/mypath/token"
+            req.toWellKnown().jwksUri shouldBe "https://yolo:771/mypath/jwks"
+        }
+
+        withEnvironment(
+            mapOf(
+                StandaloneConfig.SERVER_HOSTNAME to "yolo",
+                StandaloneConfig.PORT to "999"
+            )
+        ) {
+            val req = OAuth2HttpRequest(
+                headers = Headers.headersOf(),
+                method = "GET",
+                originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            )
+
+            req.toWellKnown().issuer shouldBe "http://yolo:999/mypath"
+            req.toWellKnown().userInfoEndpoint shouldBe "http://yolo:999/mypath/userinfo"
+            req.toWellKnown().authorizationEndpoint shouldBe "http://yolo:999/mypath/authorize"
+            req.toWellKnown().endSessionEndpoint shouldBe "http://yolo:999/mypath/endsession"
+            req.toWellKnown().tokenEndpoint shouldBe "http://yolo:999/mypath/token"
+            req.toWellKnown().jwksUri shouldBe "http://yolo:999/mypath/jwks"
+        }
+
+        withEnvironment(StandaloneConfig.SERVER_HOSTNAME to "yolo") {
+            val req = OAuth2HttpRequest(
+                headers = Headers.headersOf(),
+                method = "GET",
+                originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            )
+
+            req.toWellKnown().issuer shouldBe "http://yolo:8080/mypath"
+            req.toWellKnown().userInfoEndpoint shouldBe "http://yolo:8080/mypath/userinfo"
+            req.toWellKnown().authorizationEndpoint shouldBe "http://yolo:8080/mypath/authorize"
+            req.toWellKnown().endSessionEndpoint shouldBe "http://yolo:8080/mypath/endsession"
+            req.toWellKnown().tokenEndpoint shouldBe "http://yolo:8080/mypath/token"
+            req.toWellKnown().jwksUri shouldBe "http://yolo:8080/mypath/jwks"
         }
     }
 }

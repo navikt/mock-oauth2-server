@@ -4,6 +4,7 @@ import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import no.nav.security.mock.oauth2.StandaloneConfig
 import no.nav.security.mock.oauth2.extensions.clientAuthentication
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
@@ -41,8 +42,6 @@ import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import java.net.URI
-
-const val WELL_KNOWN_METADATA = "WELL_KNOWN_METADATA"
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -122,6 +121,7 @@ data class OAuth2HttpRequest(
         val hostheader = this.headers["host"]
         val proto = this.headers["x-forwarded-proto"]
         val port = this.headers["x-forwarded-port"]
+        val wellKnownMetadataHost = StandaloneConfig.SERVER_HOSTNAME.fromEnv()
         return if (hostheader != null && proto != null) {
             val hostUri = URI(null, hostheader, null, null, null).parseServerAuthority()
             val hostFromHostHeader = hostUri.host
@@ -141,22 +141,20 @@ data class OAuth2HttpRequest(
                 }
                 .encodedPath(originalUrl.encodedPath)
                 .query(originalUrl.query).build()
+        } else if (wellKnownMetadataHost != null) {
+            originalUrl.newBuilder()
+                .host(wellKnownMetadataHost)
+                .port(StandaloneConfig.port()).build()
         } else {
-            WELL_KNOWN_METADATA.fromEnv()?.let {
-                originalUrl.newBuilder().host(it).build()
-            } ?: hostheader?.let {
+            hostheader?.let {
                 val hostUri = URI(originalUrl.scheme, hostheader, null, null, null).parseServerAuthority()
-                HttpUrl.Builder()
-                    .scheme(hostUri.scheme)
+                originalUrl.newBuilder()
                     .host(hostUri.host)
                     .apply {
                         if (hostUri.port != -1) {
                             port(hostUri.port)
                         }
-                    }
-                    .encodedPath(originalUrl.encodedPath)
-                    .query(originalUrl.query)
-                    .build()
+                    }.build()
             } ?: originalUrl
         }
     }
