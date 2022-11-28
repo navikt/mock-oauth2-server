@@ -23,6 +23,7 @@ import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
+import no.nav.security.mock.oauth2.fromEnv
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.http.RequestType.AUTHORIZATION
 import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER
@@ -40,6 +41,8 @@ import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import java.net.URI
+
+const val WELL_KNOWN_METADATA = "WELL_KNOWN_METADATA"
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -139,12 +142,18 @@ data class OAuth2HttpRequest(
                 .encodedPath(originalUrl.encodedPath)
                 .query(originalUrl.query).build()
         } else {
-            hostheader?.let {
+            WELL_KNOWN_METADATA.fromEnv()?.let {
+                originalUrl.newBuilder().host(it).build()
+            } ?: hostheader?.let {
                 val hostUri = URI(originalUrl.scheme, hostheader, null, null, null).parseServerAuthority()
                 HttpUrl.Builder()
                     .scheme(hostUri.scheme)
                     .host(hostUri.host)
-                    .port(hostUri.port)
+                    .apply {
+                        if (hostUri.port != -1) {
+                            port(hostUri.port)
+                        }
+                    }
                     .encodedPath(originalUrl.encodedPath)
                     .query(originalUrl.query)
                     .build()
