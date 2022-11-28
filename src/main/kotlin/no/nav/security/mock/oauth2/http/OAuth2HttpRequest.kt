@@ -118,13 +118,13 @@ data class OAuth2HttpRequest(
         )
 
     internal fun proxyAwareUrl(): HttpUrl {
-        val hostheader = this.headers["host"]
+        val hostHeader = this.headers["host"]
         val proto = this.headers["x-forwarded-proto"]
         val port = this.headers["x-forwarded-port"]
         val wellKnownMetadataHost = StandaloneConfig.SERVER_HOSTNAME.fromEnv()
         return when {
-            hostheader != null && proto != null -> {
-                proxyAwareUrl(hostheader, proto, port)
+            hostHeader != null && proto != null -> {
+                proxyAwareUrl(hostHeader, proto, port)
             }
             wellKnownMetadataHost != null -> {
                 originalUrl.newBuilder()
@@ -132,13 +132,13 @@ data class OAuth2HttpRequest(
                     .port(StandaloneConfig.port()).build()
             }
             else -> {
-                proxyAwareUrl(hostheader)
+                proxyAwareUrl(hostHeader)
             }
         }
     }
 
-    private fun proxyAwareUrl(hostheader: String, proto: String, port: String?): HttpUrl {
-        val hostUri = URI(null, hostheader, null, null, null).parseServerAuthority()
+    private fun proxyAwareUrl(hostHeader: String, proto: String, port: String?): HttpUrl {
+        val hostUri = URI(null, hostHeader, null, null, null).parseServerAuthority()
         val hostFromHostHeader = hostUri.host
         val portFromHostHeader = hostUri.port
 
@@ -158,9 +158,9 @@ data class OAuth2HttpRequest(
             .query(originalUrl.query).build()
     }
 
-    private fun proxyAwareUrl(hostheader: String?): HttpUrl {
-        return hostheader?.let {
-            val hostUri = URI(originalUrl.scheme, hostheader, null, null, null).parseServerAuthority()
+    private fun proxyAwareUrl(hostHeader: String?): HttpUrl {
+        return hostHeader?.let {
+            val hostUri = URI(originalUrl.scheme, hostHeader, null, null, null).parseServerAuthority()
             originalUrl.newBuilder()
                 .host(hostUri.host)
                 .apply {
