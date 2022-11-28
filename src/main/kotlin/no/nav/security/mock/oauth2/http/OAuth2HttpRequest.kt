@@ -122,41 +122,53 @@ data class OAuth2HttpRequest(
         val proto = this.headers["x-forwarded-proto"]
         val port = this.headers["x-forwarded-port"]
         val wellKnownMetadataHost = StandaloneConfig.SERVER_HOSTNAME.fromEnv()
-        return if (hostheader != null && proto != null) {
-            val hostUri = URI(null, hostheader, null, null, null).parseServerAuthority()
-            val hostFromHostHeader = hostUri.host
-            val portFromHostHeader = hostUri.port
+        return when {
+            hostheader != null && proto != null -> {
+                proxyAwareUrl(hostheader, proto, port)
+            }
+            wellKnownMetadataHost != null -> {
+                originalUrl.newBuilder()
+                    .host(wellKnownMetadataHost)
+                    .port(StandaloneConfig.port()).build()
+            }
+            else -> {
+                proxyAwareUrl(hostheader)
+            }
+        }
+    }
 
-            HttpUrl.Builder()
-                .scheme(proto)
-                .host(hostFromHostHeader)
-                .apply {
-                    port?.toInt()?.let {
-                        port(it)
-                    } ?: run {
-                        if (portFromHostHeader != -1) {
-                            port(portFromHostHeader)
-                        }
+    private fun proxyAwareUrl(hostheader: String, proto: String, port: String?): HttpUrl {
+        val hostUri = URI(null, hostheader, null, null, null).parseServerAuthority()
+        val hostFromHostHeader = hostUri.host
+        val portFromHostHeader = hostUri.port
+
+        return HttpUrl.Builder()
+            .scheme(proto)
+            .host(hostFromHostHeader)
+            .apply {
+                port?.toInt()?.let {
+                    port(it)
+                } ?: run {
+                    if (portFromHostHeader != -1) {
+                        port(portFromHostHeader)
                     }
                 }
-                .encodedPath(originalUrl.encodedPath)
-                .query(originalUrl.query).build()
-        } else if (wellKnownMetadataHost != null) {
+            }
+            .encodedPath(originalUrl.encodedPath)
+            .query(originalUrl.query).build()
+    }
+
+    private fun proxyAwareUrl(hostheader: String?): HttpUrl {
+        return hostheader?.let {
+            val hostUri = URI(originalUrl.scheme, hostheader, null, null, null).parseServerAuthority()
             originalUrl.newBuilder()
-                .host(wellKnownMetadataHost)
-                .port(StandaloneConfig.port()).build()
-        } else {
-            hostheader?.let {
-                val hostUri = URI(originalUrl.scheme, hostheader, null, null, null).parseServerAuthority()
-                originalUrl.newBuilder()
-                    .host(hostUri.host)
-                    .apply {
-                        if (hostUri.port != -1) {
-                            port(hostUri.port)
-                        }
-                    }.build()
-            } ?: originalUrl
-        }
+                .host(hostUri.host)
+                .apply {
+                    if (hostUri.port != -1) {
+                        port(hostUri.port)
+                    }
+                }.build()
+        } ?: originalUrl
     }
 
     data class Parameters(val parameterString: String?) {
