@@ -4,7 +4,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 val assertjVersion = "3.23.1"
 val kotlinLoggingVersion = "3.0.4"
 val logbackVersion = "1.2.11"
-val nimbusSdkVersion = "10.1"
+val nimbusSdkVersion = "10.4"
 val mockWebServerVersion = "4.10.0"
 val jacksonVersion = "2.14.1"
 val nettyVersion = "4.1.86.Final"
@@ -22,7 +22,7 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.7.21"
+    kotlin("jvm") version "1.7.22"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.44.0"
     id("org.jmailen.kotlinter") version "3.12.0"
