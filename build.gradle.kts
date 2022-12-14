@@ -4,7 +4,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 val assertjVersion = "3.23.1"
 val kotlinLoggingVersion = "3.0.4"
 val logbackVersion = "1.2.11"
-val nimbusSdkVersion = "10.1"
+val nimbusSdkVersion = "10.4"
 val mockWebServerVersion = "4.10.0"
 val jacksonVersion = "2.14.1"
 val nettyVersion = "4.1.85.Final"
