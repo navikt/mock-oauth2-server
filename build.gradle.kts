@@ -3,7 +3,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
 val assertjVersion = "3.23.1"
 val kotlinLoggingVersion = "3.0.4"
-val logbackVersion = "1.2.11"
+val logbackVersion = "1.4.5"
 val nimbusSdkVersion = "10.4"
 val mockWebServerVersion = "4.10.0"
 val jacksonVersion = "2.14.1"
@@ -16,6 +16,7 @@ val bouncyCastleVersion = "1.70"
 val springBootVersion = "2.7.5"
 val reactorTestVersion = "3.4.24"
 val ktorVersion = "2.2.1"
+val slf4jLogApiVersion = "2.0.6"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -58,6 +59,7 @@ dependencies {
     implementation(kotlin("reflect"))
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
+    implementation("org.slf4j:slf4j-api:$slf4jLogApiVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-all:$nettyVersion")
