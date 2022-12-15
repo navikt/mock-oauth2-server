@@ -1,0 +1,13 @@
+version: "3.1"
+
+services:
+  mock-oauth2-server:
+    image: mock-oauth2-server:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src/test/resources/config.json:/app/config.json
+    environment:
+      LOG_LEVEL: "debug"
+      SERVER_PORT: 8080
+      JSON_CONFIG_PATH: /app/config.json
