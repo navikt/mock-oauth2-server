@@ -12,37 +12,46 @@ internal class OAuth2HttpRequestTest {
         // no hostheader
         "http://localhost:8080/mypath?query=1".GET().url shouldBe "http://localhost:8080/mypath?query=1".toHttpUrl()
 
-        //no host header, x-forwarded-proto set
+        // no host header, x-forwarded-proto set
         "http://localhost:8080/mypath?query=1".GET(
-            "x-forwarded-proto", "https"
+            "x-forwarded-proto",
+            "https"
         ).url shouldBe "https://localhost/mypath?query=1".toHttpUrl()
 
         // host header overrides host and port in url
         "http://localhost:8080/mypath?query=1".GET(
-            "host", "localhost:8080",
+            "host",
+            "localhost:8080"
         ).url shouldBe "http://localhost:8080/mypath?query=1".toHttpUrl()
 
         // host header overrides host in url, port from original url should be used
         "http://localhost:8080/mypath?query=1".GET(
-            "host", "hostonly"
+            "host",
+            "hostonly"
         ).url shouldBe "http://hostonly:8080/mypath?query=1".toHttpUrl()
 
         // host header overrides host in url, port from original url should be used
         "http://localhost:8080/mypath?query=1".GET(
-            "host", "hostonly:-1"
+            "host",
+            "hostonly:-1"
         ).url shouldBe "http://hostonly:8080/mypath?query=1".toHttpUrl()
 
         // host header present, x-forwarded-port overrides port in url
         "http://localhost:8080/mypath?query=1".GET(
-            "host", "host:8080",
-            "x-forwarded-port", "9090"
+            "host",
+            "host:8080",
+            "x-forwarded-port",
+            "9090"
         ).url shouldBe "http://host:9090/mypath?query=1".toHttpUrl()
 
         // host header and x-forwarded- headers present
         "http://localhost:8080/mypath?query=1".GET(
-            "host", "hostheader:8080",
-            "x-forwarded-port", "9090",
-            "x-forwarded-proto", "https"
+            "host",
+            "hostheader:8080",
+            "x-forwarded-port",
+            "9090",
+            "x-forwarded-proto",
+            "https"
         ).url shouldBe "https://hostheader:9090/mypath?query=1".toHttpUrl()
     }
 
@@ -119,7 +128,7 @@ internal class OAuth2HttpRequestTest {
         val req6 = OAuth2HttpRequest(
             headers = Headers.headersOf(
                 "host",
-                "oauth2",
+                "oauth2"
             ),
             method = "GET",
             originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
@@ -129,7 +138,7 @@ internal class OAuth2HttpRequestTest {
         val req7 = OAuth2HttpRequest(
             headers = Headers.headersOf(
                 "host",
-                "oauth2:8080",
+                "oauth2:8080"
             ),
             method = "GET",
             originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
@@ -139,7 +148,7 @@ internal class OAuth2HttpRequestTest {
         val req8 = OAuth2HttpRequest(
             headers = Headers.headersOf(
                 "host",
-                "oauth2",
+                "oauth2"
             ),
             method = "GET",
             originalUrl = "https://somehost/mypath?query=1".toHttpUrl()
@@ -185,5 +194,4 @@ internal class OAuth2HttpRequestTest {
         req1.toWellKnown().tokenEndpoint shouldBe "http://localhost:8080/mypath/token"
         req1.toWellKnown().jwksUri shouldBe "http://localhost:8080/mypath/jwks"
     }
-
 }

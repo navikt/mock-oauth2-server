@@ -4,9 +4,17 @@ import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
-import no.nav.security.mock.oauth2.extensions.*
+import no.nav.security.mock.oauth2.extensions.clientAuthentication
+import no.nav.security.mock.oauth2.extensions.keyValuesToMap
+import no.nav.security.mock.oauth2.extensions.requirePrivateKeyJwt
+import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toIntrospectUrl
+import no.nav.security.mock.oauth2.extensions.toIssuerUrl
+import no.nav.security.mock.oauth2.extensions.toJwksUrl
+import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
+import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
-import no.nav.security.mock.oauth2.http.RequestType.*
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -52,21 +60,6 @@ data class OAuth2HttpRequest(
         )
 
     fun asAuthenticationRequest(): AuthenticationRequest = AuthenticationRequest.parse(this.url.toUri())
-
-    fun type() = when {
-        url.isWellKnownUrl() -> WELL_KNOWN
-        url.isAuthorizationEndpointUrl() -> AUTHORIZATION
-        url.isTokenEndpointUrl() -> TOKEN
-        url.isEndSessionEndpointUrl() -> END_SESSION
-        url.isUserInfoUrl() -> USER_INFO
-        url.isIntrospectUrl() -> INTROSPECT
-        url.isJwksUrl() -> JWKS
-        url.isDebuggerUrl() -> DEBUGGER
-        url.isDebuggerCallbackUrl() -> DEBUGGER_CALLBACK
-        url.encodedPath == "/favicon.ico" -> FAVICON
-        method == "OPTIONS" -> PREFLIGHT
-        else -> UNKNOWN
-    }
 
     fun grantType(): GrantType =
         this.formParameters.map["grant_type"]
@@ -130,10 +123,4 @@ data class OAuth2HttpRequest(
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
         fun get(name: String): String? = map[name]
     }
-}
-
-enum class RequestType {
-    WELL_KNOWN, AUTHORIZATION, TOKEN, END_SESSION,
-    JWKS, DEBUGGER, DEBUGGER_CALLBACK, FAVICON,
-    PREFLIGHT, UNKNOWN, USER_INFO, INTROSPECT
 }
