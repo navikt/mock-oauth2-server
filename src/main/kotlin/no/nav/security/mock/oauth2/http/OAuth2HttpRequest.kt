@@ -4,42 +4,12 @@ import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
-import no.nav.security.mock.oauth2.extensions.clientAuthentication
-import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
-import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
-import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
-import no.nav.security.mock.oauth2.extensions.isEndSessionEndpointUrl
-import no.nav.security.mock.oauth2.extensions.isIntrospectUrl
-import no.nav.security.mock.oauth2.extensions.isJwksUrl
-import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
-import no.nav.security.mock.oauth2.extensions.isUserInfoUrl
-import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
-import no.nav.security.mock.oauth2.extensions.keyValuesToMap
-import no.nav.security.mock.oauth2.extensions.requirePrivateKeyJwt
-import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
-import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
-import no.nav.security.mock.oauth2.extensions.toIntrospectUrl
-import no.nav.security.mock.oauth2.extensions.toIssuerUrl
-import no.nav.security.mock.oauth2.extensions.toJwksUrl
-import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
-import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
+import no.nav.security.mock.oauth2.extensions.*
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
-import no.nav.security.mock.oauth2.http.RequestType.AUTHORIZATION
-import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER
-import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER_CALLBACK
-import no.nav.security.mock.oauth2.http.RequestType.END_SESSION
-import no.nav.security.mock.oauth2.http.RequestType.FAVICON
-import no.nav.security.mock.oauth2.http.RequestType.INTROSPECT
-import no.nav.security.mock.oauth2.http.RequestType.JWKS
-import no.nav.security.mock.oauth2.http.RequestType.PREFLIGHT
-import no.nav.security.mock.oauth2.http.RequestType.TOKEN
-import no.nav.security.mock.oauth2.http.RequestType.UNKNOWN
-import no.nav.security.mock.oauth2.http.RequestType.USER_INFO
-import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
+import no.nav.security.mock.oauth2.http.RequestType.*
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
-import java.net.URI
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -115,41 +85,45 @@ data class OAuth2HttpRequest(
             userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString()
         )
 
-    internal fun proxyAwareUrl(): HttpUrl {
-        val hostheader = this.headers["host"]
-        val proto = this.headers["x-forwarded-proto"]
-        val port = this.headers["x-forwarded-port"]
-        return if (hostheader != null && proto != null) {
-            val hostUri = URI(null, hostheader, null, null, null).parseServerAuthority()
-            val hostFromHostHeader = hostUri.host
-            val portFromHostHeader = hostUri.port
+    internal fun proxyAwareUrl(): HttpUrl = HttpUrl.Builder()
+        .scheme(resolveScheme())
+        .host(resolveHost())
+        .port(resolvePort())
+        .encodedPath(originalUrl.encodedPath)
+        .query(originalUrl.query)
+        .build()
 
-            HttpUrl.Builder()
-                .scheme(proto)
-                .host(hostFromHostHeader)
-                .apply {
-                    port?.toInt()?.let {
-                        port(it)
-                    } ?: run {
-                        if (portFromHostHeader != -1) {
-                            port(portFromHostHeader)
-                        }
-                    }
+    private fun resolveScheme(): String = headers["x-forwarded-proto"] ?: originalUrl.scheme
+
+    private fun resolveHost() = parseHostHeader()?.first ?: originalUrl.host
+
+    private fun resolvePort(): Int {
+        val xForwardedProto = this.headers["x-forwarded-proto"]
+        val xForwardedPort = this.headers["x-forwarded-port"]?.toInt() ?: -1
+        val hostHeaderPort = parseHostHeader()?.second ?: -1
+        return when {
+            xForwardedPort != -1 -> xForwardedPort
+            hostHeaderPort != -1 -> hostHeaderPort
+            xForwardedProto != null -> {
+                if (xForwardedProto == "https") {
+                    443
+                } else {
+                    80
                 }
-                .encodedPath(originalUrl.encodedPath)
-                .query(originalUrl.query).build()
-        } else {
-            hostheader?.let {
-                val hostUri = URI(originalUrl.scheme, hostheader, null, null, null).parseServerAuthority()
-                HttpUrl.Builder()
-                    .scheme(hostUri.scheme)
-                    .host(hostUri.host)
-                    .port(hostUri.port)
-                    .encodedPath(originalUrl.encodedPath)
-                    .query(originalUrl.query)
-                    .build()
-            } ?: originalUrl
+            }
+
+            else -> originalUrl.port
         }
+    }
+
+    private fun parseHostHeader(): Pair<String, Int>? {
+        val hostHeader = this.headers["host"]
+        if (hostHeader != null) {
+            val hostPort = hostHeader.split(":")
+            val port = if (hostPort.size == 2) hostPort[1].toInt() else -1
+            return hostPort[0] to port
+        }
+        return null
     }
 
     data class Parameters(val parameterString: String?) {
