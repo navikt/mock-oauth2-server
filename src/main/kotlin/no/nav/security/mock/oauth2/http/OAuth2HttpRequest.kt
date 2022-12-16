@@ -24,22 +24,9 @@ import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
-import no.nav.security.mock.oauth2.http.RequestType.AUTHORIZATION
-import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER
-import no.nav.security.mock.oauth2.http.RequestType.DEBUGGER_CALLBACK
-import no.nav.security.mock.oauth2.http.RequestType.END_SESSION
-import no.nav.security.mock.oauth2.http.RequestType.FAVICON
-import no.nav.security.mock.oauth2.http.RequestType.INTROSPECT
-import no.nav.security.mock.oauth2.http.RequestType.JWKS
-import no.nav.security.mock.oauth2.http.RequestType.PREFLIGHT
-import no.nav.security.mock.oauth2.http.RequestType.TOKEN
-import no.nav.security.mock.oauth2.http.RequestType.UNKNOWN
-import no.nav.security.mock.oauth2.http.RequestType.USER_INFO
-import no.nav.security.mock.oauth2.http.RequestType.WELL_KNOWN
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
-import java.net.URI
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -83,21 +70,6 @@ data class OAuth2HttpRequest(
 
     fun asAuthenticationRequest(): AuthenticationRequest = AuthenticationRequest.parse(this.url.toUri())
 
-    fun type() = when {
-        url.isWellKnownUrl() -> WELL_KNOWN
-        url.isAuthorizationEndpointUrl() -> AUTHORIZATION
-        url.isTokenEndpointUrl() -> TOKEN
-        url.isEndSessionEndpointUrl() -> END_SESSION
-        url.isUserInfoUrl() -> USER_INFO
-        url.isIntrospectUrl() -> INTROSPECT
-        url.isJwksUrl() -> JWKS
-        url.isDebuggerUrl() -> DEBUGGER
-        url.isDebuggerCallbackUrl() -> DEBUGGER_CALLBACK
-        url.encodedPath == "/favicon.ico" -> FAVICON
-        method == "OPTIONS" -> PREFLIGHT
-        else -> UNKNOWN
-    }
-
     fun grantType(): GrantType =
         this.formParameters.map["grant_type"]
             ?.ifBlank { null }
@@ -115,51 +87,49 @@ data class OAuth2HttpRequest(
             userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString()
         )
 
-    internal fun proxyAwareUrl(): HttpUrl {
-        val hostheader = this.headers["host"]
-        val proto = this.headers["x-forwarded-proto"]
-        val port = this.headers["x-forwarded-port"]
-        return if (hostheader != null && proto != null) {
-            val hostUri = URI(null, hostheader, null, null, null).parseServerAuthority()
-            val hostFromHostHeader = hostUri.host
-            val portFromHostHeader = hostUri.port
+    internal fun proxyAwareUrl(): HttpUrl = HttpUrl.Builder()
+        .scheme(resolveScheme())
+        .host(resolveHost())
+        .port(resolvePort())
+        .encodedPath(originalUrl.encodedPath)
+        .query(originalUrl.query)
+        .build()
 
-            HttpUrl.Builder()
-                .scheme(proto)
-                .host(hostFromHostHeader)
-                .apply {
-                    port?.toInt()?.let {
-                        port(it)
-                    } ?: run {
-                        if (portFromHostHeader != -1) {
-                            port(portFromHostHeader)
-                        }
-                    }
+    private fun resolveScheme(): String = headers["x-forwarded-proto"] ?: originalUrl.scheme
+
+    private fun resolveHost() = parseHostHeader()?.first ?: originalUrl.host
+
+    private fun resolvePort(): Int {
+        val xForwardedProto = this.headers["x-forwarded-proto"]
+        val xForwardedPort = this.headers["x-forwarded-port"]?.toInt() ?: -1
+        val hostHeaderPort = parseHostHeader()?.second ?: -1
+        return when {
+            xForwardedPort != -1 -> xForwardedPort
+            hostHeaderPort != -1 -> hostHeaderPort
+            xForwardedProto != null -> {
+                if (xForwardedProto == "https") {
+                    443
+                } else {
+                    80
                 }
-                .encodedPath(originalUrl.encodedPath)
-                .query(originalUrl.query).build()
-        } else {
-            hostheader?.let {
-                val hostUri = URI(originalUrl.scheme, hostheader, null, null, null).parseServerAuthority()
-                HttpUrl.Builder()
-                    .scheme(hostUri.scheme)
-                    .host(hostUri.host)
-                    .port(hostUri.port)
-                    .encodedPath(originalUrl.encodedPath)
-                    .query(originalUrl.query)
-                    .build()
-            } ?: originalUrl
+            }
+
+            else -> originalUrl.port
         }
+    }
+
+    private fun parseHostHeader(): Pair<String, Int>? {
+        val hostHeader = this.headers["host"]
+        if (hostHeader != null) {
+            val hostPort = hostHeader.split(":")
+            val port = if (hostPort.size == 2) hostPort[1].toInt() else -1
+            return hostPort[0] to port
+        }
+        return null
     }
 
     data class Parameters(val parameterString: String?) {
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
         fun get(name: String): String? = map[name]
     }
-}
-
-enum class RequestType {
-    WELL_KNOWN, AUTHORIZATION, TOKEN, END_SESSION,
-    JWKS, DEBUGGER, DEBUGGER_CALLBACK, FAVICON,
-    PREFLIGHT, UNKNOWN, USER_INFO, INTROSPECT
 }
