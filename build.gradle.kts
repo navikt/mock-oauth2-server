@@ -9,7 +9,7 @@ val mockWebServerVersion = "4.10.0"
 val jacksonVersion = "2.14.1"
 val nettyVersion = "4.1.86.Final"
 val junitJupiterVersion = "5.9.1"
-val kotlinVersion = "1.7.22"
+val kotlinVersion = "1.8.0"
 val freemarkerVersion = "2.3.31"
 val kotestVersion = "5.5.4"
 val bouncyCastleVersion = "1.70"
@@ -22,7 +22,7 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.7.22"
+    kotlin("jvm") version "1.8.0"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.44.0"
     id("org.jmailen.kotlinter") version "3.13.0"
