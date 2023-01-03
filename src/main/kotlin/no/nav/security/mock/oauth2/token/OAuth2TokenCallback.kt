@@ -16,6 +16,7 @@ interface OAuth2TokenCallback {
     fun typeHeader(tokenRequest: TokenRequest): String
     fun audience(tokenRequest: TokenRequest): List<String>
     fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
+    fun tokenHeaderKid(tokenRequest: TokenRequest): String?
     fun tokenExpiry(): Long
 }
 
@@ -27,7 +28,8 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
     // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
     private val audience: List<String>? = null,
     private val claims: Map<String, Any> = emptyMap(),
-    private val expiry: Long = 3600
+    private val expiry: Long = 3600,
+    private val tokenHeaderKid: String? = null
 ) : OAuth2TokenCallback {
 
     override fun issuerId(): String = issuerId
@@ -42,6 +44,8 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
     override fun typeHeader(tokenRequest: TokenRequest): String {
         return typeHeader
     }
+
+    override fun tokenHeaderKid(tokenRequest: TokenRequest) = tokenHeaderKid ?: issuerId
 
     override fun audience(tokenRequest: TokenRequest): List<String> {
         val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
@@ -69,7 +73,8 @@ open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
 data class RequestMappingTokenCallback(
     val issuerId: String,
     val requestMappings: Set<RequestMapping>,
-    val tokenExpiry: Long = Duration.ofHours(1).toSeconds()
+    val tokenExpiry: Long = Duration.ofHours(1).toSeconds(),
+    val tokenHeaderKid: String? = null
 ) : OAuth2TokenCallback {
     override fun issuerId(): String = issuerId
 
@@ -78,6 +83,9 @@ data class RequestMappingTokenCallback(
 
     override fun typeHeader(tokenRequest: TokenRequest): String =
         requestMappings.getTypeHeader(tokenRequest)
+
+    override fun tokenHeaderKid(tokenRequest: TokenRequest): String =
+        requestMappings.getTokenHeaderKid(tokenRequest)
 
     override fun audience(tokenRequest: TokenRequest): List<String> =
         requestMappings.getClaimOrNull(tokenRequest, "aud") ?: emptyList()
@@ -95,12 +103,16 @@ data class RequestMappingTokenCallback(
 
     private fun Set<RequestMapping>.getTypeHeader(tokenRequest: TokenRequest) =
         firstOrNull { it.isMatch(tokenRequest) }?.typeHeader ?: JOSEObjectType.JWT.type
+
+    private fun Set<RequestMapping>.getTokenHeaderKid(tokenRequest: TokenRequest) =
+        firstOrNull { it.isMatch(tokenRequest) }?.tokenHeaderKid ?: issuerId
 }
 
 data class RequestMapping(
     private val requestParam: String,
     private val match: String = "*",
     val claims: Map<String, Any> = emptyMap(),
+    val tokenHeaderKid: String? = null,
     val typeHeader: String = JOSEObjectType.JWT.type
 ) {
     fun isMatch(tokenRequest: TokenRequest): Boolean =
