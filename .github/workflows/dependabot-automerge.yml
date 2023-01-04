@@ -24,7 +24,7 @@ jobs:
 
   dependabot:
     runs-on: ubuntu-latest
-    depends-on: test
+    needs: test
     if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
       - name: Dependabot metadata
