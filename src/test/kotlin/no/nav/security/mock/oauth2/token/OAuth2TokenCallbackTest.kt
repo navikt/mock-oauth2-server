@@ -37,8 +37,8 @@ internal class OAuth2TokenCallbackTest {
                     )
                 ),
                 RequestMapping(
-                    requestParam = "tokenHeaderKid",
-                    tokenHeaderKid = "kid1",
+                    requestParam = "kidHeader",
+                    kidHeader = "kid1",
                     claims = mapOf(
                         "sub" to "kidSub",
                         "aud" to listOf("kidAud")
@@ -64,7 +64,7 @@ internal class OAuth2TokenCallbackTest {
                 issuer1.audience(scopeShouldMatch) shouldBe listOf("audByScope1")
                 issuer1.tokenExpiry() shouldBe 120
                 issuer1.addClaims(scopeShouldMatch) shouldContainAll mapOf("custom" to "custom1")
-                issuer1.tokenHeaderKid(scopeShouldMatch) shouldBe "issuer1"
+                issuer1.kidHeader(scopeShouldMatch) shouldBe "issuer1"
             }
         }
 
@@ -76,19 +76,19 @@ internal class OAuth2TokenCallbackTest {
                 issuer1.audience(scopeShouldMatch) shouldBe listOf("audByScope2")
                 issuer1.tokenExpiry() shouldBe 120
                 issuer1.typeHeader(scopeShouldMatch) shouldBe "JWT2"
-                issuer1.tokenHeaderKid(scopeShouldMatch) shouldBe "issuer1"
+                issuer1.kidHeader(scopeShouldMatch) shouldBe "issuer1"
             }
         }
 
         @Test
         fun `token request with with a specified token header kid should return specified header value`() {
-            val shouldMatchTokenHeaderKid = clientCredentialsRequest("tokenHeaderKid" to "kid1")
+            val shouldMatchkidHeader = clientCredentialsRequest("kidHeader" to "kid1")
             assertSoftly {
-                issuer1.subject(shouldMatchTokenHeaderKid) shouldBe "kidSub"
-                issuer1.audience(shouldMatchTokenHeaderKid) shouldBe listOf("kidAud")
+                issuer1.subject(shouldMatchkidHeader) shouldBe "kidSub"
+                issuer1.audience(shouldMatchkidHeader) shouldBe listOf("kidAud")
                 issuer1.tokenExpiry() shouldBe 120
-                issuer1.typeHeader(shouldMatchTokenHeaderKid) shouldBe "JWT"
-                issuer1.tokenHeaderKid(shouldMatchTokenHeaderKid) shouldBe "kid1"
+                issuer1.typeHeader(shouldMatchkidHeader) shouldBe "JWT"
+                issuer1.kidHeader(shouldMatchkidHeader) shouldBe "kid1"
             }
         }
 
@@ -100,7 +100,7 @@ internal class OAuth2TokenCallbackTest {
                 issuer1.audience(shouldMatchAllGrantTypes) shouldBe listOf("defaultAud")
                 issuer1.tokenExpiry() shouldBe 120
                 issuer1.typeHeader(shouldMatchAllGrantTypes) shouldBe "JWT"
-                issuer1.tokenHeaderKid(shouldMatchAllGrantTypes) shouldBe "issuer1"
+                issuer1.kidHeader(shouldMatchAllGrantTypes) shouldBe "issuer1"
             }
         }
     }

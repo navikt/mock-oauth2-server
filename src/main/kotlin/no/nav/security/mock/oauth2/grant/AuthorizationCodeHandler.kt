@@ -101,7 +101,7 @@ internal class AuthorizationCodeHandler(
         override fun issuerId(): String = oAuth2TokenCallback.issuerId()
         override fun subject(tokenRequest: TokenRequest): String = login.username
         override fun typeHeader(tokenRequest: TokenRequest): String = oAuth2TokenCallback.typeHeader(tokenRequest)
-        override fun tokenHeaderKid(tokenRequest: TokenRequest): String = oAuth2TokenCallback.tokenHeaderKid(tokenRequest) ?: issuerId()
+        override fun kidHeader(tokenRequest: TokenRequest): String = oAuth2TokenCallback.kidHeader(tokenRequest) ?: issuerId()
         override fun audience(tokenRequest: TokenRequest): List<String> = oAuth2TokenCallback.audience(tokenRequest)
         override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
             oAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
