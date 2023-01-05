@@ -82,7 +82,7 @@ data class OAuth2Config @JvmOverloads constructor(
             fun ssl() = Ssl(sslKeyStore())
 
             private fun sslKeyStore() =
-                if (keystoreFile == null) SslKeystore() else SslKeystore(keyPassword, keystoreFile, keystoreType, keystorePassword)
+                keystoreFile?.let { SslKeystore(keyPassword, keystoreFile, keystoreType, keystorePassword) } ?: SslKeystore()
         }
 
         override fun deserialize(p: JsonParser, ctxt: DeserializationContext): OAuth2HttpServer {

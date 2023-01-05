@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2
 
+import mu.KotlinLogging
 import no.nav.security.mock.oauth2.StandaloneConfig.hostname
 import no.nav.security.mock.oauth2.StandaloneConfig.oauth2Config
 import no.nav.security.mock.oauth2.StandaloneConfig.port
@@ -10,6 +11,8 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.net.InetAddress
 import java.net.InetSocketAddress
+
+private val log = KotlinLogging.logger {}
 
 object StandaloneConfig {
     const val JSON_CONFIG = "JSON_CONFIG"
@@ -25,6 +28,7 @@ object StandaloneConfig {
 
     fun oauth2Config(): OAuth2Config = with(jsonFromEnv()) {
         if (this != null) {
+            log.debug { "Using OAuth2Config from environment variable $this" }
             OAuth2Config.fromJson(this)
         } else {
             OAuth2Config(
