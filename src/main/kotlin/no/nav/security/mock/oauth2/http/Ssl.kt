@@ -121,7 +121,7 @@ class SslKeystore @JvmOverloads constructor(
             addExtension(Extension.subjectKeyIdentifier, false, publicKey.createSubjectKeyId())
                 .addExtension(Extension.authorityKeyIdentifier, false, publicKey.createAuthorityKeyId())
                 .addExtension(Extension.basicConstraints, true, BasicConstraints(true))
-                .addExtension(Extension.subjectAlternativeName, false, GeneralNames(san.toTypedArray())) // GeneralNames(GeneralName(GeneralName.dNSName, san)))
+                .addExtension(Extension.subjectAlternativeName, false, GeneralNames(san.toTypedArray()))
                 .addExtension(Extension.keyUsage, false, KeyUsage(KeyUsage.digitalSignature))
                 .addExtension(Extension.extendedKeyUsage, false, ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth))
         }
