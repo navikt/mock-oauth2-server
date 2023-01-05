@@ -12,6 +12,10 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.internal.toHostHeader
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
+import no.nav.security.mock.oauth2.http.Ssl
 
 internal class TokenRequest(
     val url: HttpUrl,
@@ -78,3 +82,11 @@ internal fun OkHttpClient.post(tokenRequest: TokenRequest): String =
             .post(tokenRequest.body.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
             .build()
     ).execute().body?.string() ?: throw RuntimeException("could not get response body from url=${tokenRequest.url}")
+
+fun OkHttpClient.withSsl(ssl: Ssl, followRedirects: Boolean = false): OkHttpClient =
+    newBuilder().apply {
+        followRedirects(followRedirects)
+        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(ssl.sslKeystore.keyStore) }
+        val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
+        sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
+    }.build()
