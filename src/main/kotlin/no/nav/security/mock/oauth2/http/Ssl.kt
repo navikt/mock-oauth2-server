@@ -1,5 +1,18 @@
 package no.nav.security.mock.oauth2.http
 
+import java.io.File
+import java.math.BigInteger
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.KeyStore
+import java.security.PublicKey
+import java.security.cert.X509Certificate
+import java.time.Duration
+import java.time.Instant
+import java.util.Date
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -21,19 +34,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import java.io.File
-import java.math.BigInteger
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.PublicKey
-import java.security.cert.X509Certificate
-import java.time.Duration
-import java.time.Instant
-import java.util.Date
-import javax.net.ssl.KeyManagerFactory
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLEngine
 
 class Ssl @JvmOverloads constructor(
     val sslKeystore: SslKeystore = SslKeystore()
@@ -57,7 +57,8 @@ class SslKeystore @JvmOverloads constructor(
     val keyPassword: String = "",
     val keyStore: KeyStore = generate("localhost", keyPassword)
 ) {
-    @JvmOverloads constructor(
+    @JvmOverloads
+    constructor(
         keyPassword: String,
         keystoreFile: File,
         keystoreType: KeyStoreType = KeyStoreType.PKCS12,
@@ -109,10 +110,18 @@ class SslKeystore @JvmOverloads constructor(
         }
 
         private fun X509v3CertificateBuilder.addExtensions(cn: String, publicKey: PublicKey) = apply {
+            val san: MutableList<GeneralName> = mutableListOf(
+                GeneralName(GeneralName.dNSName, cn)
+            )
+
+            if (cn == "localhost") {
+                san.add(GeneralName(GeneralName.iPAddress, "127.0.0.1"))
+            }
+
             addExtension(Extension.subjectKeyIdentifier, false, publicKey.createSubjectKeyId())
                 .addExtension(Extension.authorityKeyIdentifier, false, publicKey.createAuthorityKeyId())
                 .addExtension(Extension.basicConstraints, true, BasicConstraints(true))
-                .addExtension(Extension.subjectAlternativeName, false, GeneralNames(GeneralName(GeneralName.dNSName, cn)))
+                .addExtension(Extension.subjectAlternativeName, false, GeneralNames(san.toTypedArray()))
                 .addExtension(Extension.keyUsage, false, KeyUsage(KeyUsage.digitalSignature))
                 .addExtension(Extension.extendedKeyUsage, false, ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth))
         }

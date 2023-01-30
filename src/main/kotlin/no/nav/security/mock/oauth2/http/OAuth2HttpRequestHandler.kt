@@ -50,7 +50,7 @@ private val log = KotlinLogging.logger {}
 class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
 
     private val loginRequestHandler = LoginRequestHandler(templateMapper, config)
-    private val debuggerRequestHandler = DebuggerRequestHandler()
+    private val debuggerRequestHandler = DebuggerRequestHandler(ssl = config.httpServer.sslConfig())
     private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
     private val refreshTokenManager = RefreshTokenManager()
 

@@ -30,6 +30,7 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
+import javax.net.ssl.SSLHandshakeException
 import kotlin.properties.Delegates
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
@@ -55,6 +56,7 @@ interface OAuth2HttpServer : AutoCloseable {
 
     fun port(): Int
     fun url(path: String): HttpUrl
+    fun sslConfig(): Ssl?
 }
 
 class MockWebServerWrapper@JvmOverloads constructor(
@@ -78,6 +80,7 @@ class MockWebServerWrapper@JvmOverloads constructor(
     override fun port(): Int = mockWebServer.port
 
     override fun url(path: String): HttpUrl = mockWebServer.url(path)
+    override fun sslConfig(): Ssl? = ssl
 
     internal class MockWebServerDispatcher(
         private val requestHandler: RequestHandler,
@@ -159,9 +162,24 @@ class NettyWrapper @JvmOverloads constructor(
             .resolve(path)!!
     }
 
+    override fun sslConfig(): Ssl? = ssl
+
     private fun Ssl.nettySslHandler(): SslHandler = SslHandler(sslEngine())
 
     internal class RouterChannelHandler(val requestHandler: RequestHandler) : SimpleChannelInboundHandler<FullHttpRequest>() {
+        @Deprecated("Deprecated in ChannelInboundHandlerAdapter")
+        override fun exceptionCaught(ctx: ChannelHandlerContext, throwable: Throwable) {
+            val msg = throwable.message ?: ""
+            val ignoreError = "certificate_unknown"
+
+            // have not been able to determine why this error is thrown or how to fix it, but it does not seem to affect the server
+            if (throwable.cause is SSLHandshakeException && msg.contains(ignoreError)) {
+                log.debug("received $ignoreError error from netty channel, ignoring")
+            } else {
+                log.error("error in netty channel handler", throwable)
+                ctx.close()
+            }
+        }
 
         override fun channelRead0(ctx: ChannelHandlerContext, request: FullHttpRequest) {
             val address = ctx.channel().remoteAddress() as InetSocketAddress

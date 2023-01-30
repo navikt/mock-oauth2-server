@@ -12,6 +12,7 @@ import no.nav.security.mock.oauth2.extensions.toDebuggerUrl
 import no.nav.security.mock.oauth2.http.ExceptionHandler
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.Route
+import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.html
 import no.nav.security.mock.oauth2.http.redirect
 import no.nav.security.mock.oauth2.http.routes
@@ -26,10 +27,11 @@ private val client: OkHttpClient = OkHttpClient().newBuilder().build()
 
 class DebuggerRequestHandler(
     sessionManager: SessionManager = SessionManager(),
+    ssl: Ssl? = null,
     route: Route = routes {
         exceptionHandler(handle(sessionManager))
         debuggerForm(sessionManager)
-        debuggerCallback(sessionManager)
+        debuggerCallback(sessionManager, ssl)
     }
 ) : Route by route
 
@@ -72,7 +74,7 @@ private fun Route.Builder.debuggerForm(sessionManager: SessionManager) = apply {
     }
 }
 
-private fun Route.Builder.debuggerCallback(sessionManager: SessionManager) =
+private fun Route.Builder.debuggerCallback(sessionManager: SessionManager, ssl: Ssl? = null) =
     any(DEBUGGER_CALLBACK) {
         log.debug("handling ${it.method} request to debugger callback")
         val session = sessionManager.session(it)
@@ -91,6 +93,10 @@ private fun Route.Builder.debuggerCallback(sessionManager: SessionManager) =
                 "redirect_uri" to session["redirect_uri"].urlEncode()
             )
         )
-        val response = client.post(request)
+        val response = if (ssl != null) {
+            client.withSsl(ssl).post(request)
+        } else {
+            client.post(request)
+        }
         html(templateMapper.debuggerCallbackHtml(request.toString(), response))
     }

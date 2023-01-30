@@ -5,15 +5,6 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import no.nav.security.mock.oauth2.extensions.clientAuthentication
-import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
-import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
-import no.nav.security.mock.oauth2.extensions.isDebuggerUrl
-import no.nav.security.mock.oauth2.extensions.isEndSessionEndpointUrl
-import no.nav.security.mock.oauth2.extensions.isIntrospectUrl
-import no.nav.security.mock.oauth2.extensions.isJwksUrl
-import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
-import no.nav.security.mock.oauth2.extensions.isUserInfoUrl
-import no.nav.security.mock.oauth2.extensions.isWellKnownUrl
 import no.nav.security.mock.oauth2.extensions.keyValuesToMap
 import no.nav.security.mock.oauth2.extensions.requirePrivateKeyJwt
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
