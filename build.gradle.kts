@@ -15,7 +15,7 @@ val kotestVersion = "5.5.5"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "2.7.5"
 val reactorTestVersion = "3.4.24"
-val ktorVersion = "2.2.3"
+val ktorVersion = "2.2.4"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -25,12 +25,12 @@ plugins {
     kotlin("jvm") version "1.8.10"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.46.0"
-    id("org.jmailen.kotlinter") version "3.13.0"
+    id("org.jmailen.kotlinter") version "3.14.0"
     id("com.google.cloud.tools.jib") version "3.3.1"
     id("com.github.johnrengelman.shadow") version "8.1.0"
     id("net.researchgate.release") version "3.0.2"
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
-    id("org.jetbrains.dokka") version "1.7.20"
+    id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
+    id("org.jetbrains.dokka") version "1.8.10"
     `java-library`
     `maven-publish`
     signing
