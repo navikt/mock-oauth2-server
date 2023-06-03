@@ -14,7 +14,7 @@ val freemarkerVersion = "2.3.32"
 val kotestVersion = "5.6.2"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "2.7.5"
-val reactorTestVersion = "3.4.24"
+val reactorTestVersion = "3.5.6"
 val ktorVersion = "2.3.1"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
