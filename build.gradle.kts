@@ -26,7 +26,7 @@ plugins {
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.46.0"
     id("org.jmailen.kotlinter") version "3.15.0"
-    id("com.google.cloud.tools.jib") version "3.3.1"
+    id("com.google.cloud.tools.jib") version "3.3.2"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("net.researchgate.release") version "3.0.2"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
