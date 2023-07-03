@@ -21,7 +21,7 @@ class UserInfoIntegrationTest {
 
     private val client = client()
     private val rs384Config = OAuth2Config(
-        tokenProvider = OAuth2TokenProvider(keyProvider = KeyProvider(initialKeys = emptyList(), algorithm = JWSAlgorithm.RS384.name))
+        tokenProvider = OAuth2TokenProvider(keyProvider = KeyProvider(initialKeys = emptyList(), algorithm = JWSAlgorithm.RS384.name)),
     )
 
     @Test
@@ -31,12 +31,12 @@ class UserInfoIntegrationTest {
             val token = this.issueToken(issuerId = issuerId, subject = "foo", claims = mapOf("extra" to "bar"))
             client.get(
                 url = this.userInfoUrl(issuerId),
-                headers = token.asBearerTokenHeader()
+                headers = token.asBearerTokenHeader(),
             ).asClue {
                 it.parse<Map<String, Any>>() shouldContainAll mapOf(
                     "sub" to token.claims["sub"],
                     "iss" to token.claims["iss"],
-                    "extra" to token.claims["extra"]
+                    "extra" to token.claims["extra"],
                 )
             }
         }
@@ -50,12 +50,12 @@ class UserInfoIntegrationTest {
             token.header.algorithm.shouldBe(JWSAlgorithm.RS384)
             client.get(
                 url = this.userInfoUrl(issuerId),
-                headers = token.asBearerTokenHeader()
+                headers = token.asBearerTokenHeader(),
             ).asClue {
                 it.parse<Map<String, Any>>() shouldContainAll mapOf(
                     "sub" to token.claims["sub"],
                     "iss" to token.claims["iss"],
-                    "extra" to token.claims["extra"]
+                    "extra" to token.claims["extra"],
                 )
             }
         }
@@ -69,7 +69,7 @@ class UserInfoIntegrationTest {
         withMockOAuth2Server {
             client.get(
                 url = this.userInfoUrl(issuerId),
-                headers = token.asBearerTokenHeader()
+                headers = token.asBearerTokenHeader(),
             ).asClue {
                 it.code shouldBe 401
                 it.message shouldBe "Client Error"

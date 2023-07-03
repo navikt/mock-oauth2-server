@@ -44,8 +44,8 @@ internal fun Route.Builder.introspect(tokenProvider: OAuth2TokenProvider) =
                     claims["sub"].toString(),
                     claims["aud"].toString(),
                     claims["iss"].toString(),
-                    claims["jti"].toString()
-                )
+                    claims["jti"].toString(),
+                ),
             )
         } ?: json(IntrospectResponse(false))
     }
@@ -102,5 +102,5 @@ data class IntrospectResponse(
     @JsonProperty("iss")
     val iss: String? = null,
     @JsonProperty("jti")
-    val jti: String? = null
+    val jti: String? = null,
 )

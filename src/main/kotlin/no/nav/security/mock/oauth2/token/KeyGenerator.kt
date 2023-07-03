@@ -17,7 +17,7 @@ import java.security.interfaces.RSAPublicKey
 
 data class KeyGenerator(
     val algorithm: JWSAlgorithm = JWSAlgorithm.RS256,
-    var keyGenerator: KeyPairGenerator = generate(algorithm.name)
+    var keyGenerator: KeyPairGenerator = generate(algorithm.name),
 ) {
     fun generateKey(keyId: String): JWK {
         if (keyGenerator.algorithm != KeyType.RSA.value) {
@@ -39,7 +39,7 @@ data class KeyGenerator(
 
     private fun toCurve(algorithm: JWSAlgorithm): Curve {
         return requireNotNull(
-            Curve.forJWSAlgorithm(algorithm).single()
+            Curve.forJWSAlgorithm(algorithm).single(),
         ) {
             throw OAuth2Exception("Unsupported: $algorithm")
         }
@@ -67,7 +67,7 @@ data class KeyGenerator(
 
         private val supportedAlgorithms = listOf(
             Algorithm(rsaAlgorithmFamily, KeyType.RSA),
-            Algorithm(ecAlgorithmFamily, KeyType.EC)
+            Algorithm(ecAlgorithmFamily, KeyType.EC),
         )
 
         fun isSupported(algorithm: JWSAlgorithm) = supportedAlgorithms.flatMap { it.family }.contains(algorithm)
@@ -84,7 +84,7 @@ data class KeyGenerator(
                             } else {
                                 this.initialize(RSAKeyGenerator.MIN_KEY_SIZE_BITS)
                             }
-                        }
+                        },
                     ).keyGenerator
                 } else {
                     null
@@ -94,7 +94,7 @@ data class KeyGenerator(
 
         data class Algorithm(
             val family: List<JWSAlgorithm>,
-            val keyType: KeyType
+            val keyType: KeyType,
         )
     }
 }

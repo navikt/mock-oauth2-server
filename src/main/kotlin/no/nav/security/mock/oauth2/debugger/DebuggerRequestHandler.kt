@@ -32,14 +32,14 @@ class DebuggerRequestHandler(
         exceptionHandler(handle(sessionManager))
         debuggerForm(sessionManager)
         debuggerCallback(sessionManager, ssl)
-    }
+    },
 ) : Route by route
 
 private fun handle(sessionManager: SessionManager): ExceptionHandler = { request, error ->
     OAuth2HttpResponse(
         status = 500,
         headers = Headers.headersOf("Content-Type", "text/html", "Set-Cookie", sessionManager.session(request).asCookie()),
-        body = templateMapper.debuggerErrorHtml(request.url.toDebuggerUrl(), error.stackTraceToString())
+        body = templateMapper.debuggerErrorHtml(request.url.toDebuggerUrl(), error.stackTraceToString()),
     ).also {
         log.error("received exception when handling url=${request.url}", error)
     }
@@ -55,7 +55,7 @@ private fun Route.Builder.debuggerForm(sessionManager: SessionManager) = apply {
                 "&response_mode=query" +
                 "&scope=openid+somescope" +
                 "&state=1234" +
-                "&nonce=5678"
+                "&nonce=5678",
         ).build()
         html(templateMapper.debuggerFormHtml(url, "CLIENT_SECRET_BASIC"))
     }
@@ -90,8 +90,8 @@ private fun Route.Builder.debuggerCallback(sessionManager: SessionManager, ssl: 
                 "grant_type" to "authorization_code",
                 "code" to code,
                 "scope" to session["scope"].urlEncode(),
-                "redirect_uri" to session["redirect_uri"].urlEncode()
-            )
+                "redirect_uri" to session["redirect_uri"].urlEncode(),
+            ),
         )
         val response = if (ssl != null) {
             client.withSsl(ssl).post(request)

@@ -20,7 +20,7 @@ import java.util.Date
 import java.util.UUID
 
 class OAuth2TokenProvider @JvmOverloads constructor(
-    private val keyProvider: KeyProvider = KeyProvider()
+    private val keyProvider: KeyProvider = KeyProvider(),
 ) {
     @JvmOverloads
     fun publicJwkSet(issuerId: String = "default"): JWKSet {
@@ -35,35 +35,35 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
         oAuth2TokenCallback: OAuth2TokenCallback,
-        nonce: String? = null
+        nonce: String? = null,
     ) = defaultClaims(
         issuerUrl,
         oAuth2TokenCallback.subject(tokenRequest),
         listOf(tokenRequest.clientIdAsString()),
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
-        oAuth2TokenCallback.tokenExpiry()
+        oAuth2TokenCallback.tokenExpiry(),
     ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
 
     fun accessToken(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
         oAuth2TokenCallback: OAuth2TokenCallback,
-        nonce: String? = null
+        nonce: String? = null,
     ) = defaultClaims(
         issuerUrl,
         oAuth2TokenCallback.subject(tokenRequest),
         oAuth2TokenCallback.audience(tokenRequest),
         nonce,
         oAuth2TokenCallback.addClaims(tokenRequest),
-        oAuth2TokenCallback.tokenExpiry()
+        oAuth2TokenCallback.tokenExpiry(),
     ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
 
     fun exchangeAccessToken(
         tokenRequest: TokenRequest,
         issuerUrl: HttpUrl,
         claimsSet: JWTClaimsSet,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
     ) = Instant.now().let { now ->
         JWTClaimsSet.Builder(claimsSet)
             .issuer(issuerUrl.toString())
@@ -99,7 +99,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
             supported && keyType == KeyType.RSA.value -> {
                 SignedJWT(
                     jwsHeader(key.keyID, type, algorithm),
-                    this
+                    this,
                 ).apply {
                     sign(RSASSASigner(key.toRSAKey().toPrivateKey()))
                 }
@@ -107,7 +107,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
             supported && keyType == KeyType.EC.value -> {
                 SignedJWT(
                     jwsHeader(key.keyID, type, algorithm),
-                    this
+                    this,
                 ).apply {
                     sign(ECDSASigner(key.toECKey().toECPrivateKey()))
                 }
@@ -134,7 +134,7 @@ class OAuth2TokenProvider @JvmOverloads constructor(
         audience: List<String>,
         nonce: String?,
         additionalClaims: Map<String, Any>,
-        expiry: Long
+        expiry: Long,
     ) = JWTClaimsSet.Builder().let { builder ->
         val now = Instant.now()
         builder.subject(subject)

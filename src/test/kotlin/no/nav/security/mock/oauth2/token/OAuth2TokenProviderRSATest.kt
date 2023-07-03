@@ -43,8 +43,8 @@ internal class OAuth2TokenProviderRSATest {
                 "iss" to "http://initialissuer",
                 "sub" to "initialsubject",
                 "aud" to "initialaudience",
-                "initialclaim" to "initialclaim"
-            )
+                "initialclaim" to "initialclaim",
+            ),
         )
 
         tokenProvider.exchangeAccessToken(
@@ -52,16 +52,16 @@ internal class OAuth2TokenProviderRSATest {
                 "myclient",
                 "grant_type" to GrantType.JWT_BEARER.value,
                 "scope" to "scope1",
-                "assertion" to initialToken.serialize()
+                "assertion" to initialToken.serialize(),
             ),
             issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
             claimsSet = initialToken.jwtClaimsSet,
             oAuth2TokenCallback = DefaultOAuth2TokenCallback(
                 claims = mapOf(
                     "extraclaim" to "extra",
-                    "iss" to "http://overrideissuer"
-                )
-            )
+                    "iss" to "http://overrideissuer",
+                ),
+            ),
         ).jwtClaimsSet.asClue {
             it.issuer shouldBe "http://overrideissuer"
             it.subject shouldBe "initialsubject"
@@ -95,9 +95,9 @@ internal class OAuth2TokenProviderRSATest {
             tokenRequest = nimbusTokenRequest(
                 "client1",
                 "grant_type" to "authorization_code",
-                "code" to "123"
+                "code" to "123",
             ),
             issuerUrl = issuerUrl.toHttpUrl(),
-            oAuth2TokenCallback = DefaultOAuth2TokenCallback()
+            oAuth2TokenCallback = DefaultOAuth2TokenCallback(),
         )
 }

@@ -33,9 +33,9 @@ class ExampleAppWithClientCredentialsClient(oauth2DiscoveryUrl: String) : Abstra
                         .add("client_id", "ExampleAppWithClientCredentialsClient")
                         .add("scope", "scope1")
                         .add("grant_type", "client_credentials")
-                        .build()
+                        .build(),
                 )
-                .build()
+                .build(),
         ).execute()
         return tokenResponse.body?.string()?.let {
             ObjectMapper().readValue<JsonNode>(it).get("access_token")?.textValue()

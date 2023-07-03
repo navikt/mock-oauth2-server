@@ -13,7 +13,7 @@ fun HttpUrl.authenticationRequest(
     responseMode: String = "query",
     state: String = "1234",
     nonce: String = "5678",
-    pkce: Pkce? = null
+    pkce: Pkce? = null,
 ): HttpUrl = newBuilder()
     .addQueryParameter("client_id", clientId)
     .addQueryParameter("response_type", responseType)
@@ -32,7 +32,7 @@ fun HttpUrl.authenticationRequest(
 
 data class Pkce(
     val verifier: CodeVerifier = CodeVerifier(),
-    val method: CodeChallengeMethod = CodeChallengeMethod.S256
+    val method: CodeChallengeMethod = CodeChallengeMethod.S256,
 ) {
     val challenge: CodeChallenge = CodeChallenge.compute(method, verifier)
 }

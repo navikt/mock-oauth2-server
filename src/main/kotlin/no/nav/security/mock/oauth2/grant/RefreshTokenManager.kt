@@ -8,7 +8,7 @@ import java.util.UUID
 typealias RefreshToken = String
 
 internal data class RefreshTokenManager(
-    private val cache: MutableMap<RefreshToken, OAuth2TokenCallback> = HashMap()
+    private val cache: MutableMap<RefreshToken, OAuth2TokenCallback> = HashMap(),
 ) {
     operator fun get(refreshToken: RefreshToken) = cache[refreshToken]
 
@@ -25,8 +25,8 @@ internal data class RefreshTokenManager(
             JWTClaimsSet.parse(
                 mapOf(
                     "jti" to jti,
-                    "nonce" to nonce
-                )
-            )
+                    "nonce" to nonce,
+                ),
+            ),
         ).serialize()
 }

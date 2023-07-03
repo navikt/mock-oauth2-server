@@ -23,7 +23,7 @@ data class OAuth2HttpRequest(
     val headers: Headers,
     val method: String,
     val originalUrl: HttpUrl,
-    val body: String? = null
+    val body: String? = null,
 ) {
     val url: HttpUrl get() = proxyAwareUrl()
     val formParameters: Parameters = Parameters(body)
@@ -41,7 +41,7 @@ data class OAuth2HttpRequest(
             tokenExchangeGrant,
             null,
             emptyList(),
-            formParameters.map.mapValues { mutableListOf(it.value) }
+            formParameters.map.mapValues { mutableListOf(it.value) },
         )
     }
 
@@ -56,7 +56,7 @@ data class OAuth2HttpRequest(
 
     fun asNimbusTokenRequest(): TokenRequest =
         TokenRequest.parse(
-            this.asNimbusHTTPRequest()
+            this.asNimbusHTTPRequest(),
         )
 
     fun asAuthenticationRequest(): AuthenticationRequest = AuthenticationRequest.parse(this.url.toUri())
@@ -75,7 +75,7 @@ data class OAuth2HttpRequest(
             endSessionEndpoint = this.proxyAwareUrl().toEndSessionEndpointUrl().toString(),
             introspectionEndpoint = this.proxyAwareUrl().toIntrospectUrl().toString(),
             jwksUri = this.proxyAwareUrl().toJwksUrl().toString(),
-            userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString()
+            userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString(),
         )
 
     internal fun proxyAwareUrl(): HttpUrl = HttpUrl.Builder()

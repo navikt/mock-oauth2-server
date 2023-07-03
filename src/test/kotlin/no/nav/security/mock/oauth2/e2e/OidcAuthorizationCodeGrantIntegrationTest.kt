@@ -31,7 +31,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     @Test
     fun `authentication request should return 302 with redirectUri as location and query params state and code`() {
         client.get(
-            server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = "http://mycallback", state = "mystate")
+            server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = "http://mycallback", state = "mystate"),
         ).asClue { response ->
             response.code shouldBe 302
             response.headers["location"]?.toHttpUrl().asClue {
@@ -58,8 +58,8 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 "grant_type" to "authorization_code",
                 "scope" to "openid scope1",
                 "redirect_uri" to "http://mycallback",
-                "code" to code
-            )
+                "code" to code,
+            ),
         ).toTokenResponse().asClue {
             it.accessToken shouldNotBe null
             it.idToken shouldNotBe null
@@ -76,7 +76,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
         val code = client.post(
             server.authorizationEndpointUrl("default").authenticationRequest(),
-            mapOf("username" to "foo")
+            mapOf("username" to "foo"),
         ).let { authResponse ->
             authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
         }
@@ -91,8 +91,8 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 "grant_type" to "authorization_code",
                 "scope" to "openid scope1",
                 "redirect_uri" to "http://mycallback",
-                "code" to code
-            )
+                "code" to code,
+            ),
         ).toTokenResponse().asClue {
             it.accessToken shouldNotBe null
             it.idToken shouldNotBe null
@@ -109,7 +109,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     fun `authorization code flow should return tokens on token request when valid PKCE code_verifier is used`() {
         val pkce = Pkce()
         val code = client.get(
-            server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce)
+            server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce),
         ).let { authResponse ->
             authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
         }
@@ -126,7 +126,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     fun `authorization code flow should return 400 bad request on token request when invalid PKCE code_verifier is used`() {
         val pkce = Pkce()
         val code = client.get(
-            server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce)
+            server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce),
         ).let { authResponse ->
             authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
         }
@@ -149,11 +149,11 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 "grant_type" to "authorization_code",
                 "scope" to "openid scope1",
                 "redirect_uri" to "http://mycallback",
-                "code" to code
+                "code" to code,
             ).apply {
                 if (pkce != null) {
                     put("code_verifier", pkce.verifier.value)
                 }
-            }
+            },
         )
 }

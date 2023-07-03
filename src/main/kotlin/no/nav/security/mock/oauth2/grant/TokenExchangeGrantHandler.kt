@@ -15,7 +15,7 @@ internal class TokenExchangeGrantHandler(private val tokenProvider: OAuth2TokenP
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenResponse {
         val tokenRequest = request.asTokenExchangeRequest()
         val receivedClaimsSet = tokenRequest.subjectToken().jwtClaimsSet
@@ -23,13 +23,13 @@ internal class TokenExchangeGrantHandler(private val tokenProvider: OAuth2TokenP
             tokenRequest,
             issuerUrl,
             receivedClaimsSet,
-            oAuth2TokenCallback
+            oAuth2TokenCallback,
         )
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             issuedTokenType = "urn:ietf:params:oauth:token-type:access_token",
             accessToken = accessToken.serialize(),
-            expiresIn = accessToken.expiresIn()
+            expiresIn = accessToken.expiresIn(),
         )
     }
 }

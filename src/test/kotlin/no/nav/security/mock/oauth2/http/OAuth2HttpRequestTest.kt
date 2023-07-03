@@ -15,25 +15,25 @@ internal class OAuth2HttpRequestTest {
         // no host header, x-forwarded-proto set
         "http://localhost:8080/mypath?query=1".GET(
             "x-forwarded-proto",
-            "https"
+            "https",
         ).url shouldBe "https://localhost/mypath?query=1".toHttpUrl()
 
         // host header overrides host and port in url
         "http://localhost:8080/mypath?query=1".GET(
             "host",
-            "localhost:8080"
+            "localhost:8080",
         ).url shouldBe "http://localhost:8080/mypath?query=1".toHttpUrl()
 
         // host header overrides host in url, port from original url should be used
         "http://localhost:8080/mypath?query=1".GET(
             "host",
-            "hostonly"
+            "hostonly",
         ).url shouldBe "http://hostonly:8080/mypath?query=1".toHttpUrl()
 
         // host header overrides host in url, port from original url should be used
         "http://localhost:8080/mypath?query=1".GET(
             "host",
-            "hostonly:-1"
+            "hostonly:-1",
         ).url shouldBe "http://hostonly:8080/mypath?query=1".toHttpUrl()
 
         // host header present, x-forwarded-port overrides port in url
@@ -41,7 +41,7 @@ internal class OAuth2HttpRequestTest {
             "host",
             "host:8080",
             "x-forwarded-port",
-            "9090"
+            "9090",
         ).url shouldBe "http://host:9090/mypath?query=1".toHttpUrl()
 
         // host header and x-forwarded- headers present
@@ -51,7 +51,7 @@ internal class OAuth2HttpRequestTest {
             "x-forwarded-port",
             "9090",
             "x-forwarded-proto",
-            "https"
+            "https",
         ).url shouldBe "https://hostheader:9090/mypath?query=1".toHttpUrl()
     }
 
@@ -59,7 +59,7 @@ internal class OAuth2HttpRequestTest {
         OAuth2HttpRequest(
             originalUrl = this.toHttpUrl(),
             headers = Headers.headersOf(*headers),
-            method = "GET"
+            method = "GET",
         )
 
     @Test
@@ -67,7 +67,7 @@ internal class OAuth2HttpRequestTest {
         val req1 = OAuth2HttpRequest(
             headers = Headers.headersOf(),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
         req1.proxyAwareUrl().toString() shouldBe "http://localhost:8080/mypath?query=1"
         val req2 = OAuth2HttpRequest(
@@ -77,10 +77,10 @@ internal class OAuth2HttpRequestTest {
                 "x-forwarded-proto",
                 "https",
                 "x-forwarded-port",
-                "444"
+                "444",
             ),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
         req2.proxyAwareUrl().toString() shouldBe "https://fakedings.nais.io:444/mypath?query=1"
 
@@ -92,10 +92,10 @@ internal class OAuth2HttpRequestTest {
                 "x-forwarded-proto",
                 "https",
                 "x-forwarded-port",
-                "444"
+                "444",
             ),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
         req3.proxyAwareUrl().toString() shouldBe "https://fakedings.nais.io:444/mypath?query=1"
 
@@ -105,10 +105,10 @@ internal class OAuth2HttpRequestTest {
                 "host",
                 "fakedings.nais.io:666",
                 "x-forwarded-proto",
-                "https"
+                "https",
             ),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
         req4.proxyAwareUrl().toString() shouldBe "https://fakedings.nais.io:666/mypath?query=1"
 
@@ -118,40 +118,40 @@ internal class OAuth2HttpRequestTest {
                 "host",
                 "fakedings.nais.io",
                 "x-forwarded-proto",
-                "https"
+                "https",
             ),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
         req5.proxyAwareUrl().toString() shouldBe "https://fakedings.nais.io/mypath?query=1"
 
         val req6 = OAuth2HttpRequest(
             headers = Headers.headersOf(
                 "host",
-                "oauth2"
+                "oauth2",
             ),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
         req6.proxyAwareUrl().toString() shouldBe "http://oauth2:8080/mypath?query=1"
 
         val req7 = OAuth2HttpRequest(
             headers = Headers.headersOf(
                 "host",
-                "oauth2:8080"
+                "oauth2:8080",
             ),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
         req7.proxyAwareUrl().toString() shouldBe "http://oauth2:8080/mypath?query=1"
 
         val req8 = OAuth2HttpRequest(
             headers = Headers.headersOf(
                 "host",
-                "oauth2"
+                "oauth2",
             ),
             method = "GET",
-            originalUrl = "https://somehost/mypath?query=1".toHttpUrl()
+            originalUrl = "https://somehost/mypath?query=1".toHttpUrl(),
         )
         req8.proxyAwareUrl().toString() shouldBe "https://oauth2/mypath?query=1"
     }
@@ -161,7 +161,7 @@ internal class OAuth2HttpRequestTest {
         val req1 = OAuth2HttpRequest(
             headers = Headers.headersOf(),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
         req1.toWellKnown().issuer shouldBe "http://localhost:8080/mypath"
         val req2 = OAuth2HttpRequest(
@@ -171,10 +171,10 @@ internal class OAuth2HttpRequestTest {
                 "x-forwarded-proto",
                 "https",
                 "x-forwarded-port",
-                "444"
+                "444",
             ),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
         req2.toWellKnown().issuer shouldBe "https://fakedings.nais.io:444/mypath"
     }
@@ -184,7 +184,7 @@ internal class OAuth2HttpRequestTest {
         val req1 = OAuth2HttpRequest(
             headers = Headers.headersOf(),
             method = "GET",
-            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl()
+            originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
         )
 
         req1.toWellKnown().issuer shouldBe "http://localhost:8080/mypath"

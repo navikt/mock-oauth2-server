@@ -50,8 +50,8 @@ class ExampleAppWithOpenIdConnectTest {
         oAuth2Server.enqueueCallback(
             DefaultOAuth2TokenCallback(
                 issuerId = ISSUER_ID,
-                subject = "foo"
-            )
+                subject = "foo",
+            ),
         )
         val loginResponse = client.newCall(Request.Builder().url(exampleApp.url("/login")).build()).execute()
         assertThat(loginResponse.headers["Set-Cookie"]).contains("id_token=")

@@ -8,25 +8,25 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 
 internal class ClientCredentialsGrantHandler(
-    private val tokenProvider: OAuth2TokenProvider
+    private val tokenProvider: OAuth2TokenProvider,
 ) : GrantHandler {
 
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val accessToken = tokenProvider.accessToken(
             tokenRequest,
             issuerUrl,
-            oAuth2TokenCallback
+            oAuth2TokenCallback,
         )
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
             expiresIn = accessToken.expiresIn(),
-            scope = tokenRequest.scope?.toString()
+            scope = tokenRequest.scope?.toString(),
         )
     }
 }

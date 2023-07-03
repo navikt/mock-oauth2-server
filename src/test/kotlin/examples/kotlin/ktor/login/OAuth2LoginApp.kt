@@ -41,15 +41,15 @@ fun main() {
                     AuthConfig.IdProvider(
                         name = "google",
                         authorizationEndpoint = "https://accounts.google.com/o/oauth2/v2/auth",
-                        tokenEndpoint = "https://oauth2.googleapis.com/token"
+                        tokenEndpoint = "https://oauth2.googleapis.com/token",
                     ),
                     AuthConfig.IdProvider(
                         name = "github",
                         authorizationEndpoint = "https://github.com/login/oauth/authorize",
-                        tokenEndpoint = "https://github.com/login/oauth/access_token"
-                    )
-                )
-            )
+                        tokenEndpoint = "https://github.com/login/oauth/access_token",
+                    ),
+                ),
+            ),
         )
     }.start(true)
 }
@@ -97,7 +97,7 @@ fun Application.module(authConfig: AuthConfig) {
 class Login(val type: String = "")
 
 class AuthConfig(
-    val providers: List<IdProvider> = emptyList()
+    val providers: List<IdProvider> = emptyList(),
 ) {
     class IdProvider(val name: String, authorizationEndpoint: String, tokenEndpoint: String) {
         val settings = OAuthServerSettings.OAuth2ServerSettings(
@@ -107,7 +107,7 @@ class AuthConfig(
             requestMethod = HttpMethod.Post,
             clientId = "***",
             clientSecret = "***",
-            defaultScopes = listOf("openid")
+            defaultScopes = listOf("openid"),
         )
     }
 }

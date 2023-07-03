@@ -17,13 +17,13 @@ private val log = KotlinLogging.logger {}
 
 internal class RefreshTokenGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
-    private val refreshTokenManager: RefreshTokenManager
+    private val refreshTokenManager: RefreshTokenManager,
 ) : GrantHandler {
 
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val refreshToken = tokenRequest.refreshTokenGrant().refreshToken.value
@@ -39,7 +39,7 @@ internal class RefreshTokenGrantHandler(
             accessToken = accessToken.serialize(),
             refreshToken = refreshToken,
             expiresIn = idToken.expiresIn(),
-            scope = scope
+            scope = scope,
         )
     }
 

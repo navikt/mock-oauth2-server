@@ -88,6 +88,6 @@ class KeyGeneratorTest {
                 .subject("test")
                 .issueTime(Date.from(Instant.now()))
                 .expirationTime(Date.from(Instant.now().plusSeconds(20)))
-                .build()
+                .build(),
         )
 }

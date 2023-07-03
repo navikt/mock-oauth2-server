@@ -50,7 +50,7 @@ private fun invalidToken(msg: String) = OAuth2Exception(
     ErrorObject(
         "invalid_token",
         msg,
-        HTTPResponse.SC_UNAUTHORIZED
+        HTTPResponse.SC_UNAUTHORIZED,
     ),
-    msg
+    msg,
 )

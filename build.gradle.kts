@@ -4,7 +4,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 val assertjVersion = "3.24.2"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.4.8"
-val nimbusSdkVersion = "10.9.2"
+val nimbusSdkVersion = "10.10.1"
 val mockWebServerVersion = "4.11.0"
 val jacksonVersion = "2.15.2"
 val nettyVersion = "4.1.94.Final"
@@ -15,7 +15,7 @@ val kotestVersion = "5.6.2"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "2.7.5"
 val reactorTestVersion = "3.4.24"
-val ktorVersion = "2.3.1"
+val ktorVersion = "2.3.2"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -26,8 +26,8 @@ plugins {
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.47.0"
     id("org.jmailen.kotlinter") version "3.15.0"
-    id("com.google.cloud.tools.jib") version "3.3.1"
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.google.cloud.tools.jib") version "3.3.2"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.0.2"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
     id("org.jetbrains.dokka") version "1.8.20"
@@ -37,7 +37,7 @@ plugins {
 }
 
 application {
-    mainClassName = mainClassKt
+    mainClass.set(mainClassKt)
 }
 
 java {
@@ -200,7 +200,7 @@ jib {
 }
 
 fun isNonStable(version: String): Boolean {
-    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.toUpperCase().contains(it) }
+    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
     val regex = "^[0-9,.v-]+(-r)?$".toRegex()
     val isStable = stableKeyword || regex.matches(version)
     return isStable.not()
@@ -259,6 +259,7 @@ tasks {
     }
 
     withType<Test> {
+        jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
         useJUnitPlatform()
     }
 
@@ -273,6 +274,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "7.4.2"
+        gradleVersion = "8.2"
     }
 }

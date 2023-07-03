@@ -18,7 +18,7 @@ internal class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvi
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val receivedClaimsSet = tokenRequest.assertion()
@@ -26,13 +26,13 @@ internal class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvi
             tokenRequest,
             issuerUrl,
             receivedClaimsSet,
-            oAuth2TokenCallback
+            oAuth2TokenCallback,
         )
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
             expiresIn = accessToken.expiresIn(),
-            scope = tokenRequest.responseScope()
+            scope = tokenRequest.responseScope(),
         )
     }
 

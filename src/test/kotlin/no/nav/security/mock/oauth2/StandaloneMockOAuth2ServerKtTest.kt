@@ -9,8 +9,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.beInstanceOf
 import no.nav.security.mock.oauth2.StandaloneConfig.JSON_CONFIG
 import no.nav.security.mock.oauth2.StandaloneConfig.JSON_CONFIG_PATH
-import no.nav.security.mock.oauth2.StandaloneConfig.SERVER_PORT
 import no.nav.security.mock.oauth2.StandaloneConfig.PORT
+import no.nav.security.mock.oauth2.StandaloneConfig.SERVER_PORT
 import no.nav.security.mock.oauth2.StandaloneConfig.hostname
 import no.nav.security.mock.oauth2.StandaloneConfig.oauth2Config
 import no.nav.security.mock.oauth2.StandaloneConfig.port

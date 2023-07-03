@@ -23,8 +23,8 @@ internal class OAuth2TokenCallbackTest {
                     claims = mapOf(
                         "sub" to "subByScope1",
                         "aud" to listOf("audByScope1"),
-                        "custom" to "custom1"
-                    )
+                        "custom" to "custom1",
+                    ),
                 ),
                 RequestMapping(
                     requestParam = "scope",
@@ -33,19 +33,19 @@ internal class OAuth2TokenCallbackTest {
                     claims = mapOf(
                         "sub" to "subByScope2",
                         "aud" to listOf("audByScope2"),
-                        "custom" to "custom2"
-                    )
+                        "custom" to "custom2",
+                    ),
                 ),
                 RequestMapping(
                     requestParam = "grant_type",
                     match = "*",
                     claims = mapOf(
                         "sub" to "defaultSub",
-                        "aud" to listOf("defaultAud")
-                    )
-                )
+                        "aud" to listOf("defaultAud"),
+                    ),
+                ),
             ),
-            tokenExpiry = 120
+            tokenExpiry = 120,
         )
 
         @Test
@@ -113,7 +113,7 @@ internal class OAuth2TokenCallbackTest {
             clientId,
             "grant_type" to "authorization_code",
             "code" to "123",
-            *formParams
+            *formParams,
         )
 
     private fun clientCredentialsRequest(vararg formParams: Pair<String, String>) =

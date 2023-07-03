@@ -34,8 +34,8 @@ internal class AuthorizationCodeHandlerTest {
             "http://authorizationendpoint".toHttpUrl()
                 .authenticationRequest(
                     state = "mystate",
-                    redirectUri = "http://redirect"
-                )
+                    redirectUri = "http://redirect",
+                ),
         ) {
             handler.authorizationCodeResponse(AuthenticationRequest.parse(this.toUri())).asClue {
                 it.impliedResponseType().impliesCodeFlow() shouldBe true
@@ -60,7 +60,7 @@ internal class AuthorizationCodeHandlerTest {
     fun `token response with login including claims should return access_token containing claims from login`(
         claims: String,
         expectedClaimKey: String,
-        expectedClaimValue: String
+        expectedClaimValue: String,
     ) {
         val code: String = handler.retrieveAuthorizationCode(Login("foo", claims))
 
@@ -75,7 +75,7 @@ internal class AuthorizationCodeHandlerTest {
         @JvmStatic
         fun jsonClaimsProvider(): Stream<Arguments> = Stream.of(
             Arguments.of("{ \"acr\": \"value\" }", "acr", "\"value\""),
-            Arguments.of("{ \"acr\": { \"reference\": { \"id\": \"value\" } } }", "acr", "{\"reference\":{\"id\":\"value\"}}")
+            Arguments.of("{ \"acr\": { \"reference\": { \"id\": \"value\" } } }", "acr", "{\"reference\":{\"id\":\"value\"}}"),
         )
     }
 
@@ -113,7 +113,7 @@ internal class AuthorizationCodeHandlerTest {
     private fun AuthorizationCodeHandler.retrieveAuthorizationCode(login: Login): String =
         authorizationCodeResponse(
             authenticationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
-            login = login
+            login = login,
         ).authorizationCode.value
 
     private fun HttpUrl.asNimbusAuthRequest(): AuthenticationRequest = AuthenticationRequest.parse(this.toUri())
@@ -121,7 +121,7 @@ internal class AuthorizationCodeHandlerTest {
     private fun tokenRequest(
         code: String,
         redirectUri: String = "http://redirect",
-        scope: String = "openid"
+        scope: String = "openid",
     ): OAuth2HttpRequest {
         return OAuth2HttpRequest(
             headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
@@ -132,7 +132,7 @@ internal class AuthorizationCodeHandlerTest {
                 "client_secret=secret&" +
                 "code=$code&" +
                 "redirect_uri=$redirectUri&" +
-                "scope=$scope"
+                "scope=$scope",
 
         )
     }

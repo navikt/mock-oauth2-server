@@ -87,12 +87,12 @@ fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet, jwsAlgori
     jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
     val keySelector: JWSKeySelector<SecurityContext?> = JWSVerificationKeySelector(
         jwsAlgorithm,
-        ImmutableJWKSet(jwkSet)
+        ImmutableJWKSet(jwkSet),
     )
     jwtProcessor.jwsKeySelector = keySelector
     jwtProcessor.jwtClaimsSetVerifier = DefaultJWTClaimsVerifier(
         JWTClaimsSet.Builder().issuer(issuer.toString()).build(),
-        HashSet(listOf("sub", "iat", "exp"))
+        HashSet(listOf("sub", "iat", "exp")),
     )
     return jwtProcessor.process(this, null)
 }

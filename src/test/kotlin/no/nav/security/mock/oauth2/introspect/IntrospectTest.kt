@@ -31,7 +31,7 @@ internal class IntrospectTest {
             "iss" to issuerUrl,
             "client_id" to "yolo",
             "token_type" to "token",
-            "sub" to "foo"
+            "sub" to "foo",
         )
         val token = tokenProvider.jwt(claims)
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
@@ -51,7 +51,7 @@ internal class IntrospectTest {
             "iss" to issuerUrl,
             "client_id" to "yolo",
             "token_type" to "token",
-            "sub" to "foo"
+            "sub" to "foo",
         )
         val token = rs384TokenProvider.jwt(claims)
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
@@ -95,7 +95,7 @@ internal class IntrospectTest {
             "iss" to issuerUrl,
             "client_id" to "yolo",
             "token_type" to "token",
-            "sub" to "foo"
+            "sub" to "foo",
         )
         val token = rs384TokenProvider.jwt(claims)
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
@@ -133,11 +133,11 @@ internal class IntrospectTest {
                 "Accept",
                 "application/json",
                 "Content-Type",
-                "application/x-www-form-urlencoded"
+                "application/x-www-form-urlencoded",
             ),
             method = "POST",
             url.toHttpUrl(),
-            body = token?.let { "token=$it&token_type_hint=access_token" }
+            body = token?.let { "token=$it&token_type_hint=access_token" },
         )
     }
 }

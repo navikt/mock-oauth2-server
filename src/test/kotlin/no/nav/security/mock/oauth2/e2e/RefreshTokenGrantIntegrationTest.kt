@@ -33,7 +33,7 @@ class RefreshTokenGrantIntegrationTest {
             // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
             val authorizationCode = client.post(
                 this.authorizationEndpointUrl("default").authenticationRequest(),
-                mapOf("username" to initialSubject)
+                mapOf("username" to initialSubject),
             ).let { authResponse ->
                 authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
             }
@@ -49,8 +49,8 @@ class RefreshTokenGrantIntegrationTest {
                     "client_id" to "id",
                     "client_secret" to "secret",
                     "scope" to "openid",
-                    "redirect_uri" to "http://something"
-                )
+                    "redirect_uri" to "http://something",
+                ),
             ).toTokenResponse()
 
             tokenResponseBeforeRefresh.idToken?.subject shouldBe initialSubject
@@ -64,8 +64,8 @@ class RefreshTokenGrantIntegrationTest {
                     "grant_type" to GrantType.REFRESH_TOKEN.value,
                     "refresh_token" to refreshToken,
                     "client_id" to "id",
-                    "client_secret" to "secret"
-                )
+                    "client_secret" to "secret",
+                ),
             ).toTokenResponse()
 
             refreshTokenResponse shouldBeValidFor GrantType.REFRESH_TOKEN
@@ -94,8 +94,8 @@ class RefreshTokenGrantIntegrationTest {
                     "grant_type" to GrantType.REFRESH_TOKEN.value,
                     "refresh_token" to "canbewhatever",
                     "client_id" to "id",
-                    "client_secret" to "secret"
-                )
+                    "client_secret" to "secret",
+                ),
             ).toTokenResponse()
 
             refreshTokenResponse shouldBeValidFor GrantType.REFRESH_TOKEN
@@ -113,8 +113,8 @@ class RefreshTokenGrantIntegrationTest {
                     "grant_type" to GrantType.REFRESH_TOKEN.value,
                     "refresh_token" to "canbewhatever",
                     "client_id" to "id",
-                    "client_secret" to "secret"
-                )
+                    "client_secret" to "secret",
+                ),
             ).toTokenResponse()
 
             refreshTokenResponse shouldBeValidFor GrantType.REFRESH_TOKEN

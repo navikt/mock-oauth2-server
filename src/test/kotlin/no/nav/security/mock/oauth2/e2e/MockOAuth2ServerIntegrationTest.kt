@@ -44,7 +44,7 @@ class MockOAuth2ServerIntegrationTest {
         val s = MockOAuth2Server(
             route("/custom") {
                 OAuth2HttpResponse(status = 200, body = "custom route")
-            }
+            },
         ).apply {
             start()
         }
@@ -88,7 +88,7 @@ class MockOAuth2ServerIntegrationTest {
     fun `wellknown should include https addresses when MockWebServerWrapper is started with https enabled`() {
         val ssl = Ssl()
         val server = MockOAuth2Server(
-            OAuth2Config(httpServer = MockWebServerWrapper(ssl))
+            OAuth2Config(httpServer = MockWebServerWrapper(ssl)),
         ).apply { start() }
         client.withTrustStore(ssl.sslKeystore.keyStore).get(server.wellKnownUrl("issuer1")).parse<WellKnown>().asClue {
             it urlsShouldStartWith "https"
@@ -103,8 +103,8 @@ class MockOAuth2ServerIntegrationTest {
             DefaultOAuth2TokenCallback(
                 issuerId = "custom",
                 subject = "yolo",
-                audience = listOf("myaud")
-            )
+                audience = listOf("myaud"),
+            ),
         )
 
         client.post(
@@ -115,8 +115,8 @@ class MockOAuth2ServerIntegrationTest {
                 "grant_type" to "authorization_code",
                 "scope" to "openid scope1",
                 "redirect_uri" to "http://mycallback",
-                "code" to "1234"
-            )
+                "code" to "1234",
+            ),
         ).toTokenResponse().asClue {
             it.idToken.shouldNotBeNull()
             it.idToken.subject shouldBe "yolo"
@@ -138,8 +138,8 @@ class MockOAuth2ServerIntegrationTest {
                     issuerId = "default",
                     subject = "mysub",
                     audience = listOf("myaud"),
-                    claims = mapOf("someclaim" to "claimvalue")
-                )
+                    claims = mapOf("someclaim" to "claimvalue"),
+                ),
             )
             val wellKnown = client.get(this.wellKnownUrl("default")).parse<WellKnown>()
             val jwks = client.get(wellKnown.jwksUri.toHttpUrl()).body?.let { JWKSet.parse(it.string()) }
@@ -165,9 +165,9 @@ class MockOAuth2ServerIntegrationTest {
                     "sub" to "mysub",
                     "aud" to listOf("myapp"),
                     "customInt" to 123,
-                    "customList" to listOf(1, 2, 3)
+                    "customList" to listOf(1, 2, 3),
                 ),
-                Duration.ofSeconds(10)
+                Duration.ofSeconds(10),
             )
 
             val wellKnown = client.get(this.wellKnownUrl("default")).parse<WellKnown>()
@@ -193,13 +193,13 @@ class MockOAuth2ServerIntegrationTest {
             "client1" to "secret",
             mapOf(
                 "grant_type" to "client_credentials",
-                "scope" to "scope1"
-            )
+                "scope" to "scope1",
+            ),
         ).toTokenResponse().accessToken.asClue {
             it.shouldNotBeNull()
             it.claims shouldContainAll mapOf(
                 "sub" to "subByScope",
-                "aud" to listOf("audByScope")
+                "aud" to listOf("audByScope"),
             )
         }
     }

@@ -38,7 +38,7 @@ internal class ExampleAppWithClientCredentialsClientTest {
             Request.Builder()
                 .url(exampleApp.url("/clientcredentials"))
                 .get()
-                .build()
+                .build(),
         ).execute()
         assertThat(response.code).isEqualTo(200)
 

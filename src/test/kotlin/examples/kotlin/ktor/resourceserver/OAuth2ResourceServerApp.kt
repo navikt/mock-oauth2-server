@@ -39,14 +39,14 @@ fun main() {
             "provider1" to AuthConfig.TokenProvider(
                 wellKnownUrl = "https://provider1/.well-known/openid-configuration",
                 acceptedAudience = "thisAppClientId",
-                requiredClaims = mapOf("groups" to listOf("group1"))
+                requiredClaims = mapOf("groups" to listOf("group1")),
             ),
             "provider2" to AuthConfig.TokenProvider(
                 wellKnownUrl = "https://provider2/.well-known/openid-configuration",
                 acceptedAudience = "thisAppClientId",
-                requiredClaims = mapOf("someClaim" to "someClaim1")
-            )
-        )
+                requiredClaims = mapOf("someClaim" to "someClaim1"),
+            ),
+        ),
     )
 
     embeddedServer(Netty, port = 8080) {
@@ -91,12 +91,12 @@ fun Application.module(authConfig: AuthConfig) {
 
 // just to show how the MockOAuth2Server can support multiple "token providers"/issuers at the same time
 class AuthConfig(
-    val providers: Map<String, TokenProvider> = emptyMap()
+    val providers: Map<String, TokenProvider> = emptyMap(),
 ) {
     class TokenProvider(
         val wellKnownUrl: String,
         val acceptedAudience: String,
-        val requiredClaims: Map<String, Any> = emptyMap()
+        val requiredClaims: Map<String, Any> = emptyMap(),
     ) {
         private val httpClient = HttpClient(CIO) {
             install(ContentNegotiation) {
@@ -116,7 +116,7 @@ class AuthConfig(
         data class WellKnown(
             val issuer: String,
             @JsonProperty("jwks_uri")
-            val jwksUri: String
+            val jwksUri: String,
         )
     }
 }

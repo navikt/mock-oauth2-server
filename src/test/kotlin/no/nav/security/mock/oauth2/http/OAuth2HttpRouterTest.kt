@@ -21,7 +21,7 @@ internal class OAuth2HttpRouterTest {
             },
             route("shouldmatch") {
                 OAuth2HttpResponse(status = 200, body = "ANY")
-            }
+            },
         )
         routes.invoke(post("/something/shouldmatch")).body shouldBe "ANY"
         routes.invoke(options("/something/shouldmatch")).body shouldBe "OPTIONS"
@@ -69,7 +69,7 @@ internal class OAuth2HttpRouterTest {
                 ResponseInterceptor { _, response ->
                     val headers = response.headers.newBuilder().add("fromInterceptor", "fromInterceptor").build()
                     response.copy(headers = headers)
-                }
+                },
             )
             get("/1") {
                 it.headers shouldContain ("yolo" to "forever")
@@ -83,14 +83,14 @@ internal class OAuth2HttpRouterTest {
         routes.invoke(get("/1")).asClue {
             it.headers shouldContainAll listOf(
                 "Content-Type" to "text/plain",
-                "fromInterceptor" to "fromInterceptor"
+                "fromInterceptor" to "fromInterceptor",
             )
             it.body shouldBe "1"
         }
         routes.invoke(get("/2")).asClue {
             it.headers shouldContainAll listOf(
                 "Content-Type" to "text/plain",
-                "fromInterceptor" to "fromInterceptor"
+                "fromInterceptor" to "fromInterceptor",
             )
             it.body shouldBe "2"
         }
@@ -105,12 +105,12 @@ internal class OAuth2HttpRouterTest {
             Headers.headersOf(),
             method,
             url.toHttpUrl(),
-            body
+            body,
         )
 
     private fun ok(body: String? = null) = OAuth2HttpResponse(
         headers = Headers.headersOf("Content-Type", "text/plain"),
         status = 200,
-        body = body
+        body = body,
     )
 }

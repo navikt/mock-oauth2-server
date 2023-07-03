@@ -2,7 +2,6 @@ package no.nav.security.mock.oauth2.testutils
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import java.net.URLEncoder
 import no.nav.security.mock.oauth2.extensions.keyValuesToMap
 import okhttp3.Credentials
 import okhttp3.FormBody
@@ -11,6 +10,7 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.net.URLEncoder
 import java.security.KeyStore
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
@@ -18,7 +18,7 @@ import javax.net.ssl.X509TrustManager
 
 fun Response.toTokenResponse(): ParsedTokenResponse = ParsedTokenResponse(
     this.code,
-    checkNotNull(this.body).string()
+    checkNotNull(this.body).string(),
 )
 
 inline fun <reified T> Response.parse(): T = jacksonObjectMapper().readValue(checkNotNull(body?.string()))
@@ -49,61 +49,61 @@ fun OkHttpClient.tokenRequest(url: HttpUrl, parameters: Map<String, String>): Re
 fun OkHttpClient.tokenRequest(
     url: HttpUrl,
     headers: Headers,
-    parameters: Map<String, String>
+    parameters: Map<String, String>,
 ): Response =
     this.newCall(
         Request.Builder().post(
             url = url,
             headers = headers,
-            parameters = parameters
-        )
+            parameters = parameters,
+        ),
     ).execute()
 
 fun OkHttpClient.tokenRequest(
     url: HttpUrl,
     basicAuth: Pair<String, String>,
-    parameters: Map<String, String>
+    parameters: Map<String, String>,
 ): Response =
     tokenRequest(
         url,
         Headers.headersOf("Authorization", Credentials.basic(basicAuth.first, basicAuth.second)),
-        parameters
+        parameters,
     )
 
 fun OkHttpClient.post(
     url: HttpUrl,
-    parameters: Map<String, String>
+    parameters: Map<String, String>,
 ): Response =
     this.newCall(
         Request.Builder().post(
             url = url,
             headers = Headers.headersOf(),
-            parameters = parameters
-        )
+            parameters = parameters,
+        ),
     ).execute()
 
 fun OkHttpClient.get(
     url: HttpUrl,
     headers: Headers = Headers.headersOf(),
-    parameters: Map<String, String> = emptyMap()
+    parameters: Map<String, String> = emptyMap(),
 ): Response =
     this.newCall(
         Request.Builder().get(
             url,
             headers,
-            parameters
-        )
+            parameters,
+        ),
     ).execute()
 
 fun OkHttpClient.options(
     url: HttpUrl,
-    headers: Headers = Headers.headersOf()
+    headers: Headers = Headers.headersOf(),
 ): Response =
     this.newCall(
         Request.Builder().options(
             url,
-            headers
-        )
+            headers,
+        ),
     ).execute()
 
 fun Request.Builder.get(url: HttpUrl, headers: Headers = Headers.headersOf(), parameters: Map<String, String> = emptyMap()) =

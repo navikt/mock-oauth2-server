@@ -30,7 +30,7 @@ internal class OAuth2ClientTest {
             val tokenResponse = httpClient.clientCredentialsGrant(
                 url = server.tokenEndpointUrl("default").toString(),
                 auth = Auth.ClientSecretBasic("client1", "secret"),
-                scope = "targetScope"
+                scope = "targetScope",
             )
 
             tokenResponse.asClue {
@@ -50,10 +50,10 @@ internal class OAuth2ClientTest {
                 auth = Auth.PrivateKeyJwt(
                     keyPair = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair(),
                     clientId = "client1",
-                    tokenEndpoint = tokenEndpointUrl
+                    tokenEndpoint = tokenEndpointUrl,
                 ),
                 token = initialToken.serialize(),
-                scope = "targetScope"
+                scope = "targetScope",
             )
 
             tokenResponse.asClue {

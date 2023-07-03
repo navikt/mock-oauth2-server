@@ -11,13 +11,13 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 
 internal class PasswordGrantHandler(
-    private val tokenProvider: OAuth2TokenProvider
+    private val tokenProvider: OAuth2TokenProvider,
 ) : GrantHandler {
 
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val scope: String? = tokenRequest.scope?.toString()
@@ -28,12 +28,12 @@ internal class PasswordGrantHandler(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
             expiresIn = accessToken.expiresIn(),
-            scope = scope
+            scope = scope,
         )
     }
 
     private class PasswordGrantTokenCallback(
-        private val tokenCallback: OAuth2TokenCallback
+        private val tokenCallback: OAuth2TokenCallback,
     ) : OAuth2TokenCallback by tokenCallback {
 
         override fun subject(tokenRequest: TokenRequest) =

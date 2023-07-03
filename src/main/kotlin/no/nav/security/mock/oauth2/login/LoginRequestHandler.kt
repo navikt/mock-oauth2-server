@@ -30,5 +30,5 @@ class LoginRequestHandler(private val templateMapper: TemplateMapper, private va
 
 data class Login(
     val username: String,
-    val claims: String? = null
+    val claims: String? = null,
 )

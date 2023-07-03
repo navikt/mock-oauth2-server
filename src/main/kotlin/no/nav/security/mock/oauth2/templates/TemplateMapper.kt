@@ -9,11 +9,11 @@ import java.io.StringWriter
 
 data class HtmlContent(
     val template: String,
-    val model: Any?
+    val model: Any?,
 )
 
 class TemplateMapper(
-    private val config: Configuration
+    private val config: Configuration,
 ) {
 
     fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest): String =
@@ -22,9 +22,9 @@ class TemplateMapper(
                 "login.ftl",
                 mapOf(
                     "request_url" to oAuth2HttpRequest.url.newBuilder().query(null).build().toString(),
-                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map
-                )
-            )
+                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map,
+                ),
+            ),
         )
 
     fun debuggerCallbackHtml(tokenRequest: String, tokenResponse: String): String {
@@ -33,9 +33,9 @@ class TemplateMapper(
                 "debugger_callback.ftl",
                 mapOf(
                     "token_request" to tokenRequest,
-                    "token_response" to tokenResponse
-                )
-            )
+                    "token_response" to tokenResponse,
+                ),
+            ),
         )
     }
 
@@ -45,9 +45,9 @@ class TemplateMapper(
                 "error.ftl",
                 mapOf(
                     "debugger_url" to debuggerUrl,
-                    "stacktrace" to stacktrace
-                )
-            )
+                    "stacktrace" to stacktrace,
+                ),
+            ),
         )
 
     fun debuggerFormHtml(url: HttpUrl, clientAuthMethod: String): String {
@@ -59,9 +59,9 @@ class TemplateMapper(
                     "url" to urlWithoutQuery,
                     "token_url" to url.toTokenEndpointUrl(),
                     "query" to OAuth2HttpRequest.Parameters(url.query).map,
-                    "client_auth_method" to clientAuthMethod
-                )
-            )
+                    "client_auth_method" to clientAuthMethod,
+                ),
+            ),
         )
     }
 
@@ -72,9 +72,9 @@ class TemplateMapper(
                 mapOf(
                     "redirect_uri" to redirectUri,
                     "code" to code,
-                    "state" to state
-                )
-            )
+                    "state" to state,
+                ),
+            ),
         )
 
     private fun asString(htmlContent: HtmlContent): String =

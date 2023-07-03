@@ -27,7 +27,7 @@ internal class UserInfoTest {
         val claims = mapOf(
             "iss" to issuerUrl,
             "sub" to "foo",
-            "extra" to "bar"
+            "extra" to "bar",
         )
         val bearerToken = tokenProvider.jwt(claims)
         val request = request("$issuerUrl$USER_INFO", bearerToken.serialize())
@@ -45,7 +45,7 @@ internal class UserInfoTest {
         val claims = mapOf(
             "iss" to issuerUrl,
             "sub" to "foo",
-            "extra" to "bar"
+            "extra" to "bar",
         )
         val bearerToken = tokenProvider.jwt(claims)
         val request = request("$issuerUrl$USER_INFO", bearerToken.serialize())
@@ -97,7 +97,7 @@ internal class UserInfoTest {
             bearerToken?.let { Headers.headersOf("Authorization", "Bearer $it") } ?: Headers.headersOf(),
             "GET",
             url.toHttpUrl(),
-            null
+            null,
         )
     }
 }

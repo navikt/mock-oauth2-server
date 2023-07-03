@@ -60,7 +60,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
         TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),
         REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager),
-        PASSWORD to PasswordGrantHandler(config.tokenProvider)
+        PASSWORD to PasswordGrantHandler(config.tokenProvider),
     )
 
     private val exceptionHandler: ExceptionHandler = { request, error ->

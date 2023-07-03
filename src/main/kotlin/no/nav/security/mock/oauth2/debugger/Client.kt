@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.debugger
 
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.http.Ssl
 import okhttp3.Credentials
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -15,12 +16,11 @@ import java.nio.charset.StandardCharsets
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
-import no.nav.security.mock.oauth2.http.Ssl
 
 internal class TokenRequest(
     val url: HttpUrl,
     clientAuthentication: ClientAuthentication,
-    parameters: Map<String, String>
+    parameters: Map<String, String>,
 ) {
     val headers = when (clientAuthentication.clientAuthMethod) {
         ClientAuthentication.Method.CLIENT_SECRET_BASIC -> Headers.headersOf("Authorization", clientAuthentication.basic())
@@ -49,7 +49,7 @@ internal class TokenRequest(
 internal data class ClientAuthentication(
     val clientId: String,
     val clientSecret: String,
-    val clientAuthMethod: Method
+    val clientAuthMethod: Method,
 ) {
     fun form(): String = "client_id=${clientId.urlEncode()}&client_secret=${clientSecret.urlEncode()}"
     fun basic(): String = Credentials.basic(clientId, clientSecret, StandardCharsets.UTF_8)
@@ -59,7 +59,7 @@ internal data class ClientAuthentication(
             ClientAuthentication(
                 map.require("client_id"),
                 map.require("client_secret"),
-                Method.valueOf(map.require("client_auth_method"))
+                Method.valueOf(map.require("client_auth_method")),
             )
 
         private fun Map<String, String>.require(key: String): String =
@@ -68,7 +68,7 @@ internal data class ClientAuthentication(
 
     enum class Method {
         CLIENT_SECRET_POST,
-        CLIENT_SECRET_BASIC
+        CLIENT_SECRET_BASIC,
     }
 }
 
@@ -80,7 +80,7 @@ internal fun OkHttpClient.post(tokenRequest: TokenRequest): String =
             .headers(tokenRequest.headers)
             .url(tokenRequest.url)
             .post(tokenRequest.body.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
-            .build()
+            .build(),
     ).execute().body?.string() ?: throw RuntimeException("could not get response body from url=${tokenRequest.url}")
 
 fun OkHttpClient.withSsl(ssl: Ssl, followRedirects: Boolean = false): OkHttpClient =

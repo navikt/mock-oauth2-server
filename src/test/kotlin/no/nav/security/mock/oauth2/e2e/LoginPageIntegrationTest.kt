@@ -30,8 +30,8 @@ class LoginPageIntegrationTest {
         val server = MockOAuth2Server(
             OAuth2Config(
                 interactiveLogin = true,
-                loginPagePath = "./src/test/resources/login.example.html"
-            )
+                loginPagePath = "./src/test/resources/login.example.html",
+            ),
         ).apply { start() }
         val body = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).body?.string()
 
@@ -45,8 +45,8 @@ class LoginPageIntegrationTest {
         val server = MockOAuth2Server(
             OAuth2Config(
                 interactiveLogin = true,
-                loginPagePath = path
-            )
+                loginPagePath = path,
+            ),
         ).apply { start() }
         val code = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).code
 
