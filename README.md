@@ -109,7 +109,11 @@ A request to `http://localhost:8080/default/.well-known/openid-configuration` wi
      "PS256",
      "PS384",
      "PS512"
-   ]
+   ],
+  "code_challenge_methods_supported":[
+      "plain", 
+      "S256" 
+  ]
 }
 ```
 
