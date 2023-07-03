@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @SpringBootApplication
 public class OAuth2LoginApp {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         SpringApplication app = new SpringApplication(OAuth2LoginApp.class);
         app.setBannerMode(Banner.Mode.OFF);
         app.run(args);
@@ -37,17 +37,15 @@ public class OAuth2LoginApp {
     }
 
     @EnableWebFluxSecurity
+    static
     class SecurityConfiguration {
 
         @Bean
         public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
             return http
-                    .authorizeExchange()
-                    .anyExchange().authenticated()
-                    .and()
-                    .oauth2Login()
-                    .and()
-                    .build();
+                    .authorizeExchange(exchanges -> exchanges
+                            .anyExchange().authenticated()
+                    ).oauth2Login(withDefaults()).build();
         }
 
         @Bean

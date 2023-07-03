@@ -24,7 +24,7 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
-import java.net.URL
+import java.net.URI
 import java.util.HashSet
 
 private val log = KotlinLogging.logger {}
@@ -36,7 +36,7 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
         .followRedirects(false)
         .build()
 
-    val metadata = OIDCProviderMetadata.parse(DefaultResourceRetriever().retrieveResource(URL(oauth2DiscoveryUrl)).content)
+    val metadata = OIDCProviderMetadata.parse(DefaultResourceRetriever().retrieveResource(URI(oauth2DiscoveryUrl).toURL()).content)
 
     lateinit var exampleApp: MockWebServer
 

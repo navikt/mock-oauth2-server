@@ -13,8 +13,8 @@ val kotlinVersion = "1.8.22"
 val freemarkerVersion = "2.3.32"
 val kotestVersion = "5.6.2"
 val bouncyCastleVersion = "1.70"
-val springBootVersion = "2.7.5"
-val reactorTestVersion = "3.4.24"
+val springBootVersion = "3.1.1"
+val reactorTestVersion = "3.5.7"
 val ktorVersion = "2.3.2"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
@@ -41,8 +41,8 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     withJavadocJar()
     withSourcesJar()
 }
@@ -187,7 +187,7 @@ jib {
                 os = "linux"
             }
         }
-        image = "gcr.io/distroless/java11-debian11"
+        image = "gcr.io/distroless/java17-debian11"
     }
     container {
         ports = listOf("8080")
@@ -254,7 +254,7 @@ tasks {
 
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
-            jvmTarget = JavaVersion.VERSION_11.toString()
+            jvmTarget = JavaVersion.VERSION_17.toString()
         }
     }
 

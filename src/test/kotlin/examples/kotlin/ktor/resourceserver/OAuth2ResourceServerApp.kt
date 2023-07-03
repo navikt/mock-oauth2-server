@@ -26,7 +26,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import java.net.URL
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger { }
@@ -108,7 +108,7 @@ class AuthConfig(
         }
 
         val wellKnown: WellKnown = runBlocking { httpClient.prepareGet(wellKnownUrl).body() }
-        val jwkProvider = JwkProviderBuilder(URL(wellKnown.jwksUri))
+        val jwkProvider = JwkProviderBuilder(URI(wellKnown.jwksUri).toURL())
             .cached(10, 24, TimeUnit.HOURS)
             .rateLimited(10, 1, TimeUnit.MINUTES)
             .build()
