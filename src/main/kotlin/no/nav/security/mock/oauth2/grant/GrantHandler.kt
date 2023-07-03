@@ -9,6 +9,6 @@ interface GrantHandler {
     fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenResponse
 }

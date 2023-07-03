@@ -28,18 +28,18 @@ data class OAuth2Config @JvmOverloads constructor(
     @JsonDeserialize(contentAs = RequestMappingTokenCallback::class)
     val tokenCallbacks: Set<OAuth2TokenCallback> = emptySet(),
     @JsonDeserialize(using = OAuth2HttpServerDeserializer::class)
-    val httpServer: OAuth2HttpServer = MockWebServerWrapper()
+    val httpServer: OAuth2HttpServer = MockWebServerWrapper(),
 ) {
 
     class OAuth2TokenProviderDeserializer : JsonDeserializer<OAuth2TokenProvider>() {
 
         data class ProviderConfig(
-            val keyProvider: KeyProviderConfig?
+            val keyProvider: KeyProviderConfig?,
         )
 
         data class KeyProviderConfig(
             val initialKeys: String?,
-            val algorithm: String
+            val algorithm: String,
         )
 
         override fun deserialize(p: JsonParser, ctxt: DeserializationContext?): OAuth2TokenProvider {
@@ -56,8 +56,8 @@ data class OAuth2Config @JvmOverloads constructor(
             return OAuth2TokenProvider(
                 KeyProvider(
                     jwks,
-                    config.keyProvider?.algorithm ?: JWSAlgorithm.RS256.name
-                )
+                    config.keyProvider?.algorithm ?: JWSAlgorithm.RS256.name,
+                ),
             )
         }
     }
@@ -65,19 +65,19 @@ data class OAuth2Config @JvmOverloads constructor(
     class OAuth2HttpServerDeserializer : JsonDeserializer<OAuth2HttpServer>() {
         enum class ServerType {
             MockWebServerWrapper,
-            NettyWrapper
+            NettyWrapper,
         }
 
         data class ServerConfig(
             val type: ServerType,
-            val ssl: SslConfig? = null
+            val ssl: SslConfig? = null,
         )
 
         data class SslConfig(
             val keyPassword: String = "",
             val keystoreFile: File? = null,
             val keystoreType: SslKeystore.KeyStoreType = SslKeystore.KeyStoreType.PKCS12,
-            val keystorePassword: String = ""
+            val keystorePassword: String = "",
         ) {
             fun ssl() = Ssl(sslKeyStore())
 

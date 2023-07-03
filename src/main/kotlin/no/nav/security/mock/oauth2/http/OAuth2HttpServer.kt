@@ -26,12 +26,6 @@ import io.netty.handler.ssl.SslHandler
 import io.netty.handler.stream.ChunkedStream
 import io.netty.handler.stream.ChunkedWriteHandler
 import io.netty.util.CharsetUtil
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
-import javax.net.ssl.SSLHandshakeException
-import kotlin.properties.Delegates
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
 import okhttp3.Headers
@@ -40,6 +34,12 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
+import javax.net.ssl.SSLHandshakeException
+import kotlin.properties.Delegates
 
 private val log = KotlinLogging.logger { }
 
@@ -60,7 +60,7 @@ interface OAuth2HttpServer : AutoCloseable {
 }
 
 class MockWebServerWrapper@JvmOverloads constructor(
-    val ssl: Ssl? = null
+    val ssl: Ssl? = null,
 ) : OAuth2HttpServer {
     val mockWebServer: MockWebServer = MockWebServer()
 
@@ -84,7 +84,7 @@ class MockWebServerWrapper@JvmOverloads constructor(
 
     internal class MockWebServerDispatcher(
         private val requestHandler: RequestHandler,
-        private val responseQueue: BlockingQueue<MockResponse> = LinkedBlockingQueue()
+        private val responseQueue: BlockingQueue<MockResponse> = LinkedBlockingQueue(),
     ) : Dispatcher() {
 
         override fun dispatch(request: RecordedRequest): MockResponse =
@@ -103,7 +103,7 @@ class MockWebServerWrapper@JvmOverloads constructor(
 }
 
 class NettyWrapper @JvmOverloads constructor(
-    val ssl: Ssl? = null
+    val ssl: Ssl? = null,
 ) : OAuth2HttpServer {
     private val masterGroup = NioEventLoopGroup()
     private val workerGroup = NioEventLoopGroup()
@@ -128,7 +128,7 @@ class NettyWrapper @JvmOverloads constructor(
                             ch.pipeline().addLast("streamer", ChunkedWriteHandler())
                             ch.pipeline().addLast("routes", RouterChannelHandler(requestHandler))
                         }
-                    }
+                    },
                 )
                 .option(ChannelOption.SO_BACKLOG, 1000)
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
@@ -196,7 +196,7 @@ class NettyWrapper @JvmOverloads constructor(
         private fun OAuth2HttpResponse.asNettyResponse(): Pair<DefaultHttpResponse, ChunkedStream> =
             DefaultHttpResponse(
                 HttpVersion.HTTP_1_1,
-                HttpResponseStatus(this.status, "")
+                HttpResponseStatus(this.status, ""),
             ).apply {
                 this@asNettyResponse.headers.forEach { (key, values) -> headers().set(key, values) }
             } to ChunkedStream(this.body?.byteInputStream() ?: "".byteInputStream())
@@ -206,7 +206,7 @@ class NettyWrapper @JvmOverloads constructor(
                 this.headers().toOkHttpHeaders(),
                 this.method().name(),
                 this.requestUrl(scheme, address, port),
-                content().toString(CharsetUtil.UTF_8)
+                content().toString(CharsetUtil.UTF_8),
             )
 
         private fun FullHttpRequest.requestUrl(scheme: String, address: InetSocketAddress, port: Int): HttpUrl =

@@ -44,14 +44,14 @@ internal class OAuth2HttpRequestHandlerTest {
                 path = "/issuer1$AUTHORIZATION_WITH_PARAMS",
                 method = "POST",
                 body = "username=foo",
-                expectedResponse = OAuth2HttpResponse(status = 302)
+                expectedResponse = OAuth2HttpResponse(status = 302),
             ),
             request(
                 path = "/issuer1$TOKEN",
                 method = "POST",
                 headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
                 body = "grant_type=client_credentials&client_id=client&client_secret=secret",
-                expectedResponse = OAuth2HttpResponse(status = 200)
+                expectedResponse = OAuth2HttpResponse(status = 200),
             ),
             request(path = "/issuer1$END_SESSION", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
             request(path = "/issuer1$USER_INFO", method = "GET", headers = bearerTokenHeader("issuer1"), expectedResponse = OAuth2HttpResponse(status = 200)),
@@ -61,9 +61,9 @@ internal class OAuth2HttpRequestHandlerTest {
                 method = "POST",
                 headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
                 body = "authorize_url=http://url",
-                expectedResponse = OAuth2HttpResponse(status = 302)
+                expectedResponse = OAuth2HttpResponse(status = 302),
             ),
-            request(path = "/favicon.ico", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200))
+            request(path = "/favicon.ico", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
         )
 
         private fun request(path: String, method: String, headers: Headers = Headers.headersOf(), body: String? = null, expectedResponse: OAuth2HttpResponse) =
@@ -72,16 +72,16 @@ internal class OAuth2HttpRequestHandlerTest {
                     headers,
                     method,
                     "http://localhost$path".toHttpUrl(),
-                    body
+                    body,
                 ),
-                expectedResponse
+                expectedResponse,
             )
 
         private fun bearerTokenHeader(issuerId: String): Headers {
             val claims = mapOf(
                 "iss" to "http://localhost/$issuerId",
                 "sub" to "foo",
-                "extra" to "bar"
+                "extra" to "bar",
             )
             val bearerToken = tokenProvider.jwt(claims = claims, issuerId = issuerId).serialize()
             return Headers.headersOf("Authorization", "Bearer $bearerToken")

@@ -37,6 +37,6 @@ internal class LoginRequestHandlerTest {
             originalUrl = "http://localhost/issuer1/login".toHttpUrl(),
             headers = Headers.headersOf(),
             method = "POST",
-            body = body
+            body = body,
         )
 }

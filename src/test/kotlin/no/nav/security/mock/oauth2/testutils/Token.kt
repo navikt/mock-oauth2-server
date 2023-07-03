@@ -54,7 +54,7 @@ object SubjectTokenType {
 
 data class ParsedTokenResponse(
     val status: Int,
-    val body: String
+    val body: String,
 ) {
     private val tokenResponse: OAuth2TokenResponse = jacksonObjectMapper().readValue(body)
     val tokenType = tokenResponse.tokenType
@@ -88,7 +88,7 @@ infix fun ParsedTokenResponse.shouldBeValidFor(type: GrantType) {
 fun verifyWith(
     issuerId: String,
     server: MockOAuth2Server,
-    requiredClaims: List<String> = listOf("sub", "iss", "iat", "exp", "aud")
+    requiredClaims: List<String> = listOf("sub", "iss", "iat", "exp", "aud"),
 ) = object : Matcher<SignedJWT> {
     override fun test(value: SignedJWT): MatcherResult {
         return try {
@@ -98,7 +98,7 @@ fun verifyWith(
                 { "should not happen, famous last words" },
                 {
                     "JWT should not verify, expected exception."
-                }
+                },
             )
         } catch (e: Exception) {
             MatcherResult(
@@ -106,7 +106,7 @@ fun verifyWith(
                 { "${e.message}" },
                 {
                     "JWT should not verify, expected exception."
-                }
+                },
             )
         }
     }
@@ -118,13 +118,13 @@ fun nimbusTokenRequest(clientId: String, vararg formParams: Pair<String, String>
             "Content-Type",
             "application/x-www-form-urlencoded",
             "Authorization",
-            "Basic ${Base64.getEncoder().encodeToString("$clientId:clientSecret".toByteArray())}"
+            "Basic ${Base64.getEncoder().encodeToString("$clientId:clientSecret".toByteArray())}",
         ),
         "POST",
         "http://localhost/token".toHttpUrl(),
         formParams.joinToString("&") {
             "${it.first}=${it.second}"
-        }
+        },
     ).asNimbusTokenRequest()
 
 fun String.asJwt(): SignedJWT = SignedJWT.parse(this)
@@ -137,7 +137,7 @@ val SignedJWT.claims: Map<String, Any> get() = jwtClaimsSet.claims
 fun SignedJWT.verifyWith(
     issuer: HttpUrl,
     jwkSetUri: HttpUrl,
-    requiredClaims: List<String> = listOf("sub", "iss", "iat", "exp", "aud")
+    requiredClaims: List<String> = listOf("sub", "iss", "iat", "exp", "aud"),
 ): JWTClaimsSet {
     return DefaultJWTProcessor<SecurityContext?>()
         .apply {
@@ -146,7 +146,7 @@ fun SignedJWT.verifyWith(
                 JWTClaimsSet.Builder()
                     .issuer(issuer.toString())
                     .build(),
-                HashSet(requiredClaims)
+                HashSet(requiredClaims),
             )
         }.process(this, null)
 }
@@ -156,7 +156,7 @@ fun clientAssertion(
     audience: URL,
     rsaKey: RSAKey = generateRsaKey(),
     lifetime: Long = 119,
-    issueTime: Instant = Instant.now()
+    issueTime: Instant = Instant.now(),
 ): SignedJWT =
     JWTClaimsSet.Builder()
         .issuer(clientId)
@@ -174,7 +174,7 @@ fun JWTClaimsSet.sign(rsaKey: RSAKey = generateRsaKey()): SignedJWT =
         JWSHeader.Builder(JWSAlgorithm.RS256)
             .keyID(rsaKey.keyID)
             .type(JOSEObjectType.JWT).build(),
-        this
+        this,
     ).apply {
         sign(RSASSASigner(rsaKey.toPrivateKey()))
     }

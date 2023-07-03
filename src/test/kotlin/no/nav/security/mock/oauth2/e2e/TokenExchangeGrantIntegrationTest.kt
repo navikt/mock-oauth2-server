@@ -46,9 +46,9 @@ class TokenExchangeGrantIntegrationTest {
                     subject = initialSubject,
                     claims = mapOf(
                         "claim1" to "value1",
-                        "claim2" to "value2"
-                    )
-                )
+                        "claim2" to "value2",
+                    ),
+                ),
             )
 
             val issuerId = "tokenx"
@@ -64,8 +64,8 @@ class TokenExchangeGrantIntegrationTest {
                     "client_assertion" to clientAssertion,
                     "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
                     "subject_token" to initialToken.serialize(),
-                    "audience" to targetAudienceForToken
-                )
+                    "audience" to targetAudienceForToken,
+                ),
             ).toTokenResponse()
 
             response shouldBeValidFor TOKEN_EXCHANGE
@@ -93,8 +93,8 @@ class TokenExchangeGrantIntegrationTest {
                     "client_secret" to "somesecret",
                     "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
                     "subject_token" to "yolo",
-                    "audience" to "targetAudienceForToken"
-                )
+                    "audience" to "targetAudienceForToken",
+                ),
             )
             response.code shouldBe 400
         }
@@ -113,8 +113,8 @@ class TokenExchangeGrantIntegrationTest {
                     "client_assertion" to clientAssertion,
                     "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
                     "subject_token" to "na",
-                    "audience" to "na"
-                )
+                    "audience" to "na",
+                ),
             )
             response.code shouldBe 400
         }
@@ -145,8 +145,8 @@ class TokenExchangeGrantIntegrationTest {
                     "client_assertion" to clientAssertion,
                     "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
                     "subject_token" to "na",
-                    "audience" to "na"
-                )
+                    "audience" to "na",
+                ),
             )
             response.code shouldBe 400
         }

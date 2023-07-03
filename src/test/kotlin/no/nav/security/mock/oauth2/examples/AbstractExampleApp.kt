@@ -54,7 +54,7 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
                         MockResponse()
                             .setResponseCode(500)
                             .setBody("unhandled exception with message ${error.message}")
-                    }
+                    },
                 )
             }
         }
@@ -71,7 +71,7 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
             Request.Builder()
                 .url(metadata.jwkSetURI.toURL())
                 .get()
-                .build()
+                .build(),
         ).execute().body?.string()?.let {
             JWKSet.parse(it)
         } ?: throw RuntimeException("could not retrieve jwks")
@@ -82,12 +82,12 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
         jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
         val keySelector: JWSKeySelector<SecurityContext?> = JWSVerificationKeySelector(
             JWSAlgorithm.RS256,
-            ImmutableJWKSet(jwkSet)
+            ImmutableJWKSet(jwkSet),
         )
         jwtProcessor.jwsKeySelector = keySelector
         jwtProcessor.jwtClaimsSetVerifier = DefaultJWTClaimsVerifier(
             JWTClaimsSet.Builder().issuer(issuer.toString()).build(),
-            HashSet(listOf("sub", "iat", "exp", "aud"))
+            HashSet(listOf("sub", "iat", "exp", "aud")),
         )
         return try {
             jwtProcessor.process(jwt, null)

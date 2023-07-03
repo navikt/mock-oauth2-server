@@ -35,7 +35,7 @@ internal class OAuth2LoginAppTest {
 
         withEmbeddedServer(
             { module(authConfig()) },
-            port
+            port,
         ) {
             get<String>("http://localhost:$port/login/google").asClue {
                 it shouldBe "welcome googleSubject"
@@ -51,7 +51,7 @@ internal class OAuth2LoginAppTest {
     private fun <R> withEmbeddedServer(
         moduleFunction: Application.() -> Unit,
         port: Int,
-        test: ApplicationEngine.() -> R
+        test: ApplicationEngine.() -> R,
     ): R {
         val engine = embeddedServer(Netty, port = port) {
             moduleFunction(this)
@@ -75,13 +75,13 @@ internal class OAuth2LoginAppTest {
             AuthConfig.IdProvider(
                 name = "google",
                 authorizationEndpoint = mockOAuth2Server.authorizationEndpointUrl("google").toString(),
-                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("google").toString()
+                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("google").toString(),
             ),
             AuthConfig.IdProvider(
                 name = "github",
                 authorizationEndpoint = mockOAuth2Server.authorizationEndpointUrl("github").toString(),
-                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("github").toString()
-            )
-        )
+                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("github").toString(),
+            ),
+        ),
     )
 }

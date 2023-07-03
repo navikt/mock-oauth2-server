@@ -19,7 +19,7 @@ val templateMapper: TemplateMapper = TemplateMapper.create {}
 data class OAuth2HttpResponse(
     val headers: Headers = Headers.headersOf(),
     val status: Int,
-    val body: String? = null
+    val body: String? = null,
 )
 
 data class WellKnown(
@@ -41,7 +41,7 @@ data class WellKnown(
     @JsonProperty("subject_types_supported")
     val subjectTypesSupported: List<String> = listOf("public"),
     @JsonProperty("id_token_signing_alg_values_supported")
-    val idTokenSigningAlgValuesSupported: List<String> = (KeyGenerator.ecAlgorithmFamily + KeyGenerator.rsaAlgorithmFamily).map { it.name }.toList()
+    val idTokenSigningAlgValuesSupported: List<String> = (KeyGenerator.ecAlgorithmFamily + KeyGenerator.rsaAlgorithmFamily).map { it.name }.toList(),
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -59,13 +59,13 @@ data class OAuth2TokenResponse(
     @JsonProperty("expires_in")
     val expiresIn: Int = 0,
     @JsonProperty("scope")
-    val scope: String? = null
+    val scope: String? = null,
 )
 
 fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
         HttpHeaderNames.CONTENT_TYPE.toString(),
-        "application/json;charset=UTF-8"
+        "application/json;charset=UTF-8",
     ),
     status = 200,
     body = when (anyObject) {
@@ -74,21 +74,21 @@ fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
             objectMapper
                 .enable(SerializationFeature.INDENT_OUTPUT)
                 .writeValueAsString(anyObject)
-    }
+    },
 )
 
 fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(
         HttpHeaderNames.CONTENT_TYPE.toString(),
-        "text/html;charset=UTF-8"
+        "text/html;charset=UTF-8",
     ),
     status = 200,
-    body = content
+    body = content,
 )
 
 fun redirect(location: String, headers: Headers = Headers.headersOf()): OAuth2HttpResponse = OAuth2HttpResponse(
     headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), location).newBuilder().addAll(headers).build(),
-    status = 302
+    status = 302,
 )
 
 fun notFound(body: String? = null): OAuth2HttpResponse = OAuth2HttpResponse(status = 404, body = body)
@@ -102,13 +102,13 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
                 body = templateMapper.authorizationCodeResponseHtml(
                     authenticationSuccessResponse.redirectionURI.toString(),
                     authenticationSuccessResponse.authorizationCode.value,
-                    authenticationSuccessResponse.state.value
-                )
+                    authenticationSuccessResponse.state.value,
+                ),
             )
         }
         else -> OAuth2HttpResponse(
             headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authenticationSuccessResponse.toURI().toString()),
-            status = 302
+            status = 302,
         )
     }
 }
@@ -118,12 +118,12 @@ fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
     return OAuth2HttpResponse(
         headers = Headers.headersOf(
             HttpHeaderNames.CONTENT_TYPE.toString(),
-            "application/json;charset=UTF-8"
+            "application/json;charset=UTF-8",
         ),
         status = responseCode,
         body = objectMapper
             .enable(SerializationFeature.INDENT_OUTPUT)
             .writeValueAsString(error.toJSONObject())
-            .lowercase()
+            .lowercase(),
     )
 }

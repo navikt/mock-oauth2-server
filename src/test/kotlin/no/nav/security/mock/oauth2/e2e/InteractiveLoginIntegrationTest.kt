@@ -47,19 +47,19 @@ class InteractiveLoginIntegrationTest {
                 User(
                     username = "user1",
                     claims = mapOf(
-                        "claim1" to "claim1value"
-                    )
-                )
+                        "claim1" to "claim1value",
+                    ),
+                ),
 
             ),
             Arguments.of(
                 User(
                     username = "user2",
                     claims = mapOf(
-                        "claim2" to "claim2value"
-                    )
-                )
-            )
+                        "claim2" to "claim2value",
+                    ),
+                ),
+            ),
         )
     }
 
@@ -74,8 +74,8 @@ class InteractiveLoginIntegrationTest {
             loginUrl,
             mapOf(
                 "username" to user.username,
-                "claims" to user.claimsAsJson()
-            )
+                "claims" to user.claimsAsJson(),
+            ),
         ).let { authResponse ->
             val code = authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
             code.shouldNotBeNull()
@@ -91,13 +91,13 @@ class InteractiveLoginIntegrationTest {
                 "grant_type" to "authorization_code",
                 "scope" to "openid scope1",
                 "redirect_uri" to "http://mycallback",
-                "code" to authCode
-            )
+                "code" to authCode,
+            ),
         ).toTokenResponse()
 
     internal data class User(
         val username: String,
-        val claims: Map<String, Any> = emptyMap()
+        val claims: Map<String, Any> = emptyMap(),
     ) {
         fun claimsAsJson(): String = jacksonObjectMapper().writeValueAsString(claims)
     }

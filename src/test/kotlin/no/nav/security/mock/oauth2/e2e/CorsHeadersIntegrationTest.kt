@@ -31,8 +31,8 @@ class CorsHeadersIntegrationTest {
                     "origin",
                     origin,
                     ACCESS_CONTROL_REQUEST_HEADERS,
-                    "X-MY-HEADER"
-                )
+                    "X-MY-HEADER",
+                ),
             ).asClue {
                 it.code shouldBe 204
                 it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
@@ -48,7 +48,7 @@ class CorsHeadersIntegrationTest {
         withMockOAuth2Server {
             client.get(
                 this.wellKnownUrl("issuer"),
-                Headers.headersOf("origin", origin)
+                Headers.headersOf("origin", origin),
             ).asClue {
                 it.code shouldBe 200
                 it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
@@ -62,7 +62,7 @@ class CorsHeadersIntegrationTest {
         withMockOAuth2Server {
             client.get(
                 this.jwksUrl("issuer"),
-                Headers.headersOf("origin", origin)
+                Headers.headersOf("origin", origin),
             ).asClue {
                 it.code shouldBe 200
                 it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
@@ -85,8 +85,8 @@ class CorsHeadersIntegrationTest {
                     "grant_type" to GrantType.REFRESH_TOKEN.value,
                     "refresh_token" to "canbewhatever",
                     "client_id" to "id",
-                    "client_secret" to "secret"
-                )
+                    "client_secret" to "secret",
+                ),
             )
 
             response.code shouldBe 200

@@ -45,7 +45,7 @@ internal class KeyProviderTest {
     fun `signingKey should return a EC key from initial keys file until deque is empty`() {
         val provider = KeyProvider(
             initialKeys = KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"),
-            algorithm = "ES256"
+            algorithm = "ES256",
         )
         val initialPublicKeys = initialEcPublicKeys()
 

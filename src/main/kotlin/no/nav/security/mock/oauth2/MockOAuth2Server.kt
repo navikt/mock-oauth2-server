@@ -42,7 +42,7 @@ private val log = KotlinLogging.logger { }
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 open class MockOAuth2Server(
     val config: OAuth2Config = OAuth2Config(),
-    vararg additionalRoutes: Route
+    vararg additionalRoutes: Route,
 ) {
     constructor(vararg additionalRoutes: Route) : this(config = OAuth2Config(), additionalRoutes = additionalRoutes)
     constructor(config: OAuth2Config) : this(config = config, additionalRoutes = emptyArray())
@@ -51,7 +51,7 @@ open class MockOAuth2Server(
     private val defaultRequestHandler: OAuth2HttpRequestHandler = OAuth2HttpRequestHandler(config)
     private val router: RequestHandler = routes(
         *additionalRoutes,
-        defaultRequestHandler.authorizationServer
+        defaultRequestHandler.authorizationServer,
     )
 
     /**
@@ -221,7 +221,7 @@ open class MockOAuth2Server(
         val tokenRequest = TokenRequest(
             uri.toUri(),
             ClientSecretBasic(ClientID(clientId), Secret("secret")),
-            AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost"))
+            AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost")),
         )
         return config.tokenProvider.accessToken(tokenRequest, issuerUrl, tokenCallback, null)
     }
@@ -237,7 +237,7 @@ open class MockOAuth2Server(
         subject: String = UUID.randomUUID().toString(),
         audience: String? = "default",
         claims: Map<String, Any> = emptyMap(),
-        expiry: Long = 3600
+        expiry: Long = 3600,
     ): SignedJWT = issueToken(
         issuerId,
         "default",
@@ -247,8 +247,8 @@ open class MockOAuth2Server(
             JOSEObjectType.JWT.type,
             audience?.let { listOf(it) },
             claims,
-            expiry
-        )
+            expiry,
+        ),
     )
 
     /**
@@ -267,8 +267,8 @@ open class MockOAuth2Server(
             jwtClaimsSet,
             DefaultOAuth2TokenCallback(
                 audience = jwtClaimsSet.audience,
-                expiry = expiry.toMillis()
-            )
+                expiry = expiry.toMillis(),
+            ),
         )
     }
 
@@ -306,7 +306,7 @@ internal fun Map<String, Any>.toJwtClaimsSet(): JWTClaimsSet =
 
 fun <R> withMockOAuth2Server(
     config: OAuth2Config = OAuth2Config(),
-    test: MockOAuth2Server.() -> R
+    test: MockOAuth2Server.() -> R,
 ): R {
     val server = MockOAuth2Server(config)
     server.start()

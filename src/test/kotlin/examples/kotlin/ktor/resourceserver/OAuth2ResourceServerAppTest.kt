@@ -70,7 +70,7 @@ class OAuth2ResourceServerAppTest {
             "provider1",
             "foo",
             "scopeFromProvider1",
-            mapOf("groups" to listOf("group1", "group2"))
+            mapOf("groups" to listOf("group1", "group2")),
         ).serialize()
 
     private fun MockOAuth2Server.tokenFromProvider2() =
@@ -78,7 +78,7 @@ class OAuth2ResourceServerAppTest {
             "provider2",
             "foo",
             "scopeFromProvider2",
-            mapOf("stringClaim" to "1")
+            mapOf("stringClaim" to "1"),
         ).serialize()
 
     private fun MockOAuth2Server.authConfig() =
@@ -87,13 +87,13 @@ class OAuth2ResourceServerAppTest {
                 "provider1" to AuthConfig.TokenProvider(
                     wellKnownUrl = wellKnownUrl("provider1").toString(),
                     acceptedAudience = "scopeFromProvider1",
-                    requiredClaims = mapOf("groups" to listOf("group2"))
+                    requiredClaims = mapOf("groups" to listOf("group2")),
                 ),
                 "provider2" to AuthConfig.TokenProvider(
                     wellKnownUrl = wellKnownUrl("provider2").toString(),
                     acceptedAudience = "scopeFromProvider2",
-                    requiredClaims = mapOf("stringClaim" to "1")
-                )
-            )
+                    requiredClaims = mapOf("stringClaim" to "1"),
+                ),
+            ),
         )
 }

@@ -59,8 +59,8 @@ internal class OAuth2HttpServerTest {
                 keyPassword = "",
                 keystoreFile = File("src/test/resources/localhost.p12"),
                 keystorePassword = "",
-                keystoreType = SslKeystore.KeyStoreType.PKCS12
-            )
+                keystoreType = SslKeystore.KeyStoreType.PKCS12,
+            ),
         )
         NettyWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
     }
@@ -87,7 +87,7 @@ internal class OAuth2HttpServerTest {
 
         client.get(
             this.url("/header"),
-            Headers.headersOf("header1", "headervalue1")
+            Headers.headersOf("header1", "headervalue1"),
         ).body?.string() shouldBe "headermatch"
 
         client.get(this.url("/1/2")).body?.string() shouldBe "pathmatch"
@@ -102,6 +102,6 @@ internal class OAuth2HttpServerTest {
 
     private fun ok(body: String) = OAuth2HttpResponse(
         status = 200,
-        body = body
+        body = body,
     )
 }

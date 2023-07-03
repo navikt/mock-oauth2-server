@@ -118,7 +118,7 @@ internal class OAuth2ConfigTest {
                 { "Date $withSkew should be after $now" },
                 {
                     "Date $withSkew should not be after $now"
-                }
+                },
             )
         }
     }

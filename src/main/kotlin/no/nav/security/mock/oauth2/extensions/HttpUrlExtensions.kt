@@ -36,7 +36,7 @@ object OAuth2Endpoints {
         USER_INFO,
         INTROSPECT,
         DEBUGGER,
-        DEBUGGER_CALLBACK
+        DEBUGGER_CALLBACK,
     )
 }
 

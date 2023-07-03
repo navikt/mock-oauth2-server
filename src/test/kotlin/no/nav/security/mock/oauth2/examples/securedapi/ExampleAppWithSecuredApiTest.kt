@@ -39,7 +39,7 @@ internal class ExampleAppWithSecuredApiTest {
             Request.Builder()
                 .url(exampleApp.url("/api"))
                 .get()
-                .build()
+                .build(),
         ).execute()
         assertThat(response.code).isEqualTo(401)
     }
@@ -52,7 +52,7 @@ internal class ExampleAppWithSecuredApiTest {
                 .url(exampleApp.url("/api"))
                 .addHeader("Authorization", "Bearer " + token.serialize())
                 .get()
-                .build()
+                .build(),
         ).execute()
         assertThat(response.code).isEqualTo(200)
         assertThat(response.body?.string()).contains(token.jwtClaimsSet.subject)

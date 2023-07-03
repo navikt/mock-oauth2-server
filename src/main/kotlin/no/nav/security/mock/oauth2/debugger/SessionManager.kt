@@ -25,7 +25,7 @@ class SessionManager {
 
     class Session(
         private val encryptionKey: SecretKey,
-        val request: OAuth2HttpRequest
+        val request: OAuth2HttpRequest,
     ) {
         val parameters: MutableMap<String, String> = getSessionCookie() ?.let { objectMapper.readValue(it) } ?: mutableMapOf()
 
@@ -41,7 +41,7 @@ class SessionManager {
         private fun String.encrypt(key: SecretKey): String =
             JWEObject(
                 JWEHeader(JWEAlgorithm.DIR, EncryptionMethod.A128GCM),
-                Payload(this)
+                Payload(this),
             ).also {
                 it.encrypt(DirectEncrypter(key))
             }.serialize()
@@ -59,7 +59,7 @@ class SessionManager {
                 onFailure = { error ->
                     log.error("received exception when decrypting cookie", error)
                     null
-                }
+                },
             )
         companion object {
             const val DEBUGGER_SESSION_COOKIE = "debugger-session"

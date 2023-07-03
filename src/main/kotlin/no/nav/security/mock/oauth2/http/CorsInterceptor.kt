@@ -5,7 +5,7 @@ import mu.KotlinLogging
 private val log = KotlinLogging.logger {}
 
 class CorsInterceptor(
-    private val allowedMethods: List<String> = listOf("POST", "GET", "OPTIONS")
+    private val allowedMethods: List<String> = listOf("POST", "GET", "OPTIONS"),
 ) : ResponseInterceptor {
 
     companion object HeaderNames {

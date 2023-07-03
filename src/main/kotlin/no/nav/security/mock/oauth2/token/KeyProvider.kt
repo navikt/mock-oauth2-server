@@ -12,7 +12,7 @@ import java.util.concurrent.LinkedBlockingDeque
 
 open class KeyProvider @JvmOverloads constructor(
     private val initialKeys: List<JWK> = keysFromFile(INITIAL_KEYS_FILE),
-    private val algorithm: String = JWSAlgorithm.RS256.name
+    private val algorithm: String = JWSAlgorithm.RS256.name,
 ) {
     private val signingKeys: ConcurrentHashMap<String, JWK> = ConcurrentHashMap()
 

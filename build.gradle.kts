@@ -37,7 +37,7 @@ plugins {
 }
 
 application {
-    mainClassName = mainClassKt
+    mainClass.set(mainClassKt)
 }
 
 java {
@@ -200,7 +200,7 @@ jib {
 }
 
 fun isNonStable(version: String): Boolean {
-    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.toUpperCase().contains(it) }
+    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
     val regex = "^[0-9,.v-]+(-r)?$".toRegex()
     val isStable = stableKeyword || regex.matches(version)
     return isStable.not()
@@ -259,6 +259,7 @@ tasks {
     }
 
     withType<Test> {
+        jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
         useJUnitPlatform()
     }
 
@@ -273,6 +274,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "7.4.2"
+        gradleVersion = "8.2"
     }
 }

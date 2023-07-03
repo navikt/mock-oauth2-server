@@ -29,8 +29,8 @@ class MockOAuth2ServerTest {
                     "client_id" to "client",
                     "client_secret" to "sec",
                     "grant_type" to "client_credentials",
-                    "scope" to "scope1"
-                )
+                    "scope" to "scope1",
+                ),
             ).body?.close()
 
             this.takeRequest().asClue {

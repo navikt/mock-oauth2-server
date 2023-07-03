@@ -28,7 +28,7 @@ private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
-    private val refreshTokenManager: RefreshTokenManager
+    private val refreshTokenManager: RefreshTokenManager,
 ) : GrantHandler {
 
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
@@ -51,12 +51,12 @@ internal class AuthorizationCodeHandler(
                     null,
                     authenticationRequest.state,
                     null,
-                    authenticationRequest.responseMode
+                    authenticationRequest.responseMode,
                 )
             }
             else -> throw OAuth2Exception(
                 OAuth2Error.INVALID_GRANT,
-                "hybrid og implicit flow not supported (yet)."
+                "hybrid og implicit flow not supported (yet).",
             )
         }
     }
@@ -64,7 +64,7 @@ internal class AuthorizationCodeHandler(
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
-        oAuth2TokenCallback: OAuth2TokenCallback
+        oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val code = tokenRequest.authorizationCode()
@@ -84,7 +84,7 @@ internal class AuthorizationCodeHandler(
             accessToken = accessToken.serialize(),
             refreshToken = refreshToken,
             expiresIn = idToken.expiresIn(),
-            scope = scope
+            scope = scope,
         )
     }
 

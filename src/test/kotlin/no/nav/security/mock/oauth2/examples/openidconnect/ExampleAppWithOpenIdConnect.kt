@@ -36,9 +36,9 @@ class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp
                                 .add("code", code)
                                 .add("redirect_uri", exampleApp.url("/callback").toString())
                                 .add("grant_type", "authorization_code")
-                                .build()
+                                .build(),
                         )
-                        .build()
+                        .build(),
                 ).execute()
                 val idToken: String = ObjectMapper().readValue<JsonNode>(tokenResponse.body!!.string()).get("id_token").textValue()
                 val idTokenClaims: JWTClaimsSet = verifyJwt(idToken, metadata.issuer, retrieveJwks())
@@ -81,7 +81,7 @@ class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp
                 "response_mode" to listOf("query"),
                 "scope" to listOf("openid scope1"),
                 "state" to listOf("1234"),
-                "nonce" to listOf("5678")
-            )
+                "nonce" to listOf("5678"),
+            ),
         )
 }

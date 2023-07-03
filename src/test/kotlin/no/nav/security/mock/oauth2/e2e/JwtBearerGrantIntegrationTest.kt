@@ -36,9 +36,9 @@ class JwtBearerGrantIntegrationTest {
                     subject = initialSubject,
                     claims = mapOf(
                         "claim1" to "value1",
-                        "claim2" to "value2"
-                    )
-                )
+                        "claim2" to "value2",
+                    ),
+                ),
             )
             val issuerId = "aad"
             val response: ParsedTokenResponse = client.tokenRequest(
@@ -47,8 +47,8 @@ class JwtBearerGrantIntegrationTest {
                 parameters = mapOf(
                     "grant_type" to GrantType.JWT_BEARER.value,
                     "scope" to "scope1",
-                    "assertion" to initialToken.serialize()
-                )
+                    "assertion" to initialToken.serialize(),
+                ),
             ).toTokenResponse()
 
             response shouldBeValidFor GrantType.JWT_BEARER
@@ -78,9 +78,9 @@ class JwtBearerGrantIntegrationTest {
                         "claim1" to "value1",
                         "claim2" to "value2",
                         "scope" to "ascope",
-                        "resource" to "aud1"
-                    )
-                )
+                        "resource" to "aud1",
+                    ),
+                ),
             )
 
             initialToken.audience.shouldBeEmpty()
@@ -94,8 +94,8 @@ class JwtBearerGrantIntegrationTest {
                 basicAuth = Pair("client1", "secret"),
                 parameters = mapOf(
                     "grant_type" to GrantType.JWT_BEARER.value,
-                    "assertion" to initialToken.serialize()
-                )
+                    "assertion" to initialToken.serialize(),
+                ),
             ).toTokenResponse()
 
             response shouldBeValidFor GrantType.JWT_BEARER

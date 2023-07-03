@@ -29,7 +29,7 @@ object StandaloneConfig {
         } else {
             OAuth2Config(
                 interactiveLogin = true,
-                httpServer = NettyWrapper()
+                httpServer = NettyWrapper(),
             )
         }
     }
@@ -49,7 +49,7 @@ fun main() {
         oauth2Config(),
         route("/isalive") {
             OAuth2HttpResponse(status = 200, body = "alive and well")
-        }
+        },
     ).apply {
         start(hostname(), port())
     }

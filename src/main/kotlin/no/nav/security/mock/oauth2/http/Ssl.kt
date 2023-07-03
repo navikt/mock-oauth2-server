@@ -1,18 +1,5 @@
 package no.nav.security.mock.oauth2.http
 
-import java.io.File
-import java.math.BigInteger
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.PublicKey
-import java.security.cert.X509Certificate
-import java.time.Duration
-import java.time.Instant
-import java.util.Date
-import javax.net.ssl.KeyManagerFactory
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLEngine
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -34,9 +21,22 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
+import java.io.File
+import java.math.BigInteger
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.KeyStore
+import java.security.PublicKey
+import java.security.cert.X509Certificate
+import java.time.Duration
+import java.time.Instant
+import java.util.Date
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
 
 class Ssl @JvmOverloads constructor(
-    val sslKeystore: SslKeystore = SslKeystore()
+    val sslKeystore: SslKeystore = SslKeystore(),
 ) {
     fun sslEngine(): SSLEngine = sslContext().createSSLEngine().apply {
         useClientMode = false
@@ -55,19 +55,19 @@ class Ssl @JvmOverloads constructor(
 
 class SslKeystore @JvmOverloads constructor(
     val keyPassword: String = "",
-    val keyStore: KeyStore = generate("localhost", keyPassword)
+    val keyStore: KeyStore = generate("localhost", keyPassword),
 ) {
     @JvmOverloads
     constructor(
         keyPassword: String,
         keystoreFile: File,
         keystoreType: KeyStoreType = KeyStoreType.PKCS12,
-        keystorePassword: String = ""
+        keystorePassword: String = "",
     ) : this(keyPassword, keyStore(keystoreFile, keystoreType, keystorePassword))
 
     enum class KeyStoreType {
         PKCS12,
-        JKS
+        JKS,
     }
 
     companion object {
@@ -87,7 +87,7 @@ class SslKeystore @JvmOverloads constructor(
         private fun keyStore(
             keystoreFile: File,
             keystoreType: KeyStoreType = KeyStoreType.PKCS12,
-            keystorePassword: String = ""
+            keystorePassword: String = "",
         ) = KeyStore.getInstance(keystoreType.name).apply {
             keystoreFile.inputStream().use {
                 load(it, keystorePassword.toCharArray())
@@ -104,14 +104,14 @@ class SslKeystore @JvmOverloads constructor(
                 Date.from(now),
                 Date.from(now.plus(expiry)),
                 x500Name,
-                this.public
+                this.public,
             ).addExtensions(cn, this.public).build(contentSigner)
             return JcaX509CertificateConverter().setProvider(BouncyCastleProvider()).getCertificate(certificateHolder)
         }
 
         private fun X509v3CertificateBuilder.addExtensions(cn: String, publicKey: PublicKey) = apply {
             val san: MutableList<GeneralName> = mutableListOf(
-                GeneralName(GeneralName.dNSName, cn)
+                GeneralName(GeneralName.dNSName, cn),
             )
 
             if (cn == "localhost") {

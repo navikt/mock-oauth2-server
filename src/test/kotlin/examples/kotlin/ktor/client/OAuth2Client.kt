@@ -43,7 +43,7 @@ suspend fun HttpClient.tokenRequest(url: String, auth: Auth, params: Map<String,
             params.forEach {
                 append(it.key, it.value)
             }
-        }
+        },
     ) {
         auth.headers.forEach { s, list -> header(s, list.first()) }
     }
@@ -54,8 +54,8 @@ suspend fun HttpClient.clientCredentialsGrant(url: String, auth: Auth, scope: St
         auth = auth,
         params = mapOf(
             "grant_type" to "client_credentials",
-            "scope" to scope
-        )
+            "scope" to scope,
+        ),
     )
 
 suspend fun HttpClient.onBehalfOfGrant(url: String, auth: Auth, token: String, scope: String) =
@@ -66,13 +66,13 @@ suspend fun HttpClient.onBehalfOfGrant(url: String, auth: Auth, token: String, s
             "scope" to scope,
             "grant_type" to "urn:ietf:params:oauth:grant-type:jwt-bearer",
             "requested_token_use" to "on_behalf_of",
-            "assertion" to token
-        )
+            "assertion" to token,
+        ),
     )
 
 class Auth internal constructor(
     val parameters: Map<String, String> = emptyMap(),
-    val headers: Headers = Headers.Empty
+    val headers: Headers = Headers.Empty,
 ) {
     companion object {
         private const val CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
@@ -85,26 +85,26 @@ class Auth internal constructor(
         fun PrivateKeyJwt(jwt: String): Auth = Auth(
             parameters = mapOf(
                 "client_assertion_type" to CLIENT_ASSERTION_TYPE,
-                "client_assertion" to jwt
-            )
+                "client_assertion" to jwt,
+            ),
         )
 
         fun PrivateKeyJwt(
             keyPair: KeyPair,
             clientId: String,
             tokenEndpoint: String,
-            expiry: Duration = Duration.ofSeconds(120)
+            expiry: Duration = Duration.ofSeconds(120),
         ): Auth = Auth(
             parameters = mapOf(
                 "client_assertion_type" to CLIENT_ASSERTION_TYPE,
-                "client_assertion" to keyPair.clientAssertion(clientId, tokenEndpoint, expiry)
-            )
+                "client_assertion" to keyPair.clientAssertion(clientId, tokenEndpoint, expiry),
+            ),
         )
 
         private fun KeyPair.clientAssertion(
             clientId: String,
             tokenEndpoint: String,
-            expiry: Duration = Duration.ofSeconds(120)
+            expiry: Duration = Duration.ofSeconds(120),
         ): String {
             val now = Instant.now()
             return JWT.create()
@@ -126,5 +126,5 @@ data class TokenResponse(
     @JsonProperty("expires_in")
     val expiresIn: Int,
     @JsonProperty("token_type")
-    val tokenType: String
+    val tokenType: String,
 )
