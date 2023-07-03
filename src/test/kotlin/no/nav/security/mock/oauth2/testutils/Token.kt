@@ -8,7 +8,7 @@ import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.KeyUse
 import com.nimbusds.jose.jwk.RSAKey
-import com.nimbusds.jose.jwk.source.RemoteJWKSet
+import com.nimbusds.jose.jwk.source.JWKSourceBuilder
 import com.nimbusds.jose.proc.JWSVerificationKeySelector
 import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jwt.JWTClaimsSet
@@ -141,7 +141,7 @@ fun SignedJWT.verifyWith(
 ): JWTClaimsSet {
     return DefaultJWTProcessor<SecurityContext?>()
         .apply {
-            jwsKeySelector = JWSVerificationKeySelector(JWSAlgorithm.RS256, RemoteJWKSet(jwkSetUri.toUrl()))
+            jwsKeySelector = JWSVerificationKeySelector(JWSAlgorithm.RS256, JWKSourceBuilder.create<SecurityContext>(jwkSetUri.toUrl()).build())
             jwtClaimsSetVerifier = DefaultJWTClaimsVerifier(
                 JWTClaimsSet.Builder()
                     .issuer(issuer.toString())
