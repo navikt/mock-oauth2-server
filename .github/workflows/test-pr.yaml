@@ -1,8 +1,8 @@
 name: Test PR
-on: [push]
+on: [push, pull_request]
 
 jobs:
-  test:
+  test_pr:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout latest code
