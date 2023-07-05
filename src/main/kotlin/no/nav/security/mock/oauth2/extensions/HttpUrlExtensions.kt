@@ -20,6 +20,7 @@ object OAuth2Endpoints {
     const val AUTHORIZATION = "/authorize"
     const val TOKEN = "/token"
     const val END_SESSION = "/endsession"
+    const val REVOKE = "/revoke"
     const val JWKS = "/jwks"
     const val USER_INFO = "/userinfo"
     const val INTROSPECT = "/introspect"

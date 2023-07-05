@@ -44,6 +44,9 @@ import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
+import no.nav.security.mock.oauth2.extensions.clientAuthentication
+import no.nav.security.mock.oauth2.grant.RefreshToken
 
 private val log = KotlinLogging.logger {}
 
@@ -83,6 +86,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         authorization()
         token()
         endSession()
+        revocation(refreshTokenManager)
         userInfo(config.tokenProvider)
         introspect(config.tokenProvider)
         preflight()
@@ -127,6 +131,22 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         postLogoutRedirectUri?.let {
             redirect(postLogoutRedirectUri)
         } ?: html("logged out")
+    }
+
+    private fun Route.Builder.revocation(refreshTokenManager: RefreshTokenManager) = post(REVOKE) {
+        log.debug("handle revocation request $it")
+        val auth = it.asNimbusHTTPRequest().clientAuthentication()
+        when (val hint = it.formParameters.get("token_type_hint")) {
+            "refresh_token" -> {
+                val token = it.formParameters.get("token") as RefreshToken
+                refreshTokenManager.remove(token)
+            }
+            else -> throw OAuth2Exception(
+                ErrorObject("unsupported_token_type", "unsupported token type: $hint", 400),
+                "unsupported token type: $hint"
+            )
+        }
+        OAuth2HttpResponse(status = 200, body = "ok")
     }
 
     private fun Route.Builder.token() = apply {

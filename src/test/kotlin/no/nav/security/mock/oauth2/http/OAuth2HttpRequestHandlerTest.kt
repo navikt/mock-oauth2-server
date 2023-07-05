@@ -18,6 +18,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 
 internal class OAuth2HttpRequestHandlerTest {
 
@@ -54,6 +55,13 @@ internal class OAuth2HttpRequestHandlerTest {
                 expectedResponse = OAuth2HttpResponse(status = 200),
             ),
             request(path = "/issuer1$END_SESSION", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+            request(
+                path = "/issuer1$REVOKE",
+                method = "POST",
+                headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                body = "client_id=client&client_secret=secret&token=token&token_type_hint=refresh_token",
+                expectedResponse = OAuth2HttpResponse(status = 200)
+            ),
             request(path = "/issuer1$USER_INFO", method = "GET", headers = bearerTokenHeader("issuer1"), expectedResponse = OAuth2HttpResponse(status = 200)),
             request(path = "/issuer1$DEBUGGER", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
             request(
