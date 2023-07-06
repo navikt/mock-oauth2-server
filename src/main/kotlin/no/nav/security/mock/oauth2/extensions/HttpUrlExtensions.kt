@@ -10,6 +10,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.INTROSPECT
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.JWKS
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.USER_INFO
 import okhttp3.HttpUrl
@@ -33,6 +34,7 @@ object OAuth2Endpoints {
         AUTHORIZATION,
         TOKEN,
         END_SESSION,
+        REVOKE,
         JWKS,
         USER_INFO,
         INTROSPECT,
@@ -55,6 +57,7 @@ fun HttpUrl.toOAuth2AuthorizationServerMetadataUrl() = issuer(OAUTH2_WELL_KNOWN)
 fun HttpUrl.toWellKnownUrl(): HttpUrl = issuer(OIDC_WELL_KNOWN)
 fun HttpUrl.toAuthorizationEndpointUrl(): HttpUrl = issuer(AUTHORIZATION)
 fun HttpUrl.toEndSessionEndpointUrl(): HttpUrl = issuer(END_SESSION)
+fun HttpUrl.toRevocationEndpointUrl(): HttpUrl = issuer(REVOKE)
 fun HttpUrl.toTokenEndpointUrl(): HttpUrl = issuer(TOKEN)
 fun HttpUrl.toJwksUrl(): HttpUrl = issuer(JWKS)
 fun HttpUrl.toIssuerUrl(): HttpUrl = issuer()

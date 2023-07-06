@@ -36,6 +36,7 @@ import java.net.URI
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import no.nav.security.mock.oauth2.extensions.toRevocationEndpointUrl
 
 private val log = KotlinLogging.logger { }
 
@@ -193,6 +194,15 @@ open class MockOAuth2Server(
      * @param issuerId The path or identifier for the issuer.
      */
     fun endSessionEndpointUrl(issuerId: String): HttpUrl = url(issuerId).toEndSessionEndpointUrl()
+
+    /**
+     * Returns the authorization server's `revocation_endpoint` for the given [issuerId].
+     *
+     * E.g. `http://localhost:8080/some-issuer/revoke`.
+     *
+     * @param issuerId The path or identifier for the issuer.
+     */
+    fun revocationEndpointUrl(issuerId: String): HttpUrl = url(issuerId).toRevocationEndpointUrl()
 
     /**
      * Returns the authorization server's `userinfo_endpoint` for the given [issuerId].
