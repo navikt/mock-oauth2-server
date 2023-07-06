@@ -12,6 +12,7 @@ import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toIntrospectUrl
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
+import no.nav.security.mock.oauth2.extensions.toRevocationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
@@ -73,6 +74,7 @@ data class OAuth2HttpRequest(
             authorizationEndpoint = this.proxyAwareUrl().toAuthorizationEndpointUrl().toString(),
             tokenEndpoint = this.proxyAwareUrl().toTokenEndpointUrl().toString(),
             endSessionEndpoint = this.proxyAwareUrl().toEndSessionEndpointUrl().toString(),
+            revocationEndpoint = this.proxyAwareUrl().toRevocationEndpointUrl().toString(),
             introspectionEndpoint = this.proxyAwareUrl().toIntrospectUrl().toString(),
             jwksUri = this.proxyAwareUrl().toJwksUrl().toString(),
             userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString(),

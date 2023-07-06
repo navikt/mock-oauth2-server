@@ -28,6 +28,8 @@ data class WellKnown(
     val authorizationEndpoint: String,
     @JsonProperty("end_session_endpoint")
     val endSessionEndpoint: String,
+    @JsonProperty("revocation_endpoint")
+    val revocationEndpoint: String,
     @JsonProperty("token_endpoint")
     val tokenEndpoint: String,
     @JsonProperty("userinfo_endpoint")
@@ -42,6 +44,8 @@ data class WellKnown(
     val subjectTypesSupported: List<String> = listOf("public"),
     @JsonProperty("id_token_signing_alg_values_supported")
     val idTokenSigningAlgValuesSupported: List<String> = (KeyGenerator.ecAlgorithmFamily + KeyGenerator.rsaAlgorithmFamily).map { it.name }.toList(),
+    @JsonProperty("code_challenge_methods_supported")
+    val codeChallengeMethodsSupported: List<String> = listOf("plain", "S256"),
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

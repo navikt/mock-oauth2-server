@@ -1,11 +1,5 @@
 [![Build](https://github.com/navikt/mock-oauth2-server/workflows/Build%20master/badge.svg)](https://github.com/navikt/mock-oauth2-server/actions) [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server) 
 
-:exclamation: 
-
-As of version 0.3.3 the Docker image is published to the [GitHub Container Registry](https://docs.github.com/en/packages/guides/migrating-to-github-container-registry-for-docker-images#domain-changes) and thus can be pulled anonymously from `ghcr.io/navikt/mock-oauth2-server:<version>`. Update your image pulling spells accordingly. 
-
-:exclamation:
-
 # mock-oauth2-server
 A scriptable/customizable web server for testing HTTP clients using OAuth2/OpenID Connect or applications with a dependency to a running OAuth2 server (i.e. APIs requiring signed JWTs from a known issuer).  The server also provides the necessary endpoints for token validation (endpoint for JWKS) and ID Provider metadata discovery ("well-known" endpoints providing  server metadata)
 
@@ -88,6 +82,8 @@ A request to `http://localhost:8080/default/.well-known/openid-configuration` wi
 {
    "issuer":"http://localhost:8080/default",
    "authorization_endpoint":"http://localhost:8080/default/authorize",
+   "end_session_endpoint" : "http://localhost:8080/default/endsession",
+   "revocation_endpoint" : "http://localhost:8080/default/revoke",
    "token_endpoint":"http://localhost:8080/default/token",
    "userinfo_endpoint":"http://localhost:8080/default/userinfo",
    "jwks_uri":"http://localhost:8080/default/jwks",
@@ -109,7 +105,11 @@ A request to `http://localhost:8080/default/.well-known/openid-configuration` wi
      "PS256",
      "PS384",
      "PS512"
-   ]
+   ],
+  "code_challenge_methods_supported":[
+      "plain", 
+      "S256" 
+  ]
 }
 ```
 
