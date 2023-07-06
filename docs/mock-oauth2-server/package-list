@@ -48,6 +48,7 @@ $dokka.location:no.nav.security.mock.oauth2.extensions//toIntrospectUrl/okhttp3.
 $dokka.location:no.nav.security.mock.oauth2.extensions//toIssuerUrl/okhttp3.HttpUrl#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/to-issuer-url.html
 $dokka.location:no.nav.security.mock.oauth2.extensions//toJwksUrl/okhttp3.HttpUrl#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/to-jwks-url.html
 $dokka.location:no.nav.security.mock.oauth2.extensions//toOAuth2AuthorizationServerMetadataUrl/okhttp3.HttpUrl#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/to-o-auth2-authorization-server-metadata-url.html
+$dokka.location:no.nav.security.mock.oauth2.extensions//toRevocationEndpointUrl/okhttp3.HttpUrl#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/to-revocation-endpoint-url.html
 $dokka.location:no.nav.security.mock.oauth2.extensions//toTokenEndpointUrl/okhttp3.HttpUrl#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/to-token-endpoint-url.html
 $dokka.location:no.nav.security.mock.oauth2.extensions//toUserInfoUrl/okhttp3.HttpUrl#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/to-user-info-url.html
 $dokka.location:no.nav.security.mock.oauth2.extensions//toWellKnownUrl/okhttp3.HttpUrl#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/to-well-known-url.html
@@ -63,6 +64,7 @@ $dokka.location:no.nav.security.mock.oauth2.extensions/OAuth2Endpoints/INTROSPEC
 $dokka.location:no.nav.security.mock.oauth2.extensions/OAuth2Endpoints/JWKS/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/-o-auth2-endpoints/-j-w-k-s.html
 $dokka.location:no.nav.security.mock.oauth2.extensions/OAuth2Endpoints/OAUTH2_WELL_KNOWN/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/-o-auth2-endpoints/-o-a-u-t-h2_-w-e-l-l_-k-n-o-w-n.html
 $dokka.location:no.nav.security.mock.oauth2.extensions/OAuth2Endpoints/OIDC_WELL_KNOWN/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/-o-auth2-endpoints/-o-i-d-c_-w-e-l-l_-k-n-o-w-n.html
+$dokka.location:no.nav.security.mock.oauth2.extensions/OAuth2Endpoints/REVOKE/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/-o-auth2-endpoints/-r-e-v-o-k-e.html
 $dokka.location:no.nav.security.mock.oauth2.extensions/OAuth2Endpoints/TOKEN/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/-o-auth2-endpoints/-t-o-k-e-n.html
 $dokka.location:no.nav.security.mock.oauth2.extensions/OAuth2Endpoints/USER_INFO/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/-o-auth2-endpoints/-u-s-e-r_-i-n-f-o.html
 $dokka.location:no.nav.security.mock.oauth2.extensions/OAuth2Endpoints/all/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.extensions/-o-auth2-endpoints/all.html
@@ -207,14 +209,16 @@ $dokka.location:no.nav.security.mock.oauth2.http/SslKeystore/SslKeystore/#kotlin
 $dokka.location:no.nav.security.mock.oauth2.http/SslKeystore/keyPassword/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-ssl-keystore/key-password.html
 $dokka.location:no.nav.security.mock.oauth2.http/SslKeystore/keyStore/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-ssl-keystore/key-store.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown///PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/index.html
-$dokka.location:no.nav.security.mock.oauth2.http/WellKnown/WellKnown/#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.collections.List[kotlin.String]#kotlin.collections.List[kotlin.String]#kotlin.collections.List[kotlin.String]/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/-well-known.html
+$dokka.location:no.nav.security.mock.oauth2.http/WellKnown/WellKnown/#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.collections.List[kotlin.String]#kotlin.collections.List[kotlin.String]#kotlin.collections.List[kotlin.String]#kotlin.collections.List[kotlin.String]/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/-well-known.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/authorizationEndpoint/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/authorization-endpoint.html
+$dokka.location:no.nav.security.mock.oauth2.http/WellKnown/codeChallengeMethodsSupported/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/code-challenge-methods-supported.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/endSessionEndpoint/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/end-session-endpoint.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/idTokenSigningAlgValuesSupported/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/id-token-signing-alg-values-supported.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/introspectionEndpoint/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/introspection-endpoint.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/issuer/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/issuer.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/jwksUri/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/jwks-uri.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/responseTypesSupported/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/response-types-supported.html
+$dokka.location:no.nav.security.mock.oauth2.http/WellKnown/revocationEndpoint/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/revocation-endpoint.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/subjectTypesSupported/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/subject-types-supported.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/tokenEndpoint/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/token-endpoint.html
 $dokka.location:no.nav.security.mock.oauth2.http/WellKnown/userInfoEndpoint/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.http/-well-known/user-info-endpoint.html
@@ -343,6 +347,7 @@ $dokka.location:no.nav.security.mock.oauth2/MockOAuth2Server/issueToken/#kotlin.
 $dokka.location:no.nav.security.mock.oauth2/MockOAuth2Server/issuerUrl/#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2/-mock-o-auth2-server/issuer-url.html
 $dokka.location:no.nav.security.mock.oauth2/MockOAuth2Server/jwksUrl/#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2/-mock-o-auth2-server/jwks-url.html
 $dokka.location:no.nav.security.mock.oauth2/MockOAuth2Server/oauth2AuthorizationServerMetadataUrl/#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2/-mock-o-auth2-server/oauth2-authorization-server-metadata-url.html
+$dokka.location:no.nav.security.mock.oauth2/MockOAuth2Server/revocationEndpointUrl/#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2/-mock-o-auth2-server/revocation-endpoint-url.html
 $dokka.location:no.nav.security.mock.oauth2/MockOAuth2Server/shutdown/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2/-mock-o-auth2-server/shutdown.html
 $dokka.location:no.nav.security.mock.oauth2/MockOAuth2Server/start/#java.net.InetAddress#kotlin.Int/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2/-mock-o-auth2-server/start.html
 $dokka.location:no.nav.security.mock.oauth2/MockOAuth2Server/start/#kotlin.Int/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2/-mock-o-auth2-server/start.html
