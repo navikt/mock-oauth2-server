@@ -28,6 +28,7 @@ internal class HttpUrlExtensionsTest {
         httpUrl.toDebuggerCallbackUrl() shouldBe "$baseUrl/debugger/callback".toHttpUrl()
         httpUrl.toDebuggerUrl() shouldBe "$baseUrl/debugger".toHttpUrl()
         httpUrl.toEndSessionEndpointUrl() shouldBe "$baseUrl/endsession".toHttpUrl()
+        httpUrl.toRevocationEndpointUrl() shouldBe "$baseUrl/revoke".toHttpUrl()
         httpUrl.toJwksUrl() shouldBe "$baseUrl/jwks".toHttpUrl()
     }
 }
