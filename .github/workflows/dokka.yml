@@ -28,7 +28,7 @@ jobs:
         run: ./gradlew dokkaHtm -Pversion=${{ env.VERSION }}
 
       - name: Publish documentation
-        uses: JamesIves/github-pages-deploy-action@v4.4.2
+        uses: JamesIves/github-pages-deploy-action@v4.4.3
         with:
           branch: gh-pages
           folder: build/dokka/html
