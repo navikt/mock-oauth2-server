@@ -28,7 +28,7 @@ public class OAuth2LoginApp {
 
     @RestController
     @RequestMapping("/api")
-    class ApiController {
+    static class ApiController {
 
         @GetMapping(value = "/ping", produces = MediaType.TEXT_HTML_VALUE)
         Mono<String> ping(@AuthenticationPrincipal OAuth2AuthenticationToken token) {
@@ -37,7 +37,7 @@ public class OAuth2LoginApp {
     }
 
     @EnableWebFluxSecurity
-    class SecurityConfiguration {
+    static class SecurityConfiguration {
 
         @Bean
         public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
