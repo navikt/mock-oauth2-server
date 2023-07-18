@@ -135,7 +135,6 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
 
     private fun Route.Builder.revocation(refreshTokenManager: RefreshTokenManager) = post(REVOKE) {
         log.debug("handle revocation request $it")
-        val auth = it.asNimbusHTTPRequest().clientAuthentication()
         when (val hint = it.formParameters.get("token_type_hint")) {
             "refresh_token" -> {
                 val token = it.formParameters.get("token") as RefreshToken
