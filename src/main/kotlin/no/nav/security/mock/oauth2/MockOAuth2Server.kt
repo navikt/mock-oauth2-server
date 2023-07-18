@@ -16,6 +16,7 @@ import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toOAuth2AuthorizationServerMetadataUrl
+import no.nav.security.mock.oauth2.extensions.toRevocationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.extensions.toWellKnownUrl
@@ -36,7 +37,6 @@ import java.net.URI
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import no.nav.security.mock.oauth2.extensions.toRevocationEndpointUrl
 
 private val log = KotlinLogging.logger { }
 

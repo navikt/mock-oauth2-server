@@ -9,6 +9,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.END_SESSION
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.JWKS
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.USER_INFO
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
@@ -18,7 +19,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
-import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 
 internal class OAuth2HttpRequestHandlerTest {
 
@@ -60,7 +60,7 @@ internal class OAuth2HttpRequestHandlerTest {
                 method = "POST",
                 headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
                 body = "client_id=client&client_secret=secret&token=token&token_type_hint=refresh_token",
-                expectedResponse = OAuth2HttpResponse(status = 200)
+                expectedResponse = OAuth2HttpResponse(status = 200),
             ),
             request(path = "/issuer1$USER_INFO", method = "GET", headers = bearerTokenHeader("issuer1"), expectedResponse = OAuth2HttpResponse(status = 200)),
             request(path = "/issuer1$DEBUGGER", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),

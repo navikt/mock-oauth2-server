@@ -20,7 +20,9 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.END_SESSION
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.JWKS
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
+import no.nav.security.mock.oauth2.extensions.clientAuthentication
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
@@ -29,6 +31,7 @@ import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
 import no.nav.security.mock.oauth2.grant.JwtBearerGrantHandler
 import no.nav.security.mock.oauth2.grant.PasswordGrantHandler
+import no.nav.security.mock.oauth2.grant.RefreshToken
 import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
@@ -44,9 +47,6 @@ import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
-import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
-import no.nav.security.mock.oauth2.extensions.clientAuthentication
-import no.nav.security.mock.oauth2.grant.RefreshToken
 
 private val log = KotlinLogging.logger {}
 
@@ -143,7 +143,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
             }
             else -> throw OAuth2Exception(
                 ErrorObject("unsupported_token_type", "unsupported token type: $hint", 400),
-                "unsupported token type: $hint"
+                "unsupported token type: $hint",
             )
         }
         OAuth2HttpResponse(status = 200, body = "ok")

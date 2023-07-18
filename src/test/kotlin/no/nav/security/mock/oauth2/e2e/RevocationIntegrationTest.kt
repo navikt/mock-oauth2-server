@@ -39,7 +39,7 @@ class RevocationIntegrationTest {
                     "client_id" to "id",
                     "client_secret" to "secret",
                     "token" to refreshToken,
-                    "token_type_hint" to "refresh_token"
+                    "token_type_hint" to "refresh_token",
                 ),
             )
             revocationResponse.code shouldBe 200
