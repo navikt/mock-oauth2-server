@@ -86,8 +86,3 @@ ij_kotlin_wrap_elvis_expressions = 1
 ij_kotlin_wrap_expression_body_functions = 1
 ij_kotlin_wrap_first_method_in_call_chain = false
 
-
-# Comma-separated list of rules to disable (Since 0.34.0)
-# Note that rules in any ruleset other than the standard ruleset will need to be prefixed
-# by the ruleset identifier.
-ktlint_disabled_rules=import-ordering
