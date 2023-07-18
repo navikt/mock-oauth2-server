@@ -20,7 +20,7 @@ jobs:
           cache: 'gradle'
 
       - name: Generate and submit dependency graphs
-        uses: gradle/gradle-build-action@dependency-graph
+        uses: gradle/gradle-build-action@v2
         with:
           dependency-graph: generate-and-submit
 
