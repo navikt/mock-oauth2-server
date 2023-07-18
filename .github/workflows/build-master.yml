@@ -19,6 +19,11 @@ jobs:
           distribution: 'zulu'
           cache: 'gradle'
 
+      - name: Generate and submit dependency graphs
+        uses: gradle/gradle-build-action@dependency-graph
+        with:
+          dependency-graph: generate-and-submit
+
       - name: Build with Gradle
         run: ./gradlew build
 
