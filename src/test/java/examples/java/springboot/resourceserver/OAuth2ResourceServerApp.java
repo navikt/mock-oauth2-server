@@ -4,6 +4,7 @@ import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,12 +40,9 @@ public class OAuth2ResourceServerApp {
 
         @Bean
         public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-            return http
-                    .authorizeExchange()
-                    .anyExchange().authenticated()
-                    .and()
-                    .oauth2ResourceServer(ServerHttpSecurity.OAuth2ResourceServerSpec::jwt)
-                    .build();
+            return http.authorizeExchange(exchanges -> exchanges.anyExchange().authenticated())
+                           .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                           .build();
         }
 
         @Bean

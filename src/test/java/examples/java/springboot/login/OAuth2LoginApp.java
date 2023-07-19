@@ -18,6 +18,8 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @SpringBootApplication
 public class OAuth2LoginApp {
     public static void main(String[] args) throws IOException {
@@ -41,13 +43,9 @@ public class OAuth2LoginApp {
 
         @Bean
         public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-            return http
-                    .authorizeExchange()
-                    .anyExchange().authenticated()
-                    .and()
-                    .oauth2Login()
-                    .and()
-                    .build();
+            return http.authorizeExchange(exchanges -> exchanges.anyExchange().authenticated())
+                           .oauth2Login(withDefaults())
+                           .build();
         }
 
         @Bean
