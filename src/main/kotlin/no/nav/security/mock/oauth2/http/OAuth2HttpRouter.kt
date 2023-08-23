@@ -154,7 +154,12 @@ fun options(path: String, requestHandler: RequestHandler): Route =
 
 private fun routeFromPathAndMethod(path: String, method: String? = null, requestHandler: RequestHandler): Route =
     object : PathRoute {
-        override fun matchPath(request: OAuth2HttpRequest): Boolean = request.url.endsWith(path)
+        override fun matchPath(request: OAuth2HttpRequest): Boolean = if (path.contains("*")) {
+            val regex = path.replace("*", ".*").toRegex()
+            "/${request.url.pathSegments.joinToString("/")}".matches(regex)
+        } else {
+            request.url.endsWith(path)
+        }
 
         override fun match(request: OAuth2HttpRequest): Boolean = matchPath(request) && matchMethod(request)
 

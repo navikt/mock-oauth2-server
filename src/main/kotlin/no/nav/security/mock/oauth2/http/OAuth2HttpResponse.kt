@@ -20,7 +20,33 @@ data class OAuth2HttpResponse(
     val headers: Headers = Headers.headersOf(),
     val status: Int,
     val body: String? = null,
-)
+    val bytesBody: ByteArray? = null,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as OAuth2HttpResponse
+
+        if (headers != other.headers) return false
+        if (status != other.status) return false
+        if (body != other.body) return false
+        if (bytesBody != null) {
+            if (other.bytesBody == null) return false
+            if (!bytesBody.contentEquals(other.bytesBody)) return false
+        } else if (other.bytesBody != null) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = headers.hashCode()
+        result = 31 * result + status
+        result = 31 * result + (body?.hashCode() ?: 0)
+        result = 31 * result + (bytesBody?.contentHashCode() ?: 0)
+        return result
+    }
+}
 
 data class WellKnown(
     val issuer: String,

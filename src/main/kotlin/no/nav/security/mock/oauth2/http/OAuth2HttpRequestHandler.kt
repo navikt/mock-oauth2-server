@@ -42,8 +42,12 @@ import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.userinfo.userInfo
+import okhttp3.Headers
+import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.Charset
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -89,6 +93,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         userInfo(config.tokenProvider)
         introspect(config.tokenProvider)
         preflight()
+        staticAssets()
         get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
         attach(debuggerRequestHandler)
     }
@@ -158,6 +163,23 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
             val grantHandler: GrantHandler = grantHandlers[grantType] ?: invalidGrant(grantType)
             val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
             json(tokenResponse)
+        }
+    }
+
+    private fun Route.Builder.staticAssets() = apply {
+        if (config.staticAssetsPath != null) {
+            get("/static/*") {
+                val path = it.url.pathSegments.drop(1).joinToString("/")
+                val normalized = Paths.get(path).normalize().toString()
+                val file = File(config.staticAssetsPath, normalized)
+
+                if (file.canonicalPath.startsWith(config.staticAssetsPath) && file.exists()) {
+                    val contentType = Files.probeContentType(file.toPath()) ?: "application/octet-stream"
+                    OAuth2HttpResponse(status = 200, bytesBody = file.readBytes(), headers = Headers.headersOf("Content-Type", contentType))
+                } else {
+                    OAuth2HttpResponse(status = 404, body = "not found")
+                }
+            }
         }
     }
 

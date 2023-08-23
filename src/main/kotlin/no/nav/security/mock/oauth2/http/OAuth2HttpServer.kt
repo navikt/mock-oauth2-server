@@ -34,6 +34,7 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import okio.Buffer
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.util.concurrent.BlockingQueue
@@ -97,7 +98,11 @@ class MockWebServerWrapper@JvmOverloads constructor(
                 .setHeaders(this.headers)
                 .setResponseCode(this.status)
                 .let {
-                    if (this.body != null) it.setBody(this.body) else it.setBody("")
+                    when {
+                        this.body != null -> it.setBody(this.body)
+                        this.bytesBody != null -> it.setBody(Buffer().write(this.bytesBody))
+                        else -> it.setBody("")
+                    }
                 }
     }
 }
@@ -199,7 +204,13 @@ class NettyWrapper @JvmOverloads constructor(
                 HttpResponseStatus(this.status, ""),
             ).apply {
                 this@asNettyResponse.headers.forEach { (key, values) -> headers().set(key, values) }
-            } to ChunkedStream(this.body?.byteInputStream() ?: "".byteInputStream())
+            } to ChunkedStream(
+                when {
+                    this.body != null -> this.body.byteInputStream()
+                    this.bytesBody != null -> this.bytesBody.inputStream()
+                    else -> "".byteInputStream()
+                },
+            )
 
         private fun FullHttpRequest.asOAuth2HttpRequest(scheme: String, address: InetSocketAddress, port: Int) =
             OAuth2HttpRequest(

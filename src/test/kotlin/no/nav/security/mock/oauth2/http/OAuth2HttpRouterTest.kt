@@ -96,6 +96,25 @@ internal class OAuth2HttpRouterTest {
         }
     }
 
+    @Test
+    fun `routes with wildcard should be matched`() {
+        val routes = routes(
+            get("/shouldmatch/*") {
+                OAuth2HttpResponse(status = 200, body = "GET")
+            },
+            options("/shouldmatch/*") {
+                OAuth2HttpResponse(status = 200, body = "OPTIONS")
+            },
+            route("/shouldmatch/*") {
+                OAuth2HttpResponse(status = 200, body = "ANY")
+            },
+        )
+
+        routes.invoke(post("/shouldmatch/1/3")).body shouldBe "ANY"
+        routes.invoke(options("/shouldmatch/2/4")).body shouldBe "OPTIONS"
+        routes.invoke(get("/shouldmatch/3/6")).body shouldBe "GET"
+    }
+
     private fun get(path: String) = request("http://localhost$path", "GET")
     private fun post(path: String, body: String? = "na") = request("http://localhost$path", "POST", body)
     private fun options(path: String, body: String? = "na") = request("http://localhost$path", "OPTIONS", body)
