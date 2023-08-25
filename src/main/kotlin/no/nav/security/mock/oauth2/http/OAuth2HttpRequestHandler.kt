@@ -126,9 +126,10 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
 
     private fun Route.Builder.endSession() = any(END_SESSION) {
         log.debug("handle end session request $it")
-        val postLogoutRedirectUri = it.url.queryParameter("post_logout_redirect_uri")
-        postLogoutRedirectUri?.let {
-            redirect(postLogoutRedirectUri)
+        it.url.queryParameter("post_logout_redirect_uri")?.let { postLogoutRedirectUri ->
+            it.url.queryParameter("state")?.let { state ->
+                redirect("$postLogoutRedirectUri?state=$state")
+            } ?: redirect(postLogoutRedirectUri)
         } ?: html("logged out")
     }
 
@@ -139,6 +140,7 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
                 val token = it.formParameters.get("token") as RefreshToken
                 refreshTokenManager.remove(token)
             }
+
             else -> throw OAuth2Exception(
                 ErrorObject("unsupported_token_type", "unsupported token type: $hint", 400),
                 "unsupported token type: $hint",
