@@ -86,9 +86,14 @@ data class RequestMappingTokenCallback(
         requestMappings.getClaims(tokenRequest)
 
     override fun tokenExpiry(): Long = tokenExpiry
-
-    private fun Set<RequestMapping>.getClaims(tokenRequest: TokenRequest) =
-        firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
+    private fun Set<RequestMapping>.getClaims(tokenRequest: TokenRequest): Map<String, Any> {
+        val claims = firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
+        return if (tokenRequest.grantType() == GrantType.CLIENT_CREDENTIALS && claims["sub"] == "\${clientId}") {
+            claims + ("sub" to tokenRequest.clientIdAsString())
+        } else {
+            claims
+        }
+    }
 
     private inline fun <reified T> Set<RequestMapping>.getClaimOrNull(tokenRequest: TokenRequest, key: String): T? =
         getClaims(tokenRequest)[key] as? T

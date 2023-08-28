@@ -38,9 +38,17 @@ internal class OAuth2TokenCallbackTest {
                 ),
                 RequestMapping(
                     requestParam = "grant_type",
-                    match = "*",
+                    match = "authorization_code",
                     claims = mapOf(
                         "sub" to "defaultSub",
+                        "aud" to listOf("defaultAud"),
+                    ),
+                ),
+                RequestMapping(
+                    requestParam = "grant_type",
+                    match = "*",
+                    claims = mapOf(
+                        "sub" to "\${clientId}",
                         "aud" to listOf("defaultAud"),
                     ),
                 ),
@@ -72,12 +80,23 @@ internal class OAuth2TokenCallbackTest {
 
         @Test
         fun `token request with request params matching wildcard requestmapping should return default claims from callback`() {
-            val shouldMatchAllGrantTypes = clientCredentialsRequest()
+            val shouldMatchAllGrantTypes = authCodeRequest("scope" to "openid scope1")
             assertSoftly {
                 issuer1.subject(shouldMatchAllGrantTypes) shouldBe "defaultSub"
                 issuer1.audience(shouldMatchAllGrantTypes) shouldBe listOf("defaultAud")
                 issuer1.tokenExpiry() shouldBe 120
                 issuer1.typeHeader(shouldMatchAllGrantTypes) shouldBe "JWT"
+            }
+        }
+
+        @Test
+        fun `token request with request params matching requestmapping should return specific claims from callback with sub set to ${clientId}`() {
+            val grantTypeShouldMatch = clientCredentialsRequest()
+            assertSoftly {
+                issuer1.subject(grantTypeShouldMatch) shouldBe clientId
+                issuer1.audience(grantTypeShouldMatch) shouldBe listOf("defaultAud")
+                issuer1.tokenExpiry() shouldBe 120
+                issuer1.typeHeader(grantTypeShouldMatch) shouldBe "JWT"
             }
         }
     }
