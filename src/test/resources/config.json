@@ -1,6 +1,8 @@
 {
   "interactiveLogin": true,
   "httpServer": "NettyWrapper",
+  "loginPagePath": "/app/login/login.example.html",
+  "staticAssetsPath": "/app/static",
   "tokenCallbacks": [
     {
       "issuerId": "issuer1",

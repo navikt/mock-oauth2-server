@@ -23,6 +23,7 @@ import java.io.File
 data class OAuth2Config @JvmOverloads constructor(
     val interactiveLogin: Boolean = false,
     val loginPagePath: String? = null,
+    val staticAssetsPath: String? = null,
     @JsonDeserialize(using = OAuth2TokenProviderDeserializer::class)
     val tokenProvider: OAuth2TokenProvider = OAuth2TokenProvider(),
     @JsonDeserialize(contentAs = RequestMappingTokenCallback::class)

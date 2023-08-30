@@ -284,12 +284,13 @@ add this to your config with preferred `JWS algorithm`:
 }
 ```
 
-| Property | Description |
-| --- | --- |
-| `interactiveLogin` | `true` or `false`, enables login screen when redirecting to server `/authorize` endpoint |
-| `loginPagePath` | An optional string refering to a html file that is served as login page. This page needs to contain a form that posts a `username` and optionally a `claims` field. See `src/test/resource/login.example.html` as an example.|
-| `httpServer`| A string identifying the httpserver to use. Must match one of the following enum values: `MockWebServerWrapper` or `NettyWrapper`|
-| `tokenCallbacks` | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) that lets you specify which token claims to return when a token request matches the specified condition.|
+| Property            | Description                                                                                                                                                                                                                                                                     |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `interactiveLogin`  | `true` or `false`, enables login screen when redirecting to server `/authorize` endpoint                                                                                                                                                                                        |
+| `loginPagePath`     | An optional string refering to a html file that is served as login page. This page needs to contain a form that posts a `username` and optionally a `claims` field. See `src/test/resource/login.example.html` as an example.                                                   |
+| `staticAssetsPath`  | The path to a directory containing static resources/assets. Lets you serve your own static resources from the server. Resources are served under the `/static` URL path. E.g. http://localhost:8080/static/myimage.svg or by reference `/static/myimage.svg` from the login page. |                                                     |
+| `httpServer`        | A string identifying the httpserver to use. Must match one of the following enum values: `MockWebServerWrapper` or `NettyWrapper`                                                                                                                                               |
+| `tokenCallbacks`    | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) that lets you specify which token claims to return when a token request matches the specified condition.                                                    |
 
 *From the JSON example above:* 
 
