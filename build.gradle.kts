@@ -82,6 +82,16 @@ dependencies {
         testImplementation("org.yaml:snakeyaml:2.0") {
             because("previous versions have security vulnerabilities")
         }
+        add("api", "com.squareup.okio:okio") {
+            version {
+                require("3.4.0")
+            }
+        }
+        add("testImplementation", "com.google.guava:guava") {
+            version {
+                require("32.1.2-jre")
+            }
+        }
     }
     testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
@@ -99,16 +109,9 @@ dependencies {
 
 configurations {
    all {
-        resolutionStrategy.force("org:yaml:snakeyaml:2.0")
+        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.4.0")
     }
 }
-
-/*configurations {
-    all {
-        exclude("org.yaml", "snakeyaml")
-    }
-}*/
-
 
 nexusPublishing {
     packageGroup.set("no.nav")
