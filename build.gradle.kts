@@ -78,6 +78,11 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-client:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
+    constraints {
+        testImplementation("org.yaml:snakeyaml:2.0") {
+            because("previous versions have security vulnerabilities")
+        }
+    }
     testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
     testImplementation("io.ktor:ktor-server-sessions:$ktorVersion")
@@ -91,6 +96,19 @@ dependencies {
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 }
+
+configurations {
+   all {
+        resolutionStrategy.force("org:yaml:snakeyaml:2.0")
+    }
+}
+
+/*configurations {
+    all {
+        exclude("org.yaml", "snakeyaml")
+    }
+}*/
+
 
 nexusPublishing {
     packageGroup.set("no.nav")
