@@ -328,6 +328,41 @@ and return a token response containing a token with the following claims:
 }
 ```
 
+Use variable `clientId` to set `sub` claim for Client Credentials Grant dynamically.
+
+A token request with client credentials where `clientId = myClientId` and `tokenCallback`: 
+```json
+{
+    "issuerId": "issuer1",
+    "tokenExpiry": 120,
+    "requestMappings": [
+        {
+            "requestParam": "scope",
+            "match": "scope1",
+            "claims": {
+                "sub": "${clientId}",
+                "aud": [
+                    "audByScope"
+                ]
+            }
+        }
+    ]
+}
+```
+will return a token response containing a token with the following claims:
+
+
+```json
+{
+  "sub": "myClientId",
+  "aud": "audByScope",
+  "nbf": 1616416942,
+  "iss": "http://localhost:54905/issuer1",
+  "exp": 1616417062,
+  "iat": 1616416942,
+  "jti": "28697333-6f25-4b1f-b2c2-409ce010933a"
+}
+```
 
 #### Docker 
 
