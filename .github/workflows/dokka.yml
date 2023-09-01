@@ -10,6 +10,9 @@ permissions:
 jobs:
   dokka:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     steps:
       - name: Checkout latest code
         uses: actions/checkout@v3

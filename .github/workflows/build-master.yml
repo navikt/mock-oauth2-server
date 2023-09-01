@@ -5,8 +5,13 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    permissions:
+      packages: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout latest code
@@ -28,6 +33,9 @@ jobs:
         run: ./gradlew build
 
   release-notes:
+    permissions:
+      contents: write  # for release-drafter/release-drafter to create a github release
+      pull-requests: write  # for release-drafter/release-drafter to add label to PRs
     runs-on: ubuntu-latest
     steps:
       - name: Release Drafter
