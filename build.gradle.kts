@@ -4,7 +4,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 val assertjVersion = "3.24.2"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.4.11"
-val nimbusSdkVersion = "10.13.2"
+val nimbusSdkVersion = "10.14.2"
 val mockWebServerVersion = "4.11.0"
 val jacksonVersion = "2.15.2"
 val nettyVersion = "4.1.97.Final"
@@ -79,7 +79,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     constraints {
-        testImplementation("org.yaml:snakeyaml:2.0") {
+        testImplementation("org.yaml:snakeyaml:2.2") {
             because("previous versions have security vulnerabilities")
         }
         add("api", "com.squareup.okio:okio") {
@@ -109,7 +109,7 @@ dependencies {
 
 configurations {
    all {
-        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.4.0")
+        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.5.1")
     }
 }
 
