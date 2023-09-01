@@ -79,7 +79,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     constraints {
-        testImplementation("org.yaml:snakeyaml:2.0") {
+        testImplementation("org.yaml:snakeyaml:2.2") {
             because("previous versions have security vulnerabilities")
         }
         add("api", "com.squareup.okio:okio") {
