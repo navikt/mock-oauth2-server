@@ -4,7 +4,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 val assertjVersion = "3.24.2"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.4.11"
-val nimbusSdkVersion = "10.13.2"
+val nimbusSdkVersion = "10.14.2"
 val mockWebServerVersion = "4.11.0"
 val jacksonVersion = "2.15.2"
 val nettyVersion = "4.1.97.Final"
@@ -15,7 +15,7 @@ val kotestVersion = "5.6.2"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "3.1.3"
 val reactorTestVersion = "3.5.9"
-val ktorVersion = "2.3.3"
+val ktorVersion = "2.3.4"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -30,7 +30,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.0.2"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
-    id("org.jetbrains.dokka") version "1.8.20"
+    id("org.jetbrains.dokka") version "1.9.0"
     `java-library`
     `maven-publish`
     signing
@@ -78,6 +78,21 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-client:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
+    constraints {
+        testImplementation("org.yaml:snakeyaml:2.2") {
+            because("previous versions have security vulnerabilities")
+        }
+        add("api", "com.squareup.okio:okio") {
+            version {
+                require("3.4.0")
+            }
+        }
+        add("testImplementation", "com.google.guava:guava") {
+            version {
+                require("32.1.2-jre")
+            }
+        }
+    }
     testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
     testImplementation("io.ktor:ktor-server-sessions:$ktorVersion")
@@ -90,6 +105,12 @@ dependencies {
     testImplementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+}
+
+configurations {
+   all {
+        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.5.1")
+    }
 }
 
 nexusPublishing {
