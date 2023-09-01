@@ -15,7 +15,7 @@ val kotestVersion = "5.6.2"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "3.1.3"
 val reactorTestVersion = "3.5.9"
-val ktorVersion = "2.3.3"
+val ktorVersion = "2.3.4"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
