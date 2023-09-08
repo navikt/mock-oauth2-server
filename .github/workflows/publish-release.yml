@@ -9,6 +9,9 @@ env:
 
 jobs:
   publish-release:
+    permissions:
+      packages: write
+      contents: read
     runs-on: ubuntu-latest
 
     steps:
