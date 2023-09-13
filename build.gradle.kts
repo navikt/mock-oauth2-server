@@ -124,8 +124,8 @@ nexusPublishing {
     }
 
     transitionCheckOptions {
-        maxRetries.set(40)
-        delayBetween.set(Duration.ofMillis(5000))
+        maxRetries.set(60)
+        delayBetween.set(Duration.ofMillis(10000))
     }
 }
 
