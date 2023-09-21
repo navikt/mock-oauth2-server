@@ -42,10 +42,10 @@ internal class ExampleAppWithClientCredentialsClientTest {
         ).execute()
         assertThat(response.code).isEqualTo(200)
 
-        val token: SignedJWT? = response.body?.string()
-            ?.split("token=")
-            ?.let { it[1] }
-            ?.let { SignedJWT.parse(it) }
+        val token: SignedJWT? = response.body.string()
+            .split("token=")
+            .let { it[1] }
+            .let { SignedJWT.parse(it) }
 
         assertThat(token).isNotNull
         assertThat(token?.jwtClaimsSet?.subject).isEqualTo("ExampleAppWithClientCredentialsClient")

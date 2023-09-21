@@ -18,10 +18,10 @@ class WellKnownIntegrationTest {
     fun `get to well-known url should return oauth2 server metadata`() {
         withMockOAuth2Server {
             val response = client.get(this.wellKnownUrl("default"))
-            val body = response.body?.string()
+            val body = response.body.string()
             response.code shouldBe 200
             body shouldNotBe null
-            jacksonObjectMapper().readValue<Map<String, Any>>(body!!).keys.asClue {
+            jacksonObjectMapper().readValue<Map<String, Any>>(body).keys.asClue {
                 it shouldContainExactlyInAnyOrder listOf(
                     "issuer",
                     "authorization_endpoint",

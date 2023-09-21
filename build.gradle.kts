@@ -5,7 +5,7 @@ val assertjVersion = "3.24.2"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.4.11"
 val nimbusSdkVersion = "10.15"
-val mockWebServerVersion = "4.11.0"
+val mockWebServerVersion = "5.0.0-alpha.11"
 val jacksonVersion = "2.15.2"
 val nettyVersion = "4.1.97.Final"
 val junitJupiterVersion = "5.10.0"
@@ -58,7 +58,7 @@ dependencies {
     implementation(kotlin("reflect"))
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
-    api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
+    api("com.squareup.okhttp3:mockwebserver3-junit5:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-all:$nettyVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
@@ -104,11 +104,13 @@ dependencies {
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion") {
+        exclude(group = "junit", module = "junit")
+    }
 }
 
 configurations {
-   all {
+    all {
         resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.5.1")
     }
 }

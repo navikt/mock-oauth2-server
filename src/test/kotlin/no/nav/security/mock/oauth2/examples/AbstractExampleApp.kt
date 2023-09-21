@@ -16,14 +16,14 @@ import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
 import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import com.nimbusds.oauth2.sdk.id.Issuer
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata
+import mockwebserver3.Dispatcher
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import mu.KotlinLogging
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.mockwebserver.Dispatcher
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
 import java.net.URI
 import java.util.HashSet
 
@@ -72,7 +72,7 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
                 .url(metadata.jwkSetURI.toURL())
                 .get()
                 .build(),
-        ).execute().body?.string()?.let {
+        ).execute().body.string().let {
             JWKSet.parse(it)
         } ?: throw RuntimeException("could not retrieve jwks")
     }

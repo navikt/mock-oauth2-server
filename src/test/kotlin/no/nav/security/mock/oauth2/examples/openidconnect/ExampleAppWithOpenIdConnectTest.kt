@@ -57,7 +57,7 @@ class ExampleAppWithOpenIdConnectTest {
         assertThat(loginResponse.headers["Set-Cookie"]).contains("id_token=")
         val securedResponse = client.newCall(Request.Builder().url(exampleApp.url("/secured")).build()).execute()
         assertThat(securedResponse.code).isEqualTo(200)
-        val body = securedResponse.body?.string()
+        val body = securedResponse.body.string()
         assertThat(body).isEqualTo("welcome foo")
     }
 

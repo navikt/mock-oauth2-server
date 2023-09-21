@@ -55,6 +55,6 @@ internal class ExampleAppWithSecuredApiTest {
                 .build(),
         ).execute()
         assertThat(response.code).isEqualTo(200)
-        assertThat(response.body?.string()).contains(token.jwtClaimsSet.subject)
+        assertThat(response.body.string()).contains(token.jwtClaimsSet.subject)
     }
 }

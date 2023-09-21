@@ -21,7 +21,7 @@ fun Response.toTokenResponse(): ParsedTokenResponse = ParsedTokenResponse(
     checkNotNull(this.body).string(),
 )
 
-inline fun <reified T> Response.parse(): T = jacksonObjectMapper().readValue(checkNotNull(body?.string()))
+inline fun <reified T> Response.parse(): T = jacksonObjectMapper().readValue(checkNotNull(body.string()))
 
 val Response.authorizationCode: String?
     get() =

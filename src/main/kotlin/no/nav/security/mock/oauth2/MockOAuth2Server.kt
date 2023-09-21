@@ -11,6 +11,8 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
+import mockwebserver3.MockResponse
+import mockwebserver3.RecordedRequest
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
@@ -28,8 +30,6 @@ import no.nav.security.mock.oauth2.http.routes
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import okhttp3.HttpUrl
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.RecordedRequest
 import okio.Buffer
 import java.io.IOException
 import java.net.InetAddress

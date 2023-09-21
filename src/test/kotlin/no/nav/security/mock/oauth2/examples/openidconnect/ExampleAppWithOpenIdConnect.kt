@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import mockwebserver3.MockResponse
+import mockwebserver3.RecordedRequest
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.examples.AbstractExampleApp
 import okhttp3.FormBody
 import okhttp3.Request
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.RecordedRequest
 
 private val log = KotlinLogging.logger {}
 
@@ -40,7 +40,7 @@ class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp
                         )
                         .build(),
                 ).execute()
-                val idToken: String = ObjectMapper().readValue<JsonNode>(tokenResponse.body!!.string()).get("id_token").textValue()
+                val idToken: String = ObjectMapper().readValue<JsonNode>(tokenResponse.body.string()).get("id_token").textValue()
                 val idTokenClaims: JWTClaimsSet = verifyJwt(idToken, metadata.issuer, retrieveJwks())
                 MockResponse()
                     .setResponseCode(200)

@@ -3,13 +3,13 @@ package no.nav.security.mock.oauth2.examples.clientcredentials
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import mockwebserver3.MockResponse
+import mockwebserver3.RecordedRequest
 import no.nav.security.mock.oauth2.examples.AbstractExampleApp
 import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.RecordedRequest
 
 class ExampleAppWithClientCredentialsClient(oauth2DiscoveryUrl: String) : AbstractExampleApp(oauth2DiscoveryUrl) {
 
@@ -37,7 +37,7 @@ class ExampleAppWithClientCredentialsClient(oauth2DiscoveryUrl: String) : Abstra
                 )
                 .build(),
         ).execute()
-        return tokenResponse.body?.string()?.let {
+        return tokenResponse.body.string().let {
             ObjectMapper().readValue<JsonNode>(it).get("access_token")?.textValue()
         }
     }

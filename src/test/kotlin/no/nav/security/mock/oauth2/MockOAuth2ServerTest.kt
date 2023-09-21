@@ -16,7 +16,7 @@ class MockOAuth2ServerTest {
     @Test
     fun `server takeRequest() should return sent request`() {
         withMockOAuth2Server {
-            client.post(this.baseUrl(), mapOf("param1" to "value1")).body?.close()
+            client.post(this.baseUrl(), mapOf("param1" to "value1")).body
 
             this.takeRequest().asClue {
                 it.requestUrl shouldBe this.baseUrl()
@@ -31,7 +31,7 @@ class MockOAuth2ServerTest {
                     "grant_type" to "client_credentials",
                     "scope" to "scope1",
                 ),
-            ).body?.close()
+            ).body
 
             this.takeRequest().asClue {
                 it.requestUrl shouldBe this.tokenEndpointUrl("test")

@@ -10,7 +10,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.internal.toHostHeader
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import javax.net.ssl.SSLContext
@@ -81,7 +80,7 @@ internal fun OkHttpClient.post(tokenRequest: TokenRequest): String =
             .url(tokenRequest.url)
             .post(tokenRequest.body.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
             .build(),
-    ).execute().body?.string() ?: throw RuntimeException("could not get response body from url=${tokenRequest.url}")
+    ).execute().body.string()
 
 fun OkHttpClient.withSsl(ssl: Ssl, followRedirects: Boolean = false): OkHttpClient =
     newBuilder().apply {
@@ -90,3 +89,17 @@ fun OkHttpClient.withSsl(ssl: Ssl, followRedirects: Boolean = false): OkHttpClie
         val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
         sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
     }.build()
+
+// okhttp3 made this internal, so copy it
+internal fun HttpUrl.toHostHeader(includeDefaultPort: Boolean = false): String {
+    val host = if (":" in host) {
+        "[$host]"
+    } else {
+        host
+    }
+    return if (includeDefaultPort || port != HttpUrl.defaultPort(scheme)) {
+        "$host:$port"
+    } else {
+        host
+    }
+}

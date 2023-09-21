@@ -26,14 +26,14 @@ import io.netty.handler.ssl.SslHandler
 import io.netty.handler.stream.ChunkedStream
 import io.netty.handler.stream.ChunkedWriteHandler
 import io.netty.util.CharsetUtil
+import mockwebserver3.Dispatcher
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
 import okhttp3.Headers
 import okhttp3.HttpUrl
-import okhttp3.mockwebserver.Dispatcher
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
 import okio.Buffer
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -69,7 +69,7 @@ class MockWebServerWrapper@JvmOverloads constructor(
         mockWebServer.start(inetAddress, port)
         mockWebServer.dispatcher = MockWebServerDispatcher(requestHandler)
         if (ssl != null) {
-            mockWebServer.useHttps(ssl.sslContext().socketFactory, false)
+            mockWebServer.useHttps(ssl.sslContext().socketFactory)
         }
         log.debug("started server on address=$inetAddress and port=${mockWebServer.port}, httpsEnabled=${ssl != null}")
     }
