@@ -19,7 +19,7 @@ class LoginRequestHandler(private val templateMapper: TemplateMapper, private va
                     notFound("The configured loginPagePath '${config.loginPagePath}' is invalid, please ensure that it points to a valid html file")
                 }
             }
-            ?: templateMapper.loginHtml(httpRequest)
+            ?: templateMapper.loginHtml(httpRequest, config)
 
     fun loginSubmit(httpRequest: OAuth2HttpRequest): Login {
         val formParameters = httpRequest.formParameters

@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.templates
 
 import freemarker.cache.ClassTemplateLoader
 import freemarker.template.Configuration
+import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import okhttp3.HttpUrl
@@ -16,13 +17,14 @@ class TemplateMapper(
     private val config: Configuration,
 ) {
 
-    fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest): String =
+    fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest, config: OAuth2Config): String =
         asString(
             HtmlContent(
                 "login.ftl",
                 mapOf(
                     "request_url" to oAuth2HttpRequest.url.newBuilder().query(null).build().toString(),
                     "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map,
+                    "subject" to config.tokenCallbacks.first().subject(oAuth2HttpRequest.asTokenExchangeRequest()),
                 ),
             ),
         )
@@ -50,7 +52,7 @@ class TemplateMapper(
             ),
         )
 
-    fun debuggerFormHtml(url: HttpUrl, clientAuthMethod: String): String {
+    fun debuggerFormHtml(url: HttpUrl, clientAuthMethod: String, config: OAuth2Config): String {
         val urlWithoutQuery = url.newBuilder().query(null)
         return asString(
             HtmlContent(

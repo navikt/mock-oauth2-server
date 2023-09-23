@@ -13,7 +13,8 @@
                     <label>
                         <input class="u-full-width" required type="text" name="username"
                                placeholder="Enter any user/subject"
-                               autofocus="on">
+                               autofocus="on"
+                               value="${subject}">
                     </label>
                     <label>
                         <textarea class="u-full-width claims" name="claims" rows="15"
