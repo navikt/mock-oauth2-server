@@ -125,7 +125,5 @@ data class OAuth2HttpRequest(
     data class Parameters(val parameterString: String?) {
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
         fun get(name: String): String? = map[name]
-
-        override fun toString(): String = parameterString ?: ""
     }
 }
