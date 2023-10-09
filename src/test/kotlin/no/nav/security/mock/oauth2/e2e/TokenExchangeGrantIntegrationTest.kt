@@ -83,14 +83,58 @@ class TokenExchangeGrantIntegrationTest {
     }
 
     @Test
+    fun `token request with token exchange grant and client basic authentication should exchange subject_token with a new token containing many of the same claims`() {
+        withMockOAuth2Server {
+            val initialSubject = "yolo"
+            val initialToken = this.issueToken(
+                issuerId = "idprovider",
+                clientId = "initialClient",
+                tokenCallback = DefaultOAuth2TokenCallback(
+                    issuerId = "idprovider",
+                    subject = initialSubject,
+                    claims = mapOf(
+                        "claim1" to "value1",
+                        "claim2" to "value2",
+                    ),
+                ),
+            )
+
+            val issuerId = "tokenx"
+            val tokenEndpointUrl = this.tokenEndpointUrl(issuerId)
+            val targetAudienceForToken = "targetAudience"
+
+            val response: ParsedTokenResponse = client.tokenRequest(
+                url = tokenEndpointUrl,
+                basicAuth = Pair("client", "secret"),
+                parameters = mapOf(
+                    "grant_type" to TOKEN_EXCHANGE.value,
+                    "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
+                    "subject_token" to initialToken.serialize(),
+                    "audience" to targetAudienceForToken,
+                ),
+            ).toTokenResponse()
+
+            response shouldBeValidFor TOKEN_EXCHANGE
+            response.scope shouldBe null
+            response.tokenType shouldBe "Bearer"
+            response.issuedTokenType shouldBe "urn:ietf:params:oauth:token-type:access_token"
+
+            response.accessToken!! should verifyWith(issuerId, this)
+
+            response.accessToken.subject shouldBe initialSubject
+            response.accessToken.audience shouldContainExactly listOf(targetAudienceForToken)
+            response.accessToken.claims["claim1"] shouldBe "value1"
+            response.accessToken.claims["claim2"] shouldBe "value2"
+        }
+    }
+
+    @Test
     fun `token request without client_assertion should fail`() {
         withMockOAuth2Server {
             val response: Response = client.tokenRequest(
                 url = this.tokenEndpointUrl("tokenx"),
                 parameters = mapOf(
                     "grant_type" to TOKEN_EXCHANGE.value,
-                    "client_id" to "myid",
-                    "client_secret" to "somesecret",
                     "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
                     "subject_token" to "yolo",
                     "audience" to "targetAudienceForToken",

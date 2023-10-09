@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.http
 
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
+import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import no.nav.security.mock.oauth2.extensions.clientAuthentication
@@ -32,7 +33,10 @@ data class OAuth2HttpRequest(
 
     fun asTokenExchangeRequest(): TokenRequest {
         val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
-        val clientAuthentication = httpRequest.clientAuthentication().requirePrivateKeyJwt(this.url.toString(), 120)
+        var clientAuthentication = httpRequest.clientAuthentication()
+        if (clientAuthentication.method == ClientAuthenticationMethod.PRIVATE_KEY_JWT) {
+            clientAuthentication = clientAuthentication.requirePrivateKeyJwt(this.url.toString(), 120)
+        }
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
 
         // TODO: add scope if present in request
