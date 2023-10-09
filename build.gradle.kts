@@ -24,7 +24,7 @@ plugins {
     application
     kotlin("jvm") version "1.9.10"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
-    id("com.github.ben-manes.versions") version "0.48.0"
+    id("com.github.ben-manes.versions") version "0.49.0"
     id("org.jmailen.kotlinter") version "3.16.0"
     id("com.google.cloud.tools.jib") version "3.4.0"
     id("com.github.johnrengelman.shadow") version "8.1.1"
