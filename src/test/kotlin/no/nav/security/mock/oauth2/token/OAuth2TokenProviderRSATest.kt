@@ -38,30 +38,34 @@ internal class OAuth2TokenProviderRSATest {
 
     @Test
     fun `claims from tokencallback should be added to token in tokenExchange`() {
-        val initialToken = tokenProvider.jwt(
-            mapOf(
-                "iss" to "http://initialissuer",
-                "sub" to "initialsubject",
-                "aud" to "initialaudience",
-                "initialclaim" to "initialclaim",
-            ),
-        )
+        val initialToken =
+            tokenProvider.jwt(
+                mapOf(
+                    "iss" to "http://initialissuer",
+                    "sub" to "initialsubject",
+                    "aud" to "initialaudience",
+                    "initialclaim" to "initialclaim",
+                ),
+            )
 
         tokenProvider.exchangeAccessToken(
-            tokenRequest = nimbusTokenRequest(
-                "myclient",
-                "grant_type" to GrantType.JWT_BEARER.value,
-                "scope" to "scope1",
-                "assertion" to initialToken.serialize(),
-            ),
+            tokenRequest =
+                nimbusTokenRequest(
+                    "myclient",
+                    "grant_type" to GrantType.JWT_BEARER.value,
+                    "scope" to "scope1",
+                    "assertion" to initialToken.serialize(),
+                ),
             issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
             claimsSet = initialToken.jwtClaimsSet,
-            oAuth2TokenCallback = DefaultOAuth2TokenCallback(
-                claims = mapOf(
-                    "extraclaim" to "extra",
-                    "iss" to "http://overrideissuer",
+            oAuth2TokenCallback =
+                DefaultOAuth2TokenCallback(
+                    claims =
+                        mapOf(
+                            "extraclaim" to "extra",
+                            "iss" to "http://overrideissuer",
+                        ),
                 ),
-            ),
         ).jwtClaimsSet.asClue {
             it.issuer shouldBe "http://overrideissuer"
             it.subject shouldBe "initialsubject"
@@ -92,11 +96,12 @@ internal class OAuth2TokenProviderRSATest {
 
     private fun idToken(issuerUrl: String): SignedJWT =
         tokenProvider.idToken(
-            tokenRequest = nimbusTokenRequest(
-                "client1",
-                "grant_type" to "authorization_code",
-                "code" to "123",
-            ),
+            tokenRequest =
+                nimbusTokenRequest(
+                    "client1",
+                    "grant_type" to "authorization_code",
+                    "code" to "123",
+                ),
             issuerUrl = issuerUrl.toHttpUrl(),
             oAuth2TokenCallback = DefaultOAuth2TokenCallback(),
         )

@@ -13,7 +13,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
 
 internal class LoginRequestHandlerTest {
-
     private val handler = LoginRequestHandler(templateMapper, OAuth2Config())
 
     @Test

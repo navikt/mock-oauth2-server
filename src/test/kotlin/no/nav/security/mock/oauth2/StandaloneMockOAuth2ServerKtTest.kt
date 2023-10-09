@@ -20,7 +20,6 @@ import java.io.File
 import java.net.InetSocketAddress
 
 internal class StandaloneMockOAuth2ServerKtTest {
-
     private val configFile = "src/test/resources/config.json"
 
     @Test

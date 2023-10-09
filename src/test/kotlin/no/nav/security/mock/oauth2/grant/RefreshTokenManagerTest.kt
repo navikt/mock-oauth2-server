@@ -8,7 +8,6 @@ import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import org.junit.jupiter.api.Test
 
 internal class RefreshTokenManagerTest {
-
     @Test
     fun `refresh token should be a jwt with nonce included if nonce is not null (for keycloak compatibility)`() {
         val mgr = RefreshTokenManager()

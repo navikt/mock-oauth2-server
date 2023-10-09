@@ -33,7 +33,6 @@ import java.time.Instant
 import java.util.Date
 
 internal class OAuth2ConfigTest {
-
     @Test
     fun `create httpServer from json`() {
         OAuth2Config.fromJson(withNettyHttpServer).httpServer should beInstanceOf<NettyWrapper>()
@@ -109,19 +108,20 @@ internal class OAuth2ConfigTest {
         actualCert.notBefore should beAroundNow()
     }
 
-    private fun beAroundNow(skew: Duration = Duration.ofSeconds(2)) = object : Matcher<Date> {
-        override fun test(value: Date): MatcherResult {
-            val now = Instant.now()
-            val withSkew = value.toInstant().plus(skew)
-            return MatcherResult(
-                withSkew.isAfter(now),
-                { "Date $withSkew should be after $now" },
-                {
-                    "Date $withSkew should not be after $now"
-                },
-            )
+    private fun beAroundNow(skew: Duration = Duration.ofSeconds(2)) =
+        object : Matcher<Date> {
+            override fun test(value: Date): MatcherResult {
+                val now = Instant.now()
+                val withSkew = value.toInstant().plus(skew)
+                return MatcherResult(
+                    withSkew.isAfter(now),
+                    { "Date $withSkew should be after $now" },
+                    {
+                        "Date $withSkew should not be after $now"
+                    },
+                )
+            }
         }
-    }
 
     private fun privateKeyFromFile() =
         KeyStore.getInstance("PKCS12").apply {
@@ -131,50 +131,53 @@ internal class OAuth2ConfigTest {
 
 object FullConfig {
     @Language("json")
-    val configJson = """{
-      "interactiveLogin" : true,
-      "loginPagePath": "./login.html",
-      "httpServer": "NettyWrapper",
-      "tokenCallbacks": [
+    val configJson =
+        """
         {
-          "issuerId": "issuer1",
-          "tokenExpiry": 120,
-          "requestMappings": [
+          "interactiveLogin" : true,
+          "loginPagePath": "./login.html",
+          "httpServer": "NettyWrapper",
+          "tokenCallbacks": [
             {
-              "requestParam": "scope",
-              "match": "scope1",
-              "claims": {
-                "sub": "subByScope",
-                "aud": [
-                  "audByScope"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "issuerId": "issuer2",
-          "requestMappings": [
+              "issuerId": "issuer1",
+              "tokenExpiry": 120,
+              "requestMappings": [
+                {
+                  "requestParam": "scope",
+                  "match": "scope1",
+                  "claims": {
+                    "sub": "subByScope",
+                    "aud": [
+                      "audByScope"
+                    ]
+                  }
+                }
+              ]
+            },
             {
-              "requestParam": "someparam",
-              "match": "somevalue",
-              "claims": {
-                "sub": "subBySomeParam",
-                "aud": [
-                  "audBySomeParam"
-                ]
-              }
+              "issuerId": "issuer2",
+              "requestMappings": [
+                {
+                  "requestParam": "someparam",
+                  "match": "somevalue",
+                  "claims": {
+                    "sub": "subBySomeParam",
+                    "aud": [
+                      "audBySomeParam"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
-      ]
-    }
-    """.trimIndent()
+        """.trimIndent()
 }
 
 object SigningKey {
     @Language("json")
-    val signingJsonGenerated = """
+    val signingJsonGenerated =
+        """
         {
         "tokenProvider" : {
             "keyProvider" : {
@@ -182,10 +185,11 @@ object SigningKey {
             }
           }
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Language("json")
-    val signingJsonSpecified = """
+    val signingJsonSpecified =
+        """
         {
         "tokenProvider" : {
             "keyProvider" : {
@@ -194,10 +198,11 @@ object SigningKey {
             }
           }
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Language("json")
-    val signingJsonUnsupported = """
+    val signingJsonUnsupported =
+        """
         {
         "tokenProvider" : {
             "keyProvider" : {
@@ -205,33 +210,37 @@ object SigningKey {
             }
           }
         }
-    """.trimIndent()
+        """.trimIndent()
 }
 
 object HttpServerConfig {
     @Language("json")
-    val withMockWebServerWrapper = """
+    val withMockWebServerWrapper =
+        """
         {
           "httpServer": "MockWebServerWrapper"
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Language("json")
-    val withNettyHttpServer = """
+    val withNettyHttpServer =
+        """
         {
           "httpServer": "NettyWrapper"
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Language("json")
-    val withUnknownHttpServer = """
+    val withUnknownHttpServer =
+        """
         {
           "httpServer": "UnknownServer"
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Language("json")
-    val nettyWithProvidedKeystore = """
+    val nettyWithProvidedKeystore =
+        """
         {
           "httpServer" : {
             "type" : "NettyWrapper",
@@ -240,30 +249,33 @@ object HttpServerConfig {
             }
           }
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Language("json")
-    val nettyWithGeneratedKeystore = """
+    val nettyWithGeneratedKeystore =
+        """
         {
           "httpServer" : {
             "type" : "NettyWrapper",
             "ssl" : {}
           }
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Language("json")
-    val mockWebServerWithGeneratedKeystore = """
+    val mockWebServerWithGeneratedKeystore =
+        """
         {
           "httpServer" : {
             "type" : "MockWebServerWrapper",
             "ssl" : {}
           }
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Language("json")
-    val mockWebServerWithProvidedKeystore = """
+    val mockWebServerWithProvidedKeystore =
+        """
         {
           "httpServer" : {
             "type" : "MockWebServerWrapper",
@@ -272,5 +284,5 @@ object HttpServerConfig {
             }
           }
         }
-    """.trimIndent()
+        """.trimIndent()
 }

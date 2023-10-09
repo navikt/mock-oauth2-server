@@ -9,7 +9,6 @@ import java.io.File
 import java.io.FileNotFoundException
 
 class LoginRequestHandler(private val templateMapper: TemplateMapper, private val config: OAuth2Config) {
-
     fun loginHtml(httpRequest: OAuth2HttpRequest): String =
         config.loginPagePath
             ?.let {

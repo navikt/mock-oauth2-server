@@ -41,13 +41,14 @@ class MockOAuth2ServerIntegrationTest {
 
     @Test
     fun `server with addtional routes should serve wellknown and additional route`() {
-        val s = MockOAuth2Server(
-            route("/custom") {
-                OAuth2HttpResponse(status = 200, body = "custom route")
-            },
-        ).apply {
-            start()
-        }
+        val s =
+            MockOAuth2Server(
+                route("/custom") {
+                    OAuth2HttpResponse(status = 200, body = "custom route")
+                },
+            ).apply {
+                start()
+            }
         client.get(s.wellKnownUrl("someissuer")).body?.string() shouldContain s.issuerUrl("someissuer").toString()
         client.get(s.url("/custom")).body?.string() shouldBe "custom route"
         client.get(s.url("/someissuer/custom")).body?.string() shouldBe "custom route"
@@ -87,9 +88,10 @@ class MockOAuth2ServerIntegrationTest {
     @Test
     fun `wellknown should include https addresses when MockWebServerWrapper is started with https enabled`() {
         val ssl = Ssl()
-        val server = MockOAuth2Server(
-            OAuth2Config(httpServer = MockWebServerWrapper(ssl)),
-        ).apply { start() }
+        val server =
+            MockOAuth2Server(
+                OAuth2Config(httpServer = MockWebServerWrapper(ssl)),
+            ).apply { start() }
         client.withTrustStore(ssl.sslKeystore.keyStore).get(server.wellKnownUrl("issuer1")).parse<WellKnown>().asClue {
             it urlsShouldStartWith "https"
         }
@@ -131,16 +133,17 @@ class MockOAuth2ServerIntegrationTest {
     @Test
     fun `issue token directly from server should contain claims from callback and be verifiable with server jwks`() {
         withMockOAuth2Server {
-            val signedJWT: SignedJWT = this.issueToken(
-                "default",
-                "client1",
-                DefaultOAuth2TokenCallback(
-                    issuerId = "default",
-                    subject = "mysub",
-                    audience = listOf("myaud"),
-                    claims = mapOf("someclaim" to "claimvalue"),
-                ),
-            )
+            val signedJWT: SignedJWT =
+                this.issueToken(
+                    "default",
+                    "client1",
+                    DefaultOAuth2TokenCallback(
+                        issuerId = "default",
+                        subject = "mysub",
+                        audience = listOf("myaud"),
+                        claims = mapOf("someclaim" to "claimvalue"),
+                    ),
+                )
             val wellKnown = client.get(this.wellKnownUrl("default")).parse<WellKnown>()
             val jwks = client.get(wellKnown.jwksUri.toHttpUrl()).body?.let { JWKSet.parse(it.string()) }
 
@@ -159,16 +162,17 @@ class MockOAuth2ServerIntegrationTest {
     fun `anyToken should issue token with claims from input and be verifyable by servers keys`() {
         withMockOAuth2Server {
             val customIssuer = "https://customissuer/default".toHttpUrl()
-            val token = this.anyToken(
-                customIssuer,
-                mutableMapOf(
-                    "sub" to "mysub",
-                    "aud" to listOf("myapp"),
-                    "customInt" to 123,
-                    "customList" to listOf(1, 2, 3),
-                ),
-                Duration.ofSeconds(10),
-            )
+            val token =
+                this.anyToken(
+                    customIssuer,
+                    mutableMapOf(
+                        "sub" to "mysub",
+                        "aud" to listOf("myapp"),
+                        "customInt" to 123,
+                        "customList" to listOf(1, 2, 3),
+                    ),
+                    Duration.ofSeconds(10),
+                )
 
             val wellKnown = client.get(this.wellKnownUrl("default")).parse<WellKnown>()
             val jwks = client.get(wellKnown.jwksUri.toHttpUrl()).body?.let { JWKSet.parse(it.string()) }
@@ -197,10 +201,11 @@ class MockOAuth2ServerIntegrationTest {
             ),
         ).toTokenResponse().accessToken.asClue {
             it.shouldNotBeNull()
-            it.claims shouldContainAll mapOf(
-                "sub" to "subByScope",
-                "aud" to listOf("audByScope"),
-            )
+            it.claims shouldContainAll
+                mapOf(
+                    "sub" to "subByScope",
+                    "aud" to listOf("audByScope"),
+                )
         }
     }
 
@@ -213,42 +218,44 @@ class MockOAuth2ServerIntegrationTest {
     }
 
     @Language("json")
-    private val configJson = """{
-      "interactiveLogin" : true,
-      "httpServer": "MockWebServerWrapper",
-      "tokenCallbacks": [
+    private val configJson =
+        """
         {
-          "issuerId": "issuer1",
-          "tokenExpiry": 120,
-          "requestMappings": [
+          "interactiveLogin" : true,
+          "httpServer": "MockWebServerWrapper",
+          "tokenCallbacks": [
             {
-              "requestParam": "scope",
-              "match": "scope1",
-              "claims": {
-                "sub": "subByScope",
-                "aud": [
-                  "audByScope"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "issuerId": "issuer2",
-          "requestMappings": [
+              "issuerId": "issuer1",
+              "tokenExpiry": 120,
+              "requestMappings": [
+                {
+                  "requestParam": "scope",
+                  "match": "scope1",
+                  "claims": {
+                    "sub": "subByScope",
+                    "aud": [
+                      "audByScope"
+                    ]
+                  }
+                }
+              ]
+            },
             {
-              "requestParam": "someparam",
-              "match": "somevalue",
-              "claims": {
-                "sub": "subBySomeParam",
-                "aud": [
-                  "audBySomeParam"
-                ]
-              }
+              "issuerId": "issuer2",
+              "requestMappings": [
+                {
+                  "requestParam": "someparam",
+                  "match": "somevalue",
+                  "claims": {
+                    "sub": "subBySomeParam",
+                    "aud": [
+                      "audBySomeParam"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
-      ]
-    }
-    """.trimIndent()
+        """.trimIndent()
 }

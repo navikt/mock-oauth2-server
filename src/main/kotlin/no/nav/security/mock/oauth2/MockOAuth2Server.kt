@@ -50,10 +50,11 @@ open class MockOAuth2Server(
 
     private val httpServer = config.httpServer
     private val defaultRequestHandler: OAuth2HttpRequestHandler = OAuth2HttpRequestHandler(config)
-    private val router: RequestHandler = routes(
-        *additionalRoutes,
-        defaultRequestHandler.authorizationServer,
-    )
+    private val router: RequestHandler =
+        routes(
+            *additionalRoutes,
+            defaultRequestHandler.authorizationServer,
+        )
 
     /**
      * Starts the [MockOAuth2Server] on the localhost interface.
@@ -63,11 +64,12 @@ open class MockOAuth2Server(
      * @exception OAuth2Exception Runtime error if unable to start server.
      */
     @JvmOverloads
-    fun start(port: Int = 0) = try {
-        start(InetAddress.getByName("localhost"), port)
-    } catch (ex: IOException) {
-        throw OAuth2Exception("unable to start server: ${ex.message}", ex)
-    }
+    fun start(port: Int = 0) =
+        try {
+            start(InetAddress.getByName("localhost"), port)
+        } catch (ex: IOException) {
+            throw OAuth2Exception("unable to start server: ${ex.message}", ex)
+        }
 
     /**
      * Starts the [MockOAuth2Server] on the given [inetAddress] IP address at the given [port].
@@ -77,7 +79,10 @@ open class MockOAuth2Server(
      *
      * @exception OAuth2Exception Runtime error if unable to start server.
      */
-    fun start(inetAddress: InetAddress, port: Int) {
+    fun start(
+        inetAddress: InetAddress,
+        port: Int,
+    ) {
         log.debug("attempt to start server on port=$port")
         httpServer.start(inetAddress, port, router)
     }
@@ -104,7 +109,9 @@ open class MockOAuth2Server(
     fun url(path: String): HttpUrl = httpServer.url(path)
 
     @Deprecated("Use MockWebServer method/function instead", ReplaceWith("MockWebServer.enqueue()"))
-    fun enqueueResponse(@Suppress("UNUSED_PARAMETER") response: MockResponse) {
+    fun enqueueResponse(
+        @Suppress("UNUSED_PARAMETER") response: MockResponse,
+    ) {
         throw UnsupportedOperationException("cannot enqueue MockResponse, please use the MockWebServer directly with QueueDispatcher")
     }
 
@@ -125,7 +132,10 @@ open class MockOAuth2Server(
      * @param unit A [TimeUnit] determining how to interpret the [timeout] parameter
      */
     @JvmOverloads
-    fun takeRequest(timeout: Long = 2, unit: TimeUnit = TimeUnit.SECONDS): RecordedRequest =
+    fun takeRequest(
+        timeout: Long = 2,
+        unit: TimeUnit = TimeUnit.SECONDS,
+    ): RecordedRequest =
         (httpServer as? MockWebServerWrapper)?.mockWebServer?.let {
             it.takeRequest(timeout, unit) ?: throw RuntimeException("no request found in queue within timeout $timeout $unit")
         } ?: throw UnsupportedOperationException("can only takeRequest when httpServer is of type MockWebServer")
@@ -225,14 +235,19 @@ open class MockOAuth2Server(
      * @param clientId The identifier for the client or Relying Party that requests the token.
      * @param tokenCallback A callback that implements the [OAuth2TokenCallback] interface for token customization.
      */
-    fun issueToken(issuerId: String, clientId: String, tokenCallback: OAuth2TokenCallback): SignedJWT {
+    fun issueToken(
+        issuerId: String,
+        clientId: String,
+        tokenCallback: OAuth2TokenCallback,
+    ): SignedJWT {
         val uri = tokenEndpointUrl(issuerId)
         val issuerUrl = issuerUrl(issuerId)
-        val tokenRequest = TokenRequest(
-            uri.toUri(),
-            ClientSecretBasic(ClientID(clientId), Secret("secret")),
-            AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost")),
-        )
+        val tokenRequest =
+            TokenRequest(
+                uri.toUri(),
+                ClientSecretBasic(ClientID(clientId), Secret("secret")),
+                AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost")),
+            )
         return config.tokenProvider.accessToken(tokenRequest, issuerUrl, tokenCallback, null)
     }
 
@@ -248,29 +263,35 @@ open class MockOAuth2Server(
         audience: String? = "default",
         claims: Map<String, Any> = emptyMap(),
         expiry: Long = 3600,
-    ): SignedJWT = issueToken(
-        issuerId,
-        "default",
-        DefaultOAuth2TokenCallback(
+    ): SignedJWT =
+        issueToken(
             issuerId,
-            subject,
-            JOSEObjectType.JWT.type,
-            audience?.let { listOf(it) },
-            claims,
-            expiry,
-        ),
-    )
+            "default",
+            DefaultOAuth2TokenCallback(
+                issuerId,
+                subject,
+                JOSEObjectType.JWT.type,
+                audience?.let { listOf(it) },
+                claims,
+                expiry,
+            ),
+        )
 
     /**
      * Issues a signed JWT for a given [issuerUrl] containing the input set of [claims].
      * The JWT's signature can be verified with the server's keys found at the [jwksUrl] endpoint.
      */
     @JvmOverloads
-    fun anyToken(issuerUrl: HttpUrl, claims: Map<String, Any>, expiry: Duration = Duration.ofHours(1)): SignedJWT {
+    fun anyToken(
+        issuerUrl: HttpUrl,
+        claims: Map<String, Any>,
+        expiry: Duration = Duration.ofHours(1),
+    ): SignedJWT {
         val jwtClaimsSet = claims.toJwtClaimsSet()
-        val mockGrant: AuthorizationGrant = object : AuthorizationGrant(GrantType("MockGrant")) {
-            override fun toParameters(): MutableMap<String, MutableList<String>> = mutableMapOf()
-        }
+        val mockGrant: AuthorizationGrant =
+            object : AuthorizationGrant(GrantType("MockGrant")) {
+                override fun toParameters(): MutableMap<String, MutableList<String>> = mutableMapOf()
+            }
         return this.config.tokenProvider.exchangeAccessToken(
             TokenRequest(URI.create("http://mockgrant"), ClientID("mockclientid"), mockGrant),
             issuerUrl,

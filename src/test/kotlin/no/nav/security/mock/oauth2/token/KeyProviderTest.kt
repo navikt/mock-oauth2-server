@@ -18,7 +18,6 @@ import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 
 internal class KeyProviderTest {
-
     private val initialRSAKeysFile = File("src/main/resources$INITIAL_KEYS_FILE")
 
     private val initialECKeysFile = File("src/main/resources/mock-oauth2-server-keys-ec.json")
@@ -43,10 +42,11 @@ internal class KeyProviderTest {
 
     @Test
     fun `signingKey should return a EC key from initial keys file until deque is empty`() {
-        val provider = KeyProvider(
-            initialKeys = KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"),
-            algorithm = "ES256",
-        )
+        val provider =
+            KeyProvider(
+                initialKeys = KeyProvider.keysFromFile("/mock-oauth2-server-keys-ec.json"),
+                algorithm = "ES256",
+            )
         val initialPublicKeys = initialEcPublicKeys()
 
         for (i in initialPublicKeys.indices) {
@@ -111,15 +111,16 @@ internal class KeyProviderTest {
     private fun generateKeys(numKeys: Int): List<RSAKey> {
         val list = mutableListOf<RSAKey>()
         for (i in 1..numKeys) {
-            val key = KeyPairGenerator.getInstance("RSA").apply { this.initialize(2048) }
-                .generateKeyPair()
-                .let {
-                    RSAKey.Builder(it.public as RSAPublicKey)
-                        .privateKey(it.private as RSAPrivateKey)
-                        .keyUse(KeyUse.SIGNATURE)
-                        .keyID("initialkey-$i")
-                        .build()
-                }
+            val key =
+                KeyPairGenerator.getInstance("RSA").apply { this.initialize(2048) }
+                    .generateKeyPair()
+                    .let {
+                        RSAKey.Builder(it.public as RSAPublicKey)
+                            .privateKey(it.private as RSAPrivateKey)
+                            .keyUse(KeyUse.SIGNATURE)
+                            .keyID("initialkey-$i")
+                            .build()
+                    }
             list.add(key)
         }
         return list

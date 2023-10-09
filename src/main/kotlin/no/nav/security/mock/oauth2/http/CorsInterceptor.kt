@@ -7,7 +7,6 @@ private val log = KotlinLogging.logger {}
 class CorsInterceptor(
     private val allowedMethods: List<String> = listOf("POST", "GET", "OPTIONS"),
 ) : ResponseInterceptor {
-
     companion object HeaderNames {
         const val ORIGIN = "origin"
         const val ACCESS_CONTROL_ALLOW_CREDENTIALS = "access-control-allow-credentials"
@@ -17,7 +16,10 @@ class CorsInterceptor(
         const val ACCESS_CONTROL_ALLOW_ORIGIN = "access-control-allow-origin"
     }
 
-    override fun intercept(request: OAuth2HttpRequest, response: OAuth2HttpResponse): OAuth2HttpResponse {
+    override fun intercept(
+        request: OAuth2HttpRequest,
+        response: OAuth2HttpResponse,
+    ): OAuth2HttpResponse {
         val origin = request.headers[ORIGIN]
         log.debug("intercept response if request origin header is set: $origin")
         return if (origin != null) {

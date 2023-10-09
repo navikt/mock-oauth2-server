@@ -13,24 +13,24 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class ExampleAppWithOpenIdConnectTest {
-
     private lateinit var client: OkHttpClient
     private lateinit var oAuth2Server: MockOAuth2Server
     private lateinit var exampleApp: ExampleAppWithOpenIdConnect
 
-    private val ISSUER_ID = "test"
+    private val issuerId = "test"
 
     @BeforeEach
     fun before() {
         oAuth2Server = MockOAuth2Server()
         oAuth2Server.start()
-        exampleApp = ExampleAppWithOpenIdConnect(oAuth2Server.wellKnownUrl(ISSUER_ID).toString())
+        exampleApp = ExampleAppWithOpenIdConnect(oAuth2Server.wellKnownUrl(issuerId).toString())
         exampleApp.start()
-        client = OkHttpClient()
-            .newBuilder()
-            .followRedirects(true)
-            .cookieJar(InmemoryCookieJar())
-            .build()
+        client =
+            OkHttpClient()
+                .newBuilder()
+                .followRedirects(true)
+                .cookieJar(InmemoryCookieJar())
+                .build()
     }
 
     @AfterEach
@@ -49,7 +49,7 @@ class ExampleAppWithOpenIdConnectTest {
     fun loginAndAccessSecuredPathWithIdTokenForSubjectFoo() {
         oAuth2Server.enqueueCallback(
             DefaultOAuth2TokenCallback(
-                issuerId = ISSUER_ID,
+                issuerId = issuerId,
                 subject = "foo",
             ),
         )
@@ -63,19 +63,25 @@ class ExampleAppWithOpenIdConnectTest {
 
     @Test
     fun requestToSecuredPathShouldRedirectToLogin() {
-        val loginResponse = OkHttpClient()
-            .newBuilder()
-            .followRedirects(false)
-            .build()
-            .newCall(Request.Builder().url(exampleApp.url("/secured")).build()).execute()
+        val loginResponse =
+            OkHttpClient()
+                .newBuilder()
+                .followRedirects(false)
+                .build()
+                .newCall(Request.Builder().url(exampleApp.url("/secured")).build()).execute()
         assertThat(loginResponse.code).isEqualTo(302)
         assertThat(loginResponse.headers["Location"]).isEqualTo(exampleApp.url("/login").toString())
     }
 
     internal class InmemoryCookieJar : CookieJar {
         private val cookieList: MutableList<Cookie> = mutableListOf()
+
         override fun loadForRequest(url: HttpUrl): List<Cookie> = cookieList
-        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+
+        override fun saveFromResponse(
+            url: HttpUrl,
+            cookies: List<Cookie>,
+        ) {
             cookieList.addAll(cookies)
         }
     }

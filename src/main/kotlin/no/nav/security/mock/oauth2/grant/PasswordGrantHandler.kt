@@ -13,7 +13,6 @@ import okhttp3.HttpUrl
 internal class PasswordGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
 ) : GrantHandler {
-
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
@@ -35,7 +34,6 @@ internal class PasswordGrantHandler(
     private class PasswordGrantTokenCallback(
         private val tokenCallback: OAuth2TokenCallback,
     ) : OAuth2TokenCallback by tokenCallback {
-
         override fun subject(tokenRequest: TokenRequest) =
             tokenRequest.authorizationGrant
                 ?.let { it as? ResourceOwnerPasswordCredentialsGrant }

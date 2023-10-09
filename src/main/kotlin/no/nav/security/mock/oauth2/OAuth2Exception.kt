@@ -13,16 +13,19 @@ class OAuth2Exception(val errorObject: ErrorObject?, msg: String, throwable: Thr
     constructor(errorObject: ErrorObject?, msg: String) : this(errorObject, msg, null)
 }
 
-fun missingParameter(name: String): Nothing = "missing required parameter $name".let {
-    throw OAuth2Exception(OAuth2Error.INVALID_REQUEST.setDescription(it), it)
-}
+fun missingParameter(name: String): Nothing =
+    "missing required parameter $name".let {
+        throw OAuth2Exception(OAuth2Error.INVALID_REQUEST.setDescription(it), it)
+    }
 
-fun invalidGrant(grantType: GrantType): Nothing = "grant_type $grantType not supported.".let {
-    throw OAuth2Exception(OAuth2Error.INVALID_GRANT, it)
-}
+fun invalidGrant(grantType: GrantType): Nothing =
+    "grant_type $grantType not supported.".let {
+        throw OAuth2Exception(OAuth2Error.INVALID_GRANT, it)
+    }
 
-fun invalidRequest(message: String): Nothing = message.let {
-    throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, message)
-}
+fun invalidRequest(message: String): Nothing =
+    message.let {
+        throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, message)
+    }
 
 fun notFound(message: String): Nothing = throw OAuth2Exception(ErrorObject("not_found", "Resource not found", HTTPResponse.SC_NOT_FOUND), message)

@@ -24,19 +24,24 @@ import java.util.Base64
 import java.util.Date
 import java.util.UUID
 
-val httpClient = HttpClient(CIO) {
-    install(ContentNegotiation) {
-        jackson {
-            configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            setSerializationInclusion(JsonInclude.Include.NON_NULL)
+val httpClient =
+    HttpClient(CIO) {
+        install(ContentNegotiation) {
+            jackson {
+                configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            }
         }
     }
-}
 
-suspend fun HttpClient.tokenRequest(url: String, auth: Auth, params: Map<String, String>) =
-    submitForm(
-        url = url,
-        formParameters = Parameters.build {
+suspend fun HttpClient.tokenRequest(
+    url: String,
+    auth: Auth,
+    params: Map<String, String>,
+) = submitForm(
+    url = url,
+    formParameters =
+        Parameters.build {
             auth.parameters.forEach {
                 append(it.key, it.value)
             }
@@ -44,31 +49,40 @@ suspend fun HttpClient.tokenRequest(url: String, auth: Auth, params: Map<String,
                 append(it.key, it.value)
             }
         },
-    ) {
-        auth.headers.forEach { s, list -> header(s, list.first()) }
-    }
+) {
+    auth.headers.forEach { s, list -> header(s, list.first()) }
+}
 
-suspend fun HttpClient.clientCredentialsGrant(url: String, auth: Auth, scope: String) =
-    tokenRequest(
-        url = url,
-        auth = auth,
-        params = mapOf(
+suspend fun HttpClient.clientCredentialsGrant(
+    url: String,
+    auth: Auth,
+    scope: String,
+) = tokenRequest(
+    url = url,
+    auth = auth,
+    params =
+        mapOf(
             "grant_type" to "client_credentials",
             "scope" to scope,
         ),
-    )
+)
 
-suspend fun HttpClient.onBehalfOfGrant(url: String, auth: Auth, token: String, scope: String) =
-    tokenRequest(
-        url = url,
-        auth = auth,
-        params = mapOf(
+suspend fun HttpClient.onBehalfOfGrant(
+    url: String,
+    auth: Auth,
+    token: String,
+    scope: String,
+) = tokenRequest(
+    url = url,
+    auth = auth,
+    params =
+        mapOf(
             "scope" to scope,
             "grant_type" to "urn:ietf:params:oauth:grant-type:jwt-bearer",
             "requested_token_use" to "on_behalf_of",
             "assertion" to token,
         ),
-    )
+)
 
 class Auth internal constructor(
     val parameters: Map<String, String> = emptyMap(),
@@ -77,29 +91,36 @@ class Auth internal constructor(
     companion object {
         private const val CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 
-        fun ClientSecretBasic(clientId: String, clientSecret: String): Auth =
+        fun clientSecretBasic(
+            clientId: String,
+            clientSecret: String,
+        ): Auth =
             Base64.getEncoder().encodeToString("$clientId:$clientSecret".toByteArray(StandardCharsets.UTF_8)).let {
                 Auth(headers = headersOf("Authorization", "Basic $it"))
             }
 
-        fun PrivateKeyJwt(jwt: String): Auth = Auth(
-            parameters = mapOf(
-                "client_assertion_type" to CLIENT_ASSERTION_TYPE,
-                "client_assertion" to jwt,
-            ),
-        )
+        fun privateKeyJwt(jwt: String): Auth =
+            Auth(
+                parameters =
+                    mapOf(
+                        "client_assertion_type" to CLIENT_ASSERTION_TYPE,
+                        "client_assertion" to jwt,
+                    ),
+            )
 
-        fun PrivateKeyJwt(
+        fun privateKeyJwt(
             keyPair: KeyPair,
             clientId: String,
             tokenEndpoint: String,
             expiry: Duration = Duration.ofSeconds(120),
-        ): Auth = Auth(
-            parameters = mapOf(
-                "client_assertion_type" to CLIENT_ASSERTION_TYPE,
-                "client_assertion" to keyPair.clientAssertion(clientId, tokenEndpoint, expiry),
-            ),
-        )
+        ): Auth =
+            Auth(
+                parameters =
+                    mapOf(
+                        "client_assertion_type" to CLIENT_ASSERTION_TYPE,
+                        "client_assertion" to keyPair.clientAssertion(clientId, tokenEndpoint, expiry),
+                    ),
+            )
 
         private fun KeyPair.clientAssertion(
             clientId: String,

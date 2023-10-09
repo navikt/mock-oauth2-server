@@ -31,42 +31,45 @@ class RefreshTokenGrantIntegrationTest {
 
             // Authenticate using Authorization Code Flow
             // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
-            val authorizationCode = client.post(
-                this.authorizationEndpointUrl("default").authenticationRequest(),
-                mapOf("username" to initialSubject),
-            ).let { authResponse ->
-                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
-            }
+            val authorizationCode =
+                client.post(
+                    this.authorizationEndpointUrl("default").authenticationRequest(),
+                    mapOf("username" to initialSubject),
+                ).let { authResponse ->
+                    authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
 
             authorizationCode.shouldNotBeNull()
 
             // Token Request based on authorization code
-            val tokenResponseBeforeRefresh = client.tokenRequest(
-                this.tokenEndpointUrl(issuerId),
-                mapOf(
-                    "grant_type" to GrantType.AUTHORIZATION_CODE.value,
-                    "code" to authorizationCode,
-                    "client_id" to "id",
-                    "client_secret" to "secret",
-                    "scope" to "openid",
-                    "redirect_uri" to "http://something",
-                ),
-            ).toTokenResponse()
+            val tokenResponseBeforeRefresh =
+                client.tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                        "code" to authorizationCode,
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                        "scope" to "openid",
+                        "redirect_uri" to "http://something",
+                    ),
+                ).toTokenResponse()
 
             tokenResponseBeforeRefresh.idToken?.subject shouldBe initialSubject
             tokenResponseBeforeRefresh.accessToken?.subject shouldBe initialSubject
 
             // make token request with the refresh_token grant
             val refreshToken = checkNotNull(tokenResponseBeforeRefresh.refreshToken)
-            val refreshTokenResponse = client.tokenRequest(
-                this.tokenEndpointUrl(issuerId),
-                mapOf(
-                    "grant_type" to GrantType.REFRESH_TOKEN.value,
-                    "refresh_token" to refreshToken,
-                    "client_id" to "id",
-                    "client_secret" to "secret",
-                ),
-            ).toTokenResponse()
+            val refreshTokenResponse =
+                client.tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to refreshToken,
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                ).toTokenResponse()
 
             refreshTokenResponse shouldBeValidFor GrantType.REFRESH_TOKEN
             refreshTokenResponse.refreshToken shouldBe tokenResponseBeforeRefresh.refreshToken
@@ -88,15 +91,16 @@ class RefreshTokenGrantIntegrationTest {
             val issuerId = "idprovider"
             this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = expectedSubject))
 
-            val refreshTokenResponse = client.tokenRequest(
-                this.tokenEndpointUrl(issuerId),
-                mapOf(
-                    "grant_type" to GrantType.REFRESH_TOKEN.value,
-                    "refresh_token" to "canbewhatever",
-                    "client_id" to "id",
-                    "client_secret" to "secret",
-                ),
-            ).toTokenResponse()
+            val refreshTokenResponse =
+                client.tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to "canbewhatever",
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                ).toTokenResponse()
 
             refreshTokenResponse shouldBeValidFor GrantType.REFRESH_TOKEN
             refreshTokenResponse.idToken!!.subject shouldBe expectedSubject
@@ -107,15 +111,16 @@ class RefreshTokenGrantIntegrationTest {
     fun `token request with refresh_token grant and random refresh token should return random subject in tokens`() {
         withMockOAuth2Server {
             val issuerId = "idprovider"
-            val refreshTokenResponse = client.tokenRequest(
-                this.tokenEndpointUrl(issuerId),
-                mapOf(
-                    "grant_type" to GrantType.REFRESH_TOKEN.value,
-                    "refresh_token" to "canbewhatever",
-                    "client_id" to "id",
-                    "client_secret" to "secret",
-                ),
-            ).toTokenResponse()
+            val refreshTokenResponse =
+                client.tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to "canbewhatever",
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                ).toTokenResponse()
 
             refreshTokenResponse shouldBeValidFor GrantType.REFRESH_TOKEN
             refreshTokenResponse.idToken!!.subject shouldNotBe null

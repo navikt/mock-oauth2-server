@@ -11,9 +11,13 @@ internal data class RefreshTokenManager(
     private val cache: MutableMap<RefreshToken, OAuth2TokenCallback> = HashMap(),
 ) {
     operator fun get(refreshToken: RefreshToken) = cache[refreshToken]
+
     fun remove(refreshToken: RefreshToken) = cache.remove(refreshToken)
 
-    fun refreshToken(tokenCallback: OAuth2TokenCallback, nonce: String?): RefreshToken {
+    fun refreshToken(
+        tokenCallback: OAuth2TokenCallback,
+        nonce: String?,
+    ): RefreshToken {
         val jti = UUID.randomUUID().toString()
         // added for compatibility with keycloak js client which expects a jwt with nonce
         val refreshToken = nonce?.let { plainJWT(jti, nonce) } ?: jti
@@ -21,7 +25,10 @@ internal data class RefreshTokenManager(
         return refreshToken
     }
 
-    private fun plainJWT(jti: String, nonce: String?): String =
+    private fun plainJWT(
+        jti: String,
+        nonce: String?,
+    ): String =
         PlainJWT(
             JWTClaimsSet.parse(
                 mapOf(
