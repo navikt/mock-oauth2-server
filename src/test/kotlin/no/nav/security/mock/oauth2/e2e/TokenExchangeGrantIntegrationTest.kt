@@ -83,7 +83,7 @@ class TokenExchangeGrantIntegrationTest {
     }
 
     @Test
-    fun `token request with token exchange grant and client basic authentication should exchange subject_token with a new token containing many of the same claims`() {
+    fun `token request with token exchange grant and client basic auth should exchange subject_token with a new token containing many of the same claims`() {
         withMockOAuth2Server {
             val initialSubject = "yolo"
             val initialToken = this.issueToken(
