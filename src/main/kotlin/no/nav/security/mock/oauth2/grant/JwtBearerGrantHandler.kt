@@ -14,7 +14,6 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 
 internal class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvider) : GrantHandler {
-
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
@@ -22,12 +21,13 @@ internal class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvi
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val receivedClaimsSet = tokenRequest.assertion()
-        val accessToken = tokenProvider.exchangeAccessToken(
-            tokenRequest,
-            issuerUrl,
-            receivedClaimsSet,
-            oAuth2TokenCallback,
-        )
+        val accessToken =
+            tokenProvider.exchangeAccessToken(
+                tokenRequest,
+                issuerUrl,
+                receivedClaimsSet,
+                oAuth2TokenCallback,
+            )
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),

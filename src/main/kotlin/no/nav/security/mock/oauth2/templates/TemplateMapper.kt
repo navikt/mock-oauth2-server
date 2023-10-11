@@ -15,7 +15,6 @@ data class HtmlContent(
 class TemplateMapper(
     private val config: Configuration,
 ) {
-
     fun loginHtml(oAuth2HttpRequest: OAuth2HttpRequest): String =
         asString(
             HtmlContent(
@@ -27,7 +26,10 @@ class TemplateMapper(
             ),
         )
 
-    fun debuggerCallbackHtml(tokenRequest: String, tokenResponse: String): String {
+    fun debuggerCallbackHtml(
+        tokenRequest: String,
+        tokenResponse: String,
+    ): String {
         return asString(
             HtmlContent(
                 "debugger_callback.ftl",
@@ -39,18 +41,23 @@ class TemplateMapper(
         )
     }
 
-    fun debuggerErrorHtml(debuggerUrl: HttpUrl, stacktrace: String) =
-        asString(
-            HtmlContent(
-                "error.ftl",
-                mapOf(
-                    "debugger_url" to debuggerUrl,
-                    "stacktrace" to stacktrace,
-                ),
+    fun debuggerErrorHtml(
+        debuggerUrl: HttpUrl,
+        stacktrace: String,
+    ) = asString(
+        HtmlContent(
+            "error.ftl",
+            mapOf(
+                "debugger_url" to debuggerUrl,
+                "stacktrace" to stacktrace,
             ),
-        )
+        ),
+    )
 
-    fun debuggerFormHtml(url: HttpUrl, clientAuthMethod: String): String {
+    fun debuggerFormHtml(
+        url: HttpUrl,
+        clientAuthMethod: String,
+    ): String {
         val urlWithoutQuery = url.newBuilder().query(null)
         return asString(
             HtmlContent(
@@ -65,7 +72,11 @@ class TemplateMapper(
         )
     }
 
-    fun authorizationCodeResponseHtml(redirectUri: String, code: String, state: String): String =
+    fun authorizationCodeResponseHtml(
+        redirectUri: String,
+        code: String,
+        state: String,
+    ): String =
         asString(
             HtmlContent(
                 "authorization_code_response.ftl",
@@ -84,11 +95,12 @@ class TemplateMapper(
 
     companion object {
         fun create(configure: Configuration.() -> Unit): TemplateMapper {
-            val config = Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS)
-                .apply {
-                    templateLoader = ClassTemplateLoader(this::class.java.classLoader, "templates")
-                }
-                .apply(configure)
+            val config =
+                Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS)
+                    .apply {
+                        templateLoader = ClassTemplateLoader(this::class.java.classLoader, "templates")
+                    }
+                    .apply(configure)
             return TemplateMapper(config)
         }
     }

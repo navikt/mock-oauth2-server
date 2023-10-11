@@ -23,7 +23,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
 
 class InteractiveLoginIntegrationTest {
-
     private val issuerId = "default"
     private val server = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
     private val client = client()
@@ -42,25 +41,27 @@ class InteractiveLoginIntegrationTest {
 
     companion object {
         @JvmStatic
-        fun testUsers(): Stream<Arguments> = Stream.of(
-            Arguments.of(
-                User(
-                    username = "user1",
-                    claims = mapOf(
-                        "claim1" to "claim1value",
+        fun testUsers(): Stream<Arguments> =
+            Stream.of(
+                Arguments.of(
+                    User(
+                        username = "user1",
+                        claims =
+                            mapOf(
+                                "claim1" to "claim1value",
+                            ),
                     ),
                 ),
-
-            ),
-            Arguments.of(
-                User(
-                    username = "user2",
-                    claims = mapOf(
-                        "claim2" to "claim2value",
+                Arguments.of(
+                    User(
+                        username = "user2",
+                        claims =
+                            mapOf(
+                                "claim2" to "claim2value",
+                            ),
                     ),
                 ),
-            ),
-        )
+            )
     }
 
     private fun loginForCode(user: User): String {

@@ -21,7 +21,6 @@ import java.time.Instant
 import java.util.Date
 
 class KeyGeneratorTest {
-
     @Test
     fun `verify RSA signing keys with the right algorithm is created`() {
         rsaAlgorithmFamily.forEachIndexed { index, jwsAlgorithm ->
@@ -78,7 +77,12 @@ class KeyGeneratorTest {
         }
     }
 
-    private fun jwtWith(issuer: String, keyId: String, type: String, algorithm: JWSAlgorithm): SignedJWT =
+    private fun jwtWith(
+        issuer: String,
+        keyId: String,
+        type: String,
+        algorithm: JWSAlgorithm,
+    ): SignedJWT =
         SignedJWT(
             JWSHeader.Builder(algorithm)
                 .keyID(keyId)

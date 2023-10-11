@@ -30,11 +30,11 @@ import java.util.HashSet
 private val log = KotlinLogging.logger {}
 
 abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
-
-    val oauth2Client: OkHttpClient = OkHttpClient()
-        .newBuilder()
-        .followRedirects(false)
-        .build()
+    val oauth2Client: OkHttpClient =
+        OkHttpClient()
+            .newBuilder()
+            .followRedirects(false)
+            .build()
 
     val metadata = OIDCProviderMetadata.parse(DefaultResourceRetriever().retrieveResource(URI(oauth2DiscoveryUrl).toURL()).content)
 
@@ -43,21 +43,22 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
     fun start() {
         exampleApp = MockWebServer()
         exampleApp.start()
-        exampleApp.dispatcher = object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse {
-                return runCatching {
-                    handleRequest(request)
-                }.fold(
-                    onSuccess = { result -> result },
-                    onFailure = { error ->
-                        log.error("received unhandled exception.", error)
-                        MockResponse()
-                            .setResponseCode(500)
-                            .setBody("unhandled exception with message ${error.message}")
-                    },
-                )
+        exampleApp.dispatcher =
+            object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    return runCatching {
+                        handleRequest(request)
+                    }.fold(
+                        onSuccess = { result -> result },
+                        onFailure = { error ->
+                            log.error("received unhandled exception.", error)
+                            MockResponse()
+                                .setResponseCode(500)
+                                .setBody("unhandled exception with message ${error.message}")
+                        },
+                    )
+                }
             }
-        }
     }
 
     fun shutdown() {
@@ -77,18 +78,24 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
         } ?: throw RuntimeException("could not retrieve jwks")
     }
 
-    fun verifyJwt(jwt: String, issuer: Issuer, jwkSet: JWKSet): JWTClaimsSet {
+    fun verifyJwt(
+        jwt: String,
+        issuer: Issuer,
+        jwkSet: JWKSet,
+    ): JWTClaimsSet {
         val jwtProcessor: ConfigurableJWTProcessor<SecurityContext?> = DefaultJWTProcessor()
         jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
-        val keySelector: JWSKeySelector<SecurityContext?> = JWSVerificationKeySelector(
-            JWSAlgorithm.RS256,
-            ImmutableJWKSet(jwkSet),
-        )
+        val keySelector: JWSKeySelector<SecurityContext?> =
+            JWSVerificationKeySelector(
+                JWSAlgorithm.RS256,
+                ImmutableJWKSet(jwkSet),
+            )
         jwtProcessor.jwsKeySelector = keySelector
-        jwtProcessor.jwtClaimsSetVerifier = DefaultJWTClaimsVerifier(
-            JWTClaimsSet.Builder().issuer(issuer.toString()).build(),
-            HashSet(listOf("sub", "iat", "exp", "aud")),
-        )
+        jwtProcessor.jwtClaimsSetVerifier =
+            DefaultJWTClaimsVerifier(
+                JWTClaimsSet.Builder().issuer(issuer.toString()).build(),
+                HashSet(listOf("sub", "iat", "exp", "aud")),
+            )
         return try {
             jwtProcessor.process(jwt, null)
         } catch (e: Exception) {
@@ -103,10 +110,11 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
 
     fun notAuthorized(): MockResponse = MockResponse().setResponseCode(401)
 
-    fun json(value: Any): MockResponse = MockResponse()
-        .setResponseCode(200)
-        .setHeader("Content-Type", "application/json")
-        .setBody(ObjectMapper().writeValueAsString(value))
+    fun json(value: Any): MockResponse =
+        MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Type", "application/json")
+            .setBody(ObjectMapper().writeValueAsString(value))
 
     abstract fun handleRequest(request: RecordedRequest): MockResponse
 }

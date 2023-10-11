@@ -27,12 +27,13 @@ internal class IntrospectTest {
     fun `introspect should return active and claims from bearer token`() {
         val issuerUrl = "http://localhost/default"
         val tokenProvider = OAuth2TokenProvider()
-        val claims = mapOf(
-            "iss" to issuerUrl,
-            "client_id" to "yolo",
-            "token_type" to "token",
-            "sub" to "foo",
-        )
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "client_id" to "yolo",
+                "token_type" to "token",
+                "sub" to "foo",
+            )
         val token = tokenProvider.jwt(claims)
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
 
@@ -47,12 +48,13 @@ internal class IntrospectTest {
     @Test
     fun `introspect should return active and claims for non-default algorithm from bearer token`() {
         val issuerUrl = "http://localhost/default"
-        val claims = mapOf(
-            "iss" to issuerUrl,
-            "client_id" to "yolo",
-            "token_type" to "token",
-            "sub" to "foo",
-        )
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "client_id" to "yolo",
+                "token_type" to "token",
+                "sub" to "foo",
+            )
         val token = rs384TokenProvider.jwt(claims)
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
 
@@ -91,12 +93,13 @@ internal class IntrospectTest {
     @Test
     fun `introspect should return active false when token was signed with a different algorithm than token provider`() {
         val issuerUrl = "http://localhost/default"
-        val claims = mapOf(
-            "iss" to issuerUrl,
-            "client_id" to "yolo",
-            "token_type" to "token",
-            "sub" to "foo",
-        )
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "client_id" to "yolo",
+                "token_type" to "token",
+                "sub" to "foo",
+            )
         val token = rs384TokenProvider.jwt(claims)
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
 
@@ -125,7 +128,11 @@ internal class IntrospectTest {
 
     private inline fun <reified T> OAuth2HttpResponse.parse(): T = jacksonObjectMapper().readValue(checkNotNull(body))
 
-    private fun request(url: String, token: String?, auth: String = "Basic user=password"): OAuth2HttpRequest {
+    private fun request(
+        url: String,
+        token: String?,
+        auth: String = "Basic user=password",
+    ): OAuth2HttpRequest {
         return OAuth2HttpRequest(
             Headers.headersOf(
                 "Authorization",

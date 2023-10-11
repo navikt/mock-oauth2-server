@@ -34,7 +34,9 @@ data class OAuth2HttpResponse(
         if (bytesBody != null) {
             if (other.bytesBody == null) return false
             if (!bytesBody.contentEquals(other.bytesBody)) return false
-        } else if (other.bytesBody != null) return false
+        } else if (other.bytesBody != null) {
+            return false
+        }
 
         return true
     }
@@ -92,36 +94,46 @@ data class OAuth2TokenResponse(
     val scope: String? = null,
 )
 
-fun json(anyObject: Any): OAuth2HttpResponse = OAuth2HttpResponse(
-    headers = Headers.headersOf(
-        HttpHeaderNames.CONTENT_TYPE.toString(),
-        "application/json;charset=UTF-8",
-    ),
-    status = 200,
-    body = when (anyObject) {
-        is String -> anyObject
-        else ->
-            objectMapper
-                .enable(SerializationFeature.INDENT_OUTPUT)
-                .writeValueAsString(anyObject)
-    },
-)
+fun json(anyObject: Any): OAuth2HttpResponse =
+    OAuth2HttpResponse(
+        headers =
+            Headers.headersOf(
+                HttpHeaderNames.CONTENT_TYPE.toString(),
+                "application/json;charset=UTF-8",
+            ),
+        status = 200,
+        body =
+            when (anyObject) {
+                is String -> anyObject
+                else ->
+                    objectMapper
+                        .enable(SerializationFeature.INDENT_OUTPUT)
+                        .writeValueAsString(anyObject)
+            },
+    )
 
-fun html(content: String): OAuth2HttpResponse = OAuth2HttpResponse(
-    headers = Headers.headersOf(
-        HttpHeaderNames.CONTENT_TYPE.toString(),
-        "text/html;charset=UTF-8",
-    ),
-    status = 200,
-    body = content,
-)
+fun html(content: String): OAuth2HttpResponse =
+    OAuth2HttpResponse(
+        headers =
+            Headers.headersOf(
+                HttpHeaderNames.CONTENT_TYPE.toString(),
+                "text/html;charset=UTF-8",
+            ),
+        status = 200,
+        body = content,
+    )
 
-fun redirect(location: String, headers: Headers = Headers.headersOf()): OAuth2HttpResponse = OAuth2HttpResponse(
-    headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), location).newBuilder().addAll(headers).build(),
-    status = 302,
-)
+fun redirect(
+    location: String,
+    headers: Headers = Headers.headersOf(),
+): OAuth2HttpResponse =
+    OAuth2HttpResponse(
+        headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), location).newBuilder().addAll(headers).build(),
+        status = 302,
+    )
 
 fun notFound(body: String? = null): OAuth2HttpResponse = OAuth2HttpResponse(status = 404, body = body)
+
 fun methodNotAllowed(): OAuth2HttpResponse = OAuth2HttpResponse(status = 405, body = "method not allowed")
 
 fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessResponse): OAuth2HttpResponse {
@@ -129,31 +141,35 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
         ResponseMode.FORM_POST -> {
             OAuth2HttpResponse(
                 status = 200,
-                body = templateMapper.authorizationCodeResponseHtml(
-                    authenticationSuccessResponse.redirectionURI.toString(),
-                    authenticationSuccessResponse.authorizationCode.value,
-                    authenticationSuccessResponse.state.value,
-                ),
+                body =
+                    templateMapper.authorizationCodeResponseHtml(
+                        authenticationSuccessResponse.redirectionURI.toString(),
+                        authenticationSuccessResponse.authorizationCode.value,
+                        authenticationSuccessResponse.state.value,
+                    ),
             )
         }
-        else -> OAuth2HttpResponse(
-            headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authenticationSuccessResponse.toURI().toString()),
-            status = 302,
-        )
+        else ->
+            OAuth2HttpResponse(
+                headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authenticationSuccessResponse.toURI().toString()),
+                status = 302,
+            )
     }
 }
 
 fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
     val responseCode = error.httpStatusCode.takeUnless { it == 302 } ?: 400
     return OAuth2HttpResponse(
-        headers = Headers.headersOf(
-            HttpHeaderNames.CONTENT_TYPE.toString(),
-            "application/json;charset=UTF-8",
-        ),
+        headers =
+            Headers.headersOf(
+                HttpHeaderNames.CONTENT_TYPE.toString(),
+                "application/json;charset=UTF-8",
+            ),
         status = responseCode,
-        body = objectMapper
-            .enable(SerializationFeature.INDENT_OUTPUT)
-            .writeValueAsString(error.toJSONObject())
-            .lowercase(),
+        body =
+            objectMapper
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .writeValueAsString(error.toJSONObject())
+                .lowercase(),
     )
 }

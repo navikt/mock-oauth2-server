@@ -79,21 +79,26 @@ fun TokenRequest.clientIdAsString(): String =
     this.clientAuthentication?.clientID?.value ?: this.clientID?.value
         ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
 
-fun SignedJWT.expiresIn(): Int =
-    Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
+fun SignedJWT.expiresIn(): Int = Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
 
-fun SignedJWT.verifySignatureAndIssuer(issuer: Issuer, jwkSet: JWKSet, jwsAlgorithm: JWSAlgorithm = JWSAlgorithm.RS256): JWTClaimsSet {
+fun SignedJWT.verifySignatureAndIssuer(
+    issuer: Issuer,
+    jwkSet: JWKSet,
+    jwsAlgorithm: JWSAlgorithm = JWSAlgorithm.RS256,
+): JWTClaimsSet {
     val jwtProcessor: ConfigurableJWTProcessor<SecurityContext?> = DefaultJWTProcessor()
     jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
-    val keySelector: JWSKeySelector<SecurityContext?> = JWSVerificationKeySelector(
-        jwsAlgorithm,
-        ImmutableJWKSet(jwkSet),
-    )
+    val keySelector: JWSKeySelector<SecurityContext?> =
+        JWSVerificationKeySelector(
+            jwsAlgorithm,
+            ImmutableJWKSet(jwkSet),
+        )
     jwtProcessor.jwsKeySelector = keySelector
-    jwtProcessor.jwtClaimsSetVerifier = DefaultJWTClaimsVerifier(
-        JWTClaimsSet.Builder().issuer(issuer.toString()).build(),
-        HashSet(listOf("sub", "iat", "exp")),
-    )
+    jwtProcessor.jwtClaimsSetVerifier =
+        DefaultJWTClaimsVerifier(
+            JWTClaimsSet.Builder().issuer(issuer.toString()).build(),
+            HashSet(listOf("sub", "iat", "exp")),
+        )
     return jwtProcessor.process(this, null)
 }
 
@@ -101,7 +106,10 @@ fun HTTPRequest.clientAuthentication() =
     ClientAuthentication.parse(this)
         ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain some form of ClientAuthentication.")
 
-fun ClientAuthentication.requirePrivateKeyJwt(requiredAudience: String, maxLifetimeSeconds: Long): PrivateKeyJWT =
+fun ClientAuthentication.requirePrivateKeyJwt(
+    requiredAudience: String,
+    maxLifetimeSeconds: Long,
+): PrivateKeyJWT =
     (this as? PrivateKeyJWT)
         ?.let {
             when {

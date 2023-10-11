@@ -81,13 +81,14 @@ data class OAuth2HttpRequest(
             userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString(),
         )
 
-    internal fun proxyAwareUrl(): HttpUrl = HttpUrl.Builder()
-        .scheme(resolveScheme())
-        .host(resolveHost())
-        .port(resolvePort())
-        .encodedPath(originalUrl.encodedPath)
-        .query(originalUrl.query)
-        .build()
+    internal fun proxyAwareUrl(): HttpUrl =
+        HttpUrl.Builder()
+            .scheme(resolveScheme())
+            .host(resolveHost())
+            .port(resolvePort())
+            .encodedPath(originalUrl.encodedPath)
+            .query(originalUrl.query)
+            .build()
 
     private fun resolveScheme(): String = headers["x-forwarded-proto"] ?: originalUrl.scheme
 
@@ -124,6 +125,7 @@ data class OAuth2HttpRequest(
 
     data class Parameters(val parameterString: String?) {
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
+
         fun get(name: String): String? = map[name]
     }
 }

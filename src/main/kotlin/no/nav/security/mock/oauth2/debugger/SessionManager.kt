@@ -32,11 +32,16 @@ class SessionManager {
         fun putAll(map: Map<String, String>) = parameters.putAll(map)
 
         operator fun get(key: String): String = parameters[key] ?: throw RuntimeException("could not get $key from session.")
-        operator fun set(key: String, value: String) = parameters.put(key, value)
 
-        fun asCookie(): String = objectMapper.writeValueAsString(parameters).encrypt(encryptionKey).let {
-            "$DEBUGGER_SESSION_COOKIE=$it; HttpOnly; Path=/"
-        }
+        operator fun set(
+            key: String,
+            value: String,
+        ) = parameters.put(key, value)
+
+        fun asCookie(): String =
+            objectMapper.writeValueAsString(parameters).encrypt(encryptionKey).let {
+                "$DEBUGGER_SESSION_COOKIE=$it; HttpOnly; Path=/"
+            }
 
         private fun String.encrypt(key: SecretKey): String =
             JWEObject(

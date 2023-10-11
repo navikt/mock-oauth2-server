@@ -112,7 +112,10 @@ fun verifyWith(
     }
 }
 
-fun nimbusTokenRequest(clientId: String, vararg formParams: Pair<String, String>): TokenRequest =
+fun nimbusTokenRequest(
+    clientId: String,
+    vararg formParams: Pair<String, String>,
+): TokenRequest =
     OAuth2HttpRequest(
         Headers.headersOf(
             "Content-Type",
@@ -142,12 +145,13 @@ fun SignedJWT.verifyWith(
     return DefaultJWTProcessor<SecurityContext?>()
         .apply {
             jwsKeySelector = JWSVerificationKeySelector(JWSAlgorithm.RS256, JWKSourceBuilder.create<SecurityContext>(jwkSetUri.toUrl()).build())
-            jwtClaimsSetVerifier = DefaultJWTClaimsVerifier(
-                JWTClaimsSet.Builder()
-                    .issuer(issuer.toString())
-                    .build(),
-                HashSet(requiredClaims),
-            )
+            jwtClaimsSetVerifier =
+                DefaultJWTClaimsVerifier(
+                    JWTClaimsSet.Builder()
+                        .issuer(issuer.toString())
+                        .build(),
+                    HashSet(requiredClaims),
+                )
         }.process(this, null)
 }
 
@@ -179,7 +183,10 @@ fun JWTClaimsSet.sign(rsaKey: RSAKey = generateRsaKey()): SignedJWT =
         sign(RSASSASigner(rsaKey.toPrivateKey()))
     }
 
-fun generateRsaKey(keyId: String = UUID.randomUUID().toString(), keySize: Int = 2048): RSAKey =
+fun generateRsaKey(
+    keyId: String = UUID.randomUUID().toString(),
+    keySize: Int = 2048,
+): RSAKey =
     KeyPairGenerator.getInstance("RSA")
         .apply { initialize(keySize) }.generateKeyPair()
         .let {

@@ -12,59 +12,65 @@ import java.util.UUID
 
 interface OAuth2TokenCallback {
     fun issuerId(): String
+
     fun subject(tokenRequest: TokenRequest): String?
+
     fun typeHeader(tokenRequest: TokenRequest): String
+
     fun audience(tokenRequest: TokenRequest): List<String>
+
     fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
+
     fun tokenExpiry(): Long
 }
 
 // TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
-open class DefaultOAuth2TokenCallback @JvmOverloads constructor(
-    private val issuerId: String = "default",
-    private val subject: String = UUID.randomUUID().toString(),
-    private val typeHeader: String = JOSEObjectType.JWT.type,
-    // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
-    private val audience: List<String>? = null,
-    private val claims: Map<String, Any> = emptyMap(),
-    private val expiry: Long = 3600,
-) : OAuth2TokenCallback {
+open class DefaultOAuth2TokenCallback
+    @JvmOverloads
+    constructor(
+        private val issuerId: String = "default",
+        private val subject: String = UUID.randomUUID().toString(),
+        private val typeHeader: String = JOSEObjectType.JWT.type,
+        // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
+        private val audience: List<String>? = null,
+        private val claims: Map<String, Any> = emptyMap(),
+        private val expiry: Long = 3600,
+    ) : OAuth2TokenCallback {
+        override fun issuerId(): String = issuerId
 
-    override fun issuerId(): String = issuerId
-
-    override fun subject(tokenRequest: TokenRequest): String {
-        return when (GrantType.CLIENT_CREDENTIALS) {
-            tokenRequest.grantType() -> tokenRequest.clientIdAsString()
-            else -> subject
-        }
-    }
-
-    override fun typeHeader(tokenRequest: TokenRequest): String {
-        return typeHeader
-    }
-
-    override fun audience(tokenRequest: TokenRequest): List<String> {
-        val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
-        return when {
-            audience != null -> audience
-            audienceParam != null -> audienceParam
-            tokenRequest.scope != null -> tokenRequest.scopesWithoutOidcScopes()
-            else -> listOf("default")
-        }
-    }
-
-    override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-        claims.toMutableMap().apply {
-            putAll(
-                mapOf(
-                    "azp" to tokenRequest.clientIdAsString(),
-                    "tid" to issuerId,
-                ),
-            )
+        override fun subject(tokenRequest: TokenRequest): String {
+            return when (GrantType.CLIENT_CREDENTIALS) {
+                tokenRequest.grantType() -> tokenRequest.clientIdAsString()
+                else -> subject
+            }
         }
 
-    override fun tokenExpiry(): Long = expiry
-}
+        override fun typeHeader(tokenRequest: TokenRequest): String {
+            return typeHeader
+        }
+
+        override fun audience(tokenRequest: TokenRequest): List<String> {
+            val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
+            return when {
+                audience != null -> audience
+                audienceParam != null -> audienceParam
+                tokenRequest.scope != null -> tokenRequest.scopesWithoutOidcScopes()
+                else -> listOf("default")
+            }
+        }
+
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
+            claims.toMutableMap().apply {
+                putAll(
+                    mapOf(
+                        "azp" to tokenRequest.clientIdAsString(),
+                        "tid" to issuerId,
+                    ),
+                )
+            }
+
+        override fun tokenExpiry(): Long = expiry
+    }
 
 data class RequestMappingTokenCallback(
     val issuerId: String,
@@ -73,19 +79,16 @@ data class RequestMappingTokenCallback(
 ) : OAuth2TokenCallback {
     override fun issuerId(): String = issuerId
 
-    override fun subject(tokenRequest: TokenRequest): String? =
-        requestMappings.getClaimOrNull(tokenRequest, "sub")
+    override fun subject(tokenRequest: TokenRequest): String? = requestMappings.getClaimOrNull(tokenRequest, "sub")
 
-    override fun typeHeader(tokenRequest: TokenRequest): String =
-        requestMappings.getTypeHeader(tokenRequest)
+    override fun typeHeader(tokenRequest: TokenRequest): String = requestMappings.getTypeHeader(tokenRequest)
 
-    override fun audience(tokenRequest: TokenRequest): List<String> =
-        requestMappings.getClaimOrNull(tokenRequest, "aud") ?: emptyList()
+    override fun audience(tokenRequest: TokenRequest): List<String> = requestMappings.getClaimOrNull(tokenRequest, "aud") ?: emptyList()
 
-    override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-        requestMappings.getClaims(tokenRequest)
+    override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = requestMappings.getClaims(tokenRequest)
 
     override fun tokenExpiry(): Long = tokenExpiry
+
     private fun Set<RequestMapping>.getClaims(tokenRequest: TokenRequest): Map<String, Any> {
         val claims = firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
         return if (tokenRequest.grantType() == GrantType.CLIENT_CREDENTIALS && claims["sub"] == "\${clientId}") {
@@ -95,11 +98,12 @@ data class RequestMappingTokenCallback(
         }
     }
 
-    private inline fun <reified T> Set<RequestMapping>.getClaimOrNull(tokenRequest: TokenRequest, key: String): T? =
-        getClaims(tokenRequest)[key] as? T
+    private inline fun <reified T> Set<RequestMapping>.getClaimOrNull(
+        tokenRequest: TokenRequest,
+        key: String,
+    ): T? = getClaims(tokenRequest)[key] as? T
 
-    private fun Set<RequestMapping>.getTypeHeader(tokenRequest: TokenRequest) =
-        firstOrNull { it.isMatch(tokenRequest) }?.typeHeader ?: JOSEObjectType.JWT.type
+    private fun Set<RequestMapping>.getTypeHeader(tokenRequest: TokenRequest) = firstOrNull { it.isMatch(tokenRequest) }?.typeHeader ?: JOSEObjectType.JWT.type
 }
 
 data class RequestMapping(
