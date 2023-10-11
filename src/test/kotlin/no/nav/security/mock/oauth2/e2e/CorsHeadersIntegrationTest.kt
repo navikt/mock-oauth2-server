@@ -78,16 +78,17 @@ class CorsHeadersIntegrationTest {
             val issuerId = "idprovider"
             this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = expectedSubject))
 
-            val response = client.tokenRequest(
-                this.tokenEndpointUrl(issuerId),
-                Headers.headersOf("origin", origin),
-                mapOf(
-                    "grant_type" to GrantType.REFRESH_TOKEN.value,
-                    "refresh_token" to "canbewhatever",
-                    "client_id" to "id",
-                    "client_secret" to "secret",
-                ),
-            )
+            val response =
+                client.tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    Headers.headersOf("origin", origin),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to "canbewhatever",
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                )
 
             response.code shouldBe 200
             response.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin

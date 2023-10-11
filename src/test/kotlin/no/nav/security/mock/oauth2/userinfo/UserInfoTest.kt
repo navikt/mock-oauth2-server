@@ -19,16 +19,16 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
 
 internal class UserInfoTest {
-
     @Test
     fun `userinfo should return claims from bearer token`() {
         val issuerUrl = "http://localhost/default"
         val tokenProvider = OAuth2TokenProvider()
-        val claims = mapOf(
-            "iss" to issuerUrl,
-            "sub" to "foo",
-            "extra" to "bar",
-        )
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "sub" to "foo",
+                "extra" to "bar",
+            )
         val bearerToken = tokenProvider.jwt(claims)
         val request = request("$issuerUrl$USER_INFO", bearerToken.serialize())
 
@@ -42,11 +42,12 @@ internal class UserInfoTest {
     fun `userinfo should throw OAuth2Exception when algorithm does not match`() {
         val issuerUrl = "http://localhost/default"
         val tokenProvider = OAuth2TokenProvider(keyProvider = KeyProvider(algorithm = JWSAlgorithm.RS384.name))
-        val claims = mapOf(
-            "iss" to issuerUrl,
-            "sub" to "foo",
-            "extra" to "bar",
-        )
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "sub" to "foo",
+                "extra" to "bar",
+            )
         val bearerToken = tokenProvider.jwt(claims)
         val request = request("$issuerUrl$USER_INFO", bearerToken.serialize())
 
@@ -92,7 +93,10 @@ internal class UserInfoTest {
 
     private inline fun <reified T> OAuth2HttpResponse.parse(): T = jacksonObjectMapper().readValue(checkNotNull(body))
 
-    private fun request(url: String, bearerToken: String?): OAuth2HttpRequest {
+    private fun request(
+        url: String,
+        bearerToken: String?,
+    ): OAuth2HttpRequest {
         return OAuth2HttpRequest(
             bearerToken?.let { Headers.headersOf("Authorization", "Bearer $it") } ?: Headers.headersOf(),
             "GET",

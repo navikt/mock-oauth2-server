@@ -18,11 +18,11 @@ import okhttp3.Headers
 import org.junit.jupiter.api.Test
 
 class UserInfoIntegrationTest {
-
     private val client = client()
-    private val rs384Config = OAuth2Config(
-        tokenProvider = OAuth2TokenProvider(keyProvider = KeyProvider(initialKeys = emptyList(), algorithm = JWSAlgorithm.RS384.name)),
-    )
+    private val rs384Config =
+        OAuth2Config(
+            tokenProvider = OAuth2TokenProvider(keyProvider = KeyProvider(initialKeys = emptyList(), algorithm = JWSAlgorithm.RS384.name)),
+        )
 
     @Test
     fun `userinfo should return claims from token when valid bearer token is present`() {
@@ -33,11 +33,12 @@ class UserInfoIntegrationTest {
                 url = this.userInfoUrl(issuerId),
                 headers = token.asBearerTokenHeader(),
             ).asClue {
-                it.parse<Map<String, Any>>() shouldContainAll mapOf(
-                    "sub" to token.claims["sub"],
-                    "iss" to token.claims["iss"],
-                    "extra" to token.claims["extra"],
-                )
+                it.parse<Map<String, Any>>() shouldContainAll
+                    mapOf(
+                        "sub" to token.claims["sub"],
+                        "iss" to token.claims["iss"],
+                        "extra" to token.claims["extra"],
+                    )
             }
         }
     }
@@ -52,11 +53,12 @@ class UserInfoIntegrationTest {
                 url = this.userInfoUrl(issuerId),
                 headers = token.asBearerTokenHeader(),
             ).asClue {
-                it.parse<Map<String, Any>>() shouldContainAll mapOf(
-                    "sub" to token.claims["sub"],
-                    "iss" to token.claims["iss"],
-                    "extra" to token.claims["extra"],
-                )
+                it.parse<Map<String, Any>>() shouldContainAll
+                    mapOf(
+                        "sub" to token.claims["sub"],
+                        "iss" to token.claims["iss"],
+                        "extra" to token.claims["extra"],
+                    )
             }
         }
     }
@@ -77,7 +79,8 @@ class UserInfoIntegrationTest {
         }
     }
 
-    private fun SignedJWT.asBearerTokenHeader(): Headers = this.serialize().let {
-        Headers.headersOf("Authorization", "Bearer $it")
-    }
+    private fun SignedJWT.asBearerTokenHeader(): Headers =
+        this.serialize().let {
+            Headers.headersOf("Authorization", "Bearer $it")
+        }
 }

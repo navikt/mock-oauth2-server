@@ -76,7 +76,7 @@ fun Application.module(authConfig: AuthConfig) {
             get {
                 call.respondText("nothing to see here really")
             }
-            location<Login>() {
+            location<Login> {
                 param("error") {
                     handle {
                         call.respondText(ContentType.Text.Html, HttpStatusCode.BadRequest) {
@@ -100,15 +100,16 @@ class AuthConfig(
     val providers: List<IdProvider> = emptyList(),
 ) {
     class IdProvider(val name: String, authorizationEndpoint: String, tokenEndpoint: String) {
-        val settings = OAuthServerSettings.OAuth2ServerSettings(
-            name = name,
-            authorizeUrl = authorizationEndpoint,
-            accessTokenUrl = tokenEndpoint,
-            requestMethod = HttpMethod.Post,
-            clientId = "***",
-            clientSecret = "***",
-            defaultScopes = listOf("openid"),
-        )
+        val settings =
+            OAuthServerSettings.OAuth2ServerSettings(
+                name = name,
+                authorizeUrl = authorizationEndpoint,
+                accessTokenUrl = tokenEndpoint,
+                requestMethod = HttpMethod.Post,
+                clientId = "***",
+                clientSecret = "***",
+                defaultScopes = listOf("openid"),
+            )
     }
 }
 
@@ -122,11 +123,12 @@ private fun ApplicationCall.subject(): String? {
     }
 }
 
-internal val httpClient = HttpClient(CIO) {
-    install(ContentNegotiation) {
-        jackson {
-            configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            setSerializationInclusion(JsonInclude.Include.NON_NULL)
+internal val httpClient =
+    HttpClient(CIO) {
+        install(ContentNegotiation) {
+            jackson {
+                configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            }
         }
     }
-}

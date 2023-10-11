@@ -35,103 +35,120 @@ import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 
-class Ssl @JvmOverloads constructor(
-    val sslKeystore: SslKeystore = SslKeystore(),
-) {
-    fun sslEngine(): SSLEngine = sslContext().createSSLEngine().apply {
-        useClientMode = false
-        needClientAuth = false
-    }
-
-    fun sslContext(): SSLContext {
-        val keyManager = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply {
-            init(sslKeystore.keyStore, sslKeystore.keyPassword.toCharArray())
-        }
-        return SSLContext.getInstance("TLS").apply {
-            init(keyManager.keyManagers, null, null)
-        }
-    }
-}
-
-class SslKeystore @JvmOverloads constructor(
-    val keyPassword: String = "",
-    val keyStore: KeyStore = generate("localhost", keyPassword),
-) {
+class Ssl
     @JvmOverloads
     constructor(
-        keyPassword: String,
-        keystoreFile: File,
-        keystoreType: KeyStoreType = KeyStoreType.PKCS12,
-        keystorePassword: String = "",
-    ) : this(keyPassword, keyStore(keystoreFile, keystoreType, keystorePassword))
+        val sslKeystore: SslKeystore = SslKeystore(),
+    ) {
+        fun sslEngine(): SSLEngine =
+            sslContext().createSSLEngine().apply {
+                useClientMode = false
+                needClientAuth = false
+            }
 
-    enum class KeyStoreType {
-        PKCS12,
-        JKS,
-    }
-
-    companion object {
-        private const val CERT_SIGNATURE_ALG = "SHA256withRSA"
-        private const val KEY_ALG = "RSA"
-        private const val KEY_SIZE = 2048
-
-        fun generate(hostname: String, keyPassword: String): KeyStore {
-            val keyPair = KeyPairGenerator.getInstance(KEY_ALG).apply { initialize(KEY_SIZE) }.generateKeyPair()
-            val cert = keyPair.toX509Certificate(hostname)
-            return KeyStore.getInstance(KeyStoreType.PKCS12.name).apply {
-                this.load(null)
-                this.setKeyEntry(hostname, keyPair.private, keyPassword.toCharArray(), arrayOf(cert))
+        fun sslContext(): SSLContext {
+            val keyManager =
+                KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply {
+                    init(sslKeystore.keyStore, sslKeystore.keyPassword.toCharArray())
+                }
+            return SSLContext.getInstance("TLS").apply {
+                init(keyManager.keyManagers, null, null)
             }
         }
+    }
 
-        private fun keyStore(
+class SslKeystore
+    @JvmOverloads
+    constructor(
+        val keyPassword: String = "",
+        val keyStore: KeyStore = generate("localhost", keyPassword),
+    ) {
+        @JvmOverloads
+        constructor(
+            keyPassword: String,
             keystoreFile: File,
             keystoreType: KeyStoreType = KeyStoreType.PKCS12,
             keystorePassword: String = "",
-        ) = KeyStore.getInstance(keystoreType.name).apply {
-            keystoreFile.inputStream().use {
-                load(it, keystorePassword.toCharArray())
-            }
+        ) : this(keyPassword, keyStore(keystoreFile, keystoreType, keystorePassword))
+
+        enum class KeyStoreType {
+            PKCS12,
+            JKS,
         }
 
-        private fun KeyPair.toX509Certificate(cn: String, expiry: Duration = Duration.ofDays(365)): X509Certificate {
-            val now = Instant.now()
-            val x500Name = X500Name("CN=$cn")
-            val contentSigner: ContentSigner = JcaContentSignerBuilder(CERT_SIGNATURE_ALG).build(this.private)
-            val certificateHolder = JcaX509v3CertificateBuilder(
-                x500Name,
-                BigInteger.valueOf(now.toEpochMilli()),
-                Date.from(now),
-                Date.from(now.plus(expiry)),
-                x500Name,
-                this.public,
-            ).addExtensions(cn, this.public).build(contentSigner)
-            return JcaX509CertificateConverter().setProvider(BouncyCastleProvider()).getCertificate(certificateHolder)
-        }
+        companion object {
+            private const val CERT_SIGNATURE_ALG = "SHA256withRSA"
+            private const val KEY_ALG = "RSA"
+            private const val KEY_SIZE = 2048
 
-        private fun X509v3CertificateBuilder.addExtensions(cn: String, publicKey: PublicKey) = apply {
-            val san: MutableList<GeneralName> = mutableListOf(
-                GeneralName(GeneralName.dNSName, cn),
-            )
-
-            if (cn == "localhost") {
-                san.add(GeneralName(GeneralName.iPAddress, "127.0.0.1"))
+            fun generate(
+                hostname: String,
+                keyPassword: String,
+            ): KeyStore {
+                val keyPair = KeyPairGenerator.getInstance(KEY_ALG).apply { initialize(KEY_SIZE) }.generateKeyPair()
+                val cert = keyPair.toX509Certificate(hostname)
+                return KeyStore.getInstance(KeyStoreType.PKCS12.name).apply {
+                    this.load(null)
+                    this.setKeyEntry(hostname, keyPair.private, keyPassword.toCharArray(), arrayOf(cert))
+                }
             }
 
-            addExtension(Extension.subjectKeyIdentifier, false, publicKey.createSubjectKeyId())
-                .addExtension(Extension.authorityKeyIdentifier, false, publicKey.createAuthorityKeyId())
-                .addExtension(Extension.basicConstraints, true, BasicConstraints(true))
-                .addExtension(Extension.subjectAlternativeName, false, GeneralNames(san.toTypedArray()))
-                .addExtension(Extension.keyUsage, false, KeyUsage(KeyUsage.digitalSignature))
-                .addExtension(Extension.extendedKeyUsage, false, ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth))
+            private fun keyStore(
+                keystoreFile: File,
+                keystoreType: KeyStoreType = KeyStoreType.PKCS12,
+                keystorePassword: String = "",
+            ) = KeyStore.getInstance(keystoreType.name).apply {
+                keystoreFile.inputStream().use {
+                    load(it, keystorePassword.toCharArray())
+                }
+            }
+
+            private fun KeyPair.toX509Certificate(
+                cn: String,
+                expiry: Duration = Duration.ofDays(365),
+            ): X509Certificate {
+                val now = Instant.now()
+                val x500Name = X500Name("CN=$cn")
+                val contentSigner: ContentSigner = JcaContentSignerBuilder(CERT_SIGNATURE_ALG).build(this.private)
+                val certificateHolder =
+                    JcaX509v3CertificateBuilder(
+                        x500Name,
+                        BigInteger.valueOf(now.toEpochMilli()),
+                        Date.from(now),
+                        Date.from(now.plus(expiry)),
+                        x500Name,
+                        this.public,
+                    ).addExtensions(cn, this.public).build(contentSigner)
+                return JcaX509CertificateConverter().setProvider(BouncyCastleProvider()).getCertificate(certificateHolder)
+            }
+
+            private fun X509v3CertificateBuilder.addExtensions(
+                cn: String,
+                publicKey: PublicKey,
+            ) = apply {
+                val san: MutableList<GeneralName> =
+                    mutableListOf(
+                        GeneralName(GeneralName.dNSName, cn),
+                    )
+
+                if (cn == "localhost") {
+                    san.add(GeneralName(GeneralName.iPAddress, "127.0.0.1"))
+                }
+
+                addExtension(Extension.subjectKeyIdentifier, false, publicKey.createSubjectKeyId())
+                    .addExtension(Extension.authorityKeyIdentifier, false, publicKey.createAuthorityKeyId())
+                    .addExtension(Extension.basicConstraints, true, BasicConstraints(true))
+                    .addExtension(Extension.subjectAlternativeName, false, GeneralNames(san.toTypedArray()))
+                    .addExtension(Extension.keyUsage, false, KeyUsage(KeyUsage.digitalSignature))
+                    .addExtension(Extension.extendedKeyUsage, false, ExtendedKeyUsage(KeyPurposeId.id_kp_serverAuth))
+            }
+
+            private fun PublicKey.createSubjectKeyId(): SubjectKeyIdentifier =
+                X509ExtensionUtils(digestCalculator()).createSubjectKeyIdentifier(SubjectPublicKeyInfo.getInstance(encoded))
+
+            private fun PublicKey.createAuthorityKeyId(): AuthorityKeyIdentifier =
+                X509ExtensionUtils(digestCalculator()).createAuthorityKeyIdentifier(SubjectPublicKeyInfo.getInstance(encoded))
+
+            private fun digestCalculator() = BcDigestCalculatorProvider().get(AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1))
         }
-
-        private fun PublicKey.createSubjectKeyId(): SubjectKeyIdentifier =
-            X509ExtensionUtils(digestCalculator()).createSubjectKeyIdentifier(SubjectPublicKeyInfo.getInstance(encoded))
-
-        private fun PublicKey.createAuthorityKeyId(): AuthorityKeyIdentifier =
-            X509ExtensionUtils(digestCalculator()).createAuthorityKeyIdentifier(SubjectPublicKeyInfo.getInstance(encoded))
-
-        private fun digestCalculator() = BcDigestCalculatorProvider().get(AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1))
     }
-}

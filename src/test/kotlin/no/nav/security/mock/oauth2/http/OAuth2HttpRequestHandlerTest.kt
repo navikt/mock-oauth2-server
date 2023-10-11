@@ -21,10 +21,12 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
 
 internal class OAuth2HttpRequestHandlerTest {
-
     @ParameterizedTest
     @MethodSource("testRequests")
-    fun `supported routes in authorization server should return expected response`(request: OAuth2HttpRequest, expectedResponse: OAuth2HttpResponse) {
+    fun `supported routes in authorization server should return expected response`(
+        request: OAuth2HttpRequest,
+        expectedResponse: OAuth2HttpResponse,
+    ) {
         authServer.invoke(request).asClue {
             it.status shouldBe expectedResponse.status
         }
@@ -36,61 +38,73 @@ internal class OAuth2HttpRequestHandlerTest {
         private const val AUTHORIZATION_WITH_PARAMS = "$AUTHORIZATION?client_id=client&response_type=code&redirect_uri=foo&scope=openid"
 
         @JvmStatic
-        fun testRequests(): Stream<Arguments> = Stream.of(
-            request(path = "/issuer1$OIDC_WELL_KNOWN", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
-            request(path = "/issuer1$OAUTH2_WELL_KNOWN", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
-            request(path = "/issuer1$JWKS", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
-            request(path = "/issuer1$AUTHORIZATION_WITH_PARAMS", method = "GET", expectedResponse = OAuth2HttpResponse(status = 302)),
-            request(
-                path = "/issuer1$AUTHORIZATION_WITH_PARAMS",
-                method = "POST",
-                body = "username=foo",
-                expectedResponse = OAuth2HttpResponse(status = 302),
+        fun testRequests(): Stream<Arguments> =
+            Stream.of(
+                request(path = "/issuer1$OIDC_WELL_KNOWN", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+                request(path = "/issuer1$OAUTH2_WELL_KNOWN", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+                request(path = "/issuer1$JWKS", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+                request(path = "/issuer1$AUTHORIZATION_WITH_PARAMS", method = "GET", expectedResponse = OAuth2HttpResponse(status = 302)),
+                request(
+                    path = "/issuer1$AUTHORIZATION_WITH_PARAMS",
+                    method = "POST",
+                    body = "username=foo",
+                    expectedResponse = OAuth2HttpResponse(status = 302),
+                ),
+                request(
+                    path = "/issuer1$TOKEN",
+                    method = "POST",
+                    headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                    body = "grant_type=client_credentials&client_id=client&client_secret=secret",
+                    expectedResponse = OAuth2HttpResponse(status = 200),
+                ),
+                request(path = "/issuer1$END_SESSION", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+                request(
+                    path = "/issuer1$REVOKE",
+                    method = "POST",
+                    headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                    body = "client_id=client&client_secret=secret&token=token&token_type_hint=refresh_token",
+                    expectedResponse = OAuth2HttpResponse(status = 200),
+                ),
+                request(
+                    path = "/issuer1$USER_INFO",
+                    method = "GET",
+                    headers = bearerTokenHeader("issuer1"),
+                    expectedResponse = OAuth2HttpResponse(status = 200),
+                ),
+                request(path = "/issuer1$DEBUGGER", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+                request(
+                    path = "/issuer1$DEBUGGER",
+                    method = "POST",
+                    headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                    body = "authorize_url=http://url",
+                    expectedResponse = OAuth2HttpResponse(status = 302),
+                ),
+                request(path = "/favicon.ico", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+            )
+
+        private fun request(
+            path: String,
+            method: String,
+            headers: Headers = Headers.headersOf(),
+            body: String? = null,
+            expectedResponse: OAuth2HttpResponse,
+        ) = Arguments.of(
+            OAuth2HttpRequest(
+                headers,
+                method,
+                "http://localhost$path".toHttpUrl(),
+                body,
             ),
-            request(
-                path = "/issuer1$TOKEN",
-                method = "POST",
-                headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
-                body = "grant_type=client_credentials&client_id=client&client_secret=secret",
-                expectedResponse = OAuth2HttpResponse(status = 200),
-            ),
-            request(path = "/issuer1$END_SESSION", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
-            request(
-                path = "/issuer1$REVOKE",
-                method = "POST",
-                headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
-                body = "client_id=client&client_secret=secret&token=token&token_type_hint=refresh_token",
-                expectedResponse = OAuth2HttpResponse(status = 200),
-            ),
-            request(path = "/issuer1$USER_INFO", method = "GET", headers = bearerTokenHeader("issuer1"), expectedResponse = OAuth2HttpResponse(status = 200)),
-            request(path = "/issuer1$DEBUGGER", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
-            request(
-                path = "/issuer1$DEBUGGER",
-                method = "POST",
-                headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
-                body = "authorize_url=http://url",
-                expectedResponse = OAuth2HttpResponse(status = 302),
-            ),
-            request(path = "/favicon.ico", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+            expectedResponse,
         )
 
-        private fun request(path: String, method: String, headers: Headers = Headers.headersOf(), body: String? = null, expectedResponse: OAuth2HttpResponse) =
-            Arguments.of(
-                OAuth2HttpRequest(
-                    headers,
-                    method,
-                    "http://localhost$path".toHttpUrl(),
-                    body,
-                ),
-                expectedResponse,
-            )
-
         private fun bearerTokenHeader(issuerId: String): Headers {
-            val claims = mapOf(
-                "iss" to "http://localhost/$issuerId",
-                "sub" to "foo",
-                "extra" to "bar",
-            )
+            val claims =
+                mapOf(
+                    "iss" to "http://localhost/$issuerId",
+                    "sub" to "foo",
+                    "extra" to "bar",
+                )
             val bearerToken = tokenProvider.jwt(claims = claims, issuerId = issuerId).serialize()
             return Headers.headersOf("Authorization", "Bearer $bearerToken")
         }

@@ -10,18 +10,18 @@ import okhttp3.HttpUrl
 internal class ClientCredentialsGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
 ) : GrantHandler {
-
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
         oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
-        val accessToken = tokenProvider.accessToken(
-            tokenRequest,
-            issuerUrl,
-            oAuth2TokenCallback,
-        )
+        val accessToken =
+            tokenProvider.accessToken(
+                tokenRequest,
+                issuerUrl,
+                oAuth2TokenCallback,
+            )
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),

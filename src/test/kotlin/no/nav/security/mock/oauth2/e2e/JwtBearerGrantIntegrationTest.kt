@@ -21,35 +21,39 @@ import no.nav.security.mock.oauth2.withMockOAuth2Server
 import org.junit.jupiter.api.Test
 
 class JwtBearerGrantIntegrationTest {
-
     private val client = client()
 
     @Test
     fun `token request with JwtBearerGrant should exchange assertion with a new token containing many of the same claims`() {
         withMockOAuth2Server {
             val initialSubject = "yolo"
-            val initialToken = this.issueToken(
-                issuerId = "idprovider",
-                clientId = "client1",
-                tokenCallback = DefaultOAuth2TokenCallback(
+            val initialToken =
+                this.issueToken(
                     issuerId = "idprovider",
-                    subject = initialSubject,
-                    claims = mapOf(
-                        "claim1" to "value1",
-                        "claim2" to "value2",
-                    ),
-                ),
-            )
+                    clientId = "client1",
+                    tokenCallback =
+                        DefaultOAuth2TokenCallback(
+                            issuerId = "idprovider",
+                            subject = initialSubject,
+                            claims =
+                                mapOf(
+                                    "claim1" to "value1",
+                                    "claim2" to "value2",
+                                ),
+                        ),
+                )
             val issuerId = "aad"
-            val response: ParsedTokenResponse = client.tokenRequest(
-                url = this.tokenEndpointUrl(issuerId),
-                basicAuth = Pair("client1", "secret"),
-                parameters = mapOf(
-                    "grant_type" to GrantType.JWT_BEARER.value,
-                    "scope" to "scope1",
-                    "assertion" to initialToken.serialize(),
-                ),
-            ).toTokenResponse()
+            val response: ParsedTokenResponse =
+                client.tokenRequest(
+                    url = this.tokenEndpointUrl(issuerId),
+                    basicAuth = Pair("client1", "secret"),
+                    parameters =
+                        mapOf(
+                            "grant_type" to GrantType.JWT_BEARER.value,
+                            "scope" to "scope1",
+                            "assertion" to initialToken.serialize(),
+                        ),
+                ).toTokenResponse()
 
             response shouldBeValidFor GrantType.JWT_BEARER
             response.scope shouldContain "scope1"
@@ -67,21 +71,24 @@ class JwtBearerGrantIntegrationTest {
     fun `token request with JwtBearerGrant should exchange assertion with a new token with scope specified in assertion claim or request params`() {
         withMockOAuth2Server {
             val initialSubject = "mysub"
-            val initialToken = this.issueToken(
-                issuerId = "idprovider",
-                clientId = "client1",
-                tokenCallback = DefaultOAuth2TokenCallback(
+            val initialToken =
+                this.issueToken(
                     issuerId = "idprovider",
-                    subject = initialSubject,
-                    audience = emptyList(),
-                    claims = mapOf(
-                        "claim1" to "value1",
-                        "claim2" to "value2",
-                        "scope" to "ascope",
-                        "resource" to "aud1",
-                    ),
-                ),
-            )
+                    clientId = "client1",
+                    tokenCallback =
+                        DefaultOAuth2TokenCallback(
+                            issuerId = "idprovider",
+                            subject = initialSubject,
+                            audience = emptyList(),
+                            claims =
+                                mapOf(
+                                    "claim1" to "value1",
+                                    "claim2" to "value2",
+                                    "scope" to "ascope",
+                                    "resource" to "aud1",
+                                ),
+                        ),
+                )
 
             initialToken.audience.shouldBeEmpty()
 
@@ -89,14 +96,16 @@ class JwtBearerGrantIntegrationTest {
 
             this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, audience = emptyList()))
 
-            val response: ParsedTokenResponse = client.tokenRequest(
-                url = this.tokenEndpointUrl(issuerId),
-                basicAuth = Pair("client1", "secret"),
-                parameters = mapOf(
-                    "grant_type" to GrantType.JWT_BEARER.value,
-                    "assertion" to initialToken.serialize(),
-                ),
-            ).toTokenResponse()
+            val response: ParsedTokenResponse =
+                client.tokenRequest(
+                    url = this.tokenEndpointUrl(issuerId),
+                    basicAuth = Pair("client1", "secret"),
+                    parameters =
+                        mapOf(
+                            "grant_type" to GrantType.JWT_BEARER.value,
+                            "assertion" to initialToken.serialize(),
+                        ),
+                ).toTokenResponse()
 
             response shouldBeValidFor GrantType.JWT_BEARER
             response.scope shouldContain "ascope"

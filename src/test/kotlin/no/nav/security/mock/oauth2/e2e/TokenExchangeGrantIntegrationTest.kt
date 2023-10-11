@@ -28,45 +28,50 @@ import java.util.Date
 import java.util.UUID
 
 class TokenExchangeGrantIntegrationTest {
-
-    private val client: OkHttpClient = OkHttpClient()
-        .newBuilder()
-        .followRedirects(false)
-        .build()
+    private val client: OkHttpClient =
+        OkHttpClient()
+            .newBuilder()
+            .followRedirects(false)
+            .build()
 
     @Test
     fun `token request with token exchange grant should exchange subject_token with a new token containing many of the same claims`() {
         withMockOAuth2Server {
             val initialSubject = "yolo"
-            val initialToken = this.issueToken(
-                issuerId = "idprovider",
-                clientId = "initialClient",
-                tokenCallback = DefaultOAuth2TokenCallback(
+            val initialToken =
+                this.issueToken(
                     issuerId = "idprovider",
-                    subject = initialSubject,
-                    claims = mapOf(
-                        "claim1" to "value1",
-                        "claim2" to "value2",
-                    ),
-                ),
-            )
+                    clientId = "initialClient",
+                    tokenCallback =
+                        DefaultOAuth2TokenCallback(
+                            issuerId = "idprovider",
+                            subject = initialSubject,
+                            claims =
+                                mapOf(
+                                    "claim1" to "value1",
+                                    "claim2" to "value2",
+                                ),
+                        ),
+                )
 
             val issuerId = "tokenx"
             val tokenEndpointUrl = this.tokenEndpointUrl(issuerId)
             val clientAssertion = clientAssertion("tokenExchangeClient", tokenEndpointUrl.toUrl()).serialize()
             val targetAudienceForToken = "targetAudience"
 
-            val response: ParsedTokenResponse = client.tokenRequest(
-                url = tokenEndpointUrl,
-                parameters = mapOf(
-                    "grant_type" to TOKEN_EXCHANGE.value,
-                    "client_assertion_type" to ClientAssertionType.JWT_BEARER,
-                    "client_assertion" to clientAssertion,
-                    "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
-                    "subject_token" to initialToken.serialize(),
-                    "audience" to targetAudienceForToken,
-                ),
-            ).toTokenResponse()
+            val response: ParsedTokenResponse =
+                client.tokenRequest(
+                    url = tokenEndpointUrl,
+                    parameters =
+                        mapOf(
+                            "grant_type" to TOKEN_EXCHANGE.value,
+                            "client_assertion_type" to ClientAssertionType.JWT_BEARER,
+                            "client_assertion" to clientAssertion,
+                            "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
+                            "subject_token" to initialToken.serialize(),
+                            "audience" to targetAudienceForToken,
+                        ),
+                ).toTokenResponse()
 
             response shouldBeValidFor TOKEN_EXCHANGE
             response.scope shouldBe null
@@ -131,15 +136,17 @@ class TokenExchangeGrantIntegrationTest {
     @Test
     fun `token request without client_assertion should fail`() {
         withMockOAuth2Server {
-            val response: Response = client.tokenRequest(
-                url = this.tokenEndpointUrl("tokenx"),
-                parameters = mapOf(
-                    "grant_type" to TOKEN_EXCHANGE.value,
-                    "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
-                    "subject_token" to "yolo",
-                    "audience" to "targetAudienceForToken",
-                ),
-            )
+            val response: Response = 
+                client.tokenRequest(
+                  url = this.tokenEndpointUrl("tokenx"),
+                  parameters = 
+                    mapOf(
+                      "grant_type" to TOKEN_EXCHANGE.value,
+                      "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
+                      "subject_token" to "yolo",
+                      "audience" to "targetAudienceForToken",
+                  ),
+              )
             response.code shouldBe 400
         }
     }
@@ -149,17 +156,19 @@ class TokenExchangeGrantIntegrationTest {
         withMockOAuth2Server {
             val tokenEndpointUrl = this.tokenEndpointUrl("tokenx")
             val clientAssertion = clientAssertion("tokenExchangeClient", tokenEndpointUrl.toUrl()).serialize()
-            val response: Response = client.tokenRequest(
-                url = tokenEndpointUrl,
-                parameters = mapOf(
-                    "grant_type" to TOKEN_EXCHANGE.value,
-                    "client_assertion_type" to "some-invalid-type",
-                    "client_assertion" to clientAssertion,
-                    "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
-                    "subject_token" to "na",
-                    "audience" to "na",
-                ),
-            )
+            val response: Response =
+                client.tokenRequest(
+                    url = tokenEndpointUrl,
+                    parameters =
+                        mapOf(
+                            "grant_type" to TOKEN_EXCHANGE.value,
+                            "client_assertion_type" to "some-invalid-type",
+                            "client_assertion" to clientAssertion,
+                            "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
+                            "subject_token" to "na",
+                            "audience" to "na",
+                        ),
+                )
             response.code shouldBe 400
         }
     }
@@ -169,29 +178,32 @@ class TokenExchangeGrantIntegrationTest {
         withMockOAuth2Server {
             val tokenEndpointUrl = this.tokenEndpointUrl("tokenx")
 
-            val clientAssertion = JWTClaimsSet.Builder()
-                .issuer("clientid")
-                .subject("clientid")
-                .audience("invalid")
-                .issueTime(Date.from(Instant.now()))
-                .expirationTime(Date.from(Instant.now().plusSeconds(120)))
-                .notBeforeTime(Date.from(Instant.now()))
-                .jwtID(UUID.randomUUID().toString())
-                .build()
-                .sign(generateRsaKey())
-                .serialize()
+            val clientAssertion =
+                JWTClaimsSet.Builder()
+                    .issuer("clientid")
+                    .subject("clientid")
+                    .audience("invalid")
+                    .issueTime(Date.from(Instant.now()))
+                    .expirationTime(Date.from(Instant.now().plusSeconds(120)))
+                    .notBeforeTime(Date.from(Instant.now()))
+                    .jwtID(UUID.randomUUID().toString())
+                    .build()
+                    .sign(generateRsaKey())
+                    .serialize()
 
-            val response: Response = client.tokenRequest(
-                url = tokenEndpointUrl,
-                parameters = mapOf(
-                    "grant_type" to TOKEN_EXCHANGE.value,
-                    "client_assertion_type" to ClientAssertionType.JWT_BEARER,
-                    "client_assertion" to clientAssertion,
-                    "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
-                    "subject_token" to "na",
-                    "audience" to "na",
-                ),
-            )
+            val response: Response =
+                client.tokenRequest(
+                    url = tokenEndpointUrl,
+                    parameters =
+                        mapOf(
+                            "grant_type" to TOKEN_EXCHANGE.value,
+                            "client_assertion_type" to ClientAssertionType.JWT_BEARER,
+                            "client_assertion" to clientAssertion,
+                            "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
+                            "subject_token" to "na",
+                            "audience" to "na",
+                        ),
+                )
             response.code shouldBe 400
         }
     }

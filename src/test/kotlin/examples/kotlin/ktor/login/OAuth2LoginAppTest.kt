@@ -53,9 +53,10 @@ internal class OAuth2LoginAppTest {
         port: Int,
         test: ApplicationEngine.() -> R,
     ): R {
-        val engine = embeddedServer(Netty, port = port) {
-            moduleFunction(this)
-        }
+        val engine =
+            embeddedServer(Netty, port = port) {
+                moduleFunction(this)
+            }
         engine.start()
         try {
             return engine.test()
@@ -64,24 +65,26 @@ internal class OAuth2LoginAppTest {
         }
     }
 
-    private fun randomPort() = try {
-        ServerSocket(0).use { serverSocket -> serverSocket.localPort }
-    } catch (e: IOException) {
-        fail("Port is not available")
-    }
+    private fun randomPort() =
+        try {
+            ServerSocket(0).use { serverSocket -> serverSocket.localPort }
+        } catch (e: IOException) {
+            fail("Port is not available")
+        }
 
-    private fun authConfig() = AuthConfig(
-        listOf(
-            AuthConfig.IdProvider(
-                name = "google",
-                authorizationEndpoint = mockOAuth2Server.authorizationEndpointUrl("google").toString(),
-                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("google").toString(),
+    private fun authConfig() =
+        AuthConfig(
+            listOf(
+                AuthConfig.IdProvider(
+                    name = "google",
+                    authorizationEndpoint = mockOAuth2Server.authorizationEndpointUrl("google").toString(),
+                    tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("google").toString(),
+                ),
+                AuthConfig.IdProvider(
+                    name = "github",
+                    authorizationEndpoint = mockOAuth2Server.authorizationEndpointUrl("github").toString(),
+                    tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("github").toString(),
+                ),
             ),
-            AuthConfig.IdProvider(
-                name = "github",
-                authorizationEndpoint = mockOAuth2Server.authorizationEndpointUrl("github").toString(),
-                tokenEndpoint = mockOAuth2Server.tokenEndpointUrl("github").toString(),
-            ),
-        ),
-    )
+        )
 }
