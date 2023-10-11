@@ -12,7 +12,6 @@ class TokenExchangeGrant(
     val subjectToken: String,
     val audience: MutableList<String>,
 ) : AuthorizationGrant(TOKEN_EXCHANGE) {
-
     override fun toParameters(): MutableMap<String, MutableList<String>> =
         mutableMapOf(
             "grant_type" to mutableListOf(TOKEN_EXCHANGE.value),
@@ -33,5 +32,4 @@ class TokenExchangeGrant(
     }
 }
 
-private inline fun <reified T> Map<String, T>.require(name: String): T =
-    this[name] ?: invalidRequest("missing required parameter $name")
+private inline fun <reified T> Map<String, T>.require(name: String): T = this[name] ?: invalidRequest("missing required parameter $name")

@@ -33,15 +33,16 @@ class RevocationIntegrationTest {
             var refreshTokenResponse = refresh(tokenResponseBeforeRefresh.refreshToken)
             refreshTokenResponse.accessToken?.subject shouldBe initialSubject
             val refreshToken = checkNotNull(refreshTokenResponse.refreshToken)
-            val revocationResponse = client.post(
-                this.url("/default/revoke"),
-                mapOf(
-                    "client_id" to "id",
-                    "client_secret" to "secret",
-                    "token" to refreshToken,
-                    "token_type_hint" to "refresh_token",
-                ),
-            )
+            val revocationResponse =
+                client.post(
+                    this.url("/default/revoke"),
+                    mapOf(
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                        "token" to refreshToken,
+                        "token_type_hint" to "refresh_token",
+                    ),
+                )
             revocationResponse.code shouldBe 200
 
             refreshTokenResponse = refresh(tokenResponseBeforeRefresh.refreshToken)
@@ -52,12 +53,13 @@ class RevocationIntegrationTest {
     private fun MockOAuth2Server.login(): ParsedTokenResponse {
         // Authenticate using Authorization Code Flow
         // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
-        val authorizationCode = client.post(
-            this.authorizationEndpointUrl("default").authenticationRequest(),
-            mapOf("username" to initialSubject),
-        ).let { authResponse ->
-            authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
-        }
+        val authorizationCode =
+            client.post(
+                this.authorizationEndpointUrl("default").authenticationRequest(),
+                mapOf("username" to initialSubject),
+            ).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
 
         authorizationCode.shouldNotBeNull()
 

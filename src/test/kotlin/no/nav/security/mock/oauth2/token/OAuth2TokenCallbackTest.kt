@@ -9,52 +9,57 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 internal class OAuth2TokenCallbackTest {
-
     private val clientId = "clientId"
 
     @Nested
     inner class RequestMappingTokenCallbacks {
-        private val issuer1 = RequestMappingTokenCallback(
-            issuerId = "issuer1",
-            requestMappings = setOf(
-                RequestMapping(
-                    requestParam = "scope",
-                    match = "scope1",
-                    claims = mapOf(
-                        "sub" to "subByScope1",
-                        "aud" to listOf("audByScope1"),
-                        "custom" to "custom1",
+        private val issuer1 =
+            RequestMappingTokenCallback(
+                issuerId = "issuer1",
+                requestMappings =
+                    setOf(
+                        RequestMapping(
+                            requestParam = "scope",
+                            match = "scope1",
+                            claims =
+                                mapOf(
+                                    "sub" to "subByScope1",
+                                    "aud" to listOf("audByScope1"),
+                                    "custom" to "custom1",
+                                ),
+                        ),
+                        RequestMapping(
+                            requestParam = "scope",
+                            match = "scope2",
+                            typeHeader = "JWT2",
+                            claims =
+                                mapOf(
+                                    "sub" to "subByScope2",
+                                    "aud" to listOf("audByScope2"),
+                                    "custom" to "custom2",
+                                ),
+                        ),
+                        RequestMapping(
+                            requestParam = "grant_type",
+                            match = "authorization_code",
+                            claims =
+                                mapOf(
+                                    "sub" to "defaultSub",
+                                    "aud" to listOf("defaultAud"),
+                                ),
+                        ),
+                        RequestMapping(
+                            requestParam = "grant_type",
+                            match = "*",
+                            claims =
+                                mapOf(
+                                    "sub" to "\${clientId}",
+                                    "aud" to listOf("defaultAud"),
+                                ),
+                        ),
                     ),
-                ),
-                RequestMapping(
-                    requestParam = "scope",
-                    match = "scope2",
-                    typeHeader = "JWT2",
-                    claims = mapOf(
-                        "sub" to "subByScope2",
-                        "aud" to listOf("audByScope2"),
-                        "custom" to "custom2",
-                    ),
-                ),
-                RequestMapping(
-                    requestParam = "grant_type",
-                    match = "authorization_code",
-                    claims = mapOf(
-                        "sub" to "defaultSub",
-                        "aud" to listOf("defaultAud"),
-                    ),
-                ),
-                RequestMapping(
-                    requestParam = "grant_type",
-                    match = "*",
-                    claims = mapOf(
-                        "sub" to "\${clientId}",
-                        "aud" to listOf("defaultAud"),
-                    ),
-                ),
-            ),
-            tokenExpiry = 120,
-        )
+                tokenExpiry = 120,
+            )
 
         @Test
         fun `token request with request params matching requestmapping should return specific claims from callback with default JWT type`() {
@@ -103,7 +108,6 @@ internal class OAuth2TokenCallbackTest {
 
     @Nested
     inner class DefaultOAuth2TokenCallbacks {
-
         @Test
         fun `client credentials request should return client_id as sub from callback`() {
             val tokenRequest = clientCredentialsRequest()

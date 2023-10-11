@@ -5,7 +5,6 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
 
 class ExampleAppWithSecuredApi(oauth2DiscoveryUrl: String) : AbstractExampleApp(oauth2DiscoveryUrl) {
-
     override fun handleRequest(request: RecordedRequest): MockResponse {
         return bearerToken(request)
             ?.let {
@@ -18,6 +17,5 @@ class ExampleAppWithSecuredApi(oauth2DiscoveryUrl: String) : AbstractExampleApp(
             } ?: notAuthorized()
     }
 
-    private fun greeting(subject: String): String =
-        "{\n\"greeting\":\"welcome $subject\"\n}"
+    private fun greeting(subject: String): String = "{\n\"greeting\":\"welcome $subject\"\n}"
 }

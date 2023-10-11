@@ -18,21 +18,23 @@ object StandaloneConfig {
     const val SERVER_PORT = "SERVER_PORT"
     const val PORT = "PORT" // Supports running Docker image on Heroku.
 
-    fun hostname(): InetAddress = SERVER_HOSTNAME.fromEnv()
-        ?.let { InetAddress.getByName(it) } ?: InetSocketAddress(0).address
+    fun hostname(): InetAddress =
+        SERVER_HOSTNAME.fromEnv()
+            ?.let { InetAddress.getByName(it) } ?: InetSocketAddress(0).address
 
     fun port(): Int = (SERVER_PORT.fromEnv()?.toInt() ?: PORT.fromEnv()?.toInt()) ?: 8080
 
-    fun oauth2Config(): OAuth2Config = with(jsonFromEnv()) {
-        if (this != null) {
-            OAuth2Config.fromJson(this)
-        } else {
-            OAuth2Config(
-                interactiveLogin = true,
-                httpServer = NettyWrapper(),
-            )
+    fun oauth2Config(): OAuth2Config =
+        with(jsonFromEnv()) {
+            if (this != null) {
+                OAuth2Config.fromJson(this)
+            } else {
+                OAuth2Config(
+                    interactiveLogin = true,
+                    httpServer = NettyWrapper(),
+                )
+            }
         }
-    }
 
     private fun jsonFromEnv() = JSON_CONFIG.fromEnv() ?: JSON_CONFIG_PATH.fromEnv("config.json").readFile()
 
@@ -56,4 +58,5 @@ fun main() {
 }
 
 fun String.fromEnv(default: String): String = System.getenv(this) ?: default
+
 fun String.fromEnv(): String? = System.getenv(this)

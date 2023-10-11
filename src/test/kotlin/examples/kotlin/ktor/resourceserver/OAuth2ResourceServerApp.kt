@@ -34,20 +34,23 @@ private val log = KotlinLogging.logger { }
 fun main() {
     // just some random values for this example, would get from environment in production,
     // when testing you should provide a config that points to the mock-oauth2-server
-    val authConfig = AuthConfig(
-        mapOf(
-            "provider1" to AuthConfig.TokenProvider(
-                wellKnownUrl = "https://provider1/.well-known/openid-configuration",
-                acceptedAudience = "thisAppClientId",
-                requiredClaims = mapOf("groups" to listOf("group1")),
+    val authConfig =
+        AuthConfig(
+            mapOf(
+                "provider1" to
+                    AuthConfig.TokenProvider(
+                        wellKnownUrl = "https://provider1/.well-known/openid-configuration",
+                        acceptedAudience = "thisAppClientId",
+                        requiredClaims = mapOf("groups" to listOf("group1")),
+                    ),
+                "provider2" to
+                    AuthConfig.TokenProvider(
+                        wellKnownUrl = "https://provider2/.well-known/openid-configuration",
+                        acceptedAudience = "thisAppClientId",
+                        requiredClaims = mapOf("someClaim" to "someClaim1"),
+                    ),
             ),
-            "provider2" to AuthConfig.TokenProvider(
-                wellKnownUrl = "https://provider2/.well-known/openid-configuration",
-                acceptedAudience = "thisAppClientId",
-                requiredClaims = mapOf("someClaim" to "someClaim1"),
-            ),
-        ),
-    )
+        )
 
     embeddedServer(Netty, port = 8080) {
         module(authConfig)
@@ -98,20 +101,22 @@ class AuthConfig(
         val acceptedAudience: String,
         val requiredClaims: Map<String, Any> = emptyMap(),
     ) {
-        private val httpClient = HttpClient(CIO) {
-            install(ContentNegotiation) {
-                jackson {
-                    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                    setSerializationInclusion(JsonInclude.Include.NON_NULL)
+        private val httpClient =
+            HttpClient(CIO) {
+                install(ContentNegotiation) {
+                    jackson {
+                        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                        setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                    }
                 }
             }
-        }
 
         val wellKnown: WellKnown = runBlocking { httpClient.prepareGet(wellKnownUrl).body() }
-        val jwkProvider = JwkProviderBuilder(URI(wellKnown.jwksUri).toURL())
-            .cached(10, 24, TimeUnit.HOURS)
-            .rateLimited(10, 1, TimeUnit.MINUTES)
-            .build()
+        val jwkProvider =
+            JwkProviderBuilder(URI(wellKnown.jwksUri).toURL())
+                .cached(10, 24, TimeUnit.HOURS)
+                .rateLimited(10, 1, TimeUnit.MINUTES)
+                .build()
 
         data class WellKnown(
             val issuer: String,
@@ -126,13 +131,17 @@ internal fun JWTCredential.containsAll(claims: Map<String, Any>): Boolean =
         payload.contains(it.key, it.value)
     }.isEmpty()
 
-internal fun Payload.contains(name: String, value: Any): Boolean =
+internal fun Payload.contains(
+    name: String,
+    value: Any,
+): Boolean =
     try {
-        val type = if (value is Collection<*> && value.isNotEmpty()) {
-            value.firstOrNull()!!.javaClass
-        } else {
-            value.javaClass
-        }
+        val type =
+            if (value is Collection<*> && value.isNotEmpty()) {
+                value.firstOrNull()!!.javaClass
+            } else {
+                value.javaClass
+            }
         getClaim(name).asList(type)?.let {
             if (value is Collection<*>) {
                 it.containsAll(value)

@@ -19,7 +19,6 @@ internal class RefreshTokenGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
 ) : GrantHandler {
-
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
@@ -43,6 +42,5 @@ internal class RefreshTokenGrantHandler(
         )
     }
 
-    private fun TokenRequest.refreshTokenGrant(): RefreshTokenGrant =
-        (this.authorizationGrant as? RefreshTokenGrant) ?: invalidGrant(GrantType.REFRESH_TOKEN)
+    private fun TokenRequest.refreshTokenGrant(): RefreshTokenGrant = (this.authorizationGrant as? RefreshTokenGrant) ?: invalidGrant(GrantType.REFRESH_TOKEN)
 }

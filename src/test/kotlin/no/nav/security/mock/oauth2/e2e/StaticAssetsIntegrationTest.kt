@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
 import java.io.File
 
 class StaticAssetsIntegrationTest {
-
     private val client = client()
 
     @Test

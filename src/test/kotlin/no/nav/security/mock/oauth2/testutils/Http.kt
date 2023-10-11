@@ -16,10 +16,11 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
-fun Response.toTokenResponse(): ParsedTokenResponse = ParsedTokenResponse(
-    this.code,
-    checkNotNull(this.body).string(),
-)
+fun Response.toTokenResponse(): ParsedTokenResponse =
+    ParsedTokenResponse(
+        this.code,
+        checkNotNull(this.body).string(),
+    )
 
 inline fun <reified T> Response.parse(): T = jacksonObjectMapper().readValue(checkNotNull(body?.string()))
 
@@ -35,7 +36,10 @@ fun client(followRedirects: Boolean = false): OkHttpClient =
         .followRedirects(followRedirects)
         .build()
 
-fun OkHttpClient.withTrustStore(keyStore: KeyStore, followRedirects: Boolean = false): OkHttpClient =
+fun OkHttpClient.withTrustStore(
+    keyStore: KeyStore,
+    followRedirects: Boolean = false,
+): OkHttpClient =
     newBuilder().apply {
         followRedirects(followRedirects)
         val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(keyStore) }
@@ -43,8 +47,10 @@ fun OkHttpClient.withTrustStore(keyStore: KeyStore, followRedirects: Boolean = f
         sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
     }.build()
 
-fun OkHttpClient.tokenRequest(url: HttpUrl, parameters: Map<String, String>): Response =
-    tokenRequest(url, Headers.headersOf(), parameters)
+fun OkHttpClient.tokenRequest(
+    url: HttpUrl,
+    parameters: Map<String, String>,
+): Response = tokenRequest(url, Headers.headersOf(), parameters)
 
 fun OkHttpClient.tokenRequest(
     url: HttpUrl,
@@ -106,28 +112,38 @@ fun OkHttpClient.options(
         ),
     ).execute()
 
-fun Request.Builder.get(url: HttpUrl, headers: Headers = Headers.headersOf(), parameters: Map<String, String> = emptyMap()) =
-    this.url(url.of(parameters))
-        .headers(headers)
-        .get()
-        .build()
+fun Request.Builder.get(
+    url: HttpUrl,
+    headers: Headers = Headers.headersOf(),
+    parameters: Map<String, String> = emptyMap(),
+) = this.url(url.of(parameters))
+    .headers(headers)
+    .get()
+    .build()
 
-fun Request.Builder.get(url: HttpUrl, parameters: Map<String, String>) =
-    this.url(url.of(parameters))
-        .get()
-        .build()
+fun Request.Builder.get(
+    url: HttpUrl,
+    parameters: Map<String, String>,
+) = this.url(url.of(parameters))
+    .get()
+    .build()
 
-fun Request.Builder.post(url: HttpUrl, headers: Headers, parameters: Map<String, String>) =
-    this.url(url)
-        .headers(headers)
-        .post(FormBody.Builder().of(parameters))
-        .build()
+fun Request.Builder.post(
+    url: HttpUrl,
+    headers: Headers,
+    parameters: Map<String, String>,
+) = this.url(url)
+    .headers(headers)
+    .post(FormBody.Builder().of(parameters))
+    .build()
 
-fun Request.Builder.options(url: HttpUrl, headers: Headers = Headers.headersOf()) =
-    this.url(url)
-        .headers(headers)
-        .method("OPTIONS", null)
-        .build()
+fun Request.Builder.options(
+    url: HttpUrl,
+    headers: Headers = Headers.headersOf(),
+) = this.url(url)
+    .headers(headers)
+    .method("OPTIONS", null)
+    .build()
 
 fun HttpUrl.of(parameters: Map<String, String>) =
     this.newBuilder().apply {

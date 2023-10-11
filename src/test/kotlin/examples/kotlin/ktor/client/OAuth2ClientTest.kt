@@ -27,11 +27,12 @@ internal class OAuth2ClientTest {
         runBlocking {
             server.enqueueCallback(DefaultOAuth2TokenCallback(subject = "client1", audience = listOf("targetScope")))
 
-            val tokenResponse = httpClient.clientCredentialsGrant(
-                url = server.tokenEndpointUrl("default").toString(),
-                auth = Auth.ClientSecretBasic("client1", "secret"),
-                scope = "targetScope",
-            )
+            val tokenResponse =
+                httpClient.clientCredentialsGrant(
+                    url = server.tokenEndpointUrl("default").toString(),
+                    auth = Auth.clientSecretBasic("client1", "secret"),
+                    scope = "targetScope",
+                )
 
             tokenResponse.asClue {
                 it.body<TokenResponse>().accessToken.asDecodedJWT().subject shouldBe "client1"
@@ -45,16 +46,18 @@ internal class OAuth2ClientTest {
         runBlocking {
             val initialToken = server.issueToken(subject = "enduser")
             val tokenEndpointUrl = server.tokenEndpointUrl("default").toString()
-            val tokenResponse = httpClient.onBehalfOfGrant(
-                url = tokenEndpointUrl,
-                auth = Auth.PrivateKeyJwt(
-                    keyPair = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair(),
-                    clientId = "client1",
-                    tokenEndpoint = tokenEndpointUrl,
-                ),
-                token = initialToken.serialize(),
-                scope = "targetScope",
-            )
+            val tokenResponse =
+                httpClient.onBehalfOfGrant(
+                    url = tokenEndpointUrl,
+                    auth =
+                        Auth.privateKeyJwt(
+                            keyPair = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair(),
+                            clientId = "client1",
+                            tokenEndpoint = tokenEndpointUrl,
+                        ),
+                    token = initialToken.serialize(),
+                    scope = "targetScope",
+                )
 
             tokenResponse.asClue {
                 it.body<TokenResponse>().accessToken.asDecodedJWT().subject shouldBe "enduser"

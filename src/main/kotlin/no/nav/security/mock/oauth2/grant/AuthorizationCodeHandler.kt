@@ -30,11 +30,13 @@ internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
 ) : GrantHandler {
-
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = HashMap()
 
-    fun authorizationCodeResponse(authenticationRequest: AuthenticationRequest, login: Login? = null): AuthenticationSuccessResponse {
+    fun authorizationCodeResponse(
+        authenticationRequest: AuthenticationRequest,
+        login: Login? = null,
+    ): AuthenticationSuccessResponse {
         when {
             authenticationRequest.responseType.impliesCodeFlow() -> {
                 val code = AuthorizationCode()
@@ -88,20 +90,28 @@ internal class AuthorizationCodeHandler(
         )
     }
 
-    private fun getLoginTokenCallbackOrDefault(code: AuthorizationCode, OAuth2TokenCallback: OAuth2TokenCallback): OAuth2TokenCallback {
+    private fun getLoginTokenCallbackOrDefault(
+        code: AuthorizationCode,
+        OAuth2TokenCallback: OAuth2TokenCallback,
+    ): OAuth2TokenCallback {
         return takeLoginFromCache(code)?.let {
             LoginOAuth2TokenCallback(it, OAuth2TokenCallback)
         } ?: OAuth2TokenCallback
     }
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
+
     private fun takeAuthenticationRequestFromCache(code: AuthorizationCode): AuthenticationRequest? = codeToAuthRequestCache.remove(code)
 
     private class LoginOAuth2TokenCallback(val login: Login, val oAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
         override fun issuerId(): String = oAuth2TokenCallback.issuerId()
+
         override fun subject(tokenRequest: TokenRequest): String = login.username
+
         override fun typeHeader(tokenRequest: TokenRequest): String = oAuth2TokenCallback.typeHeader(tokenRequest)
+
         override fun audience(tokenRequest: TokenRequest): List<String> = oAuth2TokenCallback.audience(tokenRequest)
+
         override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
             oAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
                 login.claims?.let {

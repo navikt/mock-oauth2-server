@@ -46,11 +46,12 @@ private fun Headers.bearerToken(): String =
 
 // OpenID Connect Core - https://openid.net/specs/openid-connect-core-1_0.html#UserInfoResponse
 // OAuth 2.0 Bearer Token Usage - https://datatracker.ietf.org/doc/html/rfc6750#section-3.1
-private fun invalidToken(msg: String) = OAuth2Exception(
-    ErrorObject(
-        "invalid_token",
+private fun invalidToken(msg: String) =
+    OAuth2Exception(
+        ErrorObject(
+            "invalid_token",
+            msg,
+            HTTPResponse.SC_UNAUTHORIZED,
+        ),
         msg,
-        HTTPResponse.SC_UNAUTHORIZED,
-    ),
-    msg,
-)
+    )
