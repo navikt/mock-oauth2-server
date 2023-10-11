@@ -15,7 +15,6 @@ import okhttp3.Request
 private val log = KotlinLogging.logger {}
 
 class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp(oidcDiscoveryUrl) {
-
     override fun handleRequest(request: RecordedRequest): MockResponse {
         return when (request.requestUrl?.encodedPath) {
             "/login" -> {
@@ -24,22 +23,23 @@ class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp
                     .setHeader("Location", authenticationRequest().toURI())
             }
             "/callback" -> {
-                log.debug("got callback: $request")
+                log.debug("got callback: {}", request)
                 val code = request.requestUrl?.queryParameter("code")!!
-                val tokenResponse = oauth2Client.newCall(
-                    Request.Builder()
-                        .url(metadata.tokenEndpointURI.toURL())
-                        .post(
-                            FormBody.Builder()
-                                .add("client_id", "client1")
-                                .add("scope", authenticationRequest().scope.toString())
-                                .add("code", code)
-                                .add("redirect_uri", exampleApp.url("/callback").toString())
-                                .add("grant_type", "authorization_code")
-                                .build(),
-                        )
-                        .build(),
-                ).execute()
+                val tokenResponse =
+                    oauth2Client.newCall(
+                        Request.Builder()
+                            .url(metadata.tokenEndpointURI.toURL())
+                            .post(
+                                FormBody.Builder()
+                                    .add("client_id", "client1")
+                                    .add("scope", authenticationRequest().scope.toString())
+                                    .add("code", code)
+                                    .add("redirect_uri", exampleApp.url("/callback").toString())
+                                    .add("grant_type", "authorization_code")
+                                    .build(),
+                            )
+                            .build(),
+                    ).execute()
                 val idToken: String = ObjectMapper().readValue<JsonNode>(tokenResponse.body.string()).get("id_token").textValue()
                 val idTokenClaims: JWTClaimsSet = verifyJwt(idToken, metadata.issuer, retrieveJwks())
                 MockResponse()

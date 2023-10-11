@@ -22,20 +22,21 @@ class WellKnownIntegrationTest {
             response.code shouldBe 200
             body shouldNotBe null
             jacksonObjectMapper().readValue<Map<String, Any>>(body).keys.asClue {
-                it shouldContainExactlyInAnyOrder listOf(
-                    "issuer",
-                    "authorization_endpoint",
-                    "end_session_endpoint",
-                    "revocation_endpoint",
-                    "token_endpoint",
-                    "userinfo_endpoint",
-                    "jwks_uri",
-                    "introspection_endpoint",
-                    "response_types_supported",
-                    "subject_types_supported",
-                    "id_token_signing_alg_values_supported",
-                    "code_challenge_methods_supported",
-                )
+                it shouldContainExactlyInAnyOrder
+                    listOf(
+                        "issuer",
+                        "authorization_endpoint",
+                        "end_session_endpoint",
+                        "revocation_endpoint",
+                        "token_endpoint",
+                        "userinfo_endpoint",
+                        "jwks_uri",
+                        "introspection_endpoint",
+                        "response_types_supported",
+                        "subject_types_supported",
+                        "id_token_signing_alg_values_supported",
+                        "code_challenge_methods_supported",
+                    )
             }
         }
     }

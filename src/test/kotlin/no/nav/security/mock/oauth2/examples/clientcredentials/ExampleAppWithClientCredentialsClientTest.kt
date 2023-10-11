@@ -15,13 +15,13 @@ internal class ExampleAppWithClientCredentialsClientTest {
     private lateinit var oAuth2Server: MockOAuth2Server
     private lateinit var exampleApp: ExampleAppWithClientCredentialsClient
 
-    private val ISSUER_ID = "test"
+    private val issuerId = "test"
 
     @BeforeEach
     fun before() {
         oAuth2Server = MockOAuth2Server()
         oAuth2Server.start()
-        exampleApp = ExampleAppWithClientCredentialsClient(oAuth2Server.wellKnownUrl(ISSUER_ID).toString())
+        exampleApp = ExampleAppWithClientCredentialsClient(oAuth2Server.wellKnownUrl(issuerId).toString())
         exampleApp.start()
         client = OkHttpClient().newBuilder().build()
     }
@@ -34,18 +34,20 @@ internal class ExampleAppWithClientCredentialsClientTest {
 
     @Test
     fun appShouldReturnClientCredentialsAccessTokenWhenInvoked() {
-        val response: Response = client.newCall(
-            Request.Builder()
-                .url(exampleApp.url("/clientcredentials"))
-                .get()
-                .build(),
-        ).execute()
+        val response: Response =
+            client.newCall(
+                Request.Builder()
+                    .url(exampleApp.url("/clientcredentials"))
+                    .get()
+                    .build(),
+            ).execute()
         assertThat(response.code).isEqualTo(200)
 
-        val token: SignedJWT? = response.body.string()
-            .split("token=")
-            .let { it[1] }
-            .let { SignedJWT.parse(it) }
+        val token: SignedJWT? =
+            response.body.string()
+                .split("token=")
+                .let { it[1] }
+                .let { SignedJWT.parse(it) }
 
         assertThat(token).isNotNull
         assertThat(token?.jwtClaimsSet?.subject).isEqualTo("ExampleAppWithClientCredentialsClient")

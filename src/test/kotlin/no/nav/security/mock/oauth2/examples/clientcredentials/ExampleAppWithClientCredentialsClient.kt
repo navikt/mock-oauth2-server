@@ -12,7 +12,6 @@ import okhttp3.Request
 import okhttp3.Response
 
 class ExampleAppWithClientCredentialsClient(oauth2DiscoveryUrl: String) : AbstractExampleApp(oauth2DiscoveryUrl) {
-
     override fun handleRequest(request: RecordedRequest): MockResponse {
         return getClientCredentialsAccessToken()
             ?.let {
@@ -24,19 +23,20 @@ class ExampleAppWithClientCredentialsClient(oauth2DiscoveryUrl: String) : Abstra
     }
 
     private fun getClientCredentialsAccessToken(): String? {
-        val tokenResponse: Response = oauth2Client.newCall(
-            Request.Builder()
-                .url(metadata.tokenEndpointURI.toURL())
-                .addHeader("Authorization", Credentials.basic("ExampleAppWithClientCredentialsClient", "test"))
-                .post(
-                    FormBody.Builder()
-                        .add("client_id", "ExampleAppWithClientCredentialsClient")
-                        .add("scope", "scope1")
-                        .add("grant_type", "client_credentials")
-                        .build(),
-                )
-                .build(),
-        ).execute()
+        val tokenResponse: Response =
+            oauth2Client.newCall(
+                Request.Builder()
+                    .url(metadata.tokenEndpointURI.toURL())
+                    .addHeader("Authorization", Credentials.basic("ExampleAppWithClientCredentialsClient", "test"))
+                    .post(
+                        FormBody.Builder()
+                            .add("client_id", "ExampleAppWithClientCredentialsClient")
+                            .add("scope", "scope1")
+                            .add("grant_type", "client_credentials")
+                            .build(),
+                    )
+                    .build(),
+            ).execute()
         return tokenResponse.body.string().let {
             ObjectMapper().readValue<JsonNode>(it).get("access_token")?.textValue()
         }

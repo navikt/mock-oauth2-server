@@ -5,7 +5,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
 
 internal class HttpUrlExtensionsTest {
-
     @Test
     fun `urls with no segments, one segment and multiple segments`() {
         "http://localhost".toHttpUrl().issuerId() shouldBe ""

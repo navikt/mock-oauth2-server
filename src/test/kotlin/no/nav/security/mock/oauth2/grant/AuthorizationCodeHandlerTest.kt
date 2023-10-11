@@ -73,10 +73,11 @@ internal class AuthorizationCodeHandlerTest {
 
     companion object {
         @JvmStatic
-        fun jsonClaimsProvider(): Stream<Arguments> = Stream.of(
-            Arguments.of("{ \"acr\": \"value\" }", "acr", "\"value\""),
-            Arguments.of("{ \"acr\": { \"reference\": { \"id\": \"value\" } } }", "acr", "{\"reference\":{\"id\":\"value\"}}"),
-        )
+        fun jsonClaimsProvider(): Stream<Arguments> =
+            Stream.of(
+                Arguments.of("{ \"acr\": \"value\" }", "acr", "\"value\""),
+                Arguments.of("{ \"acr\": { \"reference\": { \"id\": \"value\" } } }", "acr", "{\"reference\":{\"id\":\"value\"}}"),
+            )
     }
 
     @Test
@@ -127,13 +128,13 @@ internal class AuthorizationCodeHandlerTest {
             headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
             method = "POST",
             originalUrl = "http://localhost/token".toHttpUrl(),
-            body = "grant_type=authorization_code&" +
-                "client_id=client1&" +
-                "client_secret=secret&" +
-                "code=$code&" +
-                "redirect_uri=$redirectUri&" +
-                "scope=$scope",
-
+            body =
+                "grant_type=authorization_code&" +
+                    "client_id=client1&" +
+                    "client_secret=secret&" +
+                    "code=$code&" +
+                    "redirect_uri=$redirectUri&" +
+                    "scope=$scope",
         )
     }
 }

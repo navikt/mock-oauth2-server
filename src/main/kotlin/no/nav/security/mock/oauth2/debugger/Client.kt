@@ -21,24 +21,27 @@ internal class TokenRequest(
     clientAuthentication: ClientAuthentication,
     parameters: Map<String, String>,
 ) {
-    val headers = when (clientAuthentication.clientAuthMethod) {
-        ClientAuthentication.Method.CLIENT_SECRET_BASIC -> Headers.headersOf("Authorization", clientAuthentication.basic())
-        else -> Headers.headersOf()
-    }
+    val headers =
+        when (clientAuthentication.clientAuthMethod) {
+            ClientAuthentication.Method.CLIENT_SECRET_BASIC -> Headers.headersOf("Authorization", clientAuthentication.basic())
+            else -> Headers.headersOf()
+        }
 
-    val body: String = if (clientAuthentication.clientAuthMethod == ClientAuthentication.Method.CLIENT_SECRET_POST) {
-        parameters.toKeyValueString("&").plus("&${clientAuthentication.form()}")
-    } else {
-        parameters.toKeyValueString("&")
-    }
+    val body: String =
+        if (clientAuthentication.clientAuthMethod == ClientAuthentication.Method.CLIENT_SECRET_POST) {
+            parameters.toKeyValueString("&").plus("&${clientAuthentication.form()}")
+        } else {
+            parameters.toKeyValueString("&")
+        }
 
-    override fun toString(): String = "POST ${url.encodedPath} HTTP/1.1\n" +
-        "Host: ${url.toHostHeader(true)}\n" +
-        "Content-Type: application/x-www-form-urlencoded\n" +
-        headers.joinToString("\n") {
-            "${it.first}: ${it.second}"
-        } +
-        "\n\n$body"
+    override fun toString(): String =
+        "POST ${url.encodedPath} HTTP/1.1\n" +
+            "Host: ${url.toHostHeader(true)}\n" +
+            "Content-Type: application/x-www-form-urlencoded\n" +
+            headers.joinToString("\n") {
+                "${it.first}: ${it.second}"
+            } +
+            "\n\n$body"
 
     private fun Map<String, String>.toKeyValueString(entrySeparator: String): String =
         this.map { "${it.key}=${it.value}" }
@@ -51,6 +54,7 @@ internal data class ClientAuthentication(
     val clientAuthMethod: Method,
 ) {
     fun form(): String = "client_id=${clientId.urlEncode()}&client_secret=${clientSecret.urlEncode()}"
+
     fun basic(): String = Credentials.basic(clientId, clientSecret, StandardCharsets.UTF_8)
 
     companion object {
@@ -82,7 +86,10 @@ internal fun OkHttpClient.post(tokenRequest: TokenRequest): String =
             .build(),
     ).execute().body.string()
 
-fun OkHttpClient.withSsl(ssl: Ssl, followRedirects: Boolean = false): OkHttpClient =
+fun OkHttpClient.withSsl(
+    ssl: Ssl,
+    followRedirects: Boolean = false,
+): OkHttpClient =
     newBuilder().apply {
         followRedirects(followRedirects)
         val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(ssl.sslKeystore.keyStore) }
@@ -92,11 +99,12 @@ fun OkHttpClient.withSsl(ssl: Ssl, followRedirects: Boolean = false): OkHttpClie
 
 // okhttp3 made this internal, so copy it
 internal fun HttpUrl.toHostHeader(includeDefaultPort: Boolean = false): String {
-    val host = if (":" in host) {
-        "[$host]"
-    } else {
-        host
-    }
+    val host =
+        if (":" in host) {
+            "[$host]"
+        } else {
+            host
+        }
     return if (includeDefaultPort || port != HttpUrl.defaultPort(scheme)) {
         "$host:$port"
     } else {

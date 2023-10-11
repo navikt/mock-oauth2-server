@@ -14,11 +14,13 @@ fun interface RequestInterceptor : Interceptor {
 }
 
 fun interface ResponseInterceptor : Interceptor {
-    fun intercept(request: OAuth2HttpRequest, response: OAuth2HttpResponse): OAuth2HttpResponse
+    fun intercept(
+        request: OAuth2HttpRequest,
+        response: OAuth2HttpResponse,
+    ): OAuth2HttpResponse
 }
 
 interface Route : RequestHandler {
-
     fun match(request: OAuth2HttpRequest): Boolean
 
     class Builder {
@@ -29,47 +31,67 @@ interface Route : RequestHandler {
             throw throwable
         }
 
-        fun interceptors(vararg interceptor: Interceptor) = apply {
-            interceptor.forEach {
-                interceptors.add(it)
+        fun interceptors(vararg interceptor: Interceptor) =
+            apply {
+                interceptor.forEach {
+                    interceptors.add(it)
+                }
             }
-        }
 
-        fun attach(vararg route: Route) = apply {
-            route.forEach {
-                routes.add(it)
+        fun attach(vararg route: Route) =
+            apply {
+                route.forEach {
+                    routes.add(it)
+                }
             }
-        }
 
-        fun any(vararg path: String, requestHandler: RequestHandler) = apply {
+        fun any(
+            vararg path: String,
+            requestHandler: RequestHandler,
+        ) = apply {
             path.forEach {
                 addRoute(it, null, requestHandler)
             }
         }
 
-        fun options(requestHandler: RequestHandler) = apply {
-            addRoute("", "OPTIONS", requestHandler)
-        }
+        fun options(requestHandler: RequestHandler) =
+            apply {
+                addRoute("", "OPTIONS", requestHandler)
+            }
 
-        fun get(vararg path: String, requestHandler: RequestHandler) = apply {
+        fun get(
+            vararg path: String,
+            requestHandler: RequestHandler,
+        ) = apply {
             path.forEach {
                 addRoute(it, "GET", requestHandler)
             }
         }
 
-        fun post(path: String, requestHandler: RequestHandler) = apply {
+        fun post(
+            path: String,
+            requestHandler: RequestHandler,
+        ) = apply {
             addRoute(path, "POST", requestHandler)
         }
 
-        fun put(path: String, requestHandler: RequestHandler) = apply {
+        fun put(
+            path: String,
+            requestHandler: RequestHandler,
+        ) = apply {
             addRoute(path, "PUT", requestHandler)
         }
 
-        fun exceptionHandler(exceptionHandler: ExceptionHandler) = apply {
-            this.exceptionHandler = exceptionHandler
-        }
+        fun exceptionHandler(exceptionHandler: ExceptionHandler) =
+            apply {
+                this.exceptionHandler = exceptionHandler
+            }
 
-        private fun addRoute(path: String, method: String? = null, requestHandler: RequestHandler) {
+        private fun addRoute(
+            path: String,
+            method: String? = null,
+            requestHandler: RequestHandler,
+        ) {
             routes.add(routeFromPathAndMethod(path, method, requestHandler))
         }
 
@@ -88,30 +110,35 @@ internal class PathRouter(
     private val interceptors: MutableList<Interceptor>,
     private val exceptionHandler: ExceptionHandler,
 ) : PathRoute {
-
     override fun matchPath(request: OAuth2HttpRequest): Boolean = routes.any { it.matchPath(request) }
+
     override fun match(request: OAuth2HttpRequest): Boolean = routes.firstOrNull { it.match(request) } != null
 
-    override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse = runCatching {
-        routes.findHandler(request).invokeWith(request, interceptors)
-    }.getOrElse {
-        exceptionHandler(request, it)
-    }
+    override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse =
+        runCatching {
+            routes.findHandler(request).invokeWith(request, interceptors)
+        }.getOrElse {
+            exceptionHandler(request, it)
+        }
 
     override fun toString(): String = routes.toString()
 
-    private fun MutableList<Route>.findHandler(request: OAuth2HttpRequest): RequestHandler =
-        this.firstOrNull { it.match(request) } ?: { req -> noMatch(req) }
+    private fun MutableList<Route>.findHandler(request: OAuth2HttpRequest): RequestHandler = this.firstOrNull { it.match(request) } ?: { req -> noMatch(req) }
 
-    private fun RequestHandler.invokeWith(request: OAuth2HttpRequest, interceptors: MutableList<Interceptor>): OAuth2HttpResponse {
+    private fun RequestHandler.invokeWith(
+        request: OAuth2HttpRequest,
+        interceptors: MutableList<Interceptor>,
+    ): OAuth2HttpResponse {
         return if (interceptors.size > 0) {
-            val filteredRequest = interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
-                interceptor.intercept(next)
-            }
+            val filteredRequest =
+                interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
+                    interceptor.intercept(next)
+                }
             val res = this.invoke(filteredRequest)
-            val filteredResponse = interceptors.filterIsInstance<ResponseInterceptor>().fold(res.copy()) { next, interceptor ->
-                interceptor.intercept(request, next)
-            }
+            val filteredResponse =
+                interceptors.filterIsInstance<ResponseInterceptor>().fold(res.copy()) { next, interceptor ->
+                    interceptor.intercept(request, next)
+                }
             filteredResponse
         } else {
             this.invoke(request)
@@ -130,36 +157,53 @@ internal class PathRouter(
     private fun Route.matchPath(request: OAuth2HttpRequest): Boolean = (this as? PathRoute)?.matchPath(request) ?: false
 }
 
-fun routes(vararg route: Route): Route = routes {
-    attach(*route)
-}
+fun routes(vararg route: Route): Route =
+    routes {
+        attach(*route)
+    }
 
 fun routes(config: Route.Builder.() -> Unit): Route = Route.Builder().apply(config).build()
 
 @JvmOverloads
-fun route(path: String, method: String? = null, requestHandler: RequestHandler): Route =
-    routeFromPathAndMethod(path, method, requestHandler)
+fun route(
+    path: String,
+    method: String? = null,
+    requestHandler: RequestHandler,
+): Route = routeFromPathAndMethod(path, method, requestHandler)
 
-fun put(path: String, requestHandler: RequestHandler): Route =
-    routeFromPathAndMethod(path, "PUT", requestHandler)
+fun put(
+    path: String,
+    requestHandler: RequestHandler,
+): Route = routeFromPathAndMethod(path, "PUT", requestHandler)
 
-fun post(path: String, requestHandler: RequestHandler): Route =
-    routeFromPathAndMethod(path, "POST", requestHandler)
+fun post(
+    path: String,
+    requestHandler: RequestHandler,
+): Route = routeFromPathAndMethod(path, "POST", requestHandler)
 
-fun get(path: String, requestHandler: RequestHandler): Route =
-    routeFromPathAndMethod(path, "GET", requestHandler)
+fun get(
+    path: String,
+    requestHandler: RequestHandler,
+): Route = routeFromPathAndMethod(path, "GET", requestHandler)
 
-fun options(path: String, requestHandler: RequestHandler): Route =
-    routeFromPathAndMethod(path, "OPTIONS", requestHandler)
+fun options(
+    path: String,
+    requestHandler: RequestHandler,
+): Route = routeFromPathAndMethod(path, "OPTIONS", requestHandler)
 
-private fun routeFromPathAndMethod(path: String, method: String? = null, requestHandler: RequestHandler): Route =
+private fun routeFromPathAndMethod(
+    path: String,
+    method: String? = null,
+    requestHandler: RequestHandler,
+): Route =
     object : PathRoute {
-        override fun matchPath(request: OAuth2HttpRequest): Boolean = if (path.contains("*")) {
-            val regex = path.replace("*", ".*").toRegex()
-            "/${request.url.pathSegments.joinToString("/")}".matches(regex)
-        } else {
-            request.url.endsWith(path)
-        }
+        override fun matchPath(request: OAuth2HttpRequest): Boolean =
+            if (path.contains("*")) {
+                val regex = path.replace("*", ".*").toRegex()
+                "/${request.url.pathSegments.joinToString("/")}".matches(regex)
+            } else {
+                request.url.endsWith(path)
+            }
 
         override fun match(request: OAuth2HttpRequest): Boolean = matchPath(request) && matchMethod(request)
 

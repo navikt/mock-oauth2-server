@@ -21,7 +21,6 @@ import java.io.File
 private val log = KotlinLogging.logger { }
 
 internal class OAuth2HttpServerTest {
-
     val httpClient = OkHttpClient().newBuilder().followRedirects(false).build()
 
     val requestHandler: RequestHandler = {
@@ -33,6 +32,7 @@ internal class OAuth2HttpServerTest {
             it.body == "formparam=formvalue1" -> ok("bodymatch")
             it.url.pathSegments.contains("redirect") ->
                 redirect("http://someredirect")
+
             else -> {
                 OAuth2HttpResponse(status = 404)
             }
@@ -54,14 +54,15 @@ internal class OAuth2HttpServerTest {
 
     @Test
     fun `Netty server should start and serve requests with provided keystore and HTTPS enabled`() {
-        val ssl = Ssl(
-            SslKeystore(
-                keyPassword = "",
-                keystoreFile = File("src/test/resources/localhost.p12"),
-                keystorePassword = "",
-                keystoreType = SslKeystore.KeyStoreType.PKCS12,
-            ),
-        )
+        val ssl =
+            Ssl(
+                SslKeystore(
+                    keyPassword = "",
+                    keystoreFile = File("src/test/resources/localhost.p12"),
+                    keystorePassword = "",
+                    keystoreType = SslKeystore.KeyStoreType.PKCS12,
+                ),
+            )
         NettyWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
     }
 
@@ -78,30 +79,33 @@ internal class OAuth2HttpServerTest {
         MockWebServerWrapper(ssl).start(port = 1234, requestHandler).shouldServeRequests(ssl).stop()
     }
 
-    private fun OAuth2HttpServer.shouldServeRequests(ssl: Ssl? = null) = apply {
-        val client = if (ssl != null) {
-            httpClient.withTrustStore(ssl.sslKeystore.keyStore)
-        } else {
-            httpClient
+    private fun OAuth2HttpServer.shouldServeRequests(ssl: Ssl? = null) =
+        apply {
+            val client =
+                if (ssl != null) {
+                    httpClient.withTrustStore(ssl.sslKeystore.keyStore)
+                } else {
+                    httpClient
+                }
+
+            client.get(
+                this.url("/header"),
+                Headers.headersOf("header1", "headervalue1"),
+            ).body.string() shouldBe "headermatch"
+
+            client.get(this.url("/1/2")).body.string() shouldBe "pathmatch"
+            client.get(this.url("path?param1=value1&param2=value2")).body.string() shouldBe "querymatch"
+            client.post(this.url("/form"), mapOf("formparam" to "formvalue1")).body.string() shouldBe "bodymatch"
+            client.get(this.url("/notfound")).code shouldBe 404
+            client.get(this.url("/redirect")).apply {
+                this.code shouldBe 302
+                this.headers["Location"] shouldBe "http://someredirect"
+            }
         }
 
-        client.get(
-            this.url("/header"),
-            Headers.headersOf("header1", "headervalue1"),
-        ).body.string() shouldBe "headermatch"
-
-        client.get(this.url("/1/2")).body.string() shouldBe "pathmatch"
-        client.get(this.url("path?param1=value1&param2=value2")).body.string() shouldBe "querymatch"
-        client.post(this.url("/form"), mapOf("formparam" to "formvalue1")).body.string() shouldBe "bodymatch"
-        client.get(this.url("/notfound")).code shouldBe 404
-        client.get(this.url("/redirect")).apply {
-            this.code shouldBe 302
-            this.headers["Location"] shouldBe "http://someredirect"
-        }
-    }
-
-    private fun ok(body: String) = OAuth2HttpResponse(
-        status = 200,
-        body = body,
-    )
+    private fun ok(body: String) =
+        OAuth2HttpResponse(
+            status = 200,
+            body = body,
+        )
 }

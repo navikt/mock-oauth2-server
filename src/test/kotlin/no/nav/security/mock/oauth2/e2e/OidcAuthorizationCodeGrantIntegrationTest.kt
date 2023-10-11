@@ -24,7 +24,6 @@ import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
 
 class OidcAuthorizationCodeGrantIntegrationTest {
-
     private val server = MockOAuth2Server().apply { start() }
     private val client = client()
 
@@ -44,9 +43,10 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     @Test
     fun `complete authorization code flow should return tokens according to spec`() {
-        val code = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).let { authResponse ->
-            authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
-        }
+        val code =
+            client.get(server.authorizationEndpointUrl("default").authenticationRequest()).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
 
         code.shouldNotBeNull()
 
@@ -74,12 +74,13 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     fun `complete authorization code flow with interactivelogin enabled should return tokens with sub=username posted to login`() {
         val server = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
         // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
-        val code = client.post(
-            server.authorizationEndpointUrl("default").authenticationRequest(),
-            mapOf("username" to "foo"),
-        ).let { authResponse ->
-            authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
-        }
+        val code =
+            client.post(
+                server.authorizationEndpointUrl("default").authenticationRequest(),
+                mapOf("username" to "foo"),
+            ).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
 
         code.shouldNotBeNull()
 
@@ -108,11 +109,12 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     @Test
     fun `authorization code flow should return tokens on token request when valid PKCE code_verifier is used`() {
         val pkce = Pkce()
-        val code = client.get(
-            server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce),
-        ).let { authResponse ->
-            authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
-        }
+        val code =
+            client.get(
+                server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce),
+            ).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
 
         code.shouldNotBeNull()
 
@@ -125,11 +127,12 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     @Test
     fun `authorization code flow should return 400 bad request on token request when invalid PKCE code_verifier is used`() {
         val pkce = Pkce()
-        val code = client.get(
-            server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce),
-        ).let { authResponse ->
-            authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
-        }
+        val code =
+            client.get(
+                server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce),
+            ).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
 
         code.shouldNotBeNull()
 
@@ -140,20 +143,22 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         }
     }
 
-    private fun OkHttpClient.tokenRequest(code: String, pkce: Pkce? = null) =
-        tokenRequest(
-            server.tokenEndpointUrl("default"),
-            mutableMapOf(
-                "client_id" to "client1",
-                "client_secret" to "secret",
-                "grant_type" to "authorization_code",
-                "scope" to "openid scope1",
-                "redirect_uri" to "http://mycallback",
-                "code" to code,
-            ).apply {
-                if (pkce != null) {
-                    put("code_verifier", pkce.verifier.value)
-                }
-            },
-        )
+    private fun OkHttpClient.tokenRequest(
+        code: String,
+        pkce: Pkce? = null,
+    ) = tokenRequest(
+        server.tokenEndpointUrl("default"),
+        mutableMapOf(
+            "client_id" to "client1",
+            "client_secret" to "secret",
+            "grant_type" to "authorization_code",
+            "scope" to "openid scope1",
+            "redirect_uri" to "http://mycallback",
+            "code" to code,
+        ).apply {
+            if (pkce != null) {
+                put("code_verifier", pkce.verifier.value)
+            }
+        },
+    )
 }

@@ -14,21 +14,22 @@ fun HttpUrl.authenticationRequest(
     state: String = "1234",
     nonce: String = "5678",
     pkce: Pkce? = null,
-): HttpUrl = newBuilder()
-    .addQueryParameter("client_id", clientId)
-    .addQueryParameter("response_type", responseType)
-    .addQueryParameter("redirect_uri", redirectUri)
-    .addQueryParameter("response_mode", responseMode)
-    .addQueryParameter("scope", scope.joinToString(" "))
-    .addQueryParameter("state", state)
-    .addQueryParameter("nonce", nonce)
-    .apply {
-        if (pkce != null) {
-            addQueryParameter("code_challenge", pkce.challenge.value)
-            addQueryParameter("code_challenge_method", pkce.method.value)
+): HttpUrl =
+    newBuilder()
+        .addQueryParameter("client_id", clientId)
+        .addQueryParameter("response_type", responseType)
+        .addQueryParameter("redirect_uri", redirectUri)
+        .addQueryParameter("response_mode", responseMode)
+        .addQueryParameter("scope", scope.joinToString(" "))
+        .addQueryParameter("state", state)
+        .addQueryParameter("nonce", nonce)
+        .apply {
+            if (pkce != null) {
+                addQueryParameter("code_challenge", pkce.challenge.value)
+                addQueryParameter("code_challenge_method", pkce.method.value)
+            }
         }
-    }
-    .build()
+        .build()
 
 data class Pkce(
     val verifier: CodeVerifier = CodeVerifier(),
