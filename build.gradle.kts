@@ -30,7 +30,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.0.2"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
-    id("org.jetbrains.dokka") version "1.9.0"
+    id("org.jetbrains.dokka") version "1.9.10"
     `java-library`
     `maven-publish`
     signing
