@@ -56,7 +56,7 @@ data class OAuth2HttpRequest(
         return HTTPRequest(HTTPRequest.Method.valueOf(method), url.toUrl())
             .apply {
                 headers.forEach { header -> this.setHeader(header.first, header.second) }
-                this.body = inputBody
+                body = inputBody
             }
     }
 
