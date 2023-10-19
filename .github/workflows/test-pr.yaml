@@ -23,7 +23,7 @@ jobs:
           cache: 'gradle'
 
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew clean build
 
   dependabot_pr:
     runs-on: ubuntu-latest
