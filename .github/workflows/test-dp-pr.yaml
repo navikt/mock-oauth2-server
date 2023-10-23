@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  test_pr:
+  test_dp_pr:
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
@@ -29,7 +29,7 @@ jobs:
   dependabot_pr:
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' }}
-    needs: test_pr
+    needs: test_dp_pr
     steps:
       - name: Dependabot metadata
         id: dependabot-metadata
