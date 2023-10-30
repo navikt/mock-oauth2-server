@@ -499,5 +499,5 @@ To get started, please fork the repo and checkout a new branch. You can then bui
 See more info in [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## ⚖️ License
-This library is licensed under the [MIT License](LICENSE)
+This library is licensed under the [MIT License](LICENSE.md)
 
