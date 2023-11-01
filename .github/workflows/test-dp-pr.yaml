@@ -3,6 +3,7 @@ on:
   pull_request_target:
     paths-ignore:
       - '*.md'
+      - 'LICENSE.md'
 
 permissions:
   pull-requests: write
