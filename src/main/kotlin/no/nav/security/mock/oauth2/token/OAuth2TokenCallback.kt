@@ -74,7 +74,7 @@ open class DefaultOAuth2TokenCallback
 
 data class RequestMappingTokenCallback(
     val issuerId: String,
-    val requestMappings: Set<RequestMapping>,
+    val requestMappings: List<RequestMapping>,
     val tokenExpiry: Long = Duration.ofHours(1).toSeconds(),
 ) : OAuth2TokenCallback {
     override fun issuerId(): String = issuerId
@@ -89,31 +89,59 @@ data class RequestMappingTokenCallback(
 
     override fun tokenExpiry(): Long = tokenExpiry
 
-    private fun Set<RequestMapping>.getClaims(tokenRequest: TokenRequest): Map<String, Any> {
+    private fun List<RequestMapping>.getClaims(tokenRequest: TokenRequest): Map<String, Any> {
         val claims = firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
-        return if (tokenRequest.grantType() == GrantType.CLIENT_CREDENTIALS && claims["sub"] == "\${clientId}") {
-            claims + ("sub" to tokenRequest.clientIdAsString())
-        } else {
-            claims
+        val customParameters = tokenRequest.customParameters.mapValues { (_, value) -> value.first() }
+        val variables =
+            if (tokenRequest.grantType() == GrantType.CLIENT_CREDENTIALS) {
+                customParameters + ("clientId" to tokenRequest.clientIdAsString())
+            } else {
+                customParameters
+            }
+        return claims.mapValues { (_, value) ->
+            when (value) {
+                is String -> replaceVariables(value, variables)
+                is List<*> ->
+                    value.map { v ->
+                        if (v is String) {
+                            replaceVariables(v, variables)
+                        } else {
+                            v
+                        }
+                    }
+                else -> value
+            }
         }
     }
 
-    private inline fun <reified T> Set<RequestMapping>.getClaimOrNull(
+    private inline fun <reified T> List<RequestMapping>.getClaimOrNull(
         tokenRequest: TokenRequest,
         key: String,
     ): T? = getClaims(tokenRequest)[key] as? T
 
-    private fun Set<RequestMapping>.getTypeHeader(tokenRequest: TokenRequest) = firstOrNull { it.isMatch(tokenRequest) }?.typeHeader ?: JOSEObjectType.JWT.type
+    private fun List<RequestMapping>.getTypeHeader(tokenRequest: TokenRequest) = firstOrNull { it.isMatch(tokenRequest) }?.typeHeader ?: JOSEObjectType.JWT.type
+
+    private fun replaceVariables(
+        input: String,
+        replacements: Map<String, String>,
+    ): String {
+        val pattern = Regex("""\$\{(\w+)}""")
+        return pattern.replace(input) { result ->
+            val variableName = result.groupValues[1]
+            val replacement = replacements[variableName]
+            replacement ?: result.value
+        }
+    }
 }
 
 data class RequestMapping(
     private val requestParam: String,
-    private val match: String = "*",
+    private val match: String,
     val claims: Map<String, Any> = emptyMap(),
     val typeHeader: String = JOSEObjectType.JWT.type,
 ) {
     fun isMatch(tokenRequest: TokenRequest): Boolean =
         tokenRequest.toHTTPRequest().queryParameters[requestParam]?.any {
-            if (match != "*") it == match else true
+            match == "*" || match == it || match.toRegex().matchEntire(it) != null
         } ?: false
 }
