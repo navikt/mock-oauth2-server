@@ -78,6 +78,7 @@ MockWebServerWrapper
         val ssl: Ssl? = null,
     ) : OAuth2HttpServer {
         val mockWebServer: MockWebServer = MockWebServer()
+        private var address: InetAddress? = null
 
         override fun start(
             inetAddress: InetAddress,
@@ -90,6 +91,7 @@ MockWebServerWrapper
                 if (ssl != null) {
                     mockWebServer.useHttps(ssl.sslContext().socketFactory)
                 }
+                this.address = inetAddress
                 log.debug("started server on address=$inetAddress and port=${mockWebServer.port}, httpsEnabled=${ssl != null}")
             }
 
@@ -100,7 +102,11 @@ MockWebServerWrapper
 
         override fun port(): Int = mockWebServer.port
 
-        override fun url(path: String): HttpUrl = mockWebServer.url(path)
+        override fun url(path: String): HttpUrl = mockWebServer
+            .url(path)
+            .newBuilder()
+            .host(address?.hostName ?: mockWebServer.hostName)
+            .build()
 
         override fun sslConfig(): Ssl? = ssl
 
@@ -189,7 +195,7 @@ class NettyWrapper
                 }
             return HttpUrl.Builder()
                 .scheme(scheme)
-                .host(address.address.canonicalHostName)
+                .host(address.address.hostName)
                 .port(port())
                 .build()
                 .resolve(path)!!

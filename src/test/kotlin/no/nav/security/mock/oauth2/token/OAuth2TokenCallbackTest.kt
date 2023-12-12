@@ -17,7 +17,7 @@ internal class OAuth2TokenCallbackTest {
             RequestMappingTokenCallback(
                 issuerId = "issuer1",
                 requestMappings =
-                    setOf(
+                    listOf(
                         RequestMapping(
                             requestParam = "scope",
                             match = "scope1",
@@ -37,6 +37,15 @@ internal class OAuth2TokenCallbackTest {
                                     "sub" to "subByScope2",
                                     "aud" to listOf("audByScope2"),
                                     "custom" to "custom2",
+                                ),
+                        ),
+                        RequestMapping(
+                            requestParam = "audience",
+                            match = "https://myapp.com/jwt/aud/.*",
+                            claims =
+                                mapOf(
+                                    "sub" to "\${clientId}",
+                                    "aud" to listOf("\${audience}"),
                                 ),
                         ),
                         RequestMapping(
@@ -100,6 +109,17 @@ internal class OAuth2TokenCallbackTest {
             assertSoftly {
                 issuer1.subject(grantTypeShouldMatch) shouldBe clientId
                 issuer1.audience(grantTypeShouldMatch) shouldBe listOf("defaultAud")
+                issuer1.tokenExpiry() shouldBe 120
+                issuer1.typeHeader(grantTypeShouldMatch) shouldBe "JWT"
+            }
+        }
+
+        @Test
+        fun `token request with request params matching requestmapping should return specific claims from callback with audience`() {
+            val grantTypeShouldMatch = clientCredentialsRequest("audience" to "https://myapp.com/jwt/aud/xxx")
+            assertSoftly {
+                issuer1.subject(grantTypeShouldMatch) shouldBe clientId
+                issuer1.audience(grantTypeShouldMatch) shouldBe listOf("https://myapp.com/jwt/aud/xxx")
                 issuer1.tokenExpiry() shouldBe 120
                 issuer1.typeHeader(grantTypeShouldMatch) shouldBe "JWT"
             }
