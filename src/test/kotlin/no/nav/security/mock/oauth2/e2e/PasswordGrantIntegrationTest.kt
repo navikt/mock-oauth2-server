@@ -43,6 +43,10 @@ class PasswordGrantIntegrationTest {
             response.accessToken should verifyWith(issuerId, this)
             response.accessToken.subject shouldBe "foo"
             response.accessToken.audience shouldContainExactly listOf("scope1")
+            response.idToken.shouldNotBeNull()
+            response.idToken should verifyWith(issuerId, this)
+            response.idToken.subject shouldBe "foo"
+            response.idToken.audience shouldContainExactly listOf("client")
         }
     }
 }
