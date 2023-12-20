@@ -22,10 +22,12 @@ internal class PasswordGrantHandler(
         val scope: String? = tokenRequest.scope?.toString()
         val passwordGrantTokenCallback = PasswordGrantTokenCallback(oAuth2TokenCallback)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, passwordGrantTokenCallback)
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, passwordGrantTokenCallback, null)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
+            idToken = idToken.serialize(),
             expiresIn = accessToken.expiresIn(),
             scope = scope,
         )
