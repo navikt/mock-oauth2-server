@@ -1,20 +1,20 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
-val assertjVersion = "3.24.2"
+val assertjVersion = "3.25.1"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.4.14"
 val nimbusSdkVersion = "11.6"
 val mockWebServerVersion = "4.12.0"
-val jacksonVersion = "2.16.0"
+val jacksonVersion = "2.16.1"
 val nettyVersion = "4.1.104.Final"
 val junitJupiterVersion = "5.10.1"
-val kotlinVersion = "1.9.21"
+val kotlinVersion = "1.9.22"
 val freemarkerVersion = "2.3.32"
 val kotestVersion = "5.8.0"
 val bouncyCastleVersion = "1.70"
 val springBootVersion = "3.2.1"
-val reactorTestVersion = "3.6.1"
+val reactorTestVersion = "3.6.2"
 val ktorVersion = "2.3.7"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
@@ -25,7 +25,7 @@ plugins {
     kotlin("jvm") version "1.9.22"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.50.0"
-    id("org.jmailen.kotlinter") version "4.1.0"
+    id("org.jmailen.kotlinter") version "4.1.1"
     id("com.google.cloud.tools.jib") version "3.4.0"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.0.2"
