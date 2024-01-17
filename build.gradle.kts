@@ -109,7 +109,7 @@ dependencies {
 
 configurations {
    all {
-        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.5.1")
+        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.6.0")
     }
 }
 
