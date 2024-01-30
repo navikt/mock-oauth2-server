@@ -94,7 +94,7 @@ internal class OAuth2TokenCallbackTest {
 
         @Test
         fun `token request with request params matching wildcard requestmapping should return default claims from callback`() {
-            val shouldMatchAllGrantTypes = authCodeRequest("scope" to "openid scope1")
+            val shouldMatchAllGrantTypes = authCodeRequest()
             assertSoftly {
                 issuer1.subject(shouldMatchAllGrantTypes) shouldBe "defaultSub"
                 issuer1.audience(shouldMatchAllGrantTypes) shouldBe listOf("defaultAud")
@@ -138,14 +138,14 @@ internal class OAuth2TokenCallbackTest {
 
         @Test
         fun `oidc auth code token request should return scopes not in OIDC from audience in callback`() {
-            authCodeRequest("scope" to "openid").let { tokenRequest ->
+            authCodeRequest().let { tokenRequest ->
                 DefaultOAuth2TokenCallback().asClue {
-                    it.audience(tokenRequest) shouldBe emptyList()
+                    it.audience(tokenRequest) shouldBe listOf("default")
                 }
             }
-            authCodeRequest("scope" to "openid scope1").let { tokenRequest ->
+            authCodeRequest().let { tokenRequest ->
                 DefaultOAuth2TokenCallback().asClue {
-                    it.audience(tokenRequest) shouldBe listOf("scope1")
+                    it.audience(tokenRequest) shouldBe listOf("default")
                 }
             }
         }
