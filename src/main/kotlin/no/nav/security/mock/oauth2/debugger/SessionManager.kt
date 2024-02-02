@@ -66,6 +66,7 @@ class SessionManager {
                     null
                 },
             )
+
         companion object {
             const val DEBUGGER_SESSION_COOKIE = "debugger-session"
         }

@@ -71,7 +71,6 @@ class RevocationIntegrationTest {
                 "code" to authorizationCode,
                 "client_id" to "id",
                 "client_secret" to "secret",
-                "scope" to "openid",
                 "redirect_uri" to "http://something",
             ),
         ).toTokenResponse()

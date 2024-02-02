@@ -122,7 +122,6 @@ internal class AuthorizationCodeHandlerTest {
     private fun tokenRequest(
         code: String,
         redirectUri: String = "http://redirect",
-        scope: String = "openid",
     ): OAuth2HttpRequest {
         return OAuth2HttpRequest(
             headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
@@ -133,8 +132,7 @@ internal class AuthorizationCodeHandlerTest {
                     "client_id=client1&" +
                     "client_secret=secret&" +
                     "code=$code&" +
-                    "redirect_uri=$redirectUri&" +
-                    "scope=$scope",
+                    "redirect_uri=$redirectUri&"
         )
     }
 }

@@ -102,11 +102,12 @@ MockWebServerWrapper
 
         override fun port(): Int = mockWebServer.port
 
-        override fun url(path: String): HttpUrl = mockWebServer
-            .url(path)
-            .newBuilder()
-            .host(address?.hostName ?: mockWebServer.hostName)
-            .build()
+        override fun url(path: String): HttpUrl =
+            mockWebServer
+                .url(path)
+                .newBuilder()
+                .host(address?.hostName ?: mockWebServer.hostName)
+                .build()
 
         override fun sslConfig(): Ssl? = ssl
 
