@@ -78,7 +78,8 @@ public class OAuth2LoginAppTest {
 
     private ClientHttpConnector followRedirectsWithCookies(Map<String, Cookie> cookieManager) {
         return new ReactorClientHttpConnector(
-                HttpClient.create()
+                HttpClient
+                        .create()
                         .followRedirect((req, resp) -> {
                                     for (var entry : resp.cookies().entrySet()) {
                                         var cookie = entry.getValue().stream().findFirst().orElse(null);
@@ -90,7 +91,7 @@ public class OAuth2LoginAppTest {
                                 },
                                 req -> {
                                     for (var cookie : cookieManager.entrySet()) {
-                                        req.addCookie(cookie.getValue());
+                                        req.header("Cookie", cookie.getKey() + "=" + cookie.getValue().value());
                                     }
                                 }
                         )
