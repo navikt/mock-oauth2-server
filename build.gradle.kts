@@ -16,6 +16,7 @@ val bouncyCastleVersion = "1.70"
 val springBootVersion = "3.2.2"
 val reactorTestVersion = "3.6.2"
 val ktorVersion = "2.3.8"
+val jsonPathVersion = "2.9.0"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -77,6 +78,13 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-client:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
+    constraints {
+        testImplementation("com.jayway.jsonpath:json-path") {
+            version {
+                require(jsonPathVersion)
+            }
+        }
+    }
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     constraints {
         testImplementation("org.yaml:snakeyaml:2.2") {
