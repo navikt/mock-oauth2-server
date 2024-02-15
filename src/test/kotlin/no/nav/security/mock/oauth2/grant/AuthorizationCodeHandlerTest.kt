@@ -132,7 +132,7 @@ internal class AuthorizationCodeHandlerTest {
                     "client_id=client1&" +
                     "client_secret=secret&" +
                     "code=$code&" +
-                    "redirect_uri=$redirectUri&"
+                    "redirect_uri=$redirectUri&",
         )
     }
 }
