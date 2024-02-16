@@ -12,7 +12,7 @@ val junitJupiterVersion = "5.10.2"
 val kotlinVersion = "1.9.22"
 val freemarkerVersion = "2.3.32"
 val kotestVersion = "5.8.0"
-val bouncyCastleVersion = "1.70"
+val bouncyCastleVersion = "1.77"
 val springBootVersion = "3.2.2"
 val reactorTestVersion = "3.6.2"
 val ktorVersion = "2.3.8"
@@ -65,7 +65,7 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
-    implementation("org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion")
+    implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
