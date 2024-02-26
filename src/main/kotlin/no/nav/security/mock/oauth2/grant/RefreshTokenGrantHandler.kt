@@ -18,6 +18,7 @@ private val log = KotlinLogging.logger {}
 internal class RefreshTokenGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
+    private val rotateRefreshToken: Boolean = false,
 ) : GrantHandler {
     override fun tokenResponse(
         request: OAuth2HttpRequest,
@@ -25,10 +26,13 @@ internal class RefreshTokenGrantHandler(
         oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
-        val refreshToken = tokenRequest.refreshTokenGrant().refreshToken.value
+        var refreshToken = tokenRequest.refreshTokenGrant().refreshToken.value
         log.debug("issuing token for refreshToken=$refreshToken")
         val scope: String? = tokenRequest.scope?.toString()
         val refreshTokenCallbackOrDefault = refreshTokenManager[refreshToken] ?: oAuth2TokenCallback
+        if (rotateRefreshToken) {
+            refreshToken = refreshTokenManager.rotate(refreshToken, refreshTokenCallbackOrDefault)
+        }
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, refreshTokenCallbackOrDefault)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, refreshTokenCallbackOrDefault)
 
