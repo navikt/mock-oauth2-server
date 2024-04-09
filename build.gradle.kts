@@ -3,19 +3,19 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
 val assertjVersion = "3.25.3"
 val kotlinLoggingVersion = "3.0.5"
-val logbackVersion = "1.5.3"
+val logbackVersion = "1.5.4"
 val nimbusSdkVersion = "11.10.1"
 val mockWebServerVersion = "4.12.0"
-val jacksonVersion = "2.16.1"
-val nettyVersion = "4.1.107.Final"
+val jacksonVersion = "2.17.0"
+val nettyVersion = "4.1.108.Final"
 val junitJupiterVersion = "5.10.2"
 val kotlinVersion = "1.9.23"
 val freemarkerVersion = "2.3.32"
-val kotestVersion = "5.8.0"
-val bouncyCastleVersion = "1.77"
-val springBootVersion = "3.2.3"
-val reactorTestVersion = "3.6.2"
-val ktorVersion = "2.3.9"
+val kotestVersion = "5.8.1"
+val bouncyCastleVersion = "1.78"
+val springBootVersion = "3.2.4"
+val reactorTestVersion = "3.6.4"
+val ktorVersion = "2.3.10"
 val jsonPathVersion = "2.9.0"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
@@ -26,11 +26,11 @@ plugins {
     kotlin("jvm") version "1.9.23"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.51.0"
-    id("org.jmailen.kotlinter") version "4.2.0"
-    id("com.google.cloud.tools.jib") version "3.4.1"
+    id("org.jmailen.kotlinter") version "4.3.0"
+    id("com.google.cloud.tools.jib") version "3.4.2"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.0.2"
-    id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id("org.jetbrains.dokka") version "1.9.20"
     `java-library`
     `maven-publish`
@@ -117,7 +117,7 @@ dependencies {
 
 configurations {
    all {
-        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.6.1")
+        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.6.2")
     }
 }
 
