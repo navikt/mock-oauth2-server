@@ -115,7 +115,6 @@ class MockOAuth2ServerIntegrationTest {
                 "client_id" to "client1",
                 "client_secret" to "secret",
                 "grant_type" to "authorization_code",
-                "scope" to "openid scope1",
                 "redirect_uri" to "http://mycallback",
                 "code" to "1234",
             ),

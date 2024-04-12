@@ -140,8 +140,9 @@ data class RequestMapping(
     val claims: Map<String, Any> = emptyMap(),
     val typeHeader: String = JOSEObjectType.JWT.type,
 ) {
-    fun isMatch(tokenRequest: TokenRequest): Boolean =
-        tokenRequest.toHTTPRequest().queryParameters[requestParam]?.any {
+    fun isMatch(tokenRequest: TokenRequest): Boolean {
+        return tokenRequest.toHTTPRequest().bodyAsFormParameters[requestParam]?.any {
             match == "*" || match == it || match.toRegex().matchEntire(it) != null
         } ?: false
+    }
 }

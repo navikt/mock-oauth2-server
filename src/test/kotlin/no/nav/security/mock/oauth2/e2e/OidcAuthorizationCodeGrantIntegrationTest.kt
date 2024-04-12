@@ -56,7 +56,6 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 "client_id" to "client1",
                 "client_secret" to "secret",
                 "grant_type" to "authorization_code",
-                "scope" to "openid scope1",
                 "redirect_uri" to "http://mycallback",
                 "code" to code,
             ),
@@ -64,9 +63,8 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             it.accessToken shouldNotBe null
             it.idToken shouldNotBe null
             it.expiresIn shouldBeGreaterThan 0
-            it.scope shouldBe "openid scope1"
             it.idToken?.audience shouldContainExactly listOf("client1")
-            it.accessToken?.audience shouldContainExactly listOf("scope1")
+            it.accessToken?.audience shouldContainExactly listOf("default")
         }
     }
 
@@ -90,7 +88,6 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 "client_id" to "client1",
                 "client_secret" to "secret",
                 "grant_type" to "authorization_code",
-                "scope" to "openid scope1",
                 "redirect_uri" to "http://mycallback",
                 "code" to code,
             ),
@@ -98,9 +95,8 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             it.accessToken shouldNotBe null
             it.idToken shouldNotBe null
             it.expiresIn shouldBeGreaterThan 0
-            it.scope shouldBe "openid scope1"
             it.idToken?.audience shouldContainExactly listOf("client1")
-            it.accessToken?.audience shouldContainExactly listOf("scope1")
+            it.accessToken?.audience shouldContainExactly listOf("default")
             it.idToken?.subject shouldBe "foo"
         }
         server.shutdown()
@@ -152,7 +148,6 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             "client_id" to "client1",
             "client_secret" to "secret",
             "grant_type" to "authorization_code",
-            "scope" to "openid scope1",
             "redirect_uri" to "http://mycallback",
             "code" to code,
         ).apply {

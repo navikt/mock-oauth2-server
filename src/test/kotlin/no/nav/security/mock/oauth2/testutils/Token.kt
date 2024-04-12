@@ -77,8 +77,12 @@ infix fun ParsedTokenResponse.shouldBeValidFor(type: GrantType) {
                 idToken shouldNotBe null
                 refreshToken shouldNotBe null
             }
-            TOKEN_EXCHANGE, JWT_BEARER, CLIENT_CREDENTIALS, PASSWORD -> {
+            TOKEN_EXCHANGE, JWT_BEARER, CLIENT_CREDENTIALS -> {
                 idToken shouldBe null
+                refreshToken shouldBe null
+            }
+            PASSWORD -> {
+                idToken shouldNotBe null
                 refreshToken shouldBe null
             }
         }

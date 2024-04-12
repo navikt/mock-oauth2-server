@@ -12,6 +12,7 @@ jobs:
   build:
     permissions:
       packages: write
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout latest code
@@ -25,7 +26,7 @@ jobs:
           cache: 'gradle'
 
       - name: Generate and submit dependency graphs
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
         with:
           dependency-graph: generate-and-submit
 
@@ -39,6 +40,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Release Drafter
-        uses: release-drafter/release-drafter@v5
+        uses: release-drafter/release-drafter@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

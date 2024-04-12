@@ -6,6 +6,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import java.util.UUID
 
 typealias RefreshToken = String
+typealias Nonce = String
 
 internal data class RefreshTokenManager(
     private val cache: MutableMap<RefreshToken, OAuth2TokenCallback> = HashMap(),
@@ -16,13 +17,21 @@ internal data class RefreshTokenManager(
 
     fun refreshToken(
         tokenCallback: OAuth2TokenCallback,
-        nonce: String?,
+        nonce: Nonce? = null,
     ): RefreshToken {
         val jti = UUID.randomUUID().toString()
         // added for compatibility with keycloak js client which expects a jwt with nonce
         val refreshToken = nonce?.let { plainJWT(jti, nonce) } ?: jti
         cache[refreshToken] = tokenCallback
         return refreshToken
+    }
+
+    fun rotate(
+        refreshToken: RefreshToken,
+        fallbackTokenCallback: OAuth2TokenCallback,
+    ): RefreshToken {
+        val callback = cache.remove(refreshToken) ?: fallbackTokenCallback
+        return refreshToken(callback)
     }
 
     private fun plainJWT(

@@ -32,7 +32,6 @@ class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp
                             .post(
                                 FormBody.Builder()
                                     .add("client_id", "client1")
-                                    .add("scope", authenticationRequest().scope.toString())
                                     .add("code", code)
                                     .add("redirect_uri", exampleApp.url("/callback").toString())
                                     .add("grant_type", "authorization_code")
