@@ -60,13 +60,11 @@ open class DefaultOAuth2TokenCallback
         }
 
         override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-            claims.toMutableMap().apply {
-                putAll(
-                    mapOf(
-                        "azp" to tokenRequest.clientIdAsString(),
-                        "tid" to issuerId,
-                    ),
-                )
+            mutableMapOf<String, Any>(
+                "tid" to issuerId,
+            ).apply {
+                putAll(claims)
+                put("azp", tokenRequest.clientIdAsString())
             }
 
         override fun tokenExpiry(): Long = expiry
