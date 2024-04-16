@@ -305,4 +305,9 @@ tasks {
     withType<Wrapper> {
         gradleVersion = "8.3"
     }
+
+    // Exclude logback.xml from the jar to not override projects logback config
+    withType<Jar> {
+        exclude("logback.xml")
+    }
 }
