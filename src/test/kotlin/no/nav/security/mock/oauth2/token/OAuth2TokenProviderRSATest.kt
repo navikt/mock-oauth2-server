@@ -16,6 +16,9 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.Date
 
 internal class OAuth2TokenProviderRSATest {
     private val tokenProvider = OAuth2TokenProvider()
@@ -91,6 +94,27 @@ internal class OAuth2TokenProviderRSATest {
 
         shouldThrow<BadJOSEException> {
             idToken(issuer.toString()).verifySignatureAndIssuer(issuer, tokenProvider.publicJwkSet("shouldfail"))
+        }
+    }
+
+    @Test
+    fun `token should have issuedAt set to systemTime if set, otherwise use now()`() {
+        val yesterDay = Instant.now().minus(1, ChronoUnit.DAYS)
+        val tokenProvider = OAuth2TokenProvider(systemTime = yesterDay)
+
+        tokenProvider.exchangeAccessToken(
+            tokenRequest =
+                nimbusTokenRequest(
+                    "id",
+                    "grant_type" to GrantType.CLIENT_CREDENTIALS.value,
+                    "scope" to "scope1",
+                ),
+            issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
+            claimsSet = tokenProvider.jwt(mapOf()).jwtClaimsSet,
+            oAuth2TokenCallback = DefaultOAuth2TokenCallback(),
+        ).asClue {
+            it.jwtClaimsSet.issueTime shouldBe Date.from(tokenProvider.systemTime)
+            println(it.serialize())
         }
     }
 

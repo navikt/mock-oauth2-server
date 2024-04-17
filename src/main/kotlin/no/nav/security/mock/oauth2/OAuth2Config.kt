@@ -19,6 +19,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import java.io.File
+import java.time.Instant
 
 data class OAuth2Config
     @JvmOverloads
@@ -37,6 +38,7 @@ data class OAuth2Config
         class OAuth2TokenProviderDeserializer : JsonDeserializer<OAuth2TokenProvider>() {
             data class ProviderConfig(
                 val keyProvider: KeyProviderConfig?,
+                val systemTime: String?,
             )
 
             data class KeyProviderConfig(
@@ -60,11 +62,17 @@ data class OAuth2Config
                         listOf(JWK.parse(it))
                     } ?: emptyList()
 
+                val systemTime =
+                    config.systemTime?.let {
+                        Instant.parse(it)
+                    }
+
                 return OAuth2TokenProvider(
                     KeyProvider(
                         jwks,
                         config.keyProvider?.algorithm ?: JWSAlgorithm.RS256.name,
                     ),
+                    systemTime,
                 )
             }
         }
