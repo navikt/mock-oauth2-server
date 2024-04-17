@@ -149,6 +149,19 @@ internal class OAuth2TokenCallbackTest {
                 }
             }
         }
+
+        @Test
+        fun `Allow overriding tid`() {
+            val tokenRequest = clientCredentialsRequest()
+            DefaultOAuth2TokenCallback().asClue {
+                it.addClaims(tokenRequest) shouldContainAll mapOf("tid" to "default")
+            }
+
+            DefaultOAuth2TokenCallback(claims = mapOf("tid" to "test-tid")).asClue {
+                it.addClaims(tokenRequest) shouldContainAll mapOf("tid" to "test-tid")
+            }
+        }
+
     }
 
     private fun authCodeRequest(vararg formParams: Pair<String, String>) =
