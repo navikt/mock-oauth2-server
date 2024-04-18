@@ -23,6 +23,7 @@ class OAuth2TokenProvider
     @JvmOverloads
     constructor(
         private val keyProvider: KeyProvider = KeyProvider(),
+        val systemTime: Instant? = null,
     ) {
         @JvmOverloads
         fun publicJwkSet(issuerId: String = "default"): JWKSet {
@@ -66,7 +67,7 @@ class OAuth2TokenProvider
             issuerUrl: HttpUrl,
             claimsSet: JWTClaimsSet,
             oAuth2TokenCallback: OAuth2TokenCallback,
-        ) = Instant.now().let { now ->
+        ) = systemTime.orNow().let { now ->
             JWTClaimsSet.Builder(claimsSet)
                 .issuer(issuerUrl.toString())
                 .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
@@ -86,7 +87,7 @@ class OAuth2TokenProvider
             issuerId: String = "default",
         ): SignedJWT =
             JWTClaimsSet.Builder().let { builder ->
-                val now = Instant.now()
+                val now = systemTime.orNow()
                 builder
                     .issueTime(Date.from(now))
                     .notBeforeTime(Date.from(now))
@@ -150,7 +151,7 @@ class OAuth2TokenProvider
             additionalClaims: Map<String, Any>,
             expiry: Long,
         ) = JWTClaimsSet.Builder().let { builder ->
-            val now = Instant.now()
+            val now = systemTime.orNow()
             builder.subject(subject)
                 .audience(audience)
                 .issuer(issuerUrl.toString())
@@ -163,4 +164,6 @@ class OAuth2TokenProvider
             builder.addClaims(additionalClaims)
             builder.build()
         }
+
+        private fun Instant?.orNow(): Instant = this ?: Instant.now()
     }

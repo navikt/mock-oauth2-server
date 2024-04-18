@@ -175,6 +175,7 @@ fun loginWithIdTokenForAcrClaimEqualsLevel4() {
 }
 ~~~
 
+
 ##### Testing an API requiring access_token (e.g. a signed JWT)
 
 ```kotlin
@@ -182,6 +183,20 @@ val token: SignedJWT = oAuth2Server.issueToken(issuerId, "someclientid", Default
 //use your favourite HTTP client to invoke your API and attach the serialized token
 val request = // ....
 request.addHeader("Authorization", "Bearer ${token.serialize()}")
+```
+If you for some reason need to manipulate the system time/clock you can configure the OAuth2TokenProvider to use a specific time, resulting in the `iat` claim being set to that time:
+
+```kotlin
+@Test
+fun testWithSpecificTime() {
+    val server = MockOAuth2Server(
+        config = OAuth2Config(
+            tokenProvider = OAuth2TokenProvider(systemTime = Instant.parse("2020-01-21T00:00:00Z")
+        )
+    )
+    val token = server.issueToken(issuerId = "issuer1")
+    // do whatever token testing you need to do here and assert the token has iat=2020-01-21T00:00:00Z
+}
 ```
 
 ##### More examples 
@@ -285,6 +300,17 @@ add this to your config with preferred `JWS algorithm`:
 }
 ```
 
+A token provider can also support a static "systemTime", i.e. the time for when the token is issued (`iat` claim) if you have tests that require a specific time.
+The following configuration will set the system time to `2020-01-21T00:00:00Z`:
+
+```json
+{
+  "tokenProvider" : {
+    "systemTime" : "2020-01-21T00:00:00Z"
+  }
+}
+```
+
 | Property             | Description                                                                                                                                                                                                                                                                       |
 |----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `interactiveLogin`   | `true` or `false`, enables login screen when redirecting to server `/authorize` endpoint                                                                                                                                                                                          |
@@ -294,7 +320,7 @@ add this to your config with preferred `JWS algorithm`:
 | `httpServer`         | A string identifying the httpserver to use. Must match one of the following enum values: `MockWebServerWrapper` or `NettyWrapper`                                                                                                                                                 |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) that lets you specify which token claims to return when a token request matches the specified condition.                                                      |
 
-*From the JSON example above:* 
+*From the first JSON example above:* 
 
 A token request to `http://localhost:8080/issuer1/token` with parameter `scope` equal to `scope1` will match the first `tokenCallback`:
 

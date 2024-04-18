@@ -161,7 +161,6 @@ internal class OAuth2TokenCallbackTest {
                 it.addClaims(tokenRequest) shouldContainAll mapOf("tid" to "test-tid")
             }
         }
-
     }
 
     private fun authCodeRequest(vararg formParams: Pair<String, String>) =

@@ -1,16 +1,16 @@
 package no.nav.security.mock.oauth2
 
 import ch.qos.logback.classic.ClassicConstants
-import java.io.File
-import java.io.FileNotFoundException
-import java.net.InetAddress
-import java.net.InetSocketAddress
 import no.nav.security.mock.oauth2.StandaloneConfig.hostname
 import no.nav.security.mock.oauth2.StandaloneConfig.oauth2Config
 import no.nav.security.mock.oauth2.StandaloneConfig.port
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.route
+import java.io.File
+import java.io.FileNotFoundException
+import java.net.InetAddress
+import java.net.InetSocketAddress
 
 object StandaloneConfig {
     const val JSON_CONFIG = "JSON_CONFIG"

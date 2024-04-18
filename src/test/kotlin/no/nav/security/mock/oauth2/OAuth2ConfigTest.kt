@@ -75,6 +75,21 @@ internal class OAuth2ConfigTest {
     }
 
     @Test
+    fun `create config from json with tokenprovider system time set`() {
+        val config =
+            OAuth2Config.fromJson(
+                """
+                {
+                  "tokenProvider" : {
+                    "systemTime" : "2020-01-21T00:00:00Z"
+                  }
+                }
+                """.trimIndent(),
+            )
+        config.tokenProvider.systemTime shouldBe Instant.parse("2020-01-21T00:00:00Z")
+    }
+
+    @Test
     fun `create NettyWrapper with https enabled and provided keystore`() {
         val server = OAuth2Config.fromJson(nettyWithProvidedKeystore).httpServer as NettyWrapper
         val actualKeyStore = server.ssl?.sslKeystore?.keyStore
