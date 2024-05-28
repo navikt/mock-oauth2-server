@@ -1,19 +1,19 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
-val assertjVersion = "3.25.3"
+val assertjVersion = "3.26.0"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.5.6"
 val nimbusSdkVersion = "11.12"
 val mockWebServerVersion = "4.12.0"
 val jacksonVersion = "2.17.1"
-val nettyVersion = "4.1.109.Final"
+val nettyVersion = "4.1.110.Final"
 val junitJupiterVersion = "5.10.2"
-val kotlinVersion = "1.9.24"
+val kotlinVersion = "2.0.0"
 val freemarkerVersion = "2.3.32"
 val kotestVersion = "5.9.0"
 val bouncyCastleVersion = "1.78.1"
-val springBootVersion = "3.2.5"
+val springBootVersion = "3.3.0"
 val reactorTestVersion = "3.6.6"
 val ktorVersion = "2.3.11"
 val jsonPathVersion = "2.9.0"
@@ -23,7 +23,7 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.9.24"
+    kotlin("jvm") version "2.0.0"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.51.0"
     id("org.jmailen.kotlinter") version "4.3.0"
