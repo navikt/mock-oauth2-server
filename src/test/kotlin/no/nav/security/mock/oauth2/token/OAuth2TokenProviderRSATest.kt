@@ -16,7 +16,9 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Date
 
@@ -99,8 +101,8 @@ internal class OAuth2TokenProviderRSATest {
 
     @Test
     fun `token should have issuedAt set to systemTime if set, otherwise use now()`() {
-        val yesterDay = Instant.now().minus(1, ChronoUnit.DAYS)
-        val tokenProvider = OAuth2TokenProvider(systemTime = yesterDay)
+        val yesterday = Instant.now().minus(1, ChronoUnit.DAYS)
+        val tokenProvider = OAuth2TokenProvider(systemTime = yesterday)
 
         tokenProvider.exchangeAccessToken(
             tokenRequest =
@@ -114,6 +116,70 @@ internal class OAuth2TokenProviderRSATest {
             oAuth2TokenCallback = DefaultOAuth2TokenCallback(),
         ).asClue {
             it.jwtClaimsSet.issueTime shouldBe Date.from(tokenProvider.systemTime)
+            println(it.serialize())
+        }
+    }
+
+    @Test
+    fun `token should have issuedAt set dynamically according to timeProvider`() {
+        val clock =
+            object : Clock() {
+                private var clock = systemDefaultZone()
+
+                override fun instant() = clock.instant()
+
+                override fun withZone(zone: ZoneId) = clock.withZone(zone)
+
+                override fun getZone() = clock.zone
+
+                fun fixed(instant: Instant) {
+                    clock = fixed(instant, zone)
+                }
+            }
+
+        val tokenProvider = OAuth2TokenProvider { clock.instant() }
+
+        val instant1 = Instant.parse("2000-12-03T10:15:30.00Z")
+        val instant2 = Instant.parse("2020-01-21T00:00:00.00Z")
+        instant1 shouldNotBe instant2
+
+        run {
+            clock.fixed(instant1)
+            tokenProvider.systemTime shouldBe instant1
+
+            tokenProvider.exchangeAccessToken(
+                tokenRequest =
+                    nimbusTokenRequest(
+                        "id",
+                        "grant_type" to GrantType.CLIENT_CREDENTIALS.value,
+                        "scope" to "scope1",
+                    ),
+                issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
+                claimsSet = tokenProvider.jwt(mapOf()).jwtClaimsSet,
+                oAuth2TokenCallback = DefaultOAuth2TokenCallback(),
+            )
+        }.asClue {
+            it.jwtClaimsSet.issueTime shouldBe Date.from(instant1)
+            println(it.serialize())
+        }
+
+        run {
+            clock.fixed(instant2)
+            tokenProvider.systemTime shouldBe instant2
+
+            tokenProvider.exchangeAccessToken(
+                tokenRequest =
+                    nimbusTokenRequest(
+                        "id",
+                        "grant_type" to GrantType.CLIENT_CREDENTIALS.value,
+                        "scope" to "scope1",
+                    ),
+                issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
+                claimsSet = tokenProvider.jwt(mapOf()).jwtClaimsSet,
+                oAuth2TokenCallback = DefaultOAuth2TokenCallback(),
+            )
+        }.asClue {
+            it.jwtClaimsSet.issueTime shouldBe Date.from(instant2)
             println(it.serialize())
         }
     }
