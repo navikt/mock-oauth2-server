@@ -19,12 +19,23 @@ import java.time.Instant
 import java.util.Date
 import java.util.UUID
 
+typealias TimeProvider = () -> Instant?
+
 class OAuth2TokenProvider
     @JvmOverloads
     constructor(
         private val keyProvider: KeyProvider = KeyProvider(),
-        val systemTime: Instant? = null,
+        private val timeProvider: TimeProvider,
     ) {
+        val systemTime
+            get() = timeProvider()
+
+        @JvmOverloads
+        constructor(
+            keyProvider: KeyProvider = KeyProvider(),
+            systemTime: Instant? = null,
+        ) : this(keyProvider, { systemTime })
+
         @JvmOverloads
         fun publicJwkSet(issuerId: String = "default"): JWKSet {
             return JWKSet(keyProvider.signingKey(issuerId)).toPublicJWKSet()
