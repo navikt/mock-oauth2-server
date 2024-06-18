@@ -3,12 +3,17 @@ package no.nav.security.mock.oauth2.token
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
 import no.nav.security.mock.oauth2.extensions.scopesWithoutOidcScopes
 import no.nav.security.mock.oauth2.extensions.tokenExchangeGrantOrNull
+import no.nav.security.mock.oauth2.http.objectMapper
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 
 interface OAuth2TokenCallback {
     fun issuerId(): String
@@ -26,49 +31,49 @@ interface OAuth2TokenCallback {
 
 // TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
 open class DefaultOAuth2TokenCallback
-    @JvmOverloads
-    constructor(
-        private val issuerId: String = "default",
-        private val subject: String = UUID.randomUUID().toString(),
-        private val typeHeader: String = JOSEObjectType.JWT.type,
-        // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
-        private val audience: List<String>? = null,
-        private val claims: Map<String, Any> = emptyMap(),
-        private val expiry: Long = 3600,
-    ) : OAuth2TokenCallback {
-        override fun issuerId(): String = issuerId
+@JvmOverloads
+constructor(
+    private val issuerId: String = "default",
+    private val subject: String = UUID.randomUUID().toString(),
+    private val typeHeader: String = JOSEObjectType.JWT.type,
+    // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
+    private val audience: List<String>? = null,
+    private val claims: Map<String, Any> = emptyMap(),
+    private val expiry: Long = 3600,
+) : OAuth2TokenCallback {
+    override fun issuerId(): String = issuerId
 
-        override fun subject(tokenRequest: TokenRequest): String {
-            return when (GrantType.CLIENT_CREDENTIALS) {
-                tokenRequest.grantType() -> tokenRequest.clientIdAsString()
-                else -> subject
-            }
+    override fun subject(tokenRequest: TokenRequest): String {
+        return when (GrantType.CLIENT_CREDENTIALS) {
+            tokenRequest.grantType() -> tokenRequest.clientIdAsString()
+            else -> subject
         }
-
-        override fun typeHeader(tokenRequest: TokenRequest): String {
-            return typeHeader
-        }
-
-        override fun audience(tokenRequest: TokenRequest): List<String> {
-            val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
-            return when {
-                audience != null -> audience
-                audienceParam != null -> audienceParam
-                tokenRequest.scope != null -> tokenRequest.scopesWithoutOidcScopes()
-                else -> listOf("default")
-            }
-        }
-
-        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-            mutableMapOf<String, Any>(
-                "tid" to issuerId,
-            ).apply {
-                putAll(claims)
-                put("azp", tokenRequest.clientIdAsString())
-            }
-
-        override fun tokenExpiry(): Long = expiry
     }
+
+    override fun typeHeader(tokenRequest: TokenRequest): String {
+        return typeHeader
+    }
+
+    override fun audience(tokenRequest: TokenRequest): List<String> {
+        val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
+        return when {
+            audience != null -> audience
+            audienceParam != null -> audienceParam
+            tokenRequest.scope != null -> tokenRequest.scopesWithoutOidcScopes()
+            else -> listOf("default")
+        }
+    }
+
+    override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
+        mutableMapOf<String, Any>(
+            "tid" to issuerId,
+        ).apply {
+            putAll(claims)
+            put("azp", tokenRequest.clientIdAsString())
+        }
+
+    override fun tokenExpiry(): Long = expiry
+}
 
 data class RequestMappingTokenCallback(
     val issuerId: String,
@@ -96,16 +101,44 @@ data class RequestMappingTokenCallback(
         }).toMap() + mapOf("clientId" to tokenRequest.clientIdAsString())
 
         return claims.mapValues { (_, value) ->
-            when (value) {
-                is String -> replaceVariables(value, params)
-                is List<*> ->
-                    value.map { v ->
-                        if (v is String) {
-                            replaceVariables(v, params)
-                        } else {
-                            v
+            val v = objectMapper.writeValueAsString(value)
+            val jsonElement = Json.parseToJsonElement(v)
+            when (jsonElement) {
+                is JsonPrimitive ->
+                    if (jsonElement.isString) {
+                        replaceVariables(jsonElement.content, params)
+                    } else {
+                        jsonElement.content
+                    }
+
+                is JsonObject -> {
+                    jsonElement.mapValues { (_, value) ->
+                        if (value is JsonPrimitive) {
+                            replaceVariables(value.content, params)
+                        } else if (value is JsonArray)
+                            value.map { element ->
+                                if (element is JsonPrimitive) {
+                                    replaceVariables(element.content, params)
+                                } else {
+                                    element
+                                }
+                            }
+                        else {
+                            value
                         }
                     }
+                }
+
+                is JsonArray -> {
+                    jsonElement.map { element ->
+                        if (element is JsonPrimitive) {
+                            replaceVariables(element.content, params)
+                        } else {
+                            element
+                        }
+                    }
+                }
+
                 else -> value
             }
         }
@@ -122,11 +155,8 @@ data class RequestMappingTokenCallback(
         input: String,
         replacements: Map<String, String>,
     ): String {
-        val pattern = Regex("""\$\{(\w+)}""")
-        return pattern.replace(input) { result ->
-            val variableName = result.groupValues[1]
-            val replacement = replacements[variableName]
-            replacement ?: result.value
+        return replacements.entries.fold(input) { acc, (key, value) ->
+            acc.replace("\${$key}", value)
         }
     }
 }

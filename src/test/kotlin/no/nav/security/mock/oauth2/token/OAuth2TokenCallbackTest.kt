@@ -151,6 +151,41 @@ internal class OAuth2TokenCallbackTest {
         }
     }
 
+    @Test
+    fun `token request with custom parameters in token request should include claims with placeholder names`() {
+        val request = clientCredentialsRequest(
+            "mock_token_type" to "custom",
+            "participantId" to "participantId",
+            "actAs" to "actAs",
+            "readAs" to "readAs",
+        )
+        RequestMappingTokenCallback(
+            issuerId = "issuer1",
+            requestMappings =
+            listOf(
+                RequestMapping(
+                    requestParam = "mock_token_type",
+                    match = "custom",
+                    claims = mapOf(
+                        "https://daml.com/ledger-api" to mapOf(
+                            "participantId" to "\${participantId}",
+                            "actAs" to listOf("\${actAs}"),
+                            "readAs" to listOf("\${readAs}"),
+                        ),
+                    ),
+                ),
+            )
+        ).addClaims(request).asClue {
+            it shouldContainAll mapOf(
+                "https://daml.com/ledger-api" to mapOf(
+                    "participantId" to "participantId",
+                    "actAs" to listOf("actAs"),
+                    "readAs" to listOf("readAs")
+                ),
+            )
+        }
+    }
+
     @Nested
     inner class DefaultOAuth2TokenCallbacks {
         @Test
