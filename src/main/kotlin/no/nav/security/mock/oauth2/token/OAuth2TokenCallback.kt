@@ -89,20 +89,19 @@ data class RequestMappingTokenCallback(
 
     private fun List<RequestMapping>.getClaims(tokenRequest: TokenRequest): Map<String, Any> {
         val claims = firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
-        val customParameters = tokenRequest.customParameters.mapValues { (_, value) -> value.first() }
-        val variables =
-            if (tokenRequest.grantType() == GrantType.CLIENT_CREDENTIALS) {
-                customParameters + ("clientId" to tokenRequest.clientIdAsString())
-            } else {
-                customParameters
-            }
+
+        // TODO: hack choose first element. Rewrite to support multiple elements and custom objects
+        val params = (tokenRequest.toHTTPRequest().bodyAsFormParameters.map {
+            it.key to it.value.first()
+        }).toMap() + mapOf("clientId" to tokenRequest.clientIdAsString())
+
         return claims.mapValues { (_, value) ->
             when (value) {
-                is String -> replaceVariables(value, variables)
+                is String -> replaceVariables(value, params)
                 is List<*> ->
                     value.map { v ->
                         if (v is String) {
-                            replaceVariables(v, variables)
+                            replaceVariables(v, params)
                         } else {
                             v
                         }

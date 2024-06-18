@@ -17,56 +17,56 @@ internal class OAuth2TokenCallbackTest {
             RequestMappingTokenCallback(
                 issuerId = "issuer1",
                 requestMappings =
-                    listOf(
-                        RequestMapping(
-                            requestParam = "scope",
-                            match = "scope1",
-                            claims =
-                                mapOf(
-                                    "sub" to "subByScope1",
-                                    "aud" to listOf("audByScope1"),
-                                    "custom" to "custom1",
-                                ),
-                        ),
-                        RequestMapping(
-                            requestParam = "scope",
-                            match = "scope2",
-                            typeHeader = "JWT2",
-                            claims =
-                                mapOf(
-                                    "sub" to "subByScope2",
-                                    "aud" to listOf("audByScope2"),
-                                    "custom" to "custom2",
-                                ),
-                        ),
-                        RequestMapping(
-                            requestParam = "audience",
-                            match = "https://myapp.com/jwt/aud/.*",
-                            claims =
-                                mapOf(
-                                    "sub" to "\${clientId}",
-                                    "aud" to listOf("\${audience}"),
-                                ),
-                        ),
-                        RequestMapping(
-                            requestParam = "grant_type",
-                            match = "authorization_code",
-                            claims =
-                                mapOf(
-                                    "sub" to "defaultSub",
-                                    "aud" to listOf("defaultAud"),
-                                ),
-                        ),
-                        RequestMapping(
-                            requestParam = "grant_type",
-                            match = "*",
-                            claims =
-                                mapOf(
-                                    "sub" to "\${clientId}",
-                                    "aud" to listOf("defaultAud"),
-                                ),
+                listOf(
+                    RequestMapping(
+                        requestParam = "scope",
+                        match = "scope1",
+                        claims =
+                        mapOf(
+                            "sub" to "subByScope1",
+                            "aud" to listOf("audByScope1"),
+                            "custom" to "custom1",
                         ),
                     ),
+                    RequestMapping(
+                        requestParam = "scope",
+                        match = "scope2",
+                        typeHeader = "JWT2",
+                        claims =
+                        mapOf(
+                            "sub" to "subByScope2",
+                            "aud" to listOf("audByScope2"),
+                            "custom" to "custom2",
+                        ),
+                    ),
+                    RequestMapping(
+                        requestParam = "audience",
+                        match = "https://myapp.com/jwt/aud/.*",
+                        claims =
+                        mapOf(
+                            "sub" to "\${clientId}",
+                            "aud" to listOf("\${audience}"),
+                        ),
+                    ),
+                    RequestMapping(
+                        requestParam = "grant_type",
+                        match = "authorization_code",
+                        claims =
+                        mapOf(
+                            "sub" to "defaultSub",
+                            "aud" to listOf("defaultAud"),
+                        ),
+                    ),
+                    RequestMapping(
+                        requestParam = "grant_type",
+                        match = "*",
+                        claims =
+                        mapOf(
+                            "sub" to "\${clientId}",
+                            "aud" to listOf("defaultAud"),
+                        ),
+                    ),
+                ),
                 tokenExpiry = 120,
             )
 
@@ -122,6 +122,31 @@ internal class OAuth2TokenCallbackTest {
                 issuer1.audience(grantTypeShouldMatch) shouldBe listOf("https://myapp.com/jwt/aud/xxx")
                 issuer1.tokenExpiry() shouldBe 120
                 issuer1.typeHeader(grantTypeShouldMatch) shouldBe "JWT"
+            }
+        }
+
+        @Test
+        fun `token request with custom parameters in token request should include claims with placeholder names`() {
+            val request = clientCredentialsRequest(
+                "scope" to "testscope:something",
+                "mock_token_type" to "custom",
+            )
+            RequestMappingTokenCallback(
+                issuerId = "issuer1",
+                requestMappings =
+                listOf(
+                    RequestMapping(
+                        requestParam = "scope",
+                        match = "testscope:.*",
+                        claims = mapOf(
+                            "sub" to "\${clientId}",
+                            "scope" to "\${scope}",
+                            "mock_token_type" to "\${mock_token_type}",
+                        ),
+                    ),
+                )
+            ).addClaims(request).asClue {
+                it shouldContainAll mapOf("sub" to clientId, "scope" to "testscope:something", "mock_token_type" to "custom")
             }
         }
     }
