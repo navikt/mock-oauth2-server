@@ -9,7 +9,7 @@ import no.nav.security.mock.oauth2.extensions.replaceValues
 import no.nav.security.mock.oauth2.extensions.scopesWithoutOidcScopes
 import no.nav.security.mock.oauth2.extensions.tokenExchangeGrantOrNull
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
 interface OAuth2TokenCallback {
     fun issuerId(): String
