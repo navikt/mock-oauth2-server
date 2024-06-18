@@ -87,6 +87,12 @@ dependencies {
     }
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     constraints {
+        testImplementation("org.xmlunit:xmlunit-core") {
+            because("previous versions have security vulnerabilities")
+            version {
+                require("2.10.0")
+            }
+        }
         testImplementation("org.yaml:snakeyaml:2.2") {
             because("previous versions have security vulnerabilities")
         }
