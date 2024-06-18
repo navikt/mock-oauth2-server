@@ -3,15 +3,11 @@ package no.nav.security.mock.oauth2.token
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
+import no.nav.security.mock.oauth2.extensions.replaceValues
 import no.nav.security.mock.oauth2.extensions.scopesWithoutOidcScopes
 import no.nav.security.mock.oauth2.extensions.tokenExchangeGrantOrNull
-import no.nav.security.mock.oauth2.http.objectMapper
 import java.time.Duration
 import java.util.*
 
@@ -31,49 +27,49 @@ interface OAuth2TokenCallback {
 
 // TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
 open class DefaultOAuth2TokenCallback
-@JvmOverloads
-constructor(
-    private val issuerId: String = "default",
-    private val subject: String = UUID.randomUUID().toString(),
-    private val typeHeader: String = JOSEObjectType.JWT.type,
-    // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
-    private val audience: List<String>? = null,
-    private val claims: Map<String, Any> = emptyMap(),
-    private val expiry: Long = 3600,
-) : OAuth2TokenCallback {
-    override fun issuerId(): String = issuerId
+    @JvmOverloads
+    constructor(
+        private val issuerId: String = "default",
+        private val subject: String = UUID.randomUUID().toString(),
+        private val typeHeader: String = JOSEObjectType.JWT.type,
+        // needs to be nullable in order to know if a list has explicitly been set, empty list should be a allowable value
+        private val audience: List<String>? = null,
+        private val claims: Map<String, Any> = emptyMap(),
+        private val expiry: Long = 3600,
+    ) : OAuth2TokenCallback {
+        override fun issuerId(): String = issuerId
 
-    override fun subject(tokenRequest: TokenRequest): String {
-        return when (GrantType.CLIENT_CREDENTIALS) {
-            tokenRequest.grantType() -> tokenRequest.clientIdAsString()
-            else -> subject
-        }
-    }
-
-    override fun typeHeader(tokenRequest: TokenRequest): String {
-        return typeHeader
-    }
-
-    override fun audience(tokenRequest: TokenRequest): List<String> {
-        val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
-        return when {
-            audience != null -> audience
-            audienceParam != null -> audienceParam
-            tokenRequest.scope != null -> tokenRequest.scopesWithoutOidcScopes()
-            else -> listOf("default")
-        }
-    }
-
-    override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-        mutableMapOf<String, Any>(
-            "tid" to issuerId,
-        ).apply {
-            putAll(claims)
-            put("azp", tokenRequest.clientIdAsString())
+        override fun subject(tokenRequest: TokenRequest): String {
+            return when (GrantType.CLIENT_CREDENTIALS) {
+                tokenRequest.grantType() -> tokenRequest.clientIdAsString()
+                else -> subject
+            }
         }
 
-    override fun tokenExpiry(): Long = expiry
-}
+        override fun typeHeader(tokenRequest: TokenRequest): String {
+            return typeHeader
+        }
+
+        override fun audience(tokenRequest: TokenRequest): List<String> {
+            val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
+            return when {
+                audience != null -> audience
+                audienceParam != null -> audienceParam
+                tokenRequest.scope != null -> tokenRequest.scopesWithoutOidcScopes()
+                else -> listOf("default")
+            }
+        }
+
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
+            mutableMapOf<String, Any>(
+                "tid" to issuerId,
+            ).apply {
+                putAll(claims)
+                put("azp", tokenRequest.clientIdAsString())
+            }
+
+        override fun tokenExpiry(): Long = expiry
+    }
 
 data class RequestMappingTokenCallback(
     val issuerId: String,
@@ -94,54 +90,14 @@ data class RequestMappingTokenCallback(
 
     private fun List<RequestMapping>.getClaims(tokenRequest: TokenRequest): Map<String, Any> {
         val claims = firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
+        val templateParams = tokenRequest.toHTTPRequest().bodyAsFormParameters.mapValues { it.value.joinToString(separator = " ") }
 
-        // TODO: hack choose first element. Rewrite to support multiple elements and custom objects
-        val params = (tokenRequest.toHTTPRequest().bodyAsFormParameters.map {
-            it.key to it.value.first()
-        }).toMap() + mapOf("clientId" to tokenRequest.clientIdAsString())
-
-        return claims.mapValues { (_, value) ->
-            val v = objectMapper.writeValueAsString(value)
-            val jsonElement = Json.parseToJsonElement(v)
-            when (jsonElement) {
-                is JsonPrimitive ->
-                    if (jsonElement.isString) {
-                        replaceVariables(jsonElement.content, params)
-                    } else {
-                        jsonElement.content
-                    }
-
-                is JsonObject -> {
-                    jsonElement.mapValues { (_, value) ->
-                        if (value is JsonPrimitive) {
-                            replaceVariables(value.content, params)
-                        } else if (value is JsonArray)
-                            value.map { element ->
-                                if (element is JsonPrimitive) {
-                                    replaceVariables(element.content, params)
-                                } else {
-                                    element
-                                }
-                            }
-                        else {
-                            value
-                        }
-                    }
-                }
-
-                is JsonArray -> {
-                    jsonElement.map { element ->
-                        if (element is JsonPrimitive) {
-                            replaceVariables(element.content, params)
-                        } else {
-                            element
-                        }
-                    }
-                }
-
-                else -> value
-            }
-        }
+        // in case client_id is not set as form param but as basic auth, we add it to the template params in two different formats for backwards compatibility
+        return claims.replaceValues(
+            templateParams +
+                mapOf("clientId" to tokenRequest.clientIdAsString()) +
+                mapOf("client_id" to tokenRequest.clientIdAsString()),
+        )
     }
 
     private inline fun <reified T> List<RequestMapping>.getClaimOrNull(
@@ -150,15 +106,6 @@ data class RequestMappingTokenCallback(
     ): T? = getClaims(tokenRequest)[key] as? T
 
     private fun List<RequestMapping>.getTypeHeader(tokenRequest: TokenRequest) = firstOrNull { it.isMatch(tokenRequest) }?.typeHeader ?: JOSEObjectType.JWT.type
-
-    private fun replaceVariables(
-        input: String,
-        replacements: Map<String, String>,
-    ): String {
-        return replacements.entries.fold(input) { acc, (key, value) ->
-            acc.replace("\${$key}", value)
-        }
-    }
 }
 
 data class RequestMapping(
