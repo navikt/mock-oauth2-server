@@ -124,6 +124,73 @@ internal class OAuth2TokenCallbackTest {
                 issuer1.typeHeader(grantTypeShouldMatch) shouldBe "JWT"
             }
         }
+
+        @Test
+        fun `token request with custom parameters in token request should include claims with placeholder names`() {
+            val request =
+                clientCredentialsRequest(
+                    "scope" to "testscope:something another:scope",
+                    "mock_token_type" to "custom",
+                )
+            RequestMappingTokenCallback(
+                issuerId = "issuer1",
+                requestMappings =
+                    listOf(
+                        RequestMapping(
+                            requestParam = "scope",
+                            match = "testscope:.*",
+                            claims =
+                                mapOf(
+                                    "sub" to "\${clientId}",
+                                    "scope" to "\${scope}",
+                                    "mock_token_type" to "\${mock_token_type}",
+                                ),
+                        ),
+                    ),
+            ).addClaims(request).asClue {
+                it shouldContainAll mapOf("sub" to clientId, "scope" to "testscope:something another:scope", "mock_token_type" to "custom")
+            }
+        }
+    }
+
+    @Test
+    fun `token request with custom parameters in token request should include claims with placeholder names`() {
+        val request =
+            clientCredentialsRequest(
+                "mock_token_type" to "custom",
+                "participantId" to "participantId",
+                "actAs" to "actAs",
+                "readAs" to "readAs",
+            )
+        RequestMappingTokenCallback(
+            issuerId = "issuer1",
+            requestMappings =
+                listOf(
+                    RequestMapping(
+                        requestParam = "mock_token_type",
+                        match = "custom",
+                        claims =
+                            mapOf(
+                                "https://daml.com/ledger-api" to
+                                    mapOf(
+                                        "participantId" to "\${participantId}",
+                                        "actAs" to listOf("\${actAs}"),
+                                        "readAs" to listOf("\${readAs}"),
+                                    ),
+                            ),
+                    ),
+                ),
+        ).addClaims(request).asClue {
+            it shouldContainAll
+                mapOf(
+                    "https://daml.com/ledger-api" to
+                        mapOf(
+                            "participantId" to "participantId",
+                            "actAs" to listOf("actAs"),
+                            "readAs" to listOf("readAs"),
+                        ),
+                )
+        }
     }
 
     @Nested

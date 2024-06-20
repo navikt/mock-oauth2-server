@@ -5,6 +5,7 @@ import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
+import no.nav.security.mock.oauth2.extensions.replaceValues
 import no.nav.security.mock.oauth2.extensions.scopesWithoutOidcScopes
 import no.nav.security.mock.oauth2.extensions.tokenExchangeGrantOrNull
 import java.time.Duration
@@ -89,27 +90,14 @@ data class RequestMappingTokenCallback(
 
     private fun List<RequestMapping>.getClaims(tokenRequest: TokenRequest): Map<String, Any> {
         val claims = firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
-        val customParameters = tokenRequest.customParameters.mapValues { (_, value) -> value.first() }
-        val variables =
-            if (tokenRequest.grantType() == GrantType.CLIENT_CREDENTIALS) {
-                customParameters + ("clientId" to tokenRequest.clientIdAsString())
-            } else {
-                customParameters
-            }
-        return claims.mapValues { (_, value) ->
-            when (value) {
-                is String -> replaceVariables(value, variables)
-                is List<*> ->
-                    value.map { v ->
-                        if (v is String) {
-                            replaceVariables(v, variables)
-                        } else {
-                            v
-                        }
-                    }
-                else -> value
-            }
-        }
+        val templateParams = tokenRequest.toHTTPRequest().bodyAsFormParameters.mapValues { it.value.joinToString(separator = " ") }
+
+        // in case client_id is not set as form param but as basic auth, we add it to the template params in two different formats for backwards compatibility
+        return claims.replaceValues(
+            templateParams +
+                mapOf("clientId" to tokenRequest.clientIdAsString()) +
+                mapOf("client_id" to tokenRequest.clientIdAsString()),
+        )
     }
 
     private inline fun <reified T> List<RequestMapping>.getClaimOrNull(
@@ -118,18 +106,6 @@ data class RequestMappingTokenCallback(
     ): T? = getClaims(tokenRequest)[key] as? T
 
     private fun List<RequestMapping>.getTypeHeader(tokenRequest: TokenRequest) = firstOrNull { it.isMatch(tokenRequest) }?.typeHeader ?: JOSEObjectType.JWT.type
-
-    private fun replaceVariables(
-        input: String,
-        replacements: Map<String, String>,
-    ): String {
-        val pattern = Regex("""\$\{(\w+)}""")
-        return pattern.replace(input) { result ->
-            val variableName = result.groupValues[1]
-            val replacement = replacements[variableName]
-            replacement ?: result.value
-        }
-    }
 }
 
 data class RequestMapping(
