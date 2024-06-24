@@ -13,9 +13,9 @@ val kotlinVersion = "2.0.0"
 val freemarkerVersion = "2.3.33"
 val kotestVersion = "5.9.1"
 val bouncyCastleVersion = "1.78.1"
-val springBootVersion = "3.3.0"
+val springBootVersion = "3.3.1"
 val reactorTestVersion = "3.6.7"
-val ktorVersion = "2.3.11"
+val ktorVersion = "2.3.12"
 val jsonPathVersion = "2.9.0"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
@@ -26,7 +26,7 @@ plugins {
     kotlin("jvm") version "2.0.0"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.51.0"
-    id("org.jmailen.kotlinter") version "4.3.0"
+    id("org.jmailen.kotlinter") version "4.4.0"
     id("com.google.cloud.tools.jib") version "3.4.3"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.0.2"
@@ -124,7 +124,7 @@ dependencies {
 
 configurations {
    all {
-        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:6.6.2")
+        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:7.0.0")
     }
 }
 
