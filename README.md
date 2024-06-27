@@ -89,12 +89,18 @@ A request to `http://localhost:8080/default/.well-known/openid-configuration` wi
    "jwks_uri":"http://localhost:8080/default/jwks",
    "introspection_endpoint":"http://localhost:8080/default/introspect",
    "response_types_supported":[
-      "query",
-      "fragment",
-      "form_post"
+     "code",
+     "none",
+     "id_token",
+     "token"
+   ],
+   "response_modes_supported":[
+     "query",
+     "fragment",
+     "form_post"
    ],
    "subject_types_supported":[
-      "public"
+     "public"
    ],
    "id_token_signing_alg_values_supported":[
      "ES256",
@@ -106,10 +112,10 @@ A request to `http://localhost:8080/default/.well-known/openid-configuration` wi
      "PS384",
      "PS512"
    ],
-  "code_challenge_methods_supported":[
-      "plain", 
-      "S256" 
-  ]
+   "code_challenge_methods_supported":[
+     "plain", 
+     "S256" 
+   ]
 }
 ```
 
