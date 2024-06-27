@@ -67,7 +67,9 @@ data class WellKnown(
     @JsonProperty("introspection_endpoint")
     val introspectionEndpoint: String,
     @JsonProperty("response_types_supported")
-    val responseTypesSupported: List<String> = listOf("query", "fragment", "form_post"),
+    val responseTypesSupported: List<String> = listOf("code", "none", "id_token", "token"),
+    @JsonProperty("response_modes_supported")
+    val responseModesSupported: List<String> = listOf("query", "fragment", "form_post"),
     @JsonProperty("subject_types_supported")
     val subjectTypesSupported: List<String> = listOf("public"),
     @JsonProperty("id_token_signing_alg_values_supported")
