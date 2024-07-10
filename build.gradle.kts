@@ -1,20 +1,20 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 
-val assertjVersion = "3.26.0"
+val assertjVersion = "3.26.3"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.5.6"
 val nimbusSdkVersion = "11.13"
 val mockWebServerVersion = "4.12.0"
-val jacksonVersion = "2.17.1"
+val jacksonVersion = "2.17.2"
 val nettyVersion = "4.1.111.Final"
-val junitJupiterVersion = "5.10.2"
+val junitJupiterVersion = "5.10.3"
 val kotlinVersion = "2.0.0"
 val freemarkerVersion = "2.3.33"
 val kotestVersion = "5.9.1"
 val bouncyCastleVersion = "1.78.1"
 val springBootVersion = "3.3.1"
-val reactorTestVersion = "3.6.7"
+val reactorTestVersion = "3.6.8"
 val ktorVersion = "2.3.12"
 val jsonPathVersion = "2.9.0"
 
