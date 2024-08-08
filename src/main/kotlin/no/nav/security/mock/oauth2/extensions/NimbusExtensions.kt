@@ -116,7 +116,8 @@ fun ClientAuthentication.requirePrivateKeyJwt(
                 it.clientAssertion.expiresIn() > maxLifetimeSeconds -> {
                     invalidRequest("invalid client_assertion: client_assertion expiry is too long( should be < $maxLifetimeSeconds)")
                 }
-                !it.clientAssertion.jwtClaimsSet.audience.contains(requiredAudience) -> {
+                !it.clientAssertion.jwtClaimsSet.audience
+                    .contains(requiredAudience) -> {
                     invalidRequest("invalid client_assertion: client_assertion must contain required audience '$requiredAudience'")
                 }
                 else -> it

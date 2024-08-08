@@ -29,17 +29,18 @@ class UserInfoIntegrationTest {
         withMockOAuth2Server {
             val issuerId = "default"
             val token = this.issueToken(issuerId = issuerId, subject = "foo", claims = mapOf("extra" to "bar"))
-            client.get(
-                url = this.userInfoUrl(issuerId),
-                headers = token.asBearerTokenHeader(),
-            ).asClue {
-                it.parse<Map<String, Any>>() shouldContainAll
-                    mapOf(
-                        "sub" to token.claims["sub"],
-                        "iss" to token.claims["iss"],
-                        "extra" to token.claims["extra"],
-                    )
-            }
+            client
+                .get(
+                    url = this.userInfoUrl(issuerId),
+                    headers = token.asBearerTokenHeader(),
+                ).asClue {
+                    it.parse<Map<String, Any>>() shouldContainAll
+                        mapOf(
+                            "sub" to token.claims["sub"],
+                            "iss" to token.claims["iss"],
+                            "extra" to token.claims["extra"],
+                        )
+                }
         }
     }
 
@@ -49,17 +50,18 @@ class UserInfoIntegrationTest {
             val issuerId = "default"
             val token = this.issueToken(issuerId = issuerId, subject = "foo", claims = mapOf("extra" to "bar"))
             token.header.algorithm.shouldBe(JWSAlgorithm.RS384)
-            client.get(
-                url = this.userInfoUrl(issuerId),
-                headers = token.asBearerTokenHeader(),
-            ).asClue {
-                it.parse<Map<String, Any>>() shouldContainAll
-                    mapOf(
-                        "sub" to token.claims["sub"],
-                        "iss" to token.claims["iss"],
-                        "extra" to token.claims["extra"],
-                    )
-            }
+            client
+                .get(
+                    url = this.userInfoUrl(issuerId),
+                    headers = token.asBearerTokenHeader(),
+                ).asClue {
+                    it.parse<Map<String, Any>>() shouldContainAll
+                        mapOf(
+                            "sub" to token.claims["sub"],
+                            "iss" to token.claims["iss"],
+                            "extra" to token.claims["extra"],
+                        )
+                }
         }
     }
 
@@ -69,13 +71,14 @@ class UserInfoIntegrationTest {
         val rs384Server = MockOAuth2Server(config = rs384Config)
         val token = rs384Server.issueToken(issuerId = issuerId, subject = "foo", claims = mapOf("extra" to "bar"))
         withMockOAuth2Server {
-            client.get(
-                url = this.userInfoUrl(issuerId),
-                headers = token.asBearerTokenHeader(),
-            ).asClue {
-                it.code shouldBe 401
-                it.message shouldBe "Client Error"
-            }
+            client
+                .get(
+                    url = this.userInfoUrl(issuerId),
+                    headers = token.asBearerTokenHeader(),
+                ).asClue {
+                    it.code shouldBe 401
+                    it.message shouldBe "Client Error"
+                }
         }
     }
 

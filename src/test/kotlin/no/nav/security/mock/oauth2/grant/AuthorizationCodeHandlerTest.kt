@@ -31,7 +31,8 @@ internal class AuthorizationCodeHandlerTest {
     @Test
     fun `authorization code response should contain required parameters`() {
         with(
-            "http://authorizationendpoint".toHttpUrl()
+            "http://authorizationendpoint"
+                .toHttpUrl()
                 .authenticationRequest(
                     state = "mystate",
                     redirectUri = "http://redirect",
@@ -122,8 +123,8 @@ internal class AuthorizationCodeHandlerTest {
     private fun tokenRequest(
         code: String,
         redirectUri: String = "http://redirect",
-    ): OAuth2HttpRequest {
-        return OAuth2HttpRequest(
+    ): OAuth2HttpRequest =
+        OAuth2HttpRequest(
             headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
             method = "POST",
             originalUrl = "http://localhost/token".toHttpUrl(),
@@ -134,5 +135,4 @@ internal class AuthorizationCodeHandlerTest {
                     "code=$code&" +
                     "redirect_uri=$redirectUri&",
         )
-    }
 }

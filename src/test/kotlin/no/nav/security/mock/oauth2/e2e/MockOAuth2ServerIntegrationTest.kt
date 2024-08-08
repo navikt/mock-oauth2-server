@@ -109,23 +109,25 @@ class MockOAuth2ServerIntegrationTest {
             ),
         )
 
-        client.post(
-            server.tokenEndpointUrl("custom"),
-            mapOf(
-                "client_id" to "client1",
-                "client_secret" to "secret",
-                "grant_type" to "authorization_code",
-                "redirect_uri" to "http://mycallback",
-                "code" to "1234",
-            ),
-        ).toTokenResponse().asClue {
-            it.idToken.shouldNotBeNull()
-            it.idToken.subject shouldBe "yolo"
-            it.idToken.audience shouldBe listOf("client1")
-            it.accessToken.shouldNotBeNull()
-            it.accessToken.subject shouldBe "yolo"
-            it.accessToken.audience shouldBe listOf("myaud")
-        }
+        client
+            .post(
+                server.tokenEndpointUrl("custom"),
+                mapOf(
+                    "client_id" to "client1",
+                    "client_secret" to "secret",
+                    "grant_type" to "authorization_code",
+                    "redirect_uri" to "http://mycallback",
+                    "code" to "1234",
+                ),
+            ).toTokenResponse()
+            .asClue {
+                it.idToken.shouldNotBeNull()
+                it.idToken.subject shouldBe "yolo"
+                it.idToken.audience shouldBe listOf("client1")
+                it.accessToken.shouldNotBeNull()
+                it.accessToken.subject shouldBe "yolo"
+                it.accessToken.audience shouldBe listOf("myaud")
+            }
         server.shutdown()
     }
 
@@ -191,21 +193,24 @@ class MockOAuth2ServerIntegrationTest {
     @Test
     fun `token request matching RequestMappingTokenCallback should return configured claims`() {
         val server = MockOAuth2Server(OAuth2Config.fromJson(configJson)).apply { start() }
-        client.tokenRequest(
-            server.tokenEndpointUrl("issuer1"),
-            "client1" to "secret",
-            mapOf(
-                "grant_type" to "client_credentials",
-                "scope" to "scope1",
-            ),
-        ).toTokenResponse().accessToken.asClue {
-            it.shouldNotBeNull()
-            it.claims shouldContainAll
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl("issuer1"),
+                "client1" to "secret",
                 mapOf(
-                    "sub" to "subByScope",
-                    "aud" to listOf("audByScope"),
-                )
-        }
+                    "grant_type" to "client_credentials",
+                    "scope" to "scope1",
+                ),
+            ).toTokenResponse()
+            .accessToken
+            .asClue {
+                it.shouldNotBeNull()
+                it.claims shouldContainAll
+                    mapOf(
+                        "sub" to "subByScope",
+                        "aud" to listOf("audByScope"),
+                    )
+            }
     }
 
     private infix fun WellKnown.urlsShouldStartWith(url: String) {

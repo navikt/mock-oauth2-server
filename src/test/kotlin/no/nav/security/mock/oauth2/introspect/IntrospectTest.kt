@@ -132,8 +132,8 @@ internal class IntrospectTest {
         url: String,
         token: String?,
         auth: String = "Basic user=password",
-    ): OAuth2HttpRequest {
-        return OAuth2HttpRequest(
+    ): OAuth2HttpRequest =
+        OAuth2HttpRequest(
             Headers.headersOf(
                 "Authorization",
                 auth,
@@ -146,5 +146,4 @@ internal class IntrospectTest {
             url.toHttpUrl(),
             body = token?.let { "token=$it&token_type_hint=access_token" },
         )
-    }
 }

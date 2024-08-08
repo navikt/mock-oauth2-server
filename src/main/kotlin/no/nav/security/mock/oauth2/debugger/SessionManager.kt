@@ -18,8 +18,10 @@ private val log = KotlinLogging.logger { }
 
 class SessionManager {
     private val encryptionKey: SecretKey =
-        KeyGenerator.getInstance("AES")
-            .apply { this.init(128) }.generateKey()
+        KeyGenerator
+            .getInstance("AES")
+            .apply { this.init(128) }
+            .generateKey()
 
     fun session(request: OAuth2HttpRequest): Session = Session(encryptionKey, request)
 
@@ -52,9 +54,12 @@ class SessionManager {
             }.serialize()
 
         private fun String.decrypt(key: SecretKey): String =
-            JWEObject.parse(this).also {
-                it.decrypt(DirectDecrypter(key))
-            }.payload.toString()
+            JWEObject
+                .parse(this)
+                .also {
+                    it.decrypt(DirectDecrypter(key))
+                }.payload
+                .toString()
 
         private fun getSessionCookie(): String? =
             runCatching {

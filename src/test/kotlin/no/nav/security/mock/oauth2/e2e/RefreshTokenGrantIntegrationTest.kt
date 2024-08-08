@@ -38,15 +38,16 @@ class RefreshTokenGrantIntegrationTest {
             // make token request with the refresh_token grant
             val refreshToken = checkNotNull(tokenResponseBeforeRefresh.refreshToken)
             val refreshTokenResponse =
-                client.tokenRequest(
-                    this.tokenEndpointUrl(issuerId),
-                    mapOf(
-                        "grant_type" to GrantType.REFRESH_TOKEN.value,
-                        "refresh_token" to refreshToken,
-                        "client_id" to "id",
-                        "client_secret" to "secret",
-                    ),
-                ).toTokenResponse()
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.REFRESH_TOKEN.value,
+                            "refresh_token" to refreshToken,
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                        ),
+                    ).toTokenResponse()
 
             refreshTokenResponse.asClue {
                 it shouldBeValidFor GrantType.REFRESH_TOKEN
@@ -74,15 +75,16 @@ class RefreshTokenGrantIntegrationTest {
             // make token request with the refresh_token grant
             val refreshToken = checkNotNull(tokenResponseBeforeRefresh.refreshToken)
             val refreshTokenResponse =
-                client.tokenRequest(
-                    this.tokenEndpointUrl(issuerId),
-                    mapOf(
-                        "grant_type" to GrantType.REFRESH_TOKEN.value,
-                        "refresh_token" to refreshToken,
-                        "client_id" to "id",
-                        "client_secret" to "secret",
-                    ),
-                ).toTokenResponse()
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.REFRESH_TOKEN.value,
+                            "refresh_token" to refreshToken,
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                        ),
+                    ).toTokenResponse()
 
             refreshTokenResponse.asClue {
                 it shouldBeValidFor GrantType.REFRESH_TOKEN
@@ -102,15 +104,16 @@ class RefreshTokenGrantIntegrationTest {
             this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = expectedSubject))
 
             val refreshTokenResponse =
-                client.tokenRequest(
-                    this.tokenEndpointUrl(issuerId),
-                    mapOf(
-                        "grant_type" to GrantType.REFRESH_TOKEN.value,
-                        "refresh_token" to "canbewhatever",
-                        "client_id" to "id",
-                        "client_secret" to "secret",
-                    ),
-                ).toTokenResponse()
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.REFRESH_TOKEN.value,
+                            "refresh_token" to "canbewhatever",
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                        ),
+                    ).toTokenResponse()
 
             refreshTokenResponse shouldBeValidFor GrantType.REFRESH_TOKEN
             refreshTokenResponse.idToken!!.subject shouldBe expectedSubject
@@ -122,15 +125,16 @@ class RefreshTokenGrantIntegrationTest {
         withMockOAuth2Server {
             val issuerId = "idprovider"
             val refreshTokenResponse =
-                client.tokenRequest(
-                    this.tokenEndpointUrl(issuerId),
-                    mapOf(
-                        "grant_type" to GrantType.REFRESH_TOKEN.value,
-                        "refresh_token" to "canbewhatever",
-                        "client_id" to "id",
-                        "client_secret" to "secret",
-                    ),
-                ).toTokenResponse()
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.REFRESH_TOKEN.value,
+                            "refresh_token" to "canbewhatever",
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                        ),
+                    ).toTokenResponse()
 
             refreshTokenResponse shouldBeValidFor GrantType.REFRESH_TOKEN
             refreshTokenResponse.idToken!!.subject shouldNotBe null
@@ -145,27 +149,29 @@ class RefreshTokenGrantIntegrationTest {
         // Authenticate using Authorization Code Flow
         // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
         val authorizationCode =
-            client.post(
-                this.authorizationEndpointUrl("default").authenticationRequest(),
-                mapOf("username" to initialSubject),
-            ).let { authResponse ->
-                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
-            }
+            client
+                .post(
+                    this.authorizationEndpointUrl("default").authenticationRequest(),
+                    mapOf("username" to initialSubject),
+                ).let { authResponse ->
+                    authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
 
         authorizationCode.shouldNotBeNull()
 
         // Token Request based on authorization code
         val tokenResponseBeforeRefresh =
-            client.tokenRequest(
-                this.tokenEndpointUrl(issuerId),
-                mapOf(
-                    "grant_type" to GrantType.AUTHORIZATION_CODE.value,
-                    "code" to authorizationCode,
-                    "client_id" to "id",
-                    "client_secret" to "secret",
-                    "redirect_uri" to "http://something",
-                ),
-            ).toTokenResponse()
+            client
+                .tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                        "code" to authorizationCode,
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                        "redirect_uri" to "http://something",
+                    ),
+                ).toTokenResponse()
 
         tokenResponseBeforeRefresh.idToken?.subject shouldBe initialSubject
         tokenResponseBeforeRefresh.accessToken?.subject shouldBe initialSubject

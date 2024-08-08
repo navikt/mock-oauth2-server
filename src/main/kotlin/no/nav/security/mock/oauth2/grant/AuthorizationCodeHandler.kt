@@ -93,17 +93,19 @@ internal class AuthorizationCodeHandler(
     private fun getLoginTokenCallbackOrDefault(
         code: AuthorizationCode,
         OAuth2TokenCallback: OAuth2TokenCallback,
-    ): OAuth2TokenCallback {
-        return takeLoginFromCache(code)?.let {
+    ): OAuth2TokenCallback =
+        takeLoginFromCache(code)?.let {
             LoginOAuth2TokenCallback(it, OAuth2TokenCallback)
         } ?: OAuth2TokenCallback
-    }
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
 
     private fun takeAuthenticationRequestFromCache(code: AuthorizationCode): AuthenticationRequest? = codeToAuthRequestCache.remove(code)
 
-    private class LoginOAuth2TokenCallback(val login: Login, val oAuth2TokenCallback: OAuth2TokenCallback) : OAuth2TokenCallback {
+    private class LoginOAuth2TokenCallback(
+        val login: Login,
+        val oAuth2TokenCallback: OAuth2TokenCallback,
+    ) : OAuth2TokenCallback {
         override fun issuerId(): String = oAuth2TokenCallback.issuerId()
 
         override fun subject(tokenRequest: TokenRequest): String = login.username
@@ -116,7 +118,8 @@ internal class AuthorizationCodeHandler(
             oAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
                 login.claims?.let {
                     try {
-                        jsonMapper.readTree(it)
+                        jsonMapper
+                            .readTree(it)
                             .fields()
                             .forEach { field ->
                                 put(field.key, jsonMapper.readValue(field.value.toString()))

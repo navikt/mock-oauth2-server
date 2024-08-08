@@ -44,16 +44,17 @@ class JwtBearerGrantIntegrationTest {
                 )
             val issuerId = "aad"
             val response: ParsedTokenResponse =
-                client.tokenRequest(
-                    url = this.tokenEndpointUrl(issuerId),
-                    basicAuth = Pair("client1", "secret"),
-                    parameters =
-                        mapOf(
-                            "grant_type" to GrantType.JWT_BEARER.value,
-                            "scope" to "scope1",
-                            "assertion" to initialToken.serialize(),
-                        ),
-                ).toTokenResponse()
+                client
+                    .tokenRequest(
+                        url = this.tokenEndpointUrl(issuerId),
+                        basicAuth = Pair("client1", "secret"),
+                        parameters =
+                            mapOf(
+                                "grant_type" to GrantType.JWT_BEARER.value,
+                                "scope" to "scope1",
+                                "assertion" to initialToken.serialize(),
+                            ),
+                    ).toTokenResponse()
 
             response shouldBeValidFor GrantType.JWT_BEARER
             response.scope shouldContain "scope1"
@@ -97,15 +98,16 @@ class JwtBearerGrantIntegrationTest {
             this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, audience = emptyList()))
 
             val response: ParsedTokenResponse =
-                client.tokenRequest(
-                    url = this.tokenEndpointUrl(issuerId),
-                    basicAuth = Pair("client1", "secret"),
-                    parameters =
-                        mapOf(
-                            "grant_type" to GrantType.JWT_BEARER.value,
-                            "assertion" to initialToken.serialize(),
-                        ),
-                ).toTokenResponse()
+                client
+                    .tokenRequest(
+                        url = this.tokenEndpointUrl(issuerId),
+                        basicAuth = Pair("client1", "secret"),
+                        parameters =
+                            mapOf(
+                                "grant_type" to GrantType.JWT_BEARER.value,
+                                "assertion" to initialToken.serialize(),
+                            ),
+                    ).toTokenResponse()
 
             response shouldBeValidFor GrantType.JWT_BEARER
             response.scope shouldContain "ascope"

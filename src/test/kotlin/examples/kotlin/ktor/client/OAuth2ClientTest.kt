@@ -35,8 +35,17 @@ internal class OAuth2ClientTest {
                 )
 
             tokenResponse.asClue {
-                it.body<TokenResponse>().accessToken.asDecodedJWT().subject shouldBe "client1"
-                it.body<TokenResponse>().accessToken.asDecodedJWT().audience.shouldContainExactly("targetScope")
+                it
+                    .body<TokenResponse>()
+                    .accessToken
+                    .asDecodedJWT()
+                    .subject shouldBe "client1"
+                it
+                    .body<TokenResponse>()
+                    .accessToken
+                    .asDecodedJWT()
+                    .audience
+                    .shouldContainExactly("targetScope")
             }
         }
     }
@@ -60,8 +69,17 @@ internal class OAuth2ClientTest {
                 )
 
             tokenResponse.asClue {
-                it.body<TokenResponse>().accessToken.asDecodedJWT().subject shouldBe "enduser"
-                it.body<TokenResponse>().accessToken.asDecodedJWT().audience.shouldContainExactly("targetScope")
+                it
+                    .body<TokenResponse>()
+                    .accessToken
+                    .asDecodedJWT()
+                    .subject shouldBe "enduser"
+                it
+                    .body<TokenResponse>()
+                    .accessToken
+                    .asDecodedJWT()
+                    .audience
+                    .shouldContainExactly("targetScope")
             }
         }
     }

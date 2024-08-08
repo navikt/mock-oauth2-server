@@ -25,49 +25,52 @@ class CorsHeadersIntegrationTest {
     @Test
     fun `preflight response should allow specific origin, methods and headers`() {
         withMockOAuth2Server {
-            client.options(
-                this.baseUrl(),
-                Headers.headersOf(
-                    "origin",
-                    origin,
-                    ACCESS_CONTROL_REQUEST_HEADERS,
-                    "X-MY-HEADER",
-                ),
-            ).asClue {
-                it.code shouldBe 204
-                it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
-                it.headers[ACCESS_CONTROL_ALLOW_METHODS] shouldBe "POST, GET, OPTIONS"
-                it.headers[ACCESS_CONTROL_ALLOW_HEADERS] shouldBe "X-MY-HEADER"
-                it.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
-            }
+            client
+                .options(
+                    this.baseUrl(),
+                    Headers.headersOf(
+                        "origin",
+                        origin,
+                        ACCESS_CONTROL_REQUEST_HEADERS,
+                        "X-MY-HEADER",
+                    ),
+                ).asClue {
+                    it.code shouldBe 204
+                    it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
+                    it.headers[ACCESS_CONTROL_ALLOW_METHODS] shouldBe "POST, GET, OPTIONS"
+                    it.headers[ACCESS_CONTROL_ALLOW_HEADERS] shouldBe "X-MY-HEADER"
+                    it.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
+                }
         }
     }
 
     @Test
     fun `wellknown response should allow origin`() {
         withMockOAuth2Server {
-            client.get(
-                this.wellKnownUrl("issuer"),
-                Headers.headersOf("origin", origin),
-            ).asClue {
-                it.code shouldBe 200
-                it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
-                it.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
-            }
+            client
+                .get(
+                    this.wellKnownUrl("issuer"),
+                    Headers.headersOf("origin", origin),
+                ).asClue {
+                    it.code shouldBe 200
+                    it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
+                    it.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
+                }
         }
     }
 
     @Test
     fun `jwks response should allow all origins`() {
         withMockOAuth2Server {
-            client.get(
-                this.jwksUrl("issuer"),
-                Headers.headersOf("origin", origin),
-            ).asClue {
-                it.code shouldBe 200
-                it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
-                it.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
-            }
+            client
+                .get(
+                    this.jwksUrl("issuer"),
+                    Headers.headersOf("origin", origin),
+                ).asClue {
+                    it.code shouldBe 200
+                    it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
+                    it.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
+                }
         }
     }
 

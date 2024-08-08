@@ -54,39 +54,42 @@ class RevocationIntegrationTest {
         // Authenticate using Authorization Code Flow
         // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
         val authorizationCode =
-            client.post(
-                this.authorizationEndpointUrl("default").authenticationRequest(),
-                mapOf("username" to initialSubject),
-            ).let { authResponse ->
-                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
-            }
+            client
+                .post(
+                    this.authorizationEndpointUrl("default").authenticationRequest(),
+                    mapOf("username" to initialSubject),
+                ).let { authResponse ->
+                    authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
 
         authorizationCode.shouldNotBeNull()
 
         // Token Request based on authorization code
-        return client.tokenRequest(
-            this.tokenEndpointUrl(issuerId),
-            mapOf(
-                "grant_type" to GrantType.AUTHORIZATION_CODE.value,
-                "code" to authorizationCode,
-                "client_id" to "id",
-                "client_secret" to "secret",
-                "redirect_uri" to "http://something",
-            ),
-        ).toTokenResponse()
+        return client
+            .tokenRequest(
+                this.tokenEndpointUrl(issuerId),
+                mapOf(
+                    "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                    "code" to authorizationCode,
+                    "client_id" to "id",
+                    "client_secret" to "secret",
+                    "redirect_uri" to "http://something",
+                ),
+            ).toTokenResponse()
     }
 
     private fun MockOAuth2Server.refresh(token: RefreshToken?): ParsedTokenResponse {
         // make token request with the refresh_token grant
         val refreshToken = checkNotNull(token)
-        return client.tokenRequest(
-            this.tokenEndpointUrl(issuerId),
-            mapOf(
-                "grant_type" to GrantType.REFRESH_TOKEN.value,
-                "refresh_token" to refreshToken,
-                "client_id" to "id",
-                "client_secret" to "secret",
-            ),
-        ).toTokenResponse()
+        return client
+            .tokenRequest(
+                this.tokenEndpointUrl(issuerId),
+                mapOf(
+                    "grant_type" to GrantType.REFRESH_TOKEN.value,
+                    "refresh_token" to refreshToken,
+                    "client_id" to "id",
+                    "client_secret" to "secret",
+                ),
+            ).toTokenResponse()
     }
 }

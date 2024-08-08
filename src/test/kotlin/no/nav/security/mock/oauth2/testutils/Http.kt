@@ -40,12 +40,13 @@ fun OkHttpClient.withTrustStore(
     keyStore: KeyStore,
     followRedirects: Boolean = false,
 ): OkHttpClient =
-    newBuilder().apply {
-        followRedirects(followRedirects)
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(keyStore) }
-        val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
-        sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
-    }.build()
+    newBuilder()
+        .apply {
+            followRedirects(followRedirects)
+            val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(keyStore) }
+            val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
+            sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
+        }.build()
 
 fun OkHttpClient.tokenRequest(
     url: HttpUrl,
@@ -57,13 +58,14 @@ fun OkHttpClient.tokenRequest(
     headers: Headers,
     parameters: Map<String, String>,
 ): Response =
-    this.newCall(
-        Request.Builder().post(
-            url = url,
-            headers = headers,
-            parameters = parameters,
-        ),
-    ).execute()
+    this
+        .newCall(
+            Request.Builder().post(
+                url = url,
+                headers = headers,
+                parameters = parameters,
+            ),
+        ).execute()
 
 fun OkHttpClient.tokenRequest(
     url: HttpUrl,
@@ -80,43 +82,47 @@ fun OkHttpClient.post(
     url: HttpUrl,
     parameters: Map<String, String>,
 ): Response =
-    this.newCall(
-        Request.Builder().post(
-            url = url,
-            headers = Headers.headersOf(),
-            parameters = parameters,
-        ),
-    ).execute()
+    this
+        .newCall(
+            Request.Builder().post(
+                url = url,
+                headers = Headers.headersOf(),
+                parameters = parameters,
+            ),
+        ).execute()
 
 fun OkHttpClient.get(
     url: HttpUrl,
     headers: Headers = Headers.headersOf(),
     parameters: Map<String, String> = emptyMap(),
 ): Response =
-    this.newCall(
-        Request.Builder().get(
-            url,
-            headers,
-            parameters,
-        ),
-    ).execute()
+    this
+        .newCall(
+            Request.Builder().get(
+                url,
+                headers,
+                parameters,
+            ),
+        ).execute()
 
 fun OkHttpClient.options(
     url: HttpUrl,
     headers: Headers = Headers.headersOf(),
 ): Response =
-    this.newCall(
-        Request.Builder().options(
-            url,
-            headers,
-        ),
-    ).execute()
+    this
+        .newCall(
+            Request.Builder().options(
+                url,
+                headers,
+            ),
+        ).execute()
 
 fun Request.Builder.get(
     url: HttpUrl,
     headers: Headers = Headers.headersOf(),
     parameters: Map<String, String> = emptyMap(),
-) = this.url(url.of(parameters))
+) = this
+    .url(url.of(parameters))
     .headers(headers)
     .get()
     .build()
@@ -124,7 +130,8 @@ fun Request.Builder.get(
 fun Request.Builder.get(
     url: HttpUrl,
     parameters: Map<String, String>,
-) = this.url(url.of(parameters))
+) = this
+    .url(url.of(parameters))
     .get()
     .build()
 
@@ -132,7 +139,8 @@ fun Request.Builder.post(
     url: HttpUrl,
     headers: Headers,
     parameters: Map<String, String>,
-) = this.url(url)
+) = this
+    .url(url)
     .headers(headers)
     .post(FormBody.Builder().of(parameters))
     .build()
@@ -140,17 +148,21 @@ fun Request.Builder.post(
 fun Request.Builder.options(
     url: HttpUrl,
     headers: Headers = Headers.headersOf(),
-) = this.url(url)
+) = this
+    .url(url)
     .headers(headers)
     .method("OPTIONS", null)
     .build()
 
 fun HttpUrl.of(parameters: Map<String, String>) =
-    this.newBuilder().apply {
-        parameters.forEach { (k, v) -> this.addEncodedQueryParameter(k, URLEncoder.encode(v, "UTF-8")) }
-    }.build()
+    this
+        .newBuilder()
+        .apply {
+            parameters.forEach { (k, v) -> this.addEncodedQueryParameter(k, URLEncoder.encode(v, "UTF-8")) }
+        }.build()
 
 fun FormBody.Builder.of(parameters: Map<String, String>) =
-    this.apply {
-        parameters.forEach { (k, v) -> this.add(k, v) }
-    }.build()
+    this
+        .apply {
+            parameters.forEach { (k, v) -> this.add(k, v) }
+        }.build()

@@ -49,22 +49,32 @@ internal class OAuth2ConfigTest {
         config.loginPagePath shouldBe "./login.html"
         config.httpServer should beInstanceOf<NettyWrapper>()
         config.tokenCallbacks.size shouldBe 2
-        config.tokenCallbacks.map {
-            it.issuerId()
-        }.toList() shouldContainAll listOf("issuer1", "issuer2")
+        config.tokenCallbacks
+            .map {
+                it.issuerId()
+            }.toList() shouldContainAll listOf("issuer1", "issuer2")
     }
 
     @Test
     fun `create tokenProvider with generated signing algorithm EC`() {
         val config = OAuth2Config.fromJson(signingJsonGenerated)
-        config.tokenProvider.publicJwkSet().keys[0].keyType.value shouldBe KeyType.EC.value
+        config.tokenProvider
+            .publicJwkSet()
+            .keys[0]
+            .keyType.value shouldBe KeyType.EC.value
     }
 
     @Test
     fun `create tokenProvider with specified signing algorithm EC`() {
         val config = OAuth2Config.fromJson(signingJsonSpecified)
-        config.tokenProvider.publicJwkSet().keys[0].keyType.value shouldBe KeyType.EC.value
-        config.tokenProvider.publicJwkSet("issuer0").keys[0].keyID shouldBe "issuer0"
+        config.tokenProvider
+            .publicJwkSet()
+            .keys[0]
+            .keyType.value shouldBe KeyType.EC.value
+        config.tokenProvider
+            .publicJwkSet("issuer0")
+            .keys[0]
+            .keyID shouldBe "issuer0"
     }
 
     @Test
@@ -139,9 +149,11 @@ internal class OAuth2ConfigTest {
         }
 
     private fun privateKeyFromFile() =
-        KeyStore.getInstance("PKCS12").apply {
-            File("src/test/resources/localhost.p12").inputStream().use { load(it, "".toCharArray()) }
-        }.getKey("localhost", "".toCharArray())
+        KeyStore
+            .getInstance("PKCS12")
+            .apply {
+                File("src/test/resources/localhost.p12").inputStream().use { load(it, "".toCharArray()) }
+            }.getKey("localhost", "".toCharArray())
 }
 
 object FullConfig {

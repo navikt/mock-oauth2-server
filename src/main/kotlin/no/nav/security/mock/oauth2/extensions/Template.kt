@@ -18,14 +18,13 @@ fun Map<String, Any>.replaceValues(templates: Map<String, Any>): Map<String, Any
         }
     }
 
-    fun replaceValue(value: Any): Any {
-        return when (value) {
+    fun replaceValue(value: Any): Any =
+        when (value) {
             is String -> replaceTemplateString(value, templates)
             is List<*> -> value.map { it?.let { replaceValue(it) } }
             is Map<*, *> -> value.mapValues { v -> v.value?.let { replaceValue(it) } }
             else -> value
         }
-    }
 
     return this.mapValues { replaceValue(it.value) }
 }

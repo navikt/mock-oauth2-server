@@ -60,18 +60,19 @@ class TokenExchangeGrantIntegrationTest {
             val targetAudienceForToken = "targetAudience"
 
             val response: ParsedTokenResponse =
-                client.tokenRequest(
-                    url = tokenEndpointUrl,
-                    parameters =
-                        mapOf(
-                            "grant_type" to TOKEN_EXCHANGE.value,
-                            "client_assertion_type" to ClientAssertionType.JWT_BEARER,
-                            "client_assertion" to clientAssertion,
-                            "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
-                            "subject_token" to initialToken.serialize(),
-                            "audience" to targetAudienceForToken,
-                        ),
-                ).toTokenResponse()
+                client
+                    .tokenRequest(
+                        url = tokenEndpointUrl,
+                        parameters =
+                            mapOf(
+                                "grant_type" to TOKEN_EXCHANGE.value,
+                                "client_assertion_type" to ClientAssertionType.JWT_BEARER,
+                                "client_assertion" to clientAssertion,
+                                "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
+                                "subject_token" to initialToken.serialize(),
+                                "audience" to targetAudienceForToken,
+                            ),
+                    ).toTokenResponse()
 
             response shouldBeValidFor TOKEN_EXCHANGE
             response.scope shouldBe null
@@ -112,17 +113,18 @@ class TokenExchangeGrantIntegrationTest {
             val targetAudienceForToken = "targetAudience"
 
             val response: ParsedTokenResponse =
-                client.tokenRequest(
-                    url = tokenEndpointUrl,
-                    basicAuth = Pair("client", "secret"),
-                    parameters =
-                        mapOf(
-                            "grant_type" to TOKEN_EXCHANGE.value,
-                            "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
-                            "subject_token" to initialToken.serialize(),
-                            "audience" to targetAudienceForToken,
-                        ),
-                ).toTokenResponse()
+                client
+                    .tokenRequest(
+                        url = tokenEndpointUrl,
+                        basicAuth = Pair("client", "secret"),
+                        parameters =
+                            mapOf(
+                                "grant_type" to TOKEN_EXCHANGE.value,
+                                "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
+                                "subject_token" to initialToken.serialize(),
+                                "audience" to targetAudienceForToken,
+                            ),
+                    ).toTokenResponse()
 
             response shouldBeValidFor TOKEN_EXCHANGE
             response.scope shouldBe null
@@ -184,7 +186,8 @@ class TokenExchangeGrantIntegrationTest {
             val tokenEndpointUrl = this.tokenEndpointUrl("tokenx")
 
             val clientAssertion =
-                JWTClaimsSet.Builder()
+                JWTClaimsSet
+                    .Builder()
                     .issuer("clientid")
                     .subject("clientid")
                     .audience("invalid")

@@ -52,22 +52,27 @@ private fun Route.Builder.debuggerForm(sessionManager: SessionManager) =
         get(DEBUGGER) {
             log.debug("handling GET request, return html form")
             val url =
-                it.url.toAuthorizationEndpointUrl().newBuilder().query(
-                    "client_id=debugger" +
-                        "&response_type=code" +
-                        "&redirect_uri=${it.url.toDebuggerCallbackUrl()}" +
-                        "&response_mode=query" +
-                        "&scope=openid+somescope" +
-                        "&state=1234" +
-                        "&nonce=5678",
-                ).build()
+                it.url
+                    .toAuthorizationEndpointUrl()
+                    .newBuilder()
+                    .query(
+                        "client_id=debugger" +
+                            "&response_type=code" +
+                            "&redirect_uri=${it.url.toDebuggerCallbackUrl()}" +
+                            "&response_mode=query" +
+                            "&scope=openid+somescope" +
+                            "&state=1234" +
+                            "&nonce=5678",
+                    ).build()
             html(templateMapper.debuggerFormHtml(url, "CLIENT_SECRET_BASIC"))
         }
         post(DEBUGGER) {
             log.debug("handling POST request, return redirect")
             val authorizeUrl = it.formParameters.get("authorize_url") ?: error("authorize_url is missing")
             val httpUrl =
-                authorizeUrl.toHttpUrl().newBuilder()
+                authorizeUrl
+                    .toHttpUrl()
+                    .newBuilder()
                     .encodedQuery(it.formParameters.parameterString)
                     .removeAllEncodedQueryParams("authorize_url", "token_url", "client_secret", "client_auth_method")
                     .build()

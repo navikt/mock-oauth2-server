@@ -45,8 +45,10 @@ internal class TokenRequest(
             "\n\n$body"
 
     private fun Map<String, String>.toKeyValueString(entrySeparator: String): String =
-        this.map { "${it.key}=${it.value}" }
-            .toList().joinToString(entrySeparator)
+        this
+            .map { "${it.key}=${it.value}" }
+            .toList()
+            .joinToString(entrySeparator)
 }
 
 internal data class ClientAuthentication(
@@ -79,21 +81,26 @@ internal data class ClientAuthentication(
 internal fun String.urlEncode(): String = URLEncoder.encode(this, StandardCharsets.UTF_8)
 
 internal fun OkHttpClient.post(tokenRequest: TokenRequest): String =
-    this.newCall(
-        Request.Builder()
-            .headers(tokenRequest.headers)
-            .url(tokenRequest.url)
-            .post(tokenRequest.body.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
-            .build(),
-    ).execute().body?.string() ?: throw RuntimeException("could not get response body from url=${tokenRequest.url}")
+    this
+        .newCall(
+            Request
+                .Builder()
+                .headers(tokenRequest.headers)
+                .url(tokenRequest.url)
+                .post(tokenRequest.body.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
+                .build(),
+        ).execute()
+        .body
+        ?.string() ?: throw RuntimeException("could not get response body from url=${tokenRequest.url}")
 
 fun OkHttpClient.withSsl(
     ssl: Ssl,
     followRedirects: Boolean = false,
 ): OkHttpClient =
-    newBuilder().apply {
-        followRedirects(followRedirects)
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(ssl.sslKeystore.keyStore) }
-        val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
-        sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
-    }.build()
+    newBuilder()
+        .apply {
+            followRedirects(followRedirects)
+            val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(ssl.sslKeystore.keyStore) }
+            val sslContext = SSLContext.getInstance("TLS").apply { init(null, trustManagerFactory.trustManagers, null) }
+            sslSocketFactory(sslContext.socketFactory, trustManagerFactory.trustManagers[0] as X509TrustManager)
+        }.build()

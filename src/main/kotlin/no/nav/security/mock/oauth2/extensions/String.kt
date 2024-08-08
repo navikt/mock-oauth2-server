@@ -4,7 +4,8 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 internal fun String.keyValuesToMap(listDelimiter: String): Map<String, String> =
-    this.split(listDelimiter)
+    this
+        .split(listDelimiter)
         .filter { it.contains("=") }
         .associate {
             val (key, value) = it.split("=")

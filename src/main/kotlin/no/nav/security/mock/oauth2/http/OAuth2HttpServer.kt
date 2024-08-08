@@ -152,7 +152,8 @@ class NettyWrapper
         ): OAuth2HttpServer =
             apply {
                 val bootstrap = ServerBootstrap()
-                bootstrap.group(masterGroup, workerGroup)
+                bootstrap
+                    .group(masterGroup, workerGroup)
                     .channelFactory(ChannelFactory<ServerChannel> { NioServerSocketChannel() })
                     .childHandler(
                         object : ChannelInitializer<SocketChannel>() {
@@ -167,8 +168,7 @@ class NettyWrapper
                                 ch.pipeline().addLast("routes", RouterChannelHandler(requestHandler))
                             }
                         },
-                    )
-                    .option(ChannelOption.SO_BACKLOG, 1000)
+                    ).option(ChannelOption.SO_BACKLOG, 1000)
                     .childOption(ChannelOption.SO_KEEPALIVE, true)
 
                 val channel = bootstrap.bind(inetAddress, port).sync().channel()
@@ -194,7 +194,8 @@ class NettyWrapper
                 } else {
                     "http"
                 }
-            return HttpUrl.Builder()
+            return HttpUrl
+                .Builder()
                 .scheme(scheme)
                 .host(address.address.hostName)
                 .port(port())
@@ -206,7 +207,9 @@ class NettyWrapper
 
         private fun Ssl.nettySslHandler(): SslHandler = SslHandler(sslEngine())
 
-        internal class RouterChannelHandler(val requestHandler: RequestHandler) : SimpleChannelInboundHandler<FullHttpRequest>() {
+        internal class RouterChannelHandler(
+            val requestHandler: RequestHandler,
+        ) : SimpleChannelInboundHandler<FullHttpRequest>() {
             @Deprecated("Deprecated in ChannelInboundHandlerAdapter")
             override fun exceptionCaught(
                 ctx: ChannelHandlerContext,
@@ -270,7 +273,8 @@ class NettyWrapper
                 address: InetSocketAddress,
                 port: Int,
             ): HttpUrl =
-                HttpUrl.Builder()
+                HttpUrl
+                    .Builder()
                     .scheme(scheme)
                     .host(hostAndPortFromHostHeader()?.first ?: address.hostName)
                     .port(hostAndPortFromHostHeader()?.second ?: port)

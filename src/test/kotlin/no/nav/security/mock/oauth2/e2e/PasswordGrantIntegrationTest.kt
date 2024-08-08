@@ -25,17 +25,18 @@ class PasswordGrantIntegrationTest {
         withMockOAuth2Server {
             val issuerId = "default"
             val response: ParsedTokenResponse =
-                client.tokenRequest(
-                    url = this.tokenEndpointUrl(issuerId),
-                    basicAuth = Pair("client", "secret"),
-                    parameters =
-                        mapOf(
-                            "grant_type" to GrantType.PASSWORD.value,
-                            "scope" to "scope1",
-                            "username" to "foo",
-                            "password" to "bar",
-                        ),
-                ).toTokenResponse()
+                client
+                    .tokenRequest(
+                        url = this.tokenEndpointUrl(issuerId),
+                        basicAuth = Pair("client", "secret"),
+                        parameters =
+                            mapOf(
+                                "grant_type" to GrantType.PASSWORD.value,
+                                "scope" to "scope1",
+                                "username" to "foo",
+                                "password" to "bar",
+                            ),
+                    ).toTokenResponse()
 
             response shouldBeValidFor GrantType.PASSWORD
             response.scope shouldContain "scope1"

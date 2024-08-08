@@ -53,7 +53,9 @@ import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
 
-class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
+class OAuth2HttpRequestHandler(
+    private val config: OAuth2Config,
+) {
     private val loginRequestHandler = LoginRequestHandler(templateMapper, config)
     private val debuggerRequestHandler = DebuggerRequestHandler(ssl = config.httpServer.sslConfig())
     private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
@@ -180,7 +182,10 @@ class OAuth2HttpRequestHandler(private val config: OAuth2Config) {
         apply {
             if (config.staticAssetsPath != null) {
                 get("/static/*") {
-                    val path = it.url.pathSegments.drop(1).joinToString("/")
+                    val path =
+                        it.url.pathSegments
+                            .drop(1)
+                            .joinToString("/")
                     val normalized = Paths.get(path).normalize().toString()
                     val file = File(config.staticAssetsPath, normalized)
 

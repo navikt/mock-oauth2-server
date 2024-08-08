@@ -128,8 +128,8 @@ internal class PathRouter(
     private fun RequestHandler.invokeWith(
         request: OAuth2HttpRequest,
         interceptors: MutableList<Interceptor>,
-    ): OAuth2HttpResponse {
-        return if (interceptors.size > 0) {
+    ): OAuth2HttpResponse =
+        if (interceptors.size > 0) {
             val filteredRequest =
                 interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
                     interceptor.intercept(next)
@@ -143,7 +143,6 @@ internal class PathRouter(
         } else {
             this.invoke(request)
         }
-    }
 
     private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
         log.debug("no route matching url=${request.url} with method=${request.method}")

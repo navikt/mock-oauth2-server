@@ -94,12 +94,18 @@ fun Application.module(authConfig: AuthConfig) {
 
 @Location("/login/{type?}")
 @OptIn(KtorExperimentalLocationsAPI::class)
-class Login(val type: String = "")
+class Login(
+    val type: String = "",
+)
 
 class AuthConfig(
     val providers: List<IdProvider> = emptyList(),
 ) {
-    class IdProvider(val name: String, authorizationEndpoint: String, tokenEndpoint: String) {
+    class IdProvider(
+        val name: String,
+        authorizationEndpoint: String,
+        tokenEndpoint: String,
+    ) {
         val settings =
             OAuthServerSettings.OAuth2ServerSettings(
                 name = name,

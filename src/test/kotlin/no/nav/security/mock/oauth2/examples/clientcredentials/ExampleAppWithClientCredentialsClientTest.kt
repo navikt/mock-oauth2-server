@@ -35,16 +35,19 @@ internal class ExampleAppWithClientCredentialsClientTest {
     @Test
     fun appShouldReturnClientCredentialsAccessTokenWhenInvoked() {
         val response: Response =
-            client.newCall(
-                Request.Builder()
-                    .url(exampleApp.url("/clientcredentials"))
-                    .get()
-                    .build(),
-            ).execute()
+            client
+                .newCall(
+                    Request
+                        .Builder()
+                        .url(exampleApp.url("/clientcredentials"))
+                        .get()
+                        .build(),
+                ).execute()
         assertThat(response.code).isEqualTo(200)
 
         val token: SignedJWT? =
-            response.body?.string()
+            response.body
+                ?.string()
                 ?.split("token=")
                 ?.let { it[1] }
                 ?.let { SignedJWT.parse(it) }

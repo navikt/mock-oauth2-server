@@ -37,13 +37,9 @@ class OAuth2TokenProvider
         ) : this(keyProvider, { systemTime })
 
         @JvmOverloads
-        fun publicJwkSet(issuerId: String = "default"): JWKSet {
-            return JWKSet(keyProvider.signingKey(issuerId)).toPublicJWKSet()
-        }
+        fun publicJwkSet(issuerId: String = "default"): JWKSet = JWKSet(keyProvider.signingKey(issuerId)).toPublicJWKSet()
 
-        fun getAlgorithm(): JWSAlgorithm {
-            return keyProvider.algorithm()
-        }
+        fun getAlgorithm(): JWSAlgorithm = keyProvider.algorithm()
 
         fun idToken(
             tokenRequest: TokenRequest,
@@ -79,7 +75,8 @@ class OAuth2TokenProvider
             claimsSet: JWTClaimsSet,
             oAuth2TokenCallback: OAuth2TokenCallback,
         ) = systemTime.orNow().let { now ->
-            JWTClaimsSet.Builder(claimsSet)
+            JWTClaimsSet
+                .Builder(claimsSet)
                 .issuer(issuerUrl.toString())
                 .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
                 .notBeforeTime(Date.from(now))
@@ -97,15 +94,17 @@ class OAuth2TokenProvider
             expiry: Duration = Duration.ofHours(1),
             issuerId: String = "default",
         ): SignedJWT =
-            JWTClaimsSet.Builder().let { builder ->
-                val now = systemTime.orNow()
-                builder
-                    .issueTime(Date.from(now))
-                    .notBeforeTime(Date.from(now))
-                    .expirationTime(Date.from(now.plusSeconds(expiry.toSeconds())))
-                builder.addClaims(claims)
-                builder.build()
-            }.sign(issuerId, JOSEObjectType.JWT.type)
+            JWTClaimsSet
+                .Builder()
+                .let { builder ->
+                    val now = systemTime.orNow()
+                    builder
+                        .issueTime(Date.from(now))
+                        .notBeforeTime(Date.from(now))
+                        .expirationTime(Date.from(now.plusSeconds(expiry.toSeconds())))
+                    builder.addClaims(claims)
+                    builder.build()
+                }.sign(issuerId, JOSEObjectType.JWT.type)
 
         private fun JWTClaimsSet.sign(
             issuerId: String,
@@ -143,11 +142,12 @@ class OAuth2TokenProvider
             keyId: String,
             type: String,
             algorithm: JWSAlgorithm,
-        ): JWSHeader {
-            return JWSHeader.Builder(algorithm)
+        ): JWSHeader =
+            JWSHeader
+                .Builder(algorithm)
                 .keyID(keyId)
-                .type(JOSEObjectType(type)).build()
-        }
+                .type(JOSEObjectType(type))
+                .build()
 
         private fun JWTClaimsSet.Builder.addClaims(claims: Map<String, Any> = emptyMap()) =
             apply {
@@ -163,7 +163,8 @@ class OAuth2TokenProvider
             expiry: Long,
         ) = JWTClaimsSet.Builder().let { builder ->
             val now = systemTime.orNow()
-            builder.subject(subject)
+            builder
+                .subject(subject)
                 .audience(audience)
                 .issuer(issuerUrl.toString())
                 .issueTime(Date.from(now))

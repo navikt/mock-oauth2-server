@@ -111,9 +111,7 @@ open class MockOAuth2Server(
     @Deprecated("Use MockWebServer method/function instead", ReplaceWith("MockWebServer.enqueue()"))
     fun enqueueResponse(
         @Suppress("UNUSED_PARAMETER") response: MockResponse,
-    ) {
-        throw UnsupportedOperationException("cannot enqueue MockResponse, please use the MockWebServer directly with QueueDispatcher")
-    }
+    ): Unit = throw UnsupportedOperationException("cannot enqueue MockResponse, please use the MockWebServer directly with QueueDispatcher")
 
     /**
      * Enqueues a callback at the server's HTTP request handler.
@@ -328,7 +326,8 @@ open class MockOAuth2Server(
 }
 
 internal fun Map<String, Any>.toJwtClaimsSet(): JWTClaimsSet =
-    JWTClaimsSet.Builder()
+    JWTClaimsSet
+        .Builder()
         .apply {
             this@toJwtClaimsSet.forEach {
                 this.claim(it.key, it.value)

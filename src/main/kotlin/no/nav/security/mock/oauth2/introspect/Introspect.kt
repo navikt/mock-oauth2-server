@@ -63,19 +63,18 @@ private fun OAuth2HttpRequest.verifyToken(tokenProvider: OAuth2TokenProvider): J
     }
 }
 
-private fun Headers.authenticated(): Boolean {
-    return this["Authorization"]?.let { authHeader ->
+private fun Headers.authenticated(): Boolean =
+    this["Authorization"]?.let { authHeader ->
         authHeader.auth("Bearer ")?.isNotEmpty()
             ?: authHeader.auth("Basic ")?.isNotEmpty()
             ?: false
     } ?: false
-}
 
-private fun String.auth(method: String): String? {
-    return this.split(method)
+private fun String.auth(method: String): String? =
+    this
+        .split(method)
         .takeIf { it.size == 2 }
         ?.last()
-}
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class IntrospectResponse(

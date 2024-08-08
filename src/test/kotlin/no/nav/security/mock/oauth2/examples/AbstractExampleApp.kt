@@ -29,7 +29,9 @@ import java.util.HashSet
 
 private val log = KotlinLogging.logger {}
 
-abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
+abstract class AbstractExampleApp(
+    oauth2DiscoveryUrl: String,
+) {
     val oauth2Client: OkHttpClient =
         OkHttpClient()
             .newBuilder()
@@ -45,8 +47,8 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
         exampleApp.start()
         exampleApp.dispatcher =
             object : Dispatcher() {
-                override fun dispatch(request: RecordedRequest): MockResponse {
-                    return runCatching {
+                override fun dispatch(request: RecordedRequest): MockResponse =
+                    runCatching {
                         handleRequest(request)
                     }.fold(
                         onSuccess = { result -> result },
@@ -57,7 +59,6 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
                                 .setBody("unhandled exception with message ${error.message}")
                         },
                     )
-                }
             }
     }
 
@@ -67,16 +68,20 @@ abstract class AbstractExampleApp(oauth2DiscoveryUrl: String) {
 
     fun url(path: String): HttpUrl = exampleApp.url(path)
 
-    fun retrieveJwks(): JWKSet {
-        return oauth2Client.newCall(
-            Request.Builder()
-                .url(metadata.jwkSetURI.toURL())
-                .get()
-                .build(),
-        ).execute().body?.string()?.let {
-            JWKSet.parse(it)
-        } ?: throw RuntimeException("could not retrieve jwks")
-    }
+    fun retrieveJwks(): JWKSet =
+        oauth2Client
+            .newCall(
+                Request
+                    .Builder()
+                    .url(metadata.jwkSetURI.toURL())
+                    .get()
+                    .build(),
+            ).execute()
+            .body
+            ?.string()
+            ?.let {
+                JWKSet.parse(it)
+            } ?: throw RuntimeException("could not retrieve jwks")
 
     fun verifyJwt(
         jwt: String,

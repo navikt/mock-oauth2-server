@@ -68,7 +68,8 @@ class ExampleAppWithOpenIdConnectTest {
                 .newBuilder()
                 .followRedirects(false)
                 .build()
-                .newCall(Request.Builder().url(exampleApp.url("/secured")).build()).execute()
+                .newCall(Request.Builder().url(exampleApp.url("/secured")).build())
+                .execute()
         assertThat(loginResponse.code).isEqualTo(302)
         assertThat(loginResponse.headers["Location"]).isEqualTo(exampleApp.url("/login").toString())
     }

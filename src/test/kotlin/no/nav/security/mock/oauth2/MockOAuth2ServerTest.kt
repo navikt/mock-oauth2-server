@@ -23,15 +23,17 @@ class MockOAuth2ServerTest {
                 it.body.readUtf8() shouldBe "param1=value1"
             }
 
-            client.post(
-                this.tokenEndpointUrl("test"),
-                mapOf(
-                    "client_id" to "client",
-                    "client_secret" to "sec",
-                    "grant_type" to "client_credentials",
-                    "scope" to "scope1",
-                ),
-            ).body?.close()
+            client
+                .post(
+                    this.tokenEndpointUrl("test"),
+                    mapOf(
+                        "client_id" to "client",
+                        "client_secret" to "sec",
+                        "grant_type" to "client_credentials",
+                        "scope" to "scope1",
+                    ),
+                ).body
+                ?.close()
 
             this.takeRequest().asClue {
                 it.requestUrl shouldBe this.tokenEndpointUrl("test")

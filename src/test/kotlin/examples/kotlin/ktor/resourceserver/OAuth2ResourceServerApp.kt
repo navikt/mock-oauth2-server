@@ -127,9 +127,10 @@ class AuthConfig(
 }
 
 internal fun JWTCredential.containsAll(claims: Map<String, Any>): Boolean =
-    claims.filterNot {
-        payload.contains(it.key, it.value)
-    }.isEmpty()
+    claims
+        .filterNot {
+            payload.contains(it.key, it.value)
+        }.isEmpty()
 
 internal fun Payload.contains(
     name: String,

@@ -128,7 +128,8 @@ class Auth internal constructor(
             expiry: Duration = Duration.ofSeconds(120),
         ): String {
             val now = Instant.now()
-            return JWT.create()
+            return JWT
+                .create()
                 .withAudience(tokenEndpoint)
                 .withIssuer(clientId)
                 .withSubject(clientId)
