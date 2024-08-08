@@ -84,10 +84,13 @@ class KeyGeneratorTest {
         algorithm: JWSAlgorithm,
     ): SignedJWT =
         SignedJWT(
-            JWSHeader.Builder(algorithm)
+            JWSHeader
+                .Builder(algorithm)
                 .keyID(keyId)
-                .type(JOSEObjectType(type)).build(),
-            JWTClaimsSet.Builder()
+                .type(JOSEObjectType(type))
+                .build(),
+            JWTClaimsSet
+                .Builder()
                 .issuer(issuer)
                 .subject("test")
                 .issueTime(Date.from(Instant.now()))

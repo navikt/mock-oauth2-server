@@ -32,7 +32,8 @@ data class KeyGenerator(
     ): JWK =
         generateKeyPair()
             .let {
-                ECKey.Builder(toCurve(algorithm), it.public as ECPublicKey)
+                ECKey
+                    .Builder(toCurve(algorithm), it.public as ECPublicKey)
                     .privateKey(it.private as ECPrivateKey)
                     .keyUse(KeyUse.SIGNATURE)
                     .keyID(keyId)
@@ -40,13 +41,12 @@ data class KeyGenerator(
                     .build()
             }
 
-    private fun toCurve(algorithm: JWSAlgorithm): Curve {
-        return requireNotNull(
+    private fun toCurve(algorithm: JWSAlgorithm): Curve =
+        requireNotNull(
             Curve.forJWSAlgorithm(algorithm).single(),
         ) {
             throw OAuth2Exception("Unsupported: $algorithm")
         }
-    }
 
     private fun KeyPairGenerator.generateRSAKey(
         keyId: String,
@@ -54,7 +54,8 @@ data class KeyGenerator(
     ): JWK =
         generateKeyPair()
             .let {
-                RSAKey.Builder(it.public as RSAPublicKey)
+                RSAKey
+                    .Builder(it.public as RSAPublicKey)
                     .privateKey(it.private as RSAPrivateKey)
                     .keyUse(KeyUse.SIGNATURE)
                     .keyID(keyId)
@@ -81,22 +82,28 @@ data class KeyGenerator(
 
         fun generate(algorithm: String): KeyPairGenerator {
             val parsedAlgo = JWSAlgorithm.parse(algorithm)
-            return supportedAlgorithms.mapNotNull {
-                if (it.family.contains(parsedAlgo)) {
-                    KeyGenerator(
-                        parsedAlgo,
-                        KeyPairGenerator.getInstance(it.keyType.value).apply {
-                            if (it.keyType.value != KeyType.RSA.value) {
-                                this.initialize(parsedAlgo.name.subSequence(2, 5).toString().toInt())
-                            } else {
-                                this.initialize(RSAKeyGenerator.MIN_KEY_SIZE_BITS)
-                            }
-                        },
-                    ).keyGenerator
-                } else {
-                    null
-                }
-            }.singleOrNull() ?: throw OAuth2Exception("Unsupported algorithm: $algorithm")
+            return supportedAlgorithms
+                .mapNotNull {
+                    if (it.family.contains(parsedAlgo)) {
+                        KeyGenerator(
+                            parsedAlgo,
+                            KeyPairGenerator.getInstance(it.keyType.value).apply {
+                                if (it.keyType.value != KeyType.RSA.value) {
+                                    this.initialize(
+                                        parsedAlgo.name
+                                            .subSequence(2, 5)
+                                            .toString()
+                                            .toInt(),
+                                    )
+                                } else {
+                                    this.initialize(RSAKeyGenerator.MIN_KEY_SIZE_BITS)
+                                }
+                            },
+                        ).keyGenerator
+                    } else {
+                        null
+                    }
+                }.singleOrNull() ?: throw OAuth2Exception("Unsupported algorithm: $algorithm")
         }
 
         data class Algorithm(

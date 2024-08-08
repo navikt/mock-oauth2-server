@@ -39,7 +39,8 @@ private fun OAuth2HttpRequest.verifyBearerToken(tokenProvider: OAuth2TokenProvid
 }
 
 private fun Headers.bearerToken(): String =
-    this["Authorization"]?.split("Bearer ")
+    this["Authorization"]
+        ?.split("Bearer ")
         ?.takeIf { it.size == 2 }
         ?.last()
         ?: throw invalidToken("missing bearer token")

@@ -111,7 +111,8 @@ private fun HttpUrl.issuer(path: String = ""): HttpUrl =
 private fun joinPaths(vararg path: String) = path.filter { it.isNotEmpty() }.joinToString("/") { it.trimPath() }
 
 private fun HttpUrl.baseUrl(): HttpUrl =
-    HttpUrl.Builder()
+    HttpUrl
+        .Builder()
         .scheme(this.scheme)
         .host(this.host)
         .port(this.port)

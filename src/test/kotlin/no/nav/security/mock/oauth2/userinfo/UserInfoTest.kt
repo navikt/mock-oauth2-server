@@ -96,12 +96,11 @@ internal class UserInfoTest {
     private fun request(
         url: String,
         bearerToken: String?,
-    ): OAuth2HttpRequest {
-        return OAuth2HttpRequest(
+    ): OAuth2HttpRequest =
+        OAuth2HttpRequest(
             bearerToken?.let { Headers.headersOf("Authorization", "Bearer $it") } ?: Headers.headersOf(),
             "GET",
             url.toHttpUrl(),
             null,
         )
-    }
 }

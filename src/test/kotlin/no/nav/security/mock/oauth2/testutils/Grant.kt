@@ -28,8 +28,7 @@ fun HttpUrl.authenticationRequest(
                 addQueryParameter("code_challenge", pkce.challenge.value)
                 addQueryParameter("code_challenge_method", pkce.method.value)
             }
-        }
-        .build()
+        }.build()
 
 data class Pkce(
     val verifier: CodeVerifier = CodeVerifier(),

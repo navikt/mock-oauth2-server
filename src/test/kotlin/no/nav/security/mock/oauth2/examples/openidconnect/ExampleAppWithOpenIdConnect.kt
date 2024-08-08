@@ -14,9 +14,11 @@ import okhttp3.mockwebserver.RecordedRequest
 
 private val log = KotlinLogging.logger {}
 
-class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp(oidcDiscoveryUrl) {
-    override fun handleRequest(request: RecordedRequest): MockResponse {
-        return when (request.requestUrl?.encodedPath) {
+class ExampleAppWithOpenIdConnect(
+    oidcDiscoveryUrl: String,
+) : AbstractExampleApp(oidcDiscoveryUrl) {
+    override fun handleRequest(request: RecordedRequest): MockResponse =
+        when (request.requestUrl?.encodedPath) {
             "/login" -> {
                 MockResponse()
                     .setResponseCode(302)
@@ -26,19 +28,21 @@ class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp
                 log.debug("got callback: $request")
                 val code = request.requestUrl?.queryParameter("code")!!
                 val tokenResponse =
-                    oauth2Client.newCall(
-                        Request.Builder()
-                            .url(metadata.tokenEndpointURI.toURL())
-                            .post(
-                                FormBody.Builder()
-                                    .add("client_id", "client1")
-                                    .add("code", code)
-                                    .add("redirect_uri", exampleApp.url("/callback").toString())
-                                    .add("grant_type", "authorization_code")
-                                    .build(),
-                            )
-                            .build(),
-                    ).execute()
+                    oauth2Client
+                        .newCall(
+                            Request
+                                .Builder()
+                                .url(metadata.tokenEndpointURI.toURL())
+                                .post(
+                                    FormBody
+                                        .Builder()
+                                        .add("client_id", "client1")
+                                        .add("code", code)
+                                        .add("redirect_uri", exampleApp.url("/callback").toString())
+                                        .add("grant_type", "authorization_code")
+                                        .build(),
+                                ).build(),
+                        ).execute()
                 val idToken: String = ObjectMapper().readValue<JsonNode>(tokenResponse.body!!.string()).get("id_token").textValue()
                 val idTokenClaims: JWTClaimsSet = verifyJwt(idToken, metadata.issuer, retrieveJwks())
                 MockResponse()
@@ -58,17 +62,16 @@ class ExampleAppWithOpenIdConnect(oidcDiscoveryUrl: String) : AbstractExampleApp
             }
             else -> MockResponse().setResponseCode(404)
         }
-    }
 
-    private fun getCookies(request: RecordedRequest): Map<String, String> {
-        return request.getHeader("Cookie")
+    private fun getCookies(request: RecordedRequest): Map<String, String> =
+        request
+            .getHeader("Cookie")
             ?.split(";")
             ?.filter { it.contains("=") }
             ?.associate {
                 val (key, value) = it.split("=")
                 key.trim() to value.trim()
             } ?: emptyMap()
-    }
 
     private fun authenticationRequest(): AuthenticationRequest =
         AuthenticationRequest.parse(

@@ -20,7 +20,8 @@ object StandaloneConfig {
     const val PORT = "PORT" // Supports running Docker image on Heroku.
 
     fun hostname(): InetAddress =
-        SERVER_HOSTNAME.fromEnv()
+        SERVER_HOSTNAME
+            .fromEnv()
             ?.let { InetAddress.getByName(it) } ?: InetSocketAddress(0).address
 
     fun port(): Int = (SERVER_PORT.fromEnv()?.toInt() ?: PORT.fromEnv()?.toInt()) ?: 8080

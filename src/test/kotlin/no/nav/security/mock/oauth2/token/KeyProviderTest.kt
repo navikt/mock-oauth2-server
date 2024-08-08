@@ -90,18 +90,22 @@ internal class KeyProviderTest {
     }
 
     private fun initialRsaPublicKeys(): List<RSAPublicKey> =
-        initialRSAKeysFile.readText().let {
-            JWKSet.parse(it).keys
-        }.map {
-            it.toRSAKey().toRSAPublicKey()
-        }
+        initialRSAKeysFile
+            .readText()
+            .let {
+                JWKSet.parse(it).keys
+            }.map {
+                it.toRSAKey().toRSAPublicKey()
+            }
 
     private fun initialEcPublicKeys(): List<ECPublicKey> =
-        initialECKeysFile.readText().let {
-            JWKSet.parse(it).keys
-        }.map {
-            it.toECKey().toECPublicKey()
-        }
+        initialECKeysFile
+            .readText()
+            .let {
+                JWKSet.parse(it).keys
+            }.map {
+                it.toECKey().toECPublicKey()
+            }
 
     private fun writeInitialKeysFile() {
         val list = generateKeys(5)
@@ -112,10 +116,13 @@ internal class KeyProviderTest {
         val list = mutableListOf<RSAKey>()
         for (i in 1..numKeys) {
             val key =
-                KeyPairGenerator.getInstance("RSA").apply { this.initialize(2048) }
+                KeyPairGenerator
+                    .getInstance("RSA")
+                    .apply { this.initialize(2048) }
                     .generateKeyPair()
                     .let {
-                        RSAKey.Builder(it.public as RSAPublicKey)
+                        RSAKey
+                            .Builder(it.public as RSAPublicKey)
                             .privateKey(it.private as RSAPrivateKey)
                             .keyUse(KeyUse.SIGNATURE)
                             .keyID("initialkey-$i")

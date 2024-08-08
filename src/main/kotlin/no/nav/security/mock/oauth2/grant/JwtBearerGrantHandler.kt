@@ -13,7 +13,9 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 
-internal class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvider) : GrantHandler {
+internal class JwtBearerGrantHandler(
+    private val tokenProvider: OAuth2TokenProvider,
+) : GrantHandler {
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,
@@ -36,11 +38,10 @@ internal class JwtBearerGrantHandler(private val tokenProvider: OAuth2TokenProvi
         )
     }
 
-    private fun TokenRequest.responseScope(): String {
-        return scope?.toString()
+    private fun TokenRequest.responseScope(): String =
+        scope?.toString()
             ?: assertion().getClaim("scope")?.toString()
             ?: invalidRequest("scope must be specified in request or as a claim in assertion parameter")
-    }
 
     private fun TokenRequest.assertion(): JWTClaimsSet =
         (this.authorizationGrant as? JWTBearerGrant)?.jwtAssertion?.jwtClaimsSet

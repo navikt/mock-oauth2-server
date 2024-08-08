@@ -86,7 +86,8 @@ data class OAuth2HttpRequest(
         )
 
     internal fun proxyAwareUrl(): HttpUrl =
-        HttpUrl.Builder()
+        HttpUrl
+            .Builder()
             .scheme(resolveScheme())
             .host(resolveHost())
             .port(resolvePort())
@@ -127,7 +128,9 @@ data class OAuth2HttpRequest(
         return null
     }
 
-    data class Parameters(val parameterString: String?) {
+    data class Parameters(
+        val parameterString: String?,
+    ) {
         val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
 
         fun get(name: String): String? = map[name]

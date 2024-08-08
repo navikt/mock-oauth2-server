@@ -94,8 +94,8 @@ fun verifyWith(
     server: MockOAuth2Server,
     requiredClaims: List<String> = listOf("sub", "iss", "iat", "exp", "aud"),
 ) = object : Matcher<SignedJWT> {
-    override fun test(value: SignedJWT): MatcherResult {
-        return try {
+    override fun test(value: SignedJWT): MatcherResult =
+        try {
             value.verifyWith(server.issuerUrl(issuerId), server.jwksUrl(issuerId), requiredClaims)
             MatcherResult(
                 true,
@@ -113,7 +113,6 @@ fun verifyWith(
                 },
             )
         }
-    }
 }
 
 fun nimbusTokenRequest(
@@ -145,19 +144,19 @@ fun SignedJWT.verifyWith(
     issuer: HttpUrl,
     jwkSetUri: HttpUrl,
     requiredClaims: List<String> = listOf("sub", "iss", "iat", "exp", "aud"),
-): JWTClaimsSet {
-    return DefaultJWTProcessor<SecurityContext?>()
+): JWTClaimsSet =
+    DefaultJWTProcessor<SecurityContext?>()
         .apply {
             jwsKeySelector = JWSVerificationKeySelector(JWSAlgorithm.RS256, JWKSourceBuilder.create<SecurityContext>(jwkSetUri.toUrl()).build())
             jwtClaimsSetVerifier =
                 DefaultJWTClaimsVerifier(
-                    JWTClaimsSet.Builder()
+                    JWTClaimsSet
+                        .Builder()
                         .issuer(issuer.toString())
                         .build(),
                     HashSet(requiredClaims),
                 )
         }.process(this, null)
-}
 
 fun clientAssertion(
     clientId: String,
@@ -166,7 +165,8 @@ fun clientAssertion(
     lifetime: Long = 119,
     issueTime: Instant = Instant.now(),
 ): SignedJWT =
-    JWTClaimsSet.Builder()
+    JWTClaimsSet
+        .Builder()
         .issuer(clientId)
         .subject(clientId)
         .audience(audience.toString())
@@ -179,9 +179,11 @@ fun clientAssertion(
 
 fun JWTClaimsSet.sign(rsaKey: RSAKey = generateRsaKey()): SignedJWT =
     SignedJWT(
-        JWSHeader.Builder(JWSAlgorithm.RS256)
+        JWSHeader
+            .Builder(JWSAlgorithm.RS256)
             .keyID(rsaKey.keyID)
-            .type(JOSEObjectType.JWT).build(),
+            .type(JOSEObjectType.JWT)
+            .build(),
         this,
     ).apply {
         sign(RSASSASigner(rsaKey.toPrivateKey()))
@@ -191,10 +193,13 @@ fun generateRsaKey(
     keyId: String = UUID.randomUUID().toString(),
     keySize: Int = 2048,
 ): RSAKey =
-    KeyPairGenerator.getInstance("RSA")
-        .apply { initialize(keySize) }.generateKeyPair()
+    KeyPairGenerator
+        .getInstance("RSA")
+        .apply { initialize(keySize) }
+        .generateKeyPair()
         .let {
-            RSAKey.Builder(it.public as RSAPublicKey)
+            RSAKey
+                .Builder(it.public as RSAPublicKey)
                 .privateKey(it.private as RSAPrivateKey)
                 .keyID(keyId)
                 .keyUse(KeyUse.SIGNATURE)

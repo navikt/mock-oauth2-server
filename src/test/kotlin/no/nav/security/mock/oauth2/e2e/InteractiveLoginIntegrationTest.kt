@@ -71,29 +71,31 @@ class InteractiveLoginIntegrationTest {
             it.body?.string() shouldContain "<html"
         }
 
-        return client.post(
-            loginUrl,
-            mapOf(
-                "username" to user.username,
-                "claims" to user.claimsAsJson(),
-            ),
-        ).let { authResponse ->
-            val code = authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
-            code.shouldNotBeNull()
-        }
+        return client
+            .post(
+                loginUrl,
+                mapOf(
+                    "username" to user.username,
+                    "claims" to user.claimsAsJson(),
+                ),
+            ).let { authResponse ->
+                val code = authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                code.shouldNotBeNull()
+            }
     }
 
     private fun tokenRequest(authCode: String) =
-        client.tokenRequest(
-            server.tokenEndpointUrl(issuerId),
-            mapOf(
-                "client_id" to "client1",
-                "client_secret" to "secret",
-                "grant_type" to "authorization_code",
-                "redirect_uri" to "http://mycallback",
-                "code" to authCode,
-            ),
-        ).toTokenResponse()
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl(issuerId),
+                mapOf(
+                    "client_id" to "client1",
+                    "client_secret" to "secret",
+                    "grant_type" to "authorization_code",
+                    "redirect_uri" to "http://mycallback",
+                    "code" to authCode,
+                ),
+            ).toTokenResponse()
 
     internal data class User(
         val username: String,

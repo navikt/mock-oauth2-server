@@ -39,16 +39,13 @@ open class DefaultOAuth2TokenCallback
     ) : OAuth2TokenCallback {
         override fun issuerId(): String = issuerId
 
-        override fun subject(tokenRequest: TokenRequest): String {
-            return when (GrantType.CLIENT_CREDENTIALS) {
+        override fun subject(tokenRequest: TokenRequest): String =
+            when (GrantType.CLIENT_CREDENTIALS) {
                 tokenRequest.grantType() -> tokenRequest.clientIdAsString()
                 else -> subject
             }
-        }
 
-        override fun typeHeader(tokenRequest: TokenRequest): String {
-            return typeHeader
-        }
+        override fun typeHeader(tokenRequest: TokenRequest): String = typeHeader
 
         override fun audience(tokenRequest: TokenRequest): List<String> {
             val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
@@ -114,9 +111,8 @@ data class RequestMapping(
     val claims: Map<String, Any> = emptyMap(),
     val typeHeader: String = JOSEObjectType.JWT.type,
 ) {
-    fun isMatch(tokenRequest: TokenRequest): Boolean {
-        return tokenRequest.toHTTPRequest().bodyAsFormParameters[requestParam]?.any {
+    fun isMatch(tokenRequest: TokenRequest): Boolean =
+        tokenRequest.toHTTPRequest().bodyAsFormParameters[requestParam]?.any {
             match == "*" || match == it || match.toRegex().matchEntire(it) != null
         } ?: false
-    }
 }

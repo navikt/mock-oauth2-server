@@ -12,46 +12,52 @@ internal class OAuth2HttpRequestTest {
         "http://localhost:8080/mypath?query=1".get().url shouldBe "http://localhost:8080/mypath?query=1".toHttpUrl()
 
         // no host header, x-forwarded-proto set
-        "http://localhost:8080/mypath?query=1".get(
-            "x-forwarded-proto",
-            "https",
-        ).url shouldBe "https://localhost/mypath?query=1".toHttpUrl()
+        "http://localhost:8080/mypath?query=1"
+            .get(
+                "x-forwarded-proto",
+                "https",
+            ).url shouldBe "https://localhost/mypath?query=1".toHttpUrl()
 
         // host header overrides host and port in url
-        "http://localhost:8080/mypath?query=1".get(
-            "host",
-            "localhost:8080",
-        ).url shouldBe "http://localhost:8080/mypath?query=1".toHttpUrl()
+        "http://localhost:8080/mypath?query=1"
+            .get(
+                "host",
+                "localhost:8080",
+            ).url shouldBe "http://localhost:8080/mypath?query=1".toHttpUrl()
 
         // host header overrides host in url, port from original url should be used
-        "http://localhost:8080/mypath?query=1".get(
-            "host",
-            "hostonly",
-        ).url shouldBe "http://hostonly:8080/mypath?query=1".toHttpUrl()
+        "http://localhost:8080/mypath?query=1"
+            .get(
+                "host",
+                "hostonly",
+            ).url shouldBe "http://hostonly:8080/mypath?query=1".toHttpUrl()
 
         // host header overrides host in url, port from original url should be used
-        "http://localhost:8080/mypath?query=1".get(
-            "host",
-            "hostonly:-1",
-        ).url shouldBe "http://hostonly:8080/mypath?query=1".toHttpUrl()
+        "http://localhost:8080/mypath?query=1"
+            .get(
+                "host",
+                "hostonly:-1",
+            ).url shouldBe "http://hostonly:8080/mypath?query=1".toHttpUrl()
 
         // host header present, x-forwarded-port overrides port in url
-        "http://localhost:8080/mypath?query=1".get(
-            "host",
-            "host:8080",
-            "x-forwarded-port",
-            "9090",
-        ).url shouldBe "http://host:9090/mypath?query=1".toHttpUrl()
+        "http://localhost:8080/mypath?query=1"
+            .get(
+                "host",
+                "host:8080",
+                "x-forwarded-port",
+                "9090",
+            ).url shouldBe "http://host:9090/mypath?query=1".toHttpUrl()
 
         // host header and x-forwarded- headers present
-        "http://localhost:8080/mypath?query=1".get(
-            "host",
-            "hostheader:8080",
-            "x-forwarded-port",
-            "9090",
-            "x-forwarded-proto",
-            "https",
-        ).url shouldBe "https://hostheader:9090/mypath?query=1".toHttpUrl()
+        "http://localhost:8080/mypath?query=1"
+            .get(
+                "host",
+                "hostheader:8080",
+                "x-forwarded-port",
+                "9090",
+                "x-forwarded-proto",
+                "https",
+            ).url shouldBe "https://hostheader:9090/mypath?query=1".toHttpUrl()
     }
 
     private fun String.get(vararg headers: String) =

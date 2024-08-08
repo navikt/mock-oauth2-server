@@ -130,7 +130,12 @@ fun redirect(
     headers: Headers = Headers.headersOf(),
 ): OAuth2HttpResponse =
     OAuth2HttpResponse(
-        headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), location).newBuilder().addAll(headers).build(),
+        headers =
+            Headers
+                .headersOf(HttpHeaderNames.LOCATION.toString(), location)
+                .newBuilder()
+                .addAll(headers)
+                .build(),
         status = 302,
     )
 
@@ -138,8 +143,8 @@ fun notFound(body: String? = null): OAuth2HttpResponse = OAuth2HttpResponse(stat
 
 fun methodNotAllowed(): OAuth2HttpResponse = OAuth2HttpResponse(status = 405, body = "method not allowed")
 
-fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessResponse): OAuth2HttpResponse {
-    return when (authenticationSuccessResponse.responseMode) {
+fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessResponse): OAuth2HttpResponse =
+    when (authenticationSuccessResponse.responseMode) {
         ResponseMode.FORM_POST -> {
             OAuth2HttpResponse(
                 status = 200,
@@ -157,7 +162,6 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
                 status = 302,
             )
     }
-}
 
 fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
     val responseCode = error.httpStatusCode.takeUnless { it == 302 } ?: 400

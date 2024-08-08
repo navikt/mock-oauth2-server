@@ -10,7 +10,9 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
 
-internal class TokenExchangeGrantHandler(private val tokenProvider: OAuth2TokenProvider) : GrantHandler {
+internal class TokenExchangeGrantHandler(
+    private val tokenProvider: OAuth2TokenProvider,
+) : GrantHandler {
     override fun tokenResponse(
         request: OAuth2HttpRequest,
         issuerUrl: HttpUrl,

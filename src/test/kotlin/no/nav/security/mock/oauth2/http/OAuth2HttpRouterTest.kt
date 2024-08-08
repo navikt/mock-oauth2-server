@@ -67,11 +67,19 @@ internal class OAuth2HttpRouterTest {
             routes {
                 interceptors(
                     RequestInterceptor {
-                        val headers = it.headers.newBuilder().add("yolo", "forever").build()
+                        val headers =
+                            it.headers
+                                .newBuilder()
+                                .add("yolo", "forever")
+                                .build()
                         it.copy(headers = headers)
                     },
                     ResponseInterceptor { _, response ->
-                        val headers = response.headers.newBuilder().add("fromInterceptor", "fromInterceptor").build()
+                        val headers =
+                            response.headers
+                                .newBuilder()
+                                .add("fromInterceptor", "fromInterceptor")
+                                .build()
                         response.copy(headers = headers)
                     },
                 )

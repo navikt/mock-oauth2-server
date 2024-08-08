@@ -119,8 +119,6 @@ data class OAuth2Config
         }
 
         companion object {
-            fun fromJson(json: String): OAuth2Config {
-                return jacksonObjectMapper().readValue(json)
-            }
+            fun fromJson(json: String): OAuth2Config = jacksonObjectMapper().readValue(json)
         }
     }
