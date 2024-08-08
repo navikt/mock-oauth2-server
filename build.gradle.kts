@@ -1,5 +1,6 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 val assertjVersion = "3.26.3"
 val kotlinLoggingVersion = "3.0.5"
@@ -61,7 +62,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
-    implementation("io.netty:netty-all:$nettyVersion")
+    implementation("io.netty:netty-codec-http:$nettyVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
@@ -123,7 +124,7 @@ dependencies {
 }
 
 configurations {
-   all {
+    all {
         resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:7.0.0")
     }
 }
@@ -289,8 +290,8 @@ tasks {
     }
 
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = JavaVersion.VERSION_17.toString()
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
 
