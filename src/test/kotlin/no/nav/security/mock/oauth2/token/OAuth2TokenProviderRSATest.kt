@@ -53,31 +53,33 @@ internal class OAuth2TokenProviderRSATest {
                 ),
             )
 
-        tokenProvider.exchangeAccessToken(
-            tokenRequest =
-                nimbusTokenRequest(
-                    "myclient",
-                    "grant_type" to GrantType.JWT_BEARER.value,
-                    "scope" to "scope1",
-                    "assertion" to initialToken.serialize(),
-                ),
-            issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
-            claimsSet = initialToken.jwtClaimsSet,
-            oAuth2TokenCallback =
-                DefaultOAuth2TokenCallback(
-                    claims =
-                        mapOf(
-                            "extraclaim" to "extra",
-                            "iss" to "http://overrideissuer",
-                        ),
-                ),
-        ).jwtClaimsSet.asClue {
-            it.issuer shouldBe "http://overrideissuer"
-            it.subject shouldBe "initialsubject"
-            it.audience shouldBe listOf("scope1")
-            it.claims["initialclaim"] shouldBe "initialclaim"
-            it.claims["extraclaim"] shouldBe "extra"
-        }
+        tokenProvider
+            .exchangeAccessToken(
+                tokenRequest =
+                    nimbusTokenRequest(
+                        "myclient",
+                        "grant_type" to GrantType.JWT_BEARER.value,
+                        "scope" to "scope1",
+                        "assertion" to initialToken.serialize(),
+                    ),
+                issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
+                claimsSet = initialToken.jwtClaimsSet,
+                oAuth2TokenCallback =
+                    DefaultOAuth2TokenCallback(
+                        claims =
+                            mapOf(
+                                "extraclaim" to "extra",
+                                "iss" to "http://overrideissuer",
+                            ),
+                    ),
+            ).jwtClaimsSet
+            .asClue {
+                it.issuer shouldBe "http://overrideissuer"
+                it.subject shouldBe "initialsubject"
+                it.audience shouldBe listOf("scope1")
+                it.claims["initialclaim"] shouldBe "initialclaim"
+                it.claims["extraclaim"] shouldBe "extra"
+            }
     }
 
     @Test
@@ -104,20 +106,21 @@ internal class OAuth2TokenProviderRSATest {
         val yesterday = Instant.now().minus(1, ChronoUnit.DAYS)
         val tokenProvider = OAuth2TokenProvider(systemTime = yesterday)
 
-        tokenProvider.exchangeAccessToken(
-            tokenRequest =
-                nimbusTokenRequest(
-                    "id",
-                    "grant_type" to GrantType.CLIENT_CREDENTIALS.value,
-                    "scope" to "scope1",
-                ),
-            issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
-            claimsSet = tokenProvider.jwt(mapOf()).jwtClaimsSet,
-            oAuth2TokenCallback = DefaultOAuth2TokenCallback(),
-        ).asClue {
-            it.jwtClaimsSet.issueTime shouldBe Date.from(tokenProvider.systemTime)
-            println(it.serialize())
-        }
+        tokenProvider
+            .exchangeAccessToken(
+                tokenRequest =
+                    nimbusTokenRequest(
+                        "id",
+                        "grant_type" to GrantType.CLIENT_CREDENTIALS.value,
+                        "scope" to "scope1",
+                    ),
+                issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
+                claimsSet = tokenProvider.jwt(mapOf()).jwtClaimsSet,
+                oAuth2TokenCallback = DefaultOAuth2TokenCallback(),
+            ).asClue {
+                it.jwtClaimsSet.issueTime shouldBe Date.from(tokenProvider.systemTime)
+                println(it.serialize())
+            }
     }
 
     @Test

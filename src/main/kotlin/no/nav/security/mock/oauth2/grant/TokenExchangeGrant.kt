@@ -25,7 +25,8 @@ class TokenExchangeGrant(
             TokenExchangeGrant(
                 parameters.require("subject_token_type"),
                 parameters.require("subject_token"),
-                parameters.require("audience")
+                parameters
+                    .require("audience")
                     .split(" ")
                     .toMutableList(),
             )

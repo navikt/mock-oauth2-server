@@ -20,7 +20,12 @@ class TemplateMapper(
             HtmlContent(
                 "login.ftl",
                 mapOf(
-                    "request_url" to oAuth2HttpRequest.url.newBuilder().query(null).build().toString(),
+                    "request_url" to
+                        oAuth2HttpRequest.url
+                            .newBuilder()
+                            .query(null)
+                            .build()
+                            .toString(),
                     "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map,
                 ),
             ),
@@ -29,8 +34,8 @@ class TemplateMapper(
     fun debuggerCallbackHtml(
         tokenRequest: String,
         tokenResponse: String,
-    ): String {
-        return asString(
+    ): String =
+        asString(
             HtmlContent(
                 "debugger_callback.ftl",
                 mapOf(
@@ -39,7 +44,6 @@ class TemplateMapper(
                 ),
             ),
         )
-    }
 
     fun debuggerErrorHtml(
         debuggerUrl: HttpUrl,
@@ -89,9 +93,10 @@ class TemplateMapper(
         )
 
     private fun asString(htmlContent: HtmlContent): String =
-        StringWriter().apply {
-            config.getTemplate(htmlContent.template).process(htmlContent.model, this)
-        }.toString()
+        StringWriter()
+            .apply {
+                config.getTemplate(htmlContent.template).process(htmlContent.model, this)
+            }.toString()
 
     companion object {
         fun create(configure: Configuration.() -> Unit): TemplateMapper {
@@ -99,8 +104,7 @@ class TemplateMapper(
                 Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS)
                     .apply {
                         templateLoader = ClassTemplateLoader(this::class.java.classLoader, "templates")
-                    }
-                    .apply(configure)
+                    }.apply(configure)
             return TemplateMapper(config)
         }
     }

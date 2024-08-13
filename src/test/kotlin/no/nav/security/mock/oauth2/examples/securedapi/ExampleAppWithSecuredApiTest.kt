@@ -36,12 +36,14 @@ internal class ExampleAppWithSecuredApiTest {
     @Test
     fun apiShouldDenyAccessWithoutValidToken() {
         val response: Response =
-            client.newCall(
-                Request.Builder()
-                    .url(exampleApp.url("/api"))
-                    .get()
-                    .build(),
-            ).execute()
+            client
+                .newCall(
+                    Request
+                        .Builder()
+                        .url(exampleApp.url("/api"))
+                        .get()
+                        .build(),
+                ).execute()
         assertThat(response.code).isEqualTo(401)
     }
 
@@ -49,13 +51,15 @@ internal class ExampleAppWithSecuredApiTest {
     fun apiShouldAllowAccessWhenTokenIsValid() {
         val token: SignedJWT = oAuth2Server.issueToken(issuerId, "myclient", DefaultOAuth2TokenCallback())
         val response: Response =
-            client.newCall(
-                Request.Builder()
-                    .url(exampleApp.url("/api"))
-                    .addHeader("Authorization", "Bearer " + token.serialize())
-                    .get()
-                    .build(),
-            ).execute()
+            client
+                .newCall(
+                    Request
+                        .Builder()
+                        .url(exampleApp.url("/api"))
+                        .addHeader("Authorization", "Bearer " + token.serialize())
+                        .get()
+                        .build(),
+                ).execute()
         assertThat(response.code).isEqualTo(200)
         assertThat(response.body?.string()).contains(token.jwtClaimsSet.subject)
     }

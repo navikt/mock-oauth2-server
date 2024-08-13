@@ -87,10 +87,12 @@ internal class OAuth2HttpServerTest {
                     httpClient
                 }
 
-            client.get(
-                this.url("/header"),
-                Headers.headersOf("header1", "headervalue1"),
-            ).body?.string() shouldBe "headermatch"
+            client
+                .get(
+                    this.url("/header"),
+                    Headers.headersOf("header1", "headervalue1"),
+                ).body
+                ?.string() shouldBe "headermatch"
 
             client.get(this.url("/1/2")).body?.string() shouldBe "pathmatch"
             client.get(this.url("path?param1=value1&param2=value2")).body?.string() shouldBe "querymatch"
