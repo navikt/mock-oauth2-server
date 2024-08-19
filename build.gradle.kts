@@ -4,8 +4,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 val assertjVersion = "3.26.3"
 val kotlinLoggingVersion = "3.0.5"
-val logbackVersion = "1.5.6"
-val nimbusSdkVersion = "11.16"
+val logbackVersion = "1.5.7"
+val nimbusSdkVersion = "11.17"
 val mockWebServerVersion = "4.12.0"
 val jacksonVersion = "2.17.2"
 val nettyVersion = "4.1.112.Final"
