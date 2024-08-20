@@ -114,9 +114,7 @@ class OAuth2TokenProvider
         fun verify(
             issuerUrl: HttpUrl,
             token: String,
-        ): JWTClaimsSet {
-            return SignedJWT.parse(token).verify(issuerUrl)
-        }
+        ): JWTClaimsSet = SignedJWT.parse(token).verify(issuerUrl)
 
         private fun JWTClaimsSet.sign(
             issuerId: String,
@@ -203,9 +201,7 @@ class OAuth2TokenProvider
                             JWTClaimsSet.Builder().issuer(issuerUrl.toString()).build(),
                             HashSet(listOf("iat", "exp")),
                         ) {
-                            override fun currentTime(): Date {
-                                return Date.from(timeProvider())
-                            }
+                            override fun currentTime(): Date = Date.from(timeProvider().orNow())
                         }
                 }
             return jwtProcessor.process(this, null)

@@ -72,7 +72,6 @@ open class KeyProvider
         override fun get(
             jwkSelector: JWKSelector?,
             context: SecurityContext?,
-        ): MutableList<JWK> {
-            return signingKeys.values.toMutableList()
-        }
+        ): MutableList<JWK> = jwkSelector?.select(JWKSet(signingKeys.values.toList()).toPublicJWKSet()) ?: mutableListOf()
+
     }

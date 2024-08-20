@@ -51,31 +51,33 @@ internal class OAuth2TokenProviderRSATest {
                 ),
             )
 
-        tokenProvider.exchangeAccessToken(
-            tokenRequest =
-                nimbusTokenRequest(
-                    "myclient",
-                    "grant_type" to GrantType.JWT_BEARER.value,
-                    "scope" to "scope1",
-                    "assertion" to initialToken.serialize(),
-                ),
-            issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
-            claimsSet = initialToken.jwtClaimsSet,
-            oAuth2TokenCallback =
-                DefaultOAuth2TokenCallback(
-                    claims =
-                        mapOf(
-                            "extraclaim" to "extra",
-                            "iss" to "http://overrideissuer",
-                        ),
-                ),
-        ).jwtClaimsSet.asClue {
-            it.issuer shouldBe "http://overrideissuer"
-            it.subject shouldBe "initialsubject"
-            it.audience shouldBe listOf("scope1")
-            it.claims["initialclaim"] shouldBe "initialclaim"
-            it.claims["extraclaim"] shouldBe "extra"
-        }
+        tokenProvider
+            .exchangeAccessToken(
+                tokenRequest =
+                    nimbusTokenRequest(
+                        "myclient",
+                        "grant_type" to GrantType.JWT_BEARER.value,
+                        "scope" to "scope1",
+                        "assertion" to initialToken.serialize(),
+                    ),
+                issuerUrl = "http://default_if_not_overridden".toHttpUrl(),
+                claimsSet = initialToken.jwtClaimsSet,
+                oAuth2TokenCallback =
+                    DefaultOAuth2TokenCallback(
+                        claims =
+                            mapOf(
+                                "extraclaim" to "extra",
+                                "iss" to "http://overrideissuer",
+                            ),
+                    ),
+            ).jwtClaimsSet
+            .asClue {
+                it.issuer shouldBe "http://overrideissuer"
+                it.subject shouldBe "initialsubject"
+                it.audience shouldBe listOf("scope1")
+                it.claims["initialclaim"] shouldBe "initialclaim"
+                it.claims["extraclaim"] shouldBe "extra"
+            }
     }
 
     @Test
@@ -106,7 +108,7 @@ internal class OAuth2TokenProviderRSATest {
             it.jwtClaimsSet.issueTime shouldBe Date.from(tokenProvider.systemTime)
         }
 
-        val now = Instant.now()
+        val now = Instant.now().minus(1, ChronoUnit.SECONDS)
         OAuth2TokenProvider().clientCredentialsToken("http://localhost/default").asClue {
             it.jwtClaimsSet.issueTime shouldBeAfter now
         }

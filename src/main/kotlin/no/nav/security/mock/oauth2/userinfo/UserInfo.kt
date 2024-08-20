@@ -22,13 +22,12 @@ internal fun Route.Builder.userInfo(tokenProvider: OAuth2TokenProvider) =
         json(claims)
     }
 
-private fun OAuth2HttpRequest.verifyBearerToken(tokenProvider: OAuth2TokenProvider): JWTClaimsSet {
-    return try {
+private fun OAuth2HttpRequest.verifyBearerToken(tokenProvider: OAuth2TokenProvider): JWTClaimsSet =
+    try {
         tokenProvider.verify(url.toIssuerUrl(), this.headers.bearerToken())
     } catch (e: Exception) {
         throw invalidToken(e.message ?: "could not verify bearer token")
     }
-}
 
 private fun Headers.bearerToken(): String =
     this["Authorization"]
