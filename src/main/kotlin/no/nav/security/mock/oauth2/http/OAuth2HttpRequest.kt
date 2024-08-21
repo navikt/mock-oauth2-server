@@ -16,7 +16,6 @@ import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toRevocationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
-import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -33,27 +32,17 @@ data class OAuth2HttpRequest(
 
     fun asTokenExchangeRequest(): TokenRequest {
         val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
-        var clientAuthentication = httpRequest.clientAuthentication()
+        val clientAuthentication = httpRequest.clientAuthentication()
         if (clientAuthentication.method == ClientAuthenticationMethod.PRIVATE_KEY_JWT) {
-            clientAuthentication =
-                clientAuthentication.requirePrivateKeyJwt(
-                    requiredAudience = this.url.toIssuerUrl().toString(),
-                    maxLifetimeSeconds = 120,
-                    additionalAcceptedAudience = this.url.toString(),
-                )
-        }
-        val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
-
-        // TODO: add scope if present in request
-        val builder =
-            TokenRequest.Builder(
-                this.url.toUri(),
-                clientAuthentication,
-                tokenExchangeGrant,
+            clientAuthentication.requirePrivateKeyJwt(
+                requiredAudience = this.url.toIssuerUrl().toString(),
+                maxLifetimeSeconds = 120,
+                additionalAcceptedAudience = this.url.toString(),
             )
-        formParameters.map.forEach { (key, value) -> builder.customParameter(key, value) }
-
-        return builder.build()
+        }
+        return TokenRequest.parse(
+            this.asNimbusHTTPRequest(),
+        )
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
