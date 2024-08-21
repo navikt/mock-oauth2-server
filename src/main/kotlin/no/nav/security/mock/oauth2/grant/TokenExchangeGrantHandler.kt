@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.TokenRequest
+import com.nimbusds.oauth2.sdk.tokenexchange.TokenExchangeGrant
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
@@ -36,6 +37,8 @@ internal class TokenExchangeGrantHandler(
     }
 }
 
-fun TokenRequest.subjectToken(): SignedJWT = SignedJWT.parse(this.tokenExchangeGrant().subjectToken)
+fun TokenRequest.subjectToken(): SignedJWT = SignedJWT.parse(this.tokenExchangeGrant().subjectToken.value)
+
+fun TokenRequest.audienceOrEmpty(): List<String> = (this.authorizationGrant as? TokenExchangeGrant)?.audience?.map { it.value } ?: emptyList()
 
 fun TokenRequest.tokenExchangeGrant() = this.authorizationGrant as? TokenExchangeGrant ?: invalidRequest("missing token exchange grant")

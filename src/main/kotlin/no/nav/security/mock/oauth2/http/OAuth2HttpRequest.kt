@@ -16,7 +16,6 @@ import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toRevocationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
-import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -33,20 +32,13 @@ data class OAuth2HttpRequest(
 
     fun asTokenExchangeRequest(): TokenRequest {
         val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
-        var clientAuthentication = httpRequest.clientAuthentication()
+        val clientAuthentication = httpRequest.clientAuthentication()
         if (clientAuthentication.method == ClientAuthenticationMethod.PRIVATE_KEY_JWT) {
-            clientAuthentication = clientAuthentication.requirePrivateKeyJwt(this.url.toString(), 120)
+            clientAuthentication.requirePrivateKeyJwt(this.url.toString(), 120)
         }
-        val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
 
-        // TODO: add scope if present in request
-        return TokenRequest(
-            this.url.toUri(),
-            clientAuthentication,
-            tokenExchangeGrant,
-            null,
-            emptyList(),
-            formParameters.map.mapValues { mutableListOf(it.value) },
+        return TokenRequest.parse(
+            this.asNimbusHTTPRequest(),
         )
     }
 

@@ -8,6 +8,7 @@ import com.nimbusds.oauth2.sdk.GrantType.CLIENT_CREDENTIALS
 import com.nimbusds.oauth2.sdk.GrantType.JWT_BEARER
 import com.nimbusds.oauth2.sdk.GrantType.PASSWORD
 import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
+import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
@@ -33,7 +34,6 @@ import no.nav.security.mock.oauth2.grant.PasswordGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshToken
 import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
-import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
 import no.nav.security.mock.oauth2.introspect.introspect
 import no.nav.security.mock.oauth2.invalidGrant

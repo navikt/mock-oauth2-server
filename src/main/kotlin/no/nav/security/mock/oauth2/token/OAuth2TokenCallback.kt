@@ -7,7 +7,7 @@ import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
 import no.nav.security.mock.oauth2.extensions.replaceValues
 import no.nav.security.mock.oauth2.extensions.scopesWithoutOidcScopes
-import no.nav.security.mock.oauth2.extensions.tokenExchangeGrantOrNull
+import no.nav.security.mock.oauth2.grant.audienceOrEmpty
 import java.time.Duration
 import java.util.UUID
 
@@ -48,10 +48,10 @@ open class DefaultOAuth2TokenCallback
         override fun typeHeader(tokenRequest: TokenRequest): String = typeHeader
 
         override fun audience(tokenRequest: TokenRequest): List<String> {
-            val audienceParam = tokenRequest.tokenExchangeGrantOrNull()?.audience
+            val audienceParam = tokenRequest.audienceOrEmpty()
             return when {
                 audience != null -> audience
-                audienceParam != null -> audienceParam
+                audienceParam.isNotEmpty() -> audienceParam
                 tokenRequest.scope != null -> tokenRequest.scopesWithoutOidcScopes()
                 else -> listOf("default")
             }

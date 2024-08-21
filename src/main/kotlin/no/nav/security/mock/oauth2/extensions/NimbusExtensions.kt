@@ -30,7 +30,6 @@ import com.nimbusds.openid.connect.sdk.OIDCScopeValue
 import com.nimbusds.openid.connect.sdk.Prompt
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
-import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.invalidRequest
 import java.time.Duration
 import java.time.Instant
@@ -63,7 +62,7 @@ fun TokenRequest.scopesWithoutOidcScopes() =
         OIDCScopeValue.values().map { it.toString() }.contains(value)
     } ?: emptyList()
 
-fun TokenRequest.tokenExchangeGrantOrNull(): TokenExchangeGrant? = authorizationGrant as? TokenExchangeGrant
+fun TokenRequest.tokenExchangeGrantOrNull() = authorizationGrant as? com.nimbusds.oauth2.sdk.tokenexchange.TokenExchangeGrant
 
 fun TokenRequest.authorizationCode(): AuthorizationCode =
     this.authorizationGrant

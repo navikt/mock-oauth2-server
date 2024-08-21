@@ -241,11 +241,12 @@ open class MockOAuth2Server(
         val uri = tokenEndpointUrl(issuerId)
         val issuerUrl = issuerUrl(issuerId)
         val tokenRequest =
-            TokenRequest(
-                uri.toUri(),
-                ClientSecretBasic(ClientID(clientId), Secret("secret")),
-                AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost")),
-            )
+            TokenRequest
+                .Builder(
+                    uri.toUri(),
+                    ClientSecretBasic(ClientID(clientId), Secret("secret")),
+                    AuthorizationCodeGrant(AuthorizationCode("123"), URI.create("http://localhost")),
+                ).build()
         return config.tokenProvider.accessToken(tokenRequest, issuerUrl, tokenCallback, null)
     }
 
@@ -291,7 +292,7 @@ open class MockOAuth2Server(
                 override fun toParameters(): MutableMap<String, MutableList<String>> = mutableMapOf()
             }
         return this.config.tokenProvider.exchangeAccessToken(
-            TokenRequest(URI.create("http://mockgrant"), ClientID("mockclientid"), mockGrant),
+            TokenRequest.Builder(URI.create("http://mockgrant"), ClientSecretBasic(ClientID("mockclientid"), Secret("secret")), mockGrant).build(),
             issuerUrl,
             jwtClaimsSet,
             DefaultOAuth2TokenCallback(
