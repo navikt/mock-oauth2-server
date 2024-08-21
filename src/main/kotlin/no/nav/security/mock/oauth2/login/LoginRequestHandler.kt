@@ -16,7 +16,12 @@ class LoginRequestHandler(
         config.loginPagePath
             ?.let {
                 try {
-                    File(it).readText()
+                    when (it.startsWith("classpath:")) {
+                        true ->
+                            javaClass.getResource(it.removePrefix("classpath:"))?.readText()
+                                ?: notFound("The configured loginPagePath '$it' is invalid, please ensure that it points to a valid html file")
+                        else -> File(it).readText()
+                    }
                 } catch (e: FileNotFoundException) {
                     notFound("The configured loginPagePath '${config.loginPagePath}' is invalid, please ensure that it points to a valid html file")
                 }

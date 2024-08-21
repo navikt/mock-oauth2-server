@@ -24,13 +24,14 @@ class LoginPageIntegrationTest {
         body shouldContain "<h2 class=\"title\">Mock OAuth2 Server Sign-in</h2>"
     }
 
-    @Test
-    fun `authorization with interactive login and login page path set should return external login page`() {
+    @ParameterizedTest
+    @ValueSource(strings = ["./src/test/resources/login.example.html", "classpath:/login.example.html"])
+    fun `authorization with interactive login and login page path set should return external login page`(path: String) {
         val server =
             MockOAuth2Server(
                 OAuth2Config(
                     interactiveLogin = true,
-                    loginPagePath = "./src/test/resources/login.example.html",
+                    loginPagePath = path,
                 ),
             ).apply { start() }
         val body = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).body?.string()
