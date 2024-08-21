@@ -3,15 +3,11 @@ package no.nav.security.mock.oauth2.introspect
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.nimbusds.jwt.JWTClaimsSet
-import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.OAuth2Error
-import com.nimbusds.oauth2.sdk.id.Issuer
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.INTROSPECT
-import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
-import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.Route
 import no.nav.security.mock.oauth2.http.json
@@ -51,12 +47,10 @@ internal fun Route.Builder.introspect(tokenProvider: OAuth2TokenProvider) =
     }
 
 private fun OAuth2HttpRequest.verifyToken(tokenProvider: OAuth2TokenProvider): JWTClaimsSet? {
-    val tokenString = this.formParameters.get("token")
-    val issuer = url.toIssuerUrl()
-    val jwkSet = tokenProvider.publicJwkSet(issuer.issuerId())
-    val algorithm = tokenProvider.getAlgorithm()
     return try {
-        SignedJWT.parse(tokenString).verifySignatureAndIssuer(Issuer(issuer.toString()), jwkSet, algorithm)
+        this.formParameters.get("token")?.let {
+            tokenProvider.verify(url.toIssuerUrl(), it)
+        }
     } catch (e: Exception) {
         log.debug("token_introspection: failed signature validation")
         return null

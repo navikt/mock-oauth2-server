@@ -19,6 +19,8 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 internal class IntrospectTest {
     private val rs384TokenProvider = OAuth2TokenProvider(keyProvider = KeyProvider(initialKeys = emptyList(), algorithm = JWSAlgorithm.RS384.name))
@@ -59,6 +61,29 @@ internal class IntrospectTest {
         val request = request("$issuerUrl$INTROSPECT", token.serialize())
 
         routes { introspect(rs384TokenProvider) }.invoke(request).asClue {
+            it.status shouldBe 200
+            val response = it.parse<Map<String, Any>>()
+            response shouldContainAll claims
+            response shouldContain ("active" to true)
+        }
+    }
+
+    @Test
+    fun `introspect should return active and claims from token when using a custom timeProvider in the OAuth2TokenProvider`() {
+        val issuerUrl = "http://localhost/default"
+        val yesterday = Instant.now().minus(1, ChronoUnit.DAYS)
+        val tokenProvider = OAuth2TokenProvider(timeProvider = { yesterday })
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "client_id" to "yolo",
+                "token_type" to "token",
+                "sub" to "foo",
+            )
+        val token = tokenProvider.jwt(claims)
+        val request = request("$issuerUrl$INTROSPECT", token.serialize())
+
+        routes { introspect(tokenProvider) }.invoke(request).asClue {
             it.status shouldBe 200
             val response = it.parse<Map<String, Any>>()
             response shouldContainAll claims
