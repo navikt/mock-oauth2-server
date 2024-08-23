@@ -17,12 +17,34 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 internal class UserInfoTest {
     @Test
     fun `userinfo should return claims from bearer token`() {
         val issuerUrl = "http://localhost/default"
         val tokenProvider = OAuth2TokenProvider()
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "sub" to "foo",
+                "extra" to "bar",
+            )
+        val bearerToken = tokenProvider.jwt(claims)
+        val request = request("$issuerUrl$USER_INFO", bearerToken.serialize())
+
+        routes { userInfo(tokenProvider) }.invoke(request).asClue {
+            it.status shouldBe 200
+            it.parse<Map<String, Any>>() shouldContainAll claims
+        }
+    }
+
+    @Test
+    fun `userinfo should return claims from bearer token when using a custom timeProvider in OAuth2TokenProvider`() {
+        val issuerUrl = "http://localhost/default"
+        val yesterday = Instant.now().minus(1, ChronoUnit.DAYS)
+        val tokenProvider = OAuth2TokenProvider(timeProvider = { yesterday })
         val claims =
             mapOf(
                 "iss" to issuerUrl,

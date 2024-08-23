@@ -7,8 +7,13 @@ import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.KeyType
+import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier
+import com.nimbusds.jose.proc.JWSVerificationKeySelector
+import com.nimbusds.jose.proc.SecurityContext
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
+import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
@@ -106,6 +111,11 @@ class OAuth2TokenProvider
                     builder.build()
                 }.sign(issuerId, JOSEObjectType.JWT.type)
 
+        fun verify(
+            issuerUrl: HttpUrl,
+            token: String,
+        ): JWTClaimsSet = SignedJWT.parse(token).verify(issuerUrl)
+
         private fun JWTClaimsSet.sign(
             issuerId: String,
             type: String,
@@ -124,6 +134,7 @@ class OAuth2TokenProvider
                         sign(RSASSASigner(key.toRSAKey().toPrivateKey()))
                     }
                 }
+
                 supported && keyType == KeyType.EC.value -> {
                     SignedJWT(
                         jwsHeader(key.keyID, type, algorithm),
@@ -132,6 +143,7 @@ class OAuth2TokenProvider
                         sign(ECDSASigner(key.toECKey().toECPrivateKey()))
                     }
                 }
+
                 else -> {
                     throw OAuth2Exception("Unsupported algorithm: ${algorithm.name}")
                 }
@@ -178,4 +190,20 @@ class OAuth2TokenProvider
         }
 
         private fun Instant?.orNow(): Instant = this ?: Instant.now()
+
+        private fun SignedJWT.verify(issuerUrl: HttpUrl): JWTClaimsSet {
+            val jwtProcessor =
+                DefaultJWTProcessor<SecurityContext?>().apply {
+                    jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
+                    jwsKeySelector = JWSVerificationKeySelector(keyProvider.algorithm(), keyProvider)
+                    jwtClaimsSetVerifier =
+                        object : DefaultJWTClaimsVerifier<SecurityContext?>(
+                            JWTClaimsSet.Builder().issuer(issuerUrl.toString()).build(),
+                            HashSet(listOf("iat", "exp")),
+                        ) {
+                            override fun currentTime(): Date = Date.from(timeProvider().orNow())
+                        }
+                }
+            return jwtProcessor.process(this, null)
+        }
     }

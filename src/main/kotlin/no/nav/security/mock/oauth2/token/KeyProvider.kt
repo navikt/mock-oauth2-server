@@ -3,9 +3,12 @@ package no.nav.security.mock.oauth2.token
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.ECKey
 import com.nimbusds.jose.jwk.JWK
+import com.nimbusds.jose.jwk.JWKSelector
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.KeyType
 import com.nimbusds.jose.jwk.RSAKey
+import com.nimbusds.jose.jwk.source.JWKSource
+import com.nimbusds.jose.proc.SecurityContext
 import no.nav.security.mock.oauth2.OAuth2Exception
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
@@ -15,7 +18,7 @@ open class KeyProvider
     constructor(
         private val initialKeys: List<JWK> = keysFromFile(INITIAL_KEYS_FILE),
         private val algorithm: String = JWSAlgorithm.RS256.name,
-    ) {
+    ) : JWKSource<SecurityContext> {
         private val signingKeys: ConcurrentHashMap<String, JWK> = ConcurrentHashMap()
 
         private var generator: KeyGenerator = KeyGenerator(JWSAlgorithm.parse(algorithm))
@@ -35,9 +38,11 @@ open class KeyProvider
                     KeyType.RSA.value -> {
                         RSAKey.Builder(polledJwk.toRSAKey()).keyID(keyId).build()
                     }
+
                     KeyType.EC.value -> {
                         ECKey.Builder(polledJwk.toECKey()).keyID(keyId).build()
                     }
+
                     else -> {
                         throw OAuth2Exception("Unsupported key type: ${polledJwk.keyType.value}")
                     }
@@ -63,4 +68,10 @@ open class KeyProvider
                 return emptyList()
             }
         }
+
+        override fun get(
+            jwkSelector: JWKSelector?,
+            context: SecurityContext?,
+        ): MutableList<JWK> = jwkSelector?.select(JWKSet(signingKeys.values.toList()).toPublicJWKSet()) ?: mutableListOf()
+
     }
