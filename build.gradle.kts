@@ -5,10 +5,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 val assertjVersion = "3.26.3"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.5.7"
-val nimbusSdkVersion = "11.18"
+val nimbusSdkVersion = "11.19.1"
 val mockWebServerVersion = "4.12.0"
 val jacksonVersion = "2.17.2"
-val nettyVersion = "4.1.112.Final"
+val nettyVersion = "4.1.113.Final"
 val junitJupiterVersion = "5.11.0"
 val kotlinVersion = "2.0.20"
 val freemarkerVersion = "2.3.33"
@@ -67,7 +67,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.2")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
@@ -95,7 +95,7 @@ dependencies {
                 require("2.10.0")
             }
         }
-        testImplementation("org.yaml:snakeyaml:2.2") {
+        testImplementation("org.yaml:snakeyaml:2.3") {
             because("previous versions have security vulnerabilities")
         }
         add("api", "com.squareup.okio:okio") {
