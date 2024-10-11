@@ -263,12 +263,12 @@ Example:
             "tokenExpiry": 120,
             "requestMappings": [
                 {
-                    "requestParam": "scope",
-                    "match": "scope1",
+                    "requestParam": "code",
+                    "match": "code1",
                     "claims": {
-                        "sub": "subByScope",
+                        "sub": "subByCode",
                         "aud": [
-                            "audByScope"
+                            "audByCode"
                         ]
                     }
                 }
@@ -328,7 +328,7 @@ The following configuration will set the system time to `2020-01-21T00:00:00Z`:
 
 *From the first JSON example above:* 
 
-A token request to `http://localhost:8080/issuer1/token` with parameter `scope` equal to `scope1` will match the first `tokenCallback`:
+A token request to `http://localhost:8080/issuer1/token` with parameter `code` equal to `code1` will match the first `tokenCallback`:
 
 ```json
 {
@@ -336,12 +336,12 @@ A token request to `http://localhost:8080/issuer1/token` with parameter `scope` 
     "tokenExpiry": 120,
     "requestMappings": [
         {
-            "requestParam": "scope",
-            "match": "scope1",
+            "requestParam": "code",
+            "match": "code1",
             "claims": {
-                "sub": "subByScope",
+                "sub": "subByCode",
                 "aud": [
-                    "audByScope"
+                    "audByCode"
                 ]
             }
         }
@@ -353,8 +353,8 @@ and return a token response containing a token with the following claims:
 
 ```json
 {
-  "sub": "subByScope",
-  "aud": "audByScope",
+  "sub": "subByCode",
+  "aud": "audByCode",
   "nbf": 1616416942,
   "iss": "http://localhost:54905/issuer1",
   "exp": 1616417062,
@@ -362,6 +362,8 @@ and return a token response containing a token with the following claims:
   "jti": "28697333-6f25-4b1f-b2c2-409ce010933a"
 }
 ```
+
+Earlier versions of this documentation used `scope` as `requestParam` in the example. The scope request parameter is no logner supported by nimbus due to [c960757](https://github.com/navikt/mock-oauth2-server/commit/c9607571743cc087b190112f2197f4ac0a27aef2), so the call back needs to be configured with a different key.
 
 Use variable `clientId` to set `sub` claim for Client Credentials Grant dynamically.
 
@@ -372,12 +374,12 @@ A token request with client credentials where `clientId = myClientId` and `token
     "tokenExpiry": 120,
     "requestMappings": [
         {
-            "requestParam": "scope",
-            "match": "scope1",
+            "requestParam": "code",
+            "match": "code1",
             "claims": {
                 "sub": "${clientId}",
                 "aud": [
-                    "audByScope"
+                    "audByCode"
                 ]
             }
         }
@@ -390,7 +392,7 @@ will return a token response containing a token with the following claims:
 ```json
 {
   "sub": "myClientId",
-  "aud": "audByScope",
+  "aud": "audByCode",
   "nbf": 1616416942,
   "iss": "http://localhost:54905/issuer1",
   "exp": 1616417062,
