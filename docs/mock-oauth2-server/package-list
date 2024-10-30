@@ -299,6 +299,7 @@ $dokka.location:no.nav.security.mock.oauth2.token/KeyProvider///PointingToDeclar
 $dokka.location:no.nav.security.mock.oauth2.token/KeyProvider/KeyProvider/#kotlin.collections.List[com.nimbusds.jose.jwk.JWK]#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-key-provider/-key-provider.html
 $dokka.location:no.nav.security.mock.oauth2.token/KeyProvider/algorithm/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-key-provider/algorithm.html
 $dokka.location:no.nav.security.mock.oauth2.token/KeyProvider/generate/#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-key-provider/generate.html
+$dokka.location:no.nav.security.mock.oauth2.token/KeyProvider/get/#com.nimbusds.jose.jwk.JWKSelector?#com.nimbusds.jose.proc.SecurityContext?/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-key-provider/get.html
 $dokka.location:no.nav.security.mock.oauth2.token/KeyProvider/keyType/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-key-provider/key-type.html
 $dokka.location:no.nav.security.mock.oauth2.token/KeyProvider/signingKey/#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-key-provider/signing-key.html
 $dokka.location:no.nav.security.mock.oauth2.token/OAuth2TokenCallback///PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-o-auth2-token-callback/index.html
@@ -318,6 +319,7 @@ $dokka.location:no.nav.security.mock.oauth2.token/OAuth2TokenProvider/idToken/#c
 $dokka.location:no.nav.security.mock.oauth2.token/OAuth2TokenProvider/jwt/#kotlin.collections.Map[kotlin.String,kotlin.Any]#java.time.Duration#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-o-auth2-token-provider/jwt.html
 $dokka.location:no.nav.security.mock.oauth2.token/OAuth2TokenProvider/publicJwkSet/#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-o-auth2-token-provider/public-jwk-set.html
 $dokka.location:no.nav.security.mock.oauth2.token/OAuth2TokenProvider/systemTime/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-o-auth2-token-provider/system-time.html
+$dokka.location:no.nav.security.mock.oauth2.token/OAuth2TokenProvider/verify/#okhttp3.HttpUrl#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-o-auth2-token-provider/verify.html
 $dokka.location:no.nav.security.mock.oauth2.token/RequestMapping///PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-request-mapping/index.html
 $dokka.location:no.nav.security.mock.oauth2.token/RequestMapping/RequestMapping/#kotlin.String#kotlin.String#kotlin.collections.Map[kotlin.String,kotlin.Any]#kotlin.String/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-request-mapping/-request-mapping.html
 $dokka.location:no.nav.security.mock.oauth2.token/RequestMapping/claims/#/PointingToDeclaration/mock-oauth2-server/no.nav.security.mock.oauth2.token/-request-mapping/claims.html
