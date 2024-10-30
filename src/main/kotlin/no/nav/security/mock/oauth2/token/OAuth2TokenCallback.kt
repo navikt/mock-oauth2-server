@@ -62,7 +62,9 @@ open class DefaultOAuth2TokenCallback
                 "tid" to issuerId,
             ).apply {
                 putAll(claims)
-                put("azp", tokenRequest.clientIdAsString())
+                if (tokenRequest.grantType() == GrantType.AUTHORIZATION_CODE) {
+                    put("azp", tokenRequest.clientIdAsString())
+                }
             }
 
         override fun tokenExpiry(): Long = expiry
