@@ -40,14 +40,15 @@ data class OAuth2HttpRequest(
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
 
         // TODO: add scope if present in request
-        return TokenRequest(
-            this.url.toUri(),
-            clientAuthentication,
-            tokenExchangeGrant,
-            null,
-            emptyList(),
-            formParameters.map.mapValues { mutableListOf(it.value) },
-        )
+        val builder =
+            TokenRequest.Builder(
+                this.url.toUri(),
+                clientAuthentication,
+                tokenExchangeGrant,
+            )
+        formParameters.map.forEach { (key, value) -> builder.customParameter(key, value) }
+
+        return builder.build()
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
