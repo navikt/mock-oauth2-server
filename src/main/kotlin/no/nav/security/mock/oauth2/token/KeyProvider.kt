@@ -73,5 +73,4 @@ open class KeyProvider
             jwkSelector: JWKSelector?,
             context: SecurityContext?,
         ): MutableList<JWK> = jwkSelector?.select(JWKSet(signingKeys.values.toList()).toPublicJWKSet()) ?: mutableListOf()
-
     }
