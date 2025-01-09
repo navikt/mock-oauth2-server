@@ -2,21 +2,21 @@ import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-val assertjVersion = "3.26.3"
+val assertjVersion = "3.27.2"
 val kotlinLoggingVersion = "3.0.5"
-val logbackVersion = "1.5.12"
+val logbackVersion = "1.5.16"
 val nimbusSdkVersion = "11.20.1"
 val mockWebServerVersion = "4.12.0"
-val jacksonVersion = "2.18.1"
-val nettyVersion = "4.1.114.Final"
-val junitJupiterVersion = "5.11.3"
-val kotlinVersion = "2.0.21"
-val freemarkerVersion = "2.3.33"
+val jacksonVersion = "2.18.2"
+val nettyVersion = "4.1.116.Final"
+val junitJupiterVersion = "5.11.4"
+val kotlinVersion = "2.1.0"
+val freemarkerVersion = "2.3.34"
 val kotestVersion = "5.9.1"
 val bouncyCastleVersion = "1.79"
-val springBootVersion = "3.3.5"
-val reactorTestVersion = "3.6.11"
-val ktorVersion = "2.3.12"
+val springBootVersion = "3.4.1"
+val reactorTestVersion = "3.7.1"
+val ktorVersion = "2.3.13"
 val jsonPathVersion = "2.9.0"
 
 val mavenRepoBaseUrl = "https://oss.sonatype.org"
@@ -24,15 +24,15 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "2.1.0"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.51.0"
-    id("org.jmailen.kotlinter") version "4.4.1"
+    id("org.jmailen.kotlinter") version "5.0.1"
     id("com.google.cloud.tools.jib") version "3.4.4"
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("net.researchgate.release") version "3.0.2"
+    id("net.researchgate.release") version "3.1.0"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
-    id("org.jetbrains.dokka") version "1.9.20"
+    id("org.jetbrains.dokka") version "2.0.0"
     `java-library`
     `maven-publish`
     signing
@@ -67,7 +67,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
