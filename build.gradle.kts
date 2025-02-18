@@ -2,20 +2,20 @@ import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-val assertjVersion = "3.27.2"
+val assertjVersion = "3.27.3"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.5.16"
-val nimbusSdkVersion = "11.20.1"
+val nimbusSdkVersion = "11.23"
 val mockWebServerVersion = "4.12.0"
 val jacksonVersion = "2.18.2"
-val nettyVersion = "4.1.116.Final"
+val nettyVersion = "4.1.118.Final"
 val junitJupiterVersion = "5.11.4"
-val kotlinVersion = "2.1.0"
+val kotlinVersion = "2.1.10"
 val freemarkerVersion = "2.3.34"
 val kotestVersion = "5.9.1"
-val bouncyCastleVersion = "1.79"
-val springBootVersion = "3.4.1"
-val reactorTestVersion = "3.7.1"
+val bouncyCastleVersion = "1.80"
+val springBootVersion = "3.4.2"
+val reactorTestVersion = "3.7.3"
 val ktorVersion = "2.3.13"
 val jsonPathVersion = "2.9.0"
 
@@ -24,9 +24,9 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "2.1.0"
+    kotlin("jvm") version "2.1.10"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
-    id("com.github.ben-manes.versions") version "0.51.0"
+    id("com.github.ben-manes.versions") version "0.52.0"
     id("org.jmailen.kotlinter") version "5.0.1"
     id("com.google.cloud.tools.jib") version "3.4.4"
     id("com.github.johnrengelman.shadow") version "8.1.1"
@@ -95,7 +95,7 @@ dependencies {
                 require("2.10.0")
             }
         }
-        testImplementation("org.yaml:snakeyaml:2.3") {
+        testImplementation("org.yaml:snakeyaml:2.4") {
             because("previous versions have security vulnerabilities")
         }
         add("api", "com.squareup.okio:okio") {
