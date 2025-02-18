@@ -1,6 +1,6 @@
 # The MIT License
 
-Copyright 2023 NAV (Arbeids- og velferdsdirektoratet) - The Norwegian Labour and Welfare Administration
+Copyright 2025 NAV (Arbeids- og velferdsdirektoratet) - The Norwegian Labour and Welfare Administration
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the "Software"),
