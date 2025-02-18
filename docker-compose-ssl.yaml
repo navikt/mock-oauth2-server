@@ -3,6 +3,12 @@ version: "3.1"
 services:
   mock-oauth2-server:
     image: mock-oauth2-server:latest
+    healthcheck:
+      test: ["CMD", "curl", "--retry", "7", "--retry-delay", "1", "--retry-connrefused", "-sk", "-f", "https://localhost:8080/isalive"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     ports:
       - "8080:8080"
     volumes:
@@ -11,3 +17,4 @@ services:
       LOG_LEVEL: "debug"
       SERVER_PORT: 8080
       JSON_CONFIG_PATH: /app/config.json
+
