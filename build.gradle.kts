@@ -4,18 +4,18 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 val assertjVersion = "3.27.3"
 val kotlinLoggingVersion = "3.0.5"
-val logbackVersion = "1.5.17"
+val logbackVersion = "1.5.18"
 val nimbusSdkVersion = "11.23.1"
 val mockWebServerVersion = "4.12.0"
 val jacksonVersion = "2.18.3"
-val nettyVersion = "4.1.119.Final"
-val junitJupiterVersion = "5.12.0"
-val kotlinVersion = "2.1.10"
+val nettyVersion = "4.2.0.Final"
+val junitJupiterVersion = "5.12.2"
+val kotlinVersion = "2.1.20"
 val freemarkerVersion = "2.3.34"
 val kotestVersion = "5.9.1"
 val bouncyCastleVersion = "1.80"
-val springBootVersion = "3.4.3"
-val reactorTestVersion = "3.7.3"
+val springBootVersion = "3.4.4"
+val reactorTestVersion = "3.7.5"
 val ktorVersion = "2.3.13"
 val jsonPathVersion = "2.9.0"
 
@@ -24,11 +24,11 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "2.1.10"
+    kotlin("jvm") version "2.1.20"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.52.0"
-    id("org.jmailen.kotlinter") version "5.0.1"
-    id("com.google.cloud.tools.jib") version "3.4.4"
+    id("org.jmailen.kotlinter") version "5.0.2"
+    id("com.google.cloud.tools.jib") version "3.4.5"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.1.0"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
@@ -67,7 +67,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
