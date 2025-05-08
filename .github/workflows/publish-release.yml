@@ -5,7 +5,8 @@ on:
     types: [published]
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME_GHCR: ghcr.io/${{ github.repository }}
+  IMAGE_NAME_DH: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
 
 jobs:
   publish-release:
@@ -32,7 +33,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish artifact
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish artifact and images
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_KEYS: ${{ secrets.GPG_KEYS }}
@@ -41,13 +48,11 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
 
-        # The GITHUB_REF tag comes in the format 'refs/tags/xxx'.
-        # So if we split on '/' and take the 3rd value, we can get the release name.
         run: |
           export GPG_TTY=$(tty) && echo "$GPG_KEYS" | gpg --fast-import --batch
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
-          IMAGE=${IMAGE_NAME}:${NEW_VERSION}
-          echo "Releasing new version ${NEW_VERSION} of $IMAGE"
+          IMAGE_GHCR=${IMAGE_NAME_GHCR}:${NEW_VERSION}
+          IMAGE_DH=${IMAGE_NAME_DH}:${NEW_VERSION}
+          echo "Publishing artifacts and container images for version ${NEW_VERSION}"
           ./gradlew -Pversion=${NEW_VERSION} publish publishToSonatype closeAndReleaseStagingRepository -Dorg.gradle.internal.publish.checksums.insecure=true --info
-          ./gradlew jib --image="${IMAGE}"
-
+          ./gradlew jib --image="${IMAGE_GHCR}" --image="${IMAGE_DH}"
