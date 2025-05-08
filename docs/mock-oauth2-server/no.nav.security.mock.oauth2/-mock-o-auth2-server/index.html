@@ -26,39 +26,82 @@
 <link href="../../../styles/prism.css" rel="Stylesheet">
 <link href="../../../styles/logo-styles.css" rel="Stylesheet">
 <link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
 <script type="text/javascript" src="../../../scripts/clipboard.js" async="async"></script>
 <script type="text/javascript" src="../../../scripts/navigation-loader.js" async="async"></script>
 <script type="text/javascript" src="../../../scripts/platform-content-handler.js" async="async"></script>
 <script type="text/javascript" src="../../../scripts/main.js" defer="defer"></script>
 <script type="text/javascript" src="../../../scripts/prism.js" async="async"></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer="defer"></script>
 <script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer="defer"></script>
 </head>
 <body>
     <div class="root">
-<nav class="navigation" id="navigation-wrapper">
-    <div class="navigation--inner">
-        <div class="navigation-title">
-            <button class="menu-toggle" id="menu-toggle" type="button">toggle menu</button>
-            <div class="library-name">
-                    <a class="library-name--link" href="../../../index.html">
-                            mock-oauth2-server
-                    </a>
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+            <a class="library-name--link" href="../../../index.html">
+                    mock-oauth2-server
+            </a>
+        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle"
+                type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+2.1.11        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active=""
+                        data-filter=":dokkaHtml/main">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox"
+                        data-role="dropdown-toggle"
+                        aria-controls="platform-tags-listbox"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-label="Toggle source sets"
+                ></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":dokkaHtml/main"
+                                       data-filter=":dokkaHtml/main"/>
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
             </div>
-            <div class="library-version">
-2.1.10            </div>
         </div>
-        <div class="filter-section" id="filter-section">
-                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":dokkaHtml/main">jvm</button>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button"
+                    type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
         </div>
-    </div>
-    <div class="navigation-controls">
-        <button class="navigation-controls--btn navigation-controls--theme" id="theme-toggle-button" type="button">switch theme</button>
-        <div class="navigation-controls--btn navigation-controls--search" id="searchBar" role="button">search in API</div>
-    </div>
-</nav>
+    </nav>
         <div id="container">
             <div class="sidebar" id="leftColumn">
-                <div class="sidebar--inner" id="sideMenu"></div>
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list"
+                        data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    mock-oauth2-server
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
             </div>
             <div id="main">
 <div class="main-content" data-page-type="classlike" id="content" pageIds="mock-oauth2-server::no.nav.security.mock.oauth2/MockOAuth2Server///PointingToDeclaration//769193423">
@@ -139,7 +182,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.jvm/-jvm-overloads/index.html"><span class="token annotation builtin">JvmOverloads</span></a></div></div><span class="token keyword">fun </span><a href="any-token.html"><span class="token function">anyToken</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerUrl<span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span><span class="token punctuation">, </span></span><span class="parameter ">claims<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">expiry<span class="token operator">: </span><a href="https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html">Duration</a><span class="token operator"> = </span>Duration.ofHours(1)</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.nimbusds.jwt/SignedJWT///PointingToDeclaration/">SignedJWT</span></div><div class="brief "><p class="paragraph">Issues a signed JWT for a given <a href="any-token.html">issuerUrl</a> containing the input set of <a href="any-token.html">claims</a>. The JWT's signature can be verified with the server's keys found at the <a href="jwks-url.html">jwksUrl</a> endpoint.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-overloads/index.html"><span class="token annotation builtin">JvmOverloads</span></a></div></div><span class="token keyword">fun </span><a href="any-token.html"><span class="token function">anyToken</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerUrl<span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span><span class="token punctuation">, </span></span><span class="parameter ">claims<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-any/index.html">Any</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">expiry<span class="token operator">: </span><a href="https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html">Duration</a><span class="token operator"> = </span>Duration.ofHours(1)</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.nimbusds.jwt/SignedJWT///PointingToDeclaration/">SignedJWT</span></div><div class="brief "><p class="paragraph">Issues a signed JWT for a given <a href="any-token.html">issuerUrl</a> containing the input set of <a href="any-token.html">claims</a>. The JWT's signature can be verified with the server's keys found at the <a href="jwks-url.html">jwksUrl</a> endpoint.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -154,7 +197,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="authorization-endpoint-url.html"><span class="token function">authorizationEndpointUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">authorization_endpoint</code> for the given <a href="authorization-endpoint-url.html">issuerId</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="authorization-endpoint-url.html"><span class="token function">authorizationEndpointUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">authorization_endpoint</code> for the given <a href="authorization-endpoint-url.html">issuerId</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -184,7 +227,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="end-session-endpoint-url.html"><span class="token function">endSessionEndpointUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">end_session_endpoint</code> for the given <a href="end-session-endpoint-url.html">issuerId</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="end-session-endpoint-url.html"><span class="token function">endSessionEndpointUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">end_session_endpoint</code> for the given <a href="end-session-endpoint-url.html">issuerId</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -199,7 +242,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="enqueue-callback.html"><span class="token function">enqueueCallback</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">oAuth2TokenCallback<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.token/-o-auth2-token-callback/index.html">OAuth2TokenCallback</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Enqueues a callback at the server's HTTP request handler. This allows for customization of the token that the server issues whenever a Relying Party requests a token from the <a href="token-endpoint-url.html">tokenEndpointUrl</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="enqueue-callback.html"><span class="token function">enqueueCallback</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">oAuth2TokenCallback<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.token/-o-auth2-token-callback/index.html">OAuth2TokenCallback</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Enqueues a callback at the server's HTTP request handler. This allows for customization of the token that the server issues whenever a Relying Party requests a token from the <a href="token-endpoint-url.html">tokenEndpointUrl</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -229,7 +272,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="issuer-url.html"><span class="token function">issuerUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">issuer</code> for the given <a href="issuer-url.html">issuerId</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="issuer-url.html"><span class="token function">issuerUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">issuer</code> for the given <a href="issuer-url.html">issuerId</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -244,7 +287,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="issue-token.html"><span class="token function">issueToken</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">clientId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">tokenCallback<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.token/-o-auth2-token-callback/index.html">OAuth2TokenCallback</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.nimbusds.jwt/SignedJWT///PointingToDeclaration/">SignedJWT</span></div><div class="brief "><p class="paragraph">Issues a signed JWT as part of the authorization code grant.</p></div><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.jvm/-jvm-overloads/index.html"><span class="token annotation builtin">JvmOverloads</span></a></div></div><span class="token keyword">fun </span><a href="issue-token.html"><span class="token function">issueToken</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator"> = </span><span class="token string">&quot;default&quot;</span><span class="token punctuation">, </span></span><span class="parameter ">subject<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator"> = </span>UUID.randomUUID().toString()<span class="token punctuation">, </span></span><span class="parameter ">audience<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token operator"> = </span><span class="token string">&quot;default&quot;</span><span class="token punctuation">, </span></span><span class="parameter ">claims<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">expiry<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span><span class="token constant">3600</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.nimbusds.jwt/SignedJWT///PointingToDeclaration/">SignedJWT</span></div><div class="brief "><p class="paragraph">Convenience method for issuing a signed JWT with default values.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="issue-token.html"><span class="token function">issueToken</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">clientId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">tokenCallback<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.token/-o-auth2-token-callback/index.html">OAuth2TokenCallback</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.nimbusds.jwt/SignedJWT///PointingToDeclaration/">SignedJWT</span></div><div class="brief "><p class="paragraph">Issues a signed JWT as part of the authorization code grant.</p></div><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-overloads/index.html"><span class="token annotation builtin">JvmOverloads</span></a></div></div><span class="token keyword">fun </span><a href="issue-token.html"><span class="token function">issueToken</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator"> = </span><span class="token string">&quot;default&quot;</span><span class="token punctuation">, </span></span><span class="parameter ">subject<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator"> = </span>UUID.randomUUID().toString()<span class="token punctuation">, </span></span><span class="parameter ">audience<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token operator"> = </span><span class="token string">&quot;default&quot;</span><span class="token punctuation">, </span></span><span class="parameter ">claims<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-map/index.html">Map</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-any/index.html">Any</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">expiry<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span><span class="token constant">3600</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.nimbusds.jwt/SignedJWT///PointingToDeclaration/">SignedJWT</span></div><div class="brief "><p class="paragraph">Convenience method for issuing a signed JWT with default values.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -259,7 +302,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="jwks-url.html"><span class="token function">jwksUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">jwks_uri</code> for the given <a href="jwks-url.html">issuerId</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="jwks-url.html"><span class="token function">jwksUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">jwks_uri</code> for the given <a href="jwks-url.html">issuerId</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -274,7 +317,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="oauth2-authorization-server-metadata-url.html"><span class="token function">oauth2AuthorizationServerMetadataUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's well-known OAuth2 metadata discovery URL for the given <a href="oauth2-authorization-server-metadata-url.html">issuerId</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="oauth2-authorization-server-metadata-url.html"><span class="token function">oauth2AuthorizationServerMetadataUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's well-known OAuth2 metadata discovery URL for the given <a href="oauth2-authorization-server-metadata-url.html">issuerId</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -289,7 +332,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="revocation-endpoint-url.html"><span class="token function">revocationEndpointUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">revocation_endpoint</code> for the given <a href="revocation-endpoint-url.html">issuerId</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="revocation-endpoint-url.html"><span class="token function">revocationEndpointUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">revocation_endpoint</code> for the given <a href="revocation-endpoint-url.html">issuerId</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -319,7 +362,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.jvm/-jvm-overloads/index.html"><span class="token annotation builtin">JvmOverloads</span></a></div></div><span class="token keyword">fun </span><a href="start.html"><span class="token function">start</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">port<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">0</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Starts the <a href="index.html">MockOAuth2Server</a> on the localhost interface.</p></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="start.html"><span class="token function">start</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inetAddress<span class="token operator">: </span><a href="https://docs.oracle.com/javase/8/docs/api/java/net/InetAddress.html">InetAddress</a><span class="token punctuation">, </span></span><span class="parameter ">port<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Starts the <a href="index.html">MockOAuth2Server</a> on the given <a href="start.html">inetAddress</a> IP address at the given <a href="start.html">port</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-overloads/index.html"><span class="token annotation builtin">JvmOverloads</span></a></div></div><span class="token keyword">fun </span><a href="start.html"><span class="token function">start</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">port<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">0</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Starts the <a href="index.html">MockOAuth2Server</a> on the localhost interface.</p></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="start.html"><span class="token function">start</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inetAddress<span class="token operator">: </span><a href="https://docs.oracle.com/javase/8/docs/api/java/net/InetAddress.html">InetAddress</a><span class="token punctuation">, </span></span><span class="parameter ">port<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Starts the <a href="index.html">MockOAuth2Server</a> on the given <a href="start.html">inetAddress</a> IP address at the given <a href="start.html">port</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -334,7 +377,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.jvm/-jvm-overloads/index.html"><span class="token annotation builtin">JvmOverloads</span></a></div></div><span class="token keyword">fun </span><a href="take-request.html"><span class="token function">takeRequest</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">timeout<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span><span class="token constant">2</span><span class="token punctuation">, </span></span><span class="parameter ">unit<span class="token operator">: </span><a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/TimeUnit.html">TimeUnit</a><span class="token operator"> = </span>TimeUnit.SECONDS</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3.mockwebserver/RecordedRequest///PointingToDeclaration/">RecordedRequest</span></div><div class="brief "><p class="paragraph">Awaits the next HTTP request (waiting up to the specified wait time if necessary), removes it from the queue, and returns it. Callers should use this to verify the request was sent as intended within the given time.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-overloads/index.html"><span class="token annotation builtin">JvmOverloads</span></a></div></div><span class="token keyword">fun </span><a href="take-request.html"><span class="token function">takeRequest</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">timeout<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span><span class="token constant">2</span><span class="token punctuation">, </span></span><span class="parameter ">unit<span class="token operator">: </span><a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/TimeUnit.html">TimeUnit</a><span class="token operator"> = </span>TimeUnit.SECONDS</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3.mockwebserver/RecordedRequest///PointingToDeclaration/">RecordedRequest</span></div><div class="brief "><p class="paragraph">Awaits the next HTTP request (waiting up to the specified wait time if necessary), removes it from the queue, and returns it. Callers should use this to verify the request was sent as intended within the given time.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -349,7 +392,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="token-endpoint-url.html"><span class="token function">tokenEndpointUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">token_endpoint</code> for the given <a href="token-endpoint-url.html">issuerId</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="token-endpoint-url.html"><span class="token function">tokenEndpointUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">token_endpoint</code> for the given <a href="token-endpoint-url.html">issuerId</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -364,7 +407,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="url.html"><span class="token function">url</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">path<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's issuer identifier for the given <a href="url.html">path</a>. The identifier is a URL without query or fragment components, e.g. <code class="lang-kotlin">http://localhost:8080/some-issuer</code>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="url.html"><span class="token function">url</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">path<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's issuer identifier for the given <a href="url.html">path</a>. The identifier is a URL without query or fragment components, e.g. <code class="lang-kotlin">http://localhost:8080/some-issuer</code>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -379,7 +422,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="user-info-url.html"><span class="token function">userInfoUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">userinfo_endpoint</code> for the given <a href="user-info-url.html">issuerId</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="user-info-url.html"><span class="token function">userInfoUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's <code class="lang-kotlin">userinfo_endpoint</code> for the given <a href="user-info-url.html">issuerId</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -394,7 +437,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="well-known-url.html"><span class="token function">wellKnownUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's well-known OpenID Connect metadata discovery URL for the given <a href="well-known-url.html">issuerId</a>.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="well-known-url.html"><span class="token function">wellKnownUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">issuerId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="okhttp3/HttpUrl///PointingToDeclaration/">HttpUrl</span></div><div class="brief "><p class="paragraph">Returns the authorization server's well-known OpenID Connect metadata discovery URL for the given <a href="well-known-url.html">issuerId</a>.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -404,11 +447,16 @@
     </div>
   </div>
 </div>
-      <div class="footer">
-        <span class="go-to-top-icon"><a href="#content" id="go-to-top-link"></a></span><span>© 2024 Copyright</span><span
-                class="pull-right"><span>Generated by </span><a
-                href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span>
-      </div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
             </div>
         </div>
     </div>
