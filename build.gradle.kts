@@ -226,6 +226,13 @@ jib {
         }
         image = "gcr.io/distroless/java17-debian11"
     }
+
+    to {
+        // Image tags are set via the CLI (--image=...) in the workflow
+        // But can set defaults here as well (optional)
+        tags = setOf("latest")
+    }
+
     container {
         ports = listOf("8080")
         mainClass = mainClassKt
