@@ -207,6 +207,13 @@ jib {
         }
         image = "cgr.dev/chainguard/jre:latest-dev"
     }
+
+    to {
+        // Image tags are set via the CLI (--image=...) in the workflow
+        // But can set defaults here as well (optional)
+        tags = setOf("latest")
+    }
+
     container {
         ports = listOf("8080")
         mainClass = mainClassKt
