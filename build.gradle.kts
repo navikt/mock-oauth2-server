@@ -5,17 +5,17 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 val assertjVersion = "3.27.3"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.5.18"
-val nimbusSdkVersion = "11.24"
+val nimbusSdkVersion = "11.25"
 val mockWebServerVersion = "4.12.0"
 val jacksonVersion = "2.19.0"
 val nettyVersion = "4.2.1.Final"
 val junitJupiterVersion = "5.12.2"
-val kotlinVersion = "2.1.20"
+val kotlinVersion = "2.1.21"
 val freemarkerVersion = "2.3.34"
 val kotestVersion = "5.9.1"
 val bouncyCastleVersion = "1.80"
-val springBootVersion = "3.4.5"
-val reactorTestVersion = "3.7.5"
+val springBootVersion = "3.5.0"
+val reactorTestVersion = "3.7.6"
 val ktorVersion = "2.3.13"
 val jsonPathVersion = "2.9.0"
 
@@ -24,10 +24,10 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "2.1.20"
+    kotlin("jvm") version "2.1.21"
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.52.0"
-    id("org.jmailen.kotlinter") version "5.0.2"
+    id("org.jmailen.kotlinter") version "5.1.0"
     id("com.google.cloud.tools.jib") version "3.4.5"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.1.0"
@@ -125,7 +125,7 @@ dependencies {
 
 configurations {
     all {
-        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:7.1.0")
+        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:7.1.1")
     }
 }
 
