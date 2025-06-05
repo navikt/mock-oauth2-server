@@ -55,6 +55,7 @@ internal class OAuth2ClientTest {
         runBlocking {
             val initialToken = server.issueToken(subject = "enduser")
             val tokenEndpointUrl = server.tokenEndpointUrl("default").toString()
+            val issuerUrl = server.issuerUrl("default").toString()
             val tokenResponse =
                 httpClient.onBehalfOfGrant(
                     url = tokenEndpointUrl,
@@ -62,7 +63,7 @@ internal class OAuth2ClientTest {
                         Auth.privateKeyJwt(
                             keyPair = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair(),
                             clientId = "client1",
-                            tokenEndpoint = tokenEndpointUrl,
+                            audience = issuerUrl,
                         ),
                     token = initialToken.serialize(),
                     scope = "targetScope",

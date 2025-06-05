@@ -111,26 +111,26 @@ class Auth internal constructor(
         fun privateKeyJwt(
             keyPair: KeyPair,
             clientId: String,
-            tokenEndpoint: String,
+            audience: String,
             expiry: Duration = Duration.ofSeconds(120),
         ): Auth =
             Auth(
                 parameters =
                     mapOf(
                         "client_assertion_type" to CLIENT_ASSERTION_TYPE,
-                        "client_assertion" to keyPair.clientAssertion(clientId, tokenEndpoint, expiry),
+                        "client_assertion" to keyPair.clientAssertion(clientId, audience, expiry),
                     ),
             )
 
         private fun KeyPair.clientAssertion(
             clientId: String,
-            tokenEndpoint: String,
+            audience: String,
             expiry: Duration = Duration.ofSeconds(120),
         ): String {
             val now = Instant.now()
             return JWT
                 .create()
-                .withAudience(tokenEndpoint)
+                .withAudience(audience)
                 .withIssuer(clientId)
                 .withSubject(clientId)
                 .withJWTId(UUID.randomUUID().toString())

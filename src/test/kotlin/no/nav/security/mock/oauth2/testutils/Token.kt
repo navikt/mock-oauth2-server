@@ -32,10 +32,10 @@ import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import java.net.URL
 import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
@@ -77,10 +77,12 @@ infix fun ParsedTokenResponse.shouldBeValidFor(type: GrantType) {
                 idToken shouldNotBe null
                 refreshToken shouldNotBe null
             }
+
             TOKEN_EXCHANGE, JWT_BEARER, CLIENT_CREDENTIALS -> {
                 idToken shouldBe null
                 refreshToken shouldBe null
             }
+
             PASSWORD -> {
                 idToken shouldNotBe null
                 refreshToken shouldBe null
@@ -160,7 +162,7 @@ fun SignedJWT.verifyWith(
 
 fun clientAssertion(
     clientId: String,
-    audience: URL,
+    audience: String,
     rsaKey: RSAKey = generateRsaKey(),
     lifetime: Long = 119,
     issueTime: Instant = Instant.now(),
@@ -169,7 +171,26 @@ fun clientAssertion(
         .Builder()
         .issuer(clientId)
         .subject(clientId)
-        .audience(audience.toString())
+        .audience(audience)
+        .issueTime(Date.from(issueTime))
+        .expirationTime(Date.from(issueTime.plusSeconds(lifetime)))
+        .notBeforeTime(Date.from(issueTime))
+        .jwtID(UUID.randomUUID().toString())
+        .build()
+        .sign(rsaKey)
+
+fun clientAssertion(
+    clientId: String,
+    audiences: List<String>,
+    rsaKey: RSAKey = generateRsaKey(),
+    lifetime: Long = 119,
+    issueTime: Instant = Instant.now(),
+): SignedJWT =
+    JWTClaimsSet
+        .Builder()
+        .issuer(clientId)
+        .subject(clientId)
+        .audience(audiences)
         .issueTime(Date.from(issueTime))
         .expirationTime(Date.from(issueTime.plusSeconds(lifetime)))
         .notBeforeTime(Date.from(issueTime))
@@ -205,3 +226,23 @@ fun generateRsaKey(
                 .keyUse(KeyUse.SIGNATURE)
                 .build()
         }
+
+fun MockOAuth2Server.issueSubjectToken(
+    subject: String,
+    issuerid: String = "idprovider",
+    clientId: String = "initialClient",
+    claims: Map<String, Any> =
+        mapOf(
+            "claim1" to "value1",
+            "claim2" to "value2",
+        ),
+) = this.issueToken(
+    issuerId = issuerid,
+    clientId = clientId,
+    tokenCallback =
+        DefaultOAuth2TokenCallback(
+            issuerId = issuerid,
+            subject = subject,
+            claims = claims,
+        ),
+)
