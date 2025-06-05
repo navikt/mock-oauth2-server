@@ -23,12 +23,12 @@ fun missingParameter(name: String): Nothing =
 
 fun invalidGrant(grantType: GrantType): Nothing =
     "grant_type $grantType not supported.".let {
-        throw OAuth2Exception(OAuth2Error.INVALID_GRANT, it)
+        throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(it), it)
     }
 
 fun invalidRequest(message: String): Nothing =
     message.let {
-        throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, message)
+        throw OAuth2Exception(OAuth2Error.INVALID_REQUEST.setDescription(message), message)
     }
 
 fun notFound(message: String): Nothing = throw OAuth2Exception(ErrorObject("not_found", "Resource not found", HTTPResponse.SC_NOT_FOUND), message)

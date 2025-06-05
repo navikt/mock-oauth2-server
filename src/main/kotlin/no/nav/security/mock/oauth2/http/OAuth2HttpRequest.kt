@@ -35,7 +35,12 @@ data class OAuth2HttpRequest(
         val httpRequest: HTTPRequest = this.asNimbusHTTPRequest()
         var clientAuthentication = httpRequest.clientAuthentication()
         if (clientAuthentication.method == ClientAuthenticationMethod.PRIVATE_KEY_JWT) {
-            clientAuthentication = clientAuthentication.requirePrivateKeyJwt(this.url.toString(), 120)
+            clientAuthentication =
+                clientAuthentication.requirePrivateKeyJwt(
+                    requiredAudience = this.url.toIssuerUrl().toString(),
+                    maxLifetimeSeconds = 120,
+                    additionalAcceptedAudience = this.url.toTokenEndpointUrl().toString(),
+                )
         }
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
 
