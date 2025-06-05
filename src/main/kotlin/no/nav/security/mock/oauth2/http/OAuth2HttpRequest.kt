@@ -39,7 +39,7 @@ data class OAuth2HttpRequest(
                 clientAuthentication.requirePrivateKeyJwt(
                     requiredAudience = this.url.toIssuerUrl().toString(),
                     maxLifetimeSeconds = 120,
-                    additionalAcceptedAudience = this.url.toTokenEndpointUrl().toString(),
+                    additionalAcceptedAudience = this.url.toString(),
                 )
         }
         val tokenExchangeGrant = TokenExchangeGrant.parse(formParameters.map)
