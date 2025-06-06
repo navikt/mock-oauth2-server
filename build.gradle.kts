@@ -1,6 +1,7 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 val assertjVersion = "3.27.3"
 val kotlinLoggingVersion = "3.0.5"
@@ -10,7 +11,6 @@ val mockWebServerVersion = "4.12.0"
 val jacksonVersion = "2.19.0"
 val nettyVersion = "4.2.2.Final"
 val junitJupiterVersion = "5.13.0"
-val kotlinVersion = "2.1.21"
 val freemarkerVersion = "2.3.34"
 val kotestVersion = "5.9.1"
 val bouncyCastleVersion = "1.81"
@@ -24,7 +24,7 @@ val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "2.1.21"
+    alias(libs.plugins.kotlin.jvm) // refers to plugin declared in gradle/libs.versions.toml
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.52.0"
     id("org.jmailen.kotlinter") version "5.1.0"
@@ -48,6 +48,28 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
+
+kotlin {
+    val kotlinTarget = libs.versions.kotlinTarget
+    val kotlinTargetVersion = kotlinTarget.map {
+        KotlinVersion.fromVersion(it.toKotlinMinor())
+    }
+
+    compilerOptions {
+        languageVersion = kotlinTargetVersion
+        apiVersion = kotlinTargetVersion
+        // Syncing Kotlin JVM target with Java plugin JVM target
+        jvmTarget = JvmTarget.JVM_17
+    }
+
+    // Setting core libraries version to manage compile and runtime dependencies exposed in the published artifact metadata
+    // These will become transitive dependencies for our users.
+    // Core libraries for JVM are kotlin-stdlib and kotlin-test.
+    coreLibrariesVersion = kotlinTarget.get()
+}
+
+// 1.7.21 => 1.7, 1.9 => 1.9
+fun String.toKotlinMinor() = split(".").take(2).joinToString(".")
 
 apply(plugin = "org.jmailen.kotlinter")
 
@@ -73,7 +95,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion") // for kotest framework
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion") // for kotest core jvm assertions
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5") // uses version matching kotlin-jvm plugin
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
     // example use with different frameworks
     testImplementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
@@ -289,12 +311,6 @@ tasks {
         }
     }
 
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-
     withType<Test> {
         jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
         useJUnitPlatform()
@@ -311,6 +327,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "8.9"
+        gradleVersion = "8.14.1"
     }
 }
