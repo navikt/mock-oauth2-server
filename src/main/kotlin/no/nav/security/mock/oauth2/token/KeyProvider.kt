@@ -30,7 +30,7 @@ open class KeyProvider
                 }
             }
 
-        fun signingKey(keyId: String): JWK = signingKeys.computeIfAbsent(keyId) { keyFromDequeOrNew(keyId) }
+        open fun signingKey(keyId: String): JWK = signingKeys.computeIfAbsent(keyId) { keyFromDequeOrNew(keyId) }
 
         private fun keyFromDequeOrNew(keyId: String): JWK =
             keyDeque.poll()?.let { polledJwk ->
@@ -49,11 +49,11 @@ open class KeyProvider
                 }
             } ?: generator.generateKey(keyId)
 
-        fun algorithm(): JWSAlgorithm = JWSAlgorithm.parse(algorithm)
+        open fun algorithm(): JWSAlgorithm = JWSAlgorithm.parse(algorithm)
 
-        fun keyType(): String = generator.keyGenerator.algorithm
+        open fun keyType(): String = generator.keyGenerator.algorithm
 
-        fun generate(algorithm: String) {
+        open fun generate(algorithm: String) {
             generator = KeyGenerator(JWSAlgorithm.parse(algorithm))
         }
 
