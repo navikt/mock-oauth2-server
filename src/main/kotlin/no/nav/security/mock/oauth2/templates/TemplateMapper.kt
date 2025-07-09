@@ -26,7 +26,7 @@ class TemplateMapper(
                             .query(null)
                             .build()
                             .toString(),
-                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query).map,
+                    "query" to OAuth2HttpRequest.Parameters(oAuth2HttpRequest.url.query, null).map,
                 ),
             ),
         )
@@ -69,7 +69,7 @@ class TemplateMapper(
                 mapOf(
                     "url" to urlWithoutQuery,
                     "token_url" to url.toTokenEndpointUrl(),
-                    "query" to OAuth2HttpRequest.Parameters(url.query).map,
+                    "query" to OAuth2HttpRequest.Parameters(url.query, null).map,
                     "client_auth_method" to clientAuthMethod,
                 ),
             ),

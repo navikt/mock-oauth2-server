@@ -16,6 +16,7 @@ import no.nav.security.mock.oauth2.extensions.toJwksUrl
 import no.nav.security.mock.oauth2.extensions.toRevocationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
+import no.nav.security.mock.oauth2.extensions.parseJson
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrant
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
@@ -28,7 +29,7 @@ data class OAuth2HttpRequest(
     val body: String? = null,
 ) {
     val url: HttpUrl get() = proxyAwareUrl()
-    val formParameters: Parameters = Parameters(body)
+    val formParameters: Parameters = Parameters(body, headers["Content-Type"])
     val cookies: Map<String, String> = headers["Cookie"]?.keyValuesToMap(";") ?: emptyMap()
 
     fun asTokenExchangeRequest(): TokenRequest {
@@ -136,8 +137,12 @@ data class OAuth2HttpRequest(
 
     data class Parameters(
         val parameterString: String?,
+        val contentType: String?
     ) {
-        val map: Map<String, String> = parameterString?.keyValuesToMap("&") ?: emptyMap()
+        val map: Map<String, String> = when (contentType) {
+            "application/json" -> parameterString?.parseJson() ?: emptyMap()
+            else -> parameterString?.keyValuesToMap("&") ?: emptyMap()
+        }
 
         fun get(name: String): String? = map[name]
     }

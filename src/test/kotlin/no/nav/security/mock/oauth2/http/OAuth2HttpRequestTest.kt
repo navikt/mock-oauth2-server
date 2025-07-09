@@ -218,4 +218,29 @@ internal class OAuth2HttpRequestTest {
         req1.toWellKnown().tokenEndpoint shouldBe "http://localhost:8080/mypath/token"
         req1.toWellKnown().jwksUri shouldBe "http://localhost:8080/mypath/jwks"
     }
+
+    @Test
+    fun `form parameters should be parsed from urlencoded string or json`() {
+        val urlEncodedRequest = OAuth2HttpRequest(
+            headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+            method = "POST",
+            originalUrl = "http://localhost/token".toHttpUrl(),
+            body = "grant_type=client_credentials&scope=test"
+        )
+        urlEncodedRequest.formParameters.map shouldBe mapOf(
+            "grant_type" to "client_credentials",
+            "scope" to "test"
+        )
+
+        val jsonRequest = OAuth2HttpRequest(
+            headers = Headers.headersOf("Content-Type", "application/json"),
+            method = "POST",
+            originalUrl = "http://localhost/token".toHttpUrl(),
+            body = """{"grant_type": "client_credentials", "scope": "test"}"""
+        )
+        jsonRequest.formParameters.map shouldBe mapOf(
+            "grant_type" to "client_credentials",
+            "scope" to "test"
+        )
+    }
 }
