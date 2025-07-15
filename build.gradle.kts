@@ -6,16 +6,16 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 val assertjVersion = "3.27.3"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.5.18"
-val nimbusSdkVersion = "11.25"
-val mockWebServerVersion = "4.12.0"
-val jacksonVersion = "2.19.0"
-val nettyVersion = "4.2.2.Final"
-val junitJupiterVersion = "5.13.0"
+val nimbusSdkVersion = "11.26"
+val mockWebServerVersion = "5.1.0"
+val jacksonVersion = "2.19.1"
+val nettyVersion = "4.2.3.Final"
+val junitJupiterVersion = "5.13.3"
 val freemarkerVersion = "2.3.34"
 val kotestVersion = "5.9.1"
 val bouncyCastleVersion = "1.81"
-val springBootVersion = "3.5.0"
-val reactorTestVersion = "3.7.6"
+val springBootVersion = "3.5.3"
+val reactorTestVersion = "3.7.8"
 val ktorVersion = "2.3.13"
 val jsonPathVersion = "2.9.0"
 
@@ -27,7 +27,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm) // refers to plugin declared in gradle/libs.versions.toml
     id("se.patrikerdes.use-latest-versions") version "0.2.18"
     id("com.github.ben-manes.versions") version "0.52.0"
-    id("org.jmailen.kotlinter") version "5.1.0"
+    id("org.jmailen.kotlinter") version "5.1.1"
     id("com.google.cloud.tools.jib") version "3.4.5"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.1.0"
@@ -89,7 +89,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
