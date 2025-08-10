@@ -92,6 +92,32 @@ internal class IntrospectTest {
     }
 
     @Test
+    fun `introspect should return iat and exp from claims when provider`() {
+        val issuerUrl = "http://localhost/default"
+        val tokenProvider = OAuth2TokenProvider()
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "client_id" to "yolo",
+                "token_type" to "token",
+                "sub" to "foo",
+                "iat" to Instant.now().epochSecond,
+                "exp" to Instant.now().plus(1, ChronoUnit.DAYS).epochSecond,
+            )
+
+        val token = tokenProvider.jwt(claims)
+        val request = request("$issuerUrl$INTROSPECT", token.serialize())
+
+        routes { introspect(tokenProvider) }.invoke(request).asClue {
+            it.status shouldBe 200
+            val response = it.parse<IntrospectResponse>()
+            response.active shouldBe true
+            response.iat shouldBe claims["iat"]
+            response.exp shouldBe claims["exp"]
+        }
+    }
+
+    @Test
     fun `introspect should return active false when token is missing`() {
         val url = "http://localhost/default$INTROSPECT"
 
