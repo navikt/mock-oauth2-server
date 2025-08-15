@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.login
 
+import com.nimbusds.jwt.JWT
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.missingParameter
@@ -33,4 +34,11 @@ class LoginRequestHandler(
 data class Login(
     val username: String,
     val claims: String? = null,
-)
+) {
+    companion object {
+        fun fromIdToken(idToken: JWT): Login {
+            val claims = idToken.jwtClaimsSet
+            return Login(claims.subject, claims.toPayload().toString())
+        }
+    }
+}

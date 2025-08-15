@@ -125,6 +125,9 @@ class OAuth2HttpRequestHandler(
                 val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
                 if (config.interactiveLogin || authRequest.isPrompt()) {
                     html(loginRequestHandler.loginHtml(it))
+                } else if (authRequest.idTokenHint != null) {
+                    val login: Login = Login.fromIdToken(authRequest.idTokenHint)
+                    authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
                 } else {
                     authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
                 }
