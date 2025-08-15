@@ -43,8 +43,8 @@ application {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
     withJavadocJar()
     withSourcesJar()
 }
@@ -246,7 +246,7 @@ jib {
                 os = "linux"
             }
         }
-        image = "gcr.io/distroless/java17-debian11"
+        image = "gcr.io/distroless/java21-debian12"
     }
     container {
         ports = listOf("8080")
