@@ -177,6 +177,7 @@ class OAuth2HttpRequestHandler(
                 val tokenCallback: OAuth2TokenCallback = tokenCallbackFromQueueOrDefault(it.url.issuerId())
                 val grantHandler: GrantHandler = grantHandlers[grantType] ?: invalidGrant(grantType)
                 val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
+                log.debug("returning token response: \n$tokenResponse")
                 json(tokenResponse)
             }
         }
