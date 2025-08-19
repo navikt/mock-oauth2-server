@@ -1,0 +1,33 @@
+#!/bin/bash -e
+# Usage: dp mock-idp-docker-build [push versjonsnavn]
+# Summary: Bygg, tag og push image for nye versjoner
+# Help: bruk `push X` for å pushe versjon X til azurecr. Sørg for at du er logget på azurecr og kan pushe dit. Dersom man ikke spesifiserer versjon, vil scriptet tagge med git-tag om mulig, og hvis ikke, "LOCAL-SNAPSHOT".
+
+APP_VERSION="LOCAL-SNAPSHOT"
+GIT_TAG=$(git describe --tags --exact-match 2>/dev/null) || GIT_TAG=0
+GIT_BRANCH=$(git branch --show-current)
+
+if [[ "$1" = "push" ]]; then
+    if [[ "$2" != "" ]]; then
+      APP_VERSION=$2
+    elif [[ "$GIT_TAG" -gt 0 ]]; then
+      APP_VERSION=$GIT_TAG
+    else
+      APP_VERSION="$GIT_BRANCH-SNAPSHOT"
+    fi
+
+    if [[ $APP_VERSION = "master-SNAPSHOT" ]]; then
+       echo "Du står på master branch, men prøver å pushe en commit som ikke er en tag. Branch ut eller spesifiser en tag med \"push TAGNAVN\""
+       exit
+    fi
+
+fi
+
+
+TAG_VERSION="digipost.azurecr.io/digipost/navikt-mock-oauth2-server:${APP_VERSION}"
+
+../gradlew -p .. jibDockerBuild -Djib.to.image="$TAG_VERSION"
+
+if [[ "$1" = "push" ]]; then
+    docker push "$TAG_VERSION"
+fi
