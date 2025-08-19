@@ -32,7 +32,7 @@ object StandaloneConfig {
                 OAuth2Config.fromJson(this)
             } else {
                 OAuth2Config(
-                    interactiveLogin = true,
+                    interactiveLogin = false,
                     httpServer = NettyWrapper(),
                 )
             }
