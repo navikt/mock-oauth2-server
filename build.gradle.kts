@@ -59,7 +59,7 @@ kotlin {
         languageVersion = kotlinTargetVersion
         apiVersion = kotlinTargetVersion
         // Syncing Kotlin JVM target with Java plugin JVM target
-        jvmTarget = JvmTarget.JVM_17
+        jvmTarget = JvmTarget.JVM_21
     }
 
     // Setting core libraries version to manage compile and runtime dependencies exposed in the published artifact metadata
