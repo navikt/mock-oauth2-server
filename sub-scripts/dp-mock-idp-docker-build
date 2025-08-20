@@ -28,7 +28,9 @@ fi
 
 IMAGE_TAG="$IMAGE_NAME:${APP_VERSION}"
 
-../gradlew -p .. jibDockerBuild -Djib.to.image="$IMAGE_TAG"
+cd "$DIGIPOST_HOME"/navikt-mock-oauth2-server
+
+./gradlew jibDockerBuild -Djib.to.image="$IMAGE_TAG"
 
 if [[ "$1" = "push" ]]; then
     docker push "$IMAGE_TAG"
