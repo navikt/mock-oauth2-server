@@ -123,21 +123,11 @@ class OAuth2HttpRequestHandler(
             val authorizationCodeHandler = grantHandlers[AUTHORIZATION_CODE] as AuthorizationCodeHandler
             get(AUTHORIZATION) {
                 log.debug("handle auth request GET {}", it)
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
-                if (config.interactiveLogin || authRequest.isPrompt()) {
-                    html(loginRequestHandler.loginHtml(it))
-                } else if (authRequest.idTokenHint != null) {
-                    val login: Login = Login.fromIdToken(authRequest.idTokenHint)
-                    authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
-                } else {
-                    authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
-                }
+                authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it))
             }
             post(AUTHORIZATION) {
                 log.debug("handle auth request POST {}", it)
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
-                val login: Login = loginRequestHandler.loginSubmit(it)
-                authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
+                authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it))
             }
         }
 

@@ -34,18 +34,20 @@ internal class AuthorizationCodeHandler(
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = HashMap()
 
     fun authorizationCodeResponse(
-        authenticationRequest: AuthenticationRequest,
-        login: Login? = null,
+        request: OAuth2HttpRequest
     ): AuthenticationSuccessResponse {
+        val authenticationRequest = request.asAuthenticationRequest()
+        val login = Login.fromRequest(request)
         when {
             authenticationRequest.responseType.impliesCodeFlow() -> {
                 val code = AuthorizationCode()
+
                 log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
-                login?.also {
-                    log.debug("adding user with username ${it.username} to cache")
-                    codeToLoginCache[code] = login
-                }
+
+                log.debug("adding user with username ${login.username} to cache")
+                codeToLoginCache[code] = login
+
                 return AuthenticationSuccessResponse(
                     authenticationRequest.redirectionURI,
                     code,
