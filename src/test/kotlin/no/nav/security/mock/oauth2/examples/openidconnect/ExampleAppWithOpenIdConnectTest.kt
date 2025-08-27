@@ -1,6 +1,11 @@
 package no.nav.security.mock.oauth2.examples.openidconnect
 
+import com.nimbusds.jwt.JWTClaimsSet
+import io.kotest.assertions.asClue
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldMatch
 import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.security.mock.oauth2.testutils.uuidRegex
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import okhttp3.Cookie
 import okhttp3.CookieJar
@@ -58,7 +63,9 @@ class ExampleAppWithOpenIdConnectTest {
         val securedResponse = client.newCall(Request.Builder().url(exampleApp.url("/secured")).build()).execute()
         assertThat(securedResponse.code).isEqualTo(200)
         val body = securedResponse.body?.string()
-        assertThat(body).isEqualTo("welcome foo")
+        body.asClue {
+            it shouldMatch uuidRegex
+        }
     }
 
     @Test

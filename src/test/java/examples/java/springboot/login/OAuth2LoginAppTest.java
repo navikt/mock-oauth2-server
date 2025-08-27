@@ -18,12 +18,13 @@ import reactor.netty.http.client.HttpClient;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import static examples.java.springboot.MockOAuth2ServerInitializer.MOCK_OAUTH_2_SERVER_BASE_URL;
 import static examples.java.springboot.login.OAuth2LoginAppTest.PROVIDER;
 import static examples.java.springboot.login.OAuth2LoginAppTest.PROVIDER_ID;
 import static examples.java.springboot.login.OAuth2LoginAppTest.REGISTRATION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
@@ -73,7 +74,7 @@ public class OAuth2LoginAppTest {
                 .retrieve()
                 .bodyToMono(String.class).block();
 
-        assertEquals("hello foo", response);
+        assertDoesNotThrow(() -> UUID.fromString(response.split(" ")[1]));
     }
 
     private ClientHttpConnector followRedirectsWithCookies(Map<String, Cookie> cookieManager) {

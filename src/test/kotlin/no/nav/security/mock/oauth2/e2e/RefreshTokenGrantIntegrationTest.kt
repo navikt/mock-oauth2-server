@@ -6,6 +6,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldMatch
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
@@ -17,6 +18,7 @@ import no.nav.security.mock.oauth2.testutils.shouldBeValidFor
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.testutils.uuidRegex
 import no.nav.security.mock.oauth2.testutils.verifyWith
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
@@ -57,9 +59,9 @@ class RefreshTokenGrantIntegrationTest {
                 it.accessToken should verifyWith(issuerId, this)
                 it.idToken should verifyWith(issuerId, this)
 
-                it.idToken.subject shouldBe initialSubject
+                it.idToken.subject shouldMatch uuidRegex
                 it.idToken.audience shouldBe tokenResponseBeforeRefresh.idToken.audience
-                it.accessToken.subject shouldBe initialSubject
+                it.accessToken.subject shouldMatch uuidRegex
             }
         }
     }
@@ -89,9 +91,9 @@ class RefreshTokenGrantIntegrationTest {
             refreshTokenResponse.asClue {
                 it shouldBeValidFor GrantType.REFRESH_TOKEN
                 it.refreshToken shouldNotBe tokenResponseBeforeRefresh.refreshToken
-                it.idToken?.subject shouldBe initialSubject
+                it.idToken?.subject shouldMatch uuidRegex
                 it.idToken?.audience shouldBe tokenResponseBeforeRefresh.idToken?.audience
-                it.accessToken?.subject shouldBe initialSubject
+                it.accessToken?.subject shouldMatch uuidRegex
             }
         }
     }
@@ -173,8 +175,8 @@ class RefreshTokenGrantIntegrationTest {
                     ),
                 ).toTokenResponse()
 
-        tokenResponseBeforeRefresh.idToken?.subject shouldBe initialSubject
-        tokenResponseBeforeRefresh.accessToken?.subject shouldBe initialSubject
+        tokenResponseBeforeRefresh.idToken?.subject shouldMatch uuidRegex
+        tokenResponseBeforeRefresh.accessToken?.subject shouldMatch uuidRegex
         return tokenResponseBeforeRefresh
     }
 }

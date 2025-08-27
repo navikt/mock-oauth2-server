@@ -7,6 +7,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldMatch
 import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
@@ -19,6 +20,7 @@ import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.testutils.uuidRegex
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
@@ -66,8 +68,8 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 it.accessToken shouldNotBe null
                 it.idToken shouldNotBe null
                 it.expiresIn shouldBeGreaterThan 0
-                it.idToken?.audience shouldContainExactly listOf("client1")
-                it.accessToken?.audience shouldContainExactly listOf("default")
+                it.idToken?.audience shouldContainExactly listOf("defaultClient")
+                it.accessToken?.audience shouldContainExactly listOf("defaultClient")
             }
     }
 
@@ -101,9 +103,9 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 it.accessToken shouldNotBe null
                 it.idToken shouldNotBe null
                 it.expiresIn shouldBeGreaterThan 0
-                it.idToken?.audience shouldContainExactly listOf("client1")
-                it.accessToken?.audience shouldContainExactly listOf("default")
-                it.idToken?.subject shouldBe "foo"
+                it.idToken?.audience shouldContainExactly listOf("defaultClient")
+                it.accessToken?.audience shouldContainExactly listOf("defaultClient")
+                it.idToken?.subject shouldMatch uuidRegex
             }
         server.shutdown()
     }

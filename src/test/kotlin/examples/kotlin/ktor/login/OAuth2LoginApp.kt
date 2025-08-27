@@ -85,7 +85,7 @@ fun Application.module(authConfig: AuthConfig) {
                     }
                 }
                 handle {
-                    call.respondText("welcome ${call.subject()}")
+                    call.respondText(call.subject() ?: "")
                 }
             }
         }

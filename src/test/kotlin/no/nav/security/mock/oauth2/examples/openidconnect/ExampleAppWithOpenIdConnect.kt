@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.examples.AbstractExampleApp
+import no.nav.security.mock.oauth2.toJwtClaimsSet
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.mockwebserver.MockResponse
@@ -57,7 +59,7 @@ class ExampleAppWithOpenIdConnect(
                     }?.let {
                         MockResponse()
                             .setResponseCode(200)
-                            .setBody("welcome ${it.subject}")
+                            .setBody(it.subject)
                     } ?: MockResponse().setResponseCode(302).setHeader("Location", exampleApp.url("/login"))
             }
             else -> MockResponse().setResponseCode(404)

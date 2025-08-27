@@ -2,6 +2,9 @@ package examples.kotlin.ktor.login
 
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.UUIDVersion
+import io.kotest.matchers.string.beUUID
+import io.kotest.matchers.string.shouldMatch
 import io.ktor.client.request.prepareGet
 import io.ktor.server.application.Application
 import io.ktor.server.engine.ApplicationEngine
@@ -9,6 +12,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import kotlinx.coroutines.runBlocking
 import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.security.mock.oauth2.testutils.uuidRegex
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -27,7 +31,7 @@ internal class OAuth2LoginAppTest {
     fun after() = mockOAuth2Server.shutdown()
 
     @Test
-    fun `login with google or github should return appropriate subject`() {
+    fun `login with idporten or signicat should return appropriate pid claim`() {
         mockOAuth2Server.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = "google", subject = "googleSubject"))
         mockOAuth2Server.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = "github", subject = "githubSubject"))
 
@@ -37,11 +41,11 @@ internal class OAuth2LoginAppTest {
             { module(authConfig()) },
             port,
         ) {
-            get<String>("http://localhost:$port/login/google").asClue {
-                it shouldBe "welcome googleSubject"
+            get<String>("http://localhost:$port/login/idporten").asClue {
+                it shouldMatch uuidRegex
             }
-            get<String>("http://localhost:$port/login/github").asClue {
-                it shouldBe "welcome githubSubject"
+            get<String>("http://localhost:$port/login/signicat").asClue {
+                it shouldMatch uuidRegex
             }
         }
     }

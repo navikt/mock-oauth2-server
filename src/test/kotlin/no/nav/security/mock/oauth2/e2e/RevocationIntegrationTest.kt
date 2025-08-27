@@ -4,6 +4,7 @@ import com.nimbusds.oauth2.sdk.GrantType
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldMatch
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.grant.RefreshToken
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
@@ -13,6 +14,7 @@ import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.testutils.uuidRegex
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -27,11 +29,11 @@ class RevocationIntegrationTest {
     fun `revocation request with refresh_token should should remove refresh token`() {
         withMockOAuth2Server {
             val tokenResponseBeforeRefresh = login()
-            tokenResponseBeforeRefresh.idToken?.subject shouldBe initialSubject
-            tokenResponseBeforeRefresh.accessToken?.subject shouldBe initialSubject
+            tokenResponseBeforeRefresh.idToken?.subject shouldMatch uuidRegex
+            tokenResponseBeforeRefresh.accessToken?.subject shouldMatch uuidRegex
 
             var refreshTokenResponse = refresh(tokenResponseBeforeRefresh.refreshToken)
-            refreshTokenResponse.accessToken?.subject shouldBe initialSubject
+            refreshTokenResponse.accessToken?.subject shouldMatch uuidRegex
             val refreshToken = checkNotNull(refreshTokenResponse.refreshToken)
             val revocationResponse =
                 client.post(

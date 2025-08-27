@@ -75,7 +75,7 @@ internal class OAuth2HttpServerTest {
     fun `MockWebServer should start and serve requests with generated keystore and HTTPS enabled`() {
         val ssl = Ssl()
         MockWebServerWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
-        MockWebServerWrapper(ssl).start(port = 1234, requestHandler).shouldServeRequests(ssl).stop()
+        MockWebServerWrapper(ssl).start(port = 1235, requestHandler).shouldServeRequests(ssl).stop()
     }
 
     private fun OAuth2HttpServer.shouldServeRequests(ssl: Ssl? = null) =
