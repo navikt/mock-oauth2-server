@@ -236,17 +236,7 @@ tasks.javadoc {
 
 jib {
     from {
-        platforms {
-            platform {
-                architecture = "amd64"
-                os = "linux"
-            }
-            platform {
-                architecture = "arm64"
-                os = "linux"
-            }
-        }
-        image = "gcr.io/distroless/java21-debian12"
+        image = "digipost.azurecr.io/infrastructure/docker-openjdk:jre-21-alpine@sha256:f91ff681a6795c55eb2cb5071bc7ccf1ef1b76bbb87e712a0257d830d79ad9f5"
     }
     container {
         ports = listOf("8080")
