@@ -1,6 +1,6 @@
 # navikt-mock-oauth2-server
 
-Dette er en fork av NAV IT sin [mock-oauth2-server](https://github.com/navikt/mock-oauth2-server), tilpasset for å kunne brukes som en Mock IdP for Digipost IdP. Det vil si at den brukes til å ukritisk autentisere en bruker med claims og credentials den får oppgitt, _og skal derfor aldri brukes i prod_. 
+Dette er en fork av NAV IT sin [mock-oauth2-server](https://github.com/navikt/mock-oauth2-server), tilpasset for å kunne brukes som en Mock IdP for Digipost IdP. Det vil si at den brukes til å ukritisk autentisere en bruker med claims og credentials den får oppgitt, __og skal derfor aldri brukes i prod__. 
 
 Videre i denne README'en vil "mock-oauth2-server" og "mock IdP" brukes om hverandre, 
 
