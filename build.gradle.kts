@@ -19,7 +19,6 @@ val reactorTestVersion = "3.7.9"
 val ktorVersion = "2.3.13"
 val jsonPathVersion = "2.9.0"
 
-val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
@@ -31,11 +30,9 @@ plugins {
     id("com.google.cloud.tools.jib") version "3.4.5"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("net.researchgate.release") version "3.1.0"
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("com.vanniktech.maven.publish") version "0.34.0"
     id("org.jetbrains.dokka") version "2.0.0"
     `java-library`
-    `maven-publish`
-    signing
 }
 
 application {
@@ -151,62 +148,37 @@ configurations {
     }
 }
 
-nexusPublishing {
-    packageGroup.set("no.nav")
-    clientTimeout.set(Duration.ofMinutes(2))
-    repositories {
-        sonatype {
-            username.set(System.getenv("SONATYPE_USERNAME"))
-            password.set(System.getenv("SONATYPE_PASSWORD"))
-        }
-    }
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates(group.toString(), rootProject.name, version.toString())
 
-    transitionCheckOptions {
-        maxRetries.set(60)
-        delayBetween.set(Duration.ofMillis(10000))
+    pom {
+        name.set(rootProject.name)
+        description.set("A simple mock oauth2 server based on OkHttp MockWebServer")
+        url.set("https://github.com/navikt/${rootProject.name}")
+        licenses {
+            license {
+                name.set("MIT License")
+                url.set("https://opensource.org/licenses/MIT")
+                distribution.set("https://opensource.org/licenses/MIT")
+            }
+        }
+        developers {
+            developer {
+                organization.set("Nav (Arbeids- og velferdsdirektoratet) - The Norwegian Labour and Welfare Administration")
+                organizationUrl.set("https://www.nav.no")
+            }
+        }
+        scm {
+            connection.set("scm:git:git://github.com/navikt/${rootProject.name}.git")
+            developerConnection.set("scm:git:ssh://github.com/navikt/${rootProject.name}.git")
+            url.set("https://github.com/navikt/${rootProject.name}")
+        }
     }
 }
 
 publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            artifactId = rootProject.name
-            from(components["java"])
-
-            versionMapping {
-                usage("java-api") {
-                    fromResolutionOf("runtimeClasspath")
-                }
-
-                usage("java-runtime") {
-                    fromResolutionResult()
-                }
-            }
-            pom {
-                name.set(rootProject.name)
-                description.set("A simple mock oauth2 server based on OkHttp MockWebServer")
-                url.set("https://github.com/navikt/${rootProject.name}")
-
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
-                developers {
-                    developer {
-                        organization.set("NAV (Arbeids- og velferdsdirektoratet) - The Norwegian Labour and Welfare Administration")
-                        organizationUrl.set("https://www.nav.no")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:git://github.com/navikt/${rootProject.name}.git")
-                    developerConnection.set("scm:git:ssh://github.com/navikt/${rootProject.name}.git")
-                    url.set("https://github.com/navikt/${rootProject.name}")
-                }
-            }
-        }
-    }
     repositories {
         maven {
             name = "GitHubPackages"
@@ -217,15 +189,6 @@ publishing {
             }
         }
     }
-}
-
-ext["signing.gnupg.keyName"] = System.getenv("GPG_KEY_NAME")
-ext["signing.gnupg.passphrase"] = System.getenv("GPG_PASSPHRASE")
-ext["signing.gnupg.executable"] = "gpg"
-
-signing {
-    useGpgCmd()
-    sign(publishing.publications["mavenJava"])
 }
 
 tasks.javadoc {
@@ -275,12 +238,6 @@ tasks.named("dependencyUpdates", DependencyUpdatesTask::class.java).configure {
             }
         }
     }
-}
-
-tasks.named("useLatestVersions", se.patrikerdes.UseLatestVersionsTask::class.java).configure {
-    updateBlacklist = listOf(
-        "io.codearte:nexus-staging"
-    )
 }
 
 // This task is added by Gradle when we use java.withJavadocJar()
