@@ -33,7 +33,6 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.34.0"
     id("org.jetbrains.dokka") version "2.0.0"
     `java-library`
-    `maven-publish`
 }
 
 application {
@@ -43,8 +42,6 @@ application {
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-    withJavadocJar()
-    withSourcesJar()
 }
 
 kotlin {
@@ -154,7 +151,6 @@ mavenPublishing {
     signAllPublications()
     coordinates(group.toString(), rootProject.name, version.toString())
 
-
     pom {
         name.set(rootProject.name)
         description.set("A simple mock oauth2 server based on OkHttp MockWebServer")
@@ -242,11 +238,6 @@ tasks.named("dependencyUpdates", DependencyUpdatesTask::class.java).configure {
     }
 }
 
-// This task is added by Gradle when we use java.withJavadocJar()
-tasks.named<Jar>("javadocJar") {
-    from(tasks.named("dokkaJavadoc"))
-}
-
 buildscript {
     dependencies {
         configurations.classpath.get().exclude("xerces", "xercesImpl")
@@ -287,11 +278,5 @@ tasks {
 
     withType<Wrapper> {
         gradleVersion = "8.14.1"
-    }
-}
-
-afterEvaluate {
-    tasks.named("generateMetadataFileForMavenPublication") {
-        dependsOn("dokkaJavadocJar")
     }
 }
