@@ -246,7 +246,7 @@ jib {
                 os = "linux"
             }
         }
-        image = "gcr.io/distroless/java17-debian11"
+        image = "gcr.io/distroless/java17-debian12"
     }
     container {
         ports = listOf("8080")
