@@ -106,20 +106,56 @@ fun HTTPRequest.clientAuthentication() =
     ClientAuthentication.parse(this)
         ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain some form of ClientAuthentication.")
 
+/**
+ * TODO: We currently accept multiple audiences for backwards compatibility as updates to RFC7523 are pending.
+ * Relevant excerpts:
+ *  > The JWT MUST contain an aud (audience) claim containing the issuer identifier [RFC8414] of the authorization server as its sole value.
+ *
+ *  > Unlike the aud value specified in [RFC7523], there MUST be no value other than the issuer identifier of the intended authorization server used as the audience of the JWT;
+ *  > this includes that the token endpoint URL of the authorization server MUST NOT be used as an audience value.
+ *
+ *  > The authorization server MUST reject any JWT that does not contain its issuer identifier as its sole audience value.
+ *
+ * See [RFC7523bis](https://datatracker.ietf.org/doc/draft-ietf-oauth-rfc7523bis) for details.
+ * Compliance with the RFC will require breaking changes.
+ **/
 fun ClientAuthentication.requirePrivateKeyJwt(
     requiredAudience: String,
     maxLifetimeSeconds: Long,
+    additionalAcceptedAudience: String? = null,
 ): PrivateKeyJWT =
     (this as? PrivateKeyJWT)
         ?.let {
+            val acceptedAudiences = setOf(requiredAudience, additionalAcceptedAudience).filterNotNull().toSet()
             when {
                 it.clientAssertion.expiresIn() > maxLifetimeSeconds -> {
-                    invalidRequest("invalid client_assertion: client_assertion expiry is too long( should be < $maxLifetimeSeconds)")
+                    invalidRequest("invalid client_assertion: expiry must be less than $maxLifetimeSeconds seconds")
                 }
-                !it.clientAssertion.jwtClaimsSet.audience
-                    .contains(requiredAudience) -> {
-                    invalidRequest("invalid client_assertion: client_assertion must contain required audience '$requiredAudience'")
+
+                it.clientAssertion.jwtClaimsSet.issuer != it.clientID.value -> {
+                    invalidRequest("invalid client_assertion: issuer must match client_id '${it.clientID.value}'")
                 }
+
+                it.clientAssertion.jwtClaimsSet.subject != it.clientID.value -> {
+                    invalidRequest("invalid client_assertion: subject must match client_id '${it.clientID.value}'")
+                }
+
+                it.clientAssertion.jwtClaimsSet.audience
+                    .isEmpty() -> {
+                    invalidRequest("invalid client_assertion: audience cannot be empty")
+                }
+
+                it.clientAssertion.jwtClaimsSet.audience.size > 1 -> {
+                    invalidRequest("invalid client_assertion: audience must not contain more than one element")
+                }
+
+                // audience is a List<String>; it should contain exactly one element as per previous checks
+                it.clientAssertion.jwtClaimsSet.audience
+                    .first() !in acceptedAudiences -> {
+                    invalidRequest("invalid client_assertion: audience should be $requiredAudience")
+                }
+
+                // all checks passed
                 else -> it
             }
         } ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain a valid client_assertion.")

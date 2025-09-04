@@ -1,53 +1,43 @@
 name: Publish release
-
 on:
   release:
     types: [published]
-
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
-
 jobs:
   publish-release:
     permissions:
       packages: write
       contents: read
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout latest code
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # ratchet:actions/checkout@v5
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # ratchet:actions/setup-java@v5
         with:
           java-version: 17
           distribution: 'zulu'
           cache: 'gradle'
-
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # ratchet:docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Publish artifact
         env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
+          # must be an armored (i.e. ascii) private key _only_ (no public key block)
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_KEYS: ${{ secrets.GPG_KEYS }}
-          GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-
         # The GITHUB_REF tag comes in the format 'refs/tags/xxx'.
         # So if we split on '/' and take the 3rd value, we can get the release name.
         run: |
-          export GPG_TTY=$(tty) && echo "$GPG_KEYS" | gpg --fast-import --batch
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
           IMAGE=${IMAGE_NAME}:${NEW_VERSION}
           echo "Releasing new version ${NEW_VERSION} of $IMAGE"
-          ./gradlew -Pversion=${NEW_VERSION} publish publishToSonatype closeAndReleaseStagingRepository -Dorg.gradle.internal.publish.checksums.insecure=true --info
+          ./gradlew -Pversion=${NEW_VERSION} publishAllPublicationsToGithubPackagesRepository publishAndReleaseToMavenCentral --no-configuration-cache
           ./gradlew jib --image="${IMAGE}"
-

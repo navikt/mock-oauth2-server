@@ -4,18 +4,12 @@ updates:
     # Files stored in repository root
     directory: "/"
     schedule:
-      interval: "daily"
-    open-pull-requests-limit: 10
-    groups:
-      github:
-        patterns:
-          - "*"
+      interval: "weekly"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: daily
-    open-pull-requests-limit: 10
+      interval: "weekly"
     groups:
-      github:
+      github-actions:
         patterns:
           - "*"

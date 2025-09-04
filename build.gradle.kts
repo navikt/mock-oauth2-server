@@ -1,40 +1,37 @@
 import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
-val assertjVersion = "3.27.3"
+val assertjVersion = "3.27.4"
 val kotlinLoggingVersion = "3.0.5"
-val logbackVersion = "1.5.16"
-val nimbusSdkVersion = "11.23"
+val logbackVersion = "1.5.18"
+val nimbusSdkVersion = "11.28"
 val mockWebServerVersion = "4.12.0"
-val jacksonVersion = "2.18.2"
-val nettyVersion = "4.1.118.Final"
-val junitJupiterVersion = "5.11.4"
-val kotlinVersion = "2.1.10"
+val jacksonVersion = "2.20.0"
+val nettyVersion = "4.2.4.Final"
+val junitJupiterVersion = "5.13.4"
 val freemarkerVersion = "2.3.34"
 val kotestVersion = "5.9.1"
-val bouncyCastleVersion = "1.80"
-val springBootVersion = "3.4.2"
-val reactorTestVersion = "3.7.3"
+val bouncyCastleVersion = "1.81"
+val springBootVersion = "3.5.5"
+val reactorTestVersion = "3.7.9"
 val ktorVersion = "2.3.13"
 val jsonPathVersion = "2.9.0"
 
-val mavenRepoBaseUrl = "https://oss.sonatype.org"
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
 plugins {
     application
-    kotlin("jvm") version "2.1.10"
-    id("se.patrikerdes.use-latest-versions") version "0.2.18"
+    alias(libs.plugins.kotlin.jvm) // refers to plugin declared in gradle/libs.versions.toml
+    id("se.patrikerdes.use-latest-versions") version "0.2.19"
     id("com.github.ben-manes.versions") version "0.52.0"
-    id("org.jmailen.kotlinter") version "5.0.1"
-    id("com.google.cloud.tools.jib") version "3.4.4"
+    id("org.jmailen.kotlinter") version "5.2.0"
+    id("com.google.cloud.tools.jib") version "3.4.5"
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("net.researchgate.release") version "3.1.0"
-    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("com.vanniktech.maven.publish") version "0.34.0"
     id("org.jetbrains.dokka") version "2.0.0"
     `java-library`
-    `maven-publish`
     signing
 }
 
@@ -45,9 +42,29 @@ application {
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-    withJavadocJar()
-    withSourcesJar()
 }
+
+kotlin {
+    val kotlinTarget = libs.versions.kotlinTarget
+    val kotlinTargetVersion = kotlinTarget.map {
+        KotlinVersion.fromVersion(it.toKotlinMinor())
+    }
+
+    compilerOptions {
+        languageVersion = kotlinTargetVersion
+        apiVersion = kotlinTargetVersion
+        // Syncing Kotlin JVM target with Java plugin JVM target
+        jvmTarget = JvmTarget.JVM_17
+    }
+
+    // Setting core libraries version to manage compile and runtime dependencies exposed in the published artifact metadata
+    // These will become transitive dependencies for our users.
+    // Core libraries for JVM are kotlin-stdlib and kotlin-test.
+    coreLibrariesVersion = kotlinTarget.get()
+}
+
+// 1.7.21 => 1.7, 1.9 => 1.9
+fun String.toKotlinMinor() = split(".").take(2).joinToString(".")
 
 apply(plugin = "org.jmailen.kotlinter")
 
@@ -67,13 +84,13 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion") // for kotest framework
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion") // for kotest core jvm assertions
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlinVersion")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5") // uses version matching kotlin-jvm plugin
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
     // example use with different frameworks
     testImplementation("org.springframework.boot:spring-boot-starter-webflux:$springBootVersion")
@@ -95,7 +112,7 @@ dependencies {
                 require("2.10.0")
             }
         }
-        testImplementation("org.yaml:snakeyaml:2.4") {
+        testImplementation("org.yaml:snakeyaml:2.5") {
             because("previous versions have security vulnerabilities")
         }
         add("api", "com.squareup.okio:okio") {
@@ -125,66 +142,41 @@ dependencies {
 
 configurations {
     all {
-        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:7.1.0")
+        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:7.1.1")
     }
 }
 
-nexusPublishing {
-    packageGroup.set("no.nav")
-    clientTimeout.set(Duration.ofMinutes(2))
-    repositories {
-        sonatype {
-            username.set(System.getenv("SONATYPE_USERNAME"))
-            password.set(System.getenv("SONATYPE_PASSWORD"))
-        }
-    }
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates(group.toString(), rootProject.name, version.toString())
 
-    transitionCheckOptions {
-        maxRetries.set(60)
-        delayBetween.set(Duration.ofMillis(10000))
+    pom {
+        name.set(rootProject.name)
+        description.set("A simple mock oauth2 server based on OkHttp MockWebServer")
+        url.set("https://github.com/navikt/${rootProject.name}")
+        licenses {
+            license {
+                name.set("MIT License")
+                url.set("https://opensource.org/licenses/MIT")
+                distribution.set("https://opensource.org/licenses/MIT")
+            }
+        }
+        developers {
+            developer {
+                organization.set("Nav (Arbeids- og velferdsdirektoratet) - The Norwegian Labour and Welfare Administration")
+                organizationUrl.set("https://www.nav.no")
+            }
+        }
+        scm {
+            connection.set("scm:git:git://github.com/navikt/${rootProject.name}.git")
+            developerConnection.set("scm:git:ssh://github.com/navikt/${rootProject.name}.git")
+            url.set("https://github.com/navikt/${rootProject.name}")
+        }
     }
 }
 
 publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            artifactId = rootProject.name
-            from(components["java"])
-
-            versionMapping {
-                usage("java-api") {
-                    fromResolutionOf("runtimeClasspath")
-                }
-
-                usage("java-runtime") {
-                    fromResolutionResult()
-                }
-            }
-            pom {
-                name.set(rootProject.name)
-                description.set("A simple mock oauth2 server based on OkHttp MockWebServer")
-                url.set("https://github.com/navikt/${rootProject.name}")
-
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
-                developers {
-                    developer {
-                        organization.set("NAV (Arbeids- og velferdsdirektoratet) - The Norwegian Labour and Welfare Administration")
-                        organizationUrl.set("https://www.nav.no")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:git://github.com/navikt/${rootProject.name}.git")
-                    developerConnection.set("scm:git:ssh://github.com/navikt/${rootProject.name}.git")
-                    url.set("https://github.com/navikt/${rootProject.name}")
-                }
-            }
-        }
-    }
     repositories {
         maven {
             name = "GitHubPackages"
@@ -195,15 +187,6 @@ publishing {
             }
         }
     }
-}
-
-ext["signing.gnupg.keyName"] = System.getenv("GPG_KEY_NAME")
-ext["signing.gnupg.passphrase"] = System.getenv("GPG_PASSPHRASE")
-ext["signing.gnupg.executable"] = "gpg"
-
-signing {
-    useGpgCmd()
-    sign(publishing.publications["mavenJava"])
 }
 
 tasks.javadoc {
@@ -226,7 +209,7 @@ jib {
                 os = "linux"
             }
         }
-        image = "gcr.io/distroless/java17-debian11"
+        image = "gcr.io/distroless/java17-debian12"
     }
     container {
         ports = listOf("8080")
@@ -268,17 +251,6 @@ tasks.named("dependencyUpdates", DependencyUpdatesTask::class.java).configure {
     }
 }
 
-tasks.named("useLatestVersions", se.patrikerdes.UseLatestVersionsTask::class.java).configure {
-    updateBlacklist = listOf(
-        "io.codearte:nexus-staging"
-    )
-}
-
-// This task is added by Gradle when we use java.withJavadocJar()
-tasks.named<Jar>("javadocJar") {
-    from(tasks.named("dokkaJavadoc"))
-}
-
 buildscript {
     dependencies {
         configurations.classpath.get().exclude("xerces", "xercesImpl")
@@ -302,12 +274,6 @@ tasks {
         }
     }
 
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-
     withType<Test> {
         jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
         useJUnitPlatform()
@@ -317,13 +283,7 @@ tasks {
         dependsOn("shadowJar")
     }
 
-    withType<Sign>().configureEach {
-        onlyIf {
-            System.getenv("GPG_KEYS") != null
-        }
-    }
-
     withType<Wrapper> {
-        gradleVersion = "8.9"
+        gradleVersion = "8.14.1"
     }
 }
