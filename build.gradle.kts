@@ -29,10 +29,10 @@ plugins {
     id("org.jmailen.kotlinter") version "5.2.0"
     id("com.google.cloud.tools.jib") version "3.4.5"
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("net.researchgate.release") version "3.1.0"
     id("com.vanniktech.maven.publish") version "0.34.0"
     id("org.jetbrains.dokka") version "2.0.0"
     `java-library`
+    signing
 }
 
 application {
