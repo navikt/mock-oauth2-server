@@ -33,6 +33,7 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.34.0"
     id("org.jetbrains.dokka") version "2.0.0"
     `java-library`
+    `maven-publish`
 }
 
 application {
@@ -152,6 +153,7 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
     coordinates(group.toString(), rootProject.name, version.toString())
+
 
     pom {
         name.set(rootProject.name)
@@ -285,5 +287,11 @@ tasks {
 
     withType<Wrapper> {
         gradleVersion = "8.14.1"
+    }
+}
+
+afterEvaluate {
+    tasks.named("generateMetadataFileForMavenPublication") {
+        dependsOn("dokkaJavadocJar")
     }
 }
