@@ -35,7 +35,6 @@ jobs:
         # The GITHUB_REF tag comes in the format 'refs/tags/xxx'.
         # So if we split on '/' and take the 3rd value, we can get the release name.
         run: |
-          export GPG_TTY=$(tty) && echo "$GPG_KEYS" | gpg --fast-import --batch
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
           IMAGE=${IMAGE_NAME}:${NEW_VERSION}
           echo "Releasing new version ${NEW_VERSION} of $IMAGE"
