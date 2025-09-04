@@ -270,12 +270,6 @@ tasks {
         dependsOn("shadowJar")
     }
 
-    withType<Sign>().configureEach {
-        onlyIf {
-            System.getenv("GPG_KEYS") != null
-        }
-    }
-
     withType<Wrapper> {
         gradleVersion = "8.14.1"
     }
