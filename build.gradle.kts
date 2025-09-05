@@ -27,7 +27,6 @@ plugins {
     id("com.github.ben-manes.versions") version "0.52.0"
     id("org.jmailen.kotlinter") version "5.2.0"
     id("com.google.cloud.tools.jib") version "3.4.5"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
     id("com.vanniktech.maven.publish") version "0.34.0"
     id("org.jetbrains.dokka") version "2.0.0"
     `java-library`
@@ -206,16 +205,15 @@ jib {
                 os = "linux"
             }
         }
-        image = "gcr.io/distroless/java21-debian12"
+        image = "cgr.dev/chainguard/jre:latest-dev"
     }
     container {
         ports = listOf("8080")
         mainClass = mainClassKt
+        jvmFlags = listOf(
+            "--sun-misc-unsafe-memory-access=allow", // see https://netty.io/wiki/java-24-and-sun.misc.unsafe.html
+        )
     }
-}
-
-(components["java"] as AdhocComponentWithVariants).withVariantsFromConfiguration(configurations["shadowRuntimeElements"]) {
-    skip()
 }
 
 fun isNonStable(version: String): Boolean {
@@ -248,25 +246,9 @@ tasks {
         dependsOn("formatKotlin")
     }
 
-    withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
-        archiveBaseName.set("app")
-        archiveClassifier.set("")
-        manifest {
-            attributes(
-                mapOf(
-                    "Main-Class" to mainClassKt
-                )
-            )
-        }
-    }
-
     withType<Test> {
         jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
         useJUnitPlatform()
-    }
-
-    "jibDockerBuild" {
-        dependsOn("shadowJar")
     }
 
     withType<Wrapper> {
