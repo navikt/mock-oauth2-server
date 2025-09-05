@@ -92,7 +92,7 @@ internal class IntrospectTest {
     }
 
     @Test
-    fun `introspect should return iat and exp from claims when provider`() {
+    fun `introspect should return iat and exp from claims when present in token`() {
         val issuerUrl = "http://localhost/default"
         val tokenProvider = OAuth2TokenProvider()
         val claims =

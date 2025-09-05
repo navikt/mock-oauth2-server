@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.util.DateUtils
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -14,6 +15,7 @@ import no.nav.security.mock.oauth2.http.Route
 import no.nav.security.mock.oauth2.http.json
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
+import java.util.Date
 
 private val log = KotlinLogging.logger { }
 
@@ -29,18 +31,18 @@ internal fun Route.Builder.introspect(tokenProvider: OAuth2TokenProvider) =
         request.verifyToken(tokenProvider)?.let {
             json(
                 IntrospectResponse(
-                    true,
-                    it.getStringClaim("scope"),
-                    it.getStringClaim("client_id"),
-                    it.getStringClaim("username"),
-                    it.getStringClaim("token_type") ?: "Bearer",
-                    it.expirationTime?.time?.div(1000),
-                    it.issueTime?.time?.div(1000),
-                    it.notBeforeTime?.time?.div(1000),
-                    it.subject,
-                    it.audience,
-                    it.issuer,
-                    it.jwtid,
+                    active = true,
+                    scope = it.getStringClaim("scope"),
+                    clientId = it.getStringClaim("client_id"),
+                    username = it.getStringClaim("username"),
+                    tokenType = it.getStringClaim("token_type") ?: "Bearer",
+                    exp = it.expirationTime.epochSeconds(),
+                    iat = it.issueTime.epochSeconds(),
+                    nbf = it.notBeforeTime.epochSeconds(),
+                    sub = it.subject,
+                    aud = it.audience,
+                    iss = it.issuer,
+                    jti = it.jwtid,
                 ),
             )
         } ?: json(IntrospectResponse(false))
@@ -69,6 +71,8 @@ private fun String.auth(method: String): String? =
         .split(method)
         .takeIf { it.size == 2 }
         ?.last()
+
+private fun Date?.epochSeconds(): Long? = this?.let(DateUtils::toSecondsSinceEpoch)
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class IntrospectResponse(
