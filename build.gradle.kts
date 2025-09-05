@@ -1,4 +1,3 @@
-import java.time.Duration
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
@@ -207,7 +206,7 @@ jib {
                 os = "linux"
             }
         }
-        image = "gcr.io/distroless/java17-debian12"
+        image = "gcr.io/distroless/java21-debian12"
     }
     container {
         ports = listOf("8080")
