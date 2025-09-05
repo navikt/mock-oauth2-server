@@ -118,6 +118,52 @@ internal class IntrospectTest {
     }
 
     @Test
+    fun `introspect should return single audience as string`() {
+        val issuerUrl = "http://localhost/default"
+        val tokenProvider = OAuth2TokenProvider()
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "client_id" to "yolo",
+                "token_type" to "token",
+                "sub" to "foo",
+                "aud" to "some-audience",
+            )
+        val token = tokenProvider.jwt(claims)
+        val request = request("$issuerUrl$INTROSPECT", token.serialize())
+
+        routes { introspect(tokenProvider) }.invoke(request).asClue {
+            it.status shouldBe 200
+            val response = it.parse<Map<String, Any>>()
+            response shouldContainAll claims
+            response shouldContain ("active" to true)
+        }
+    }
+
+    @Test
+    fun `introspect should return multiple audiences as array of strings`() {
+        val issuerUrl = "http://localhost/default"
+        val tokenProvider = OAuth2TokenProvider()
+        val claims =
+            mapOf(
+                "iss" to issuerUrl,
+                "client_id" to "yolo",
+                "token_type" to "token",
+                "sub" to "foo",
+                "aud" to listOf("audience1", "audience2"),
+            )
+        val token = tokenProvider.jwt(claims)
+        val request = request("$issuerUrl$INTROSPECT", token.serialize())
+
+        routes { introspect(tokenProvider) }.invoke(request).asClue {
+            it.status shouldBe 200
+            val response = it.parse<Map<String, Any>>()
+            response shouldContainAll claims
+            response shouldContain ("active" to true)
+        }
+    }
+
+    @Test
     fun `introspect should return active false when token is missing`() {
         val url = "http://localhost/default$INTROSPECT"
 

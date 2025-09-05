@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.introspect
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.nimbusds.jwt.JWTClaimsSet
@@ -90,6 +91,7 @@ data class IntrospectResponse(
     @JsonProperty("sub")
     val sub: String? = null,
     @JsonProperty("aud")
+    @JsonFormat(with = [JsonFormat.Feature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED])
     val aud: List<String>? = null,
     @JsonProperty("iss")
     val iss: String? = null,
