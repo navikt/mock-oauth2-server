@@ -194,6 +194,8 @@ tasks.javadoc {
     }
 }
 
+// Original Jib configuration (commented out in favor of custom Dockerfile with curl)
+/*
 jib {
     from {
         platforms {
@@ -211,6 +213,17 @@ jib {
     container {
         ports = listOf("8080")
         mainClass = mainClassKt
+    }
+}
+*/
+
+// Add Docker build task for custom Dockerfile
+tasks.register("buildDocker") {
+    dependsOn("shadowJar")
+    doLast {
+        exec {
+            commandLine("docker", "build", "-t", "mock-oauth2-server:latest", ".")
+        }
     }
 }
 
