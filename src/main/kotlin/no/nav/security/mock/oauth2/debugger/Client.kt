@@ -10,7 +10,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.internal.toHostHeader
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import javax.net.ssl.SSLContext
@@ -43,6 +42,15 @@ internal class TokenRequest(
                 "${it.first}: ${it.second}"
             } +
             "\n\n$body"
+
+    private fun HttpUrl.toHostHeader(includeDefaultPort: Boolean = false): String {
+        val host = if (":" in host) "[$host]" else host
+        return if (includeDefaultPort || port != HttpUrl.defaultPort(scheme)) {
+            "$host:$port"
+        } else {
+            host
+        }
+    }
 
     private fun Map<String, String>.toKeyValueString(entrySeparator: String): String =
         this
