@@ -21,6 +21,7 @@ import com.nimbusds.oauth2.sdk.GrantType.CLIENT_CREDENTIALS
 import com.nimbusds.oauth2.sdk.GrantType.JWT_BEARER
 import com.nimbusds.oauth2.sdk.GrantType.PASSWORD
 import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
+import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.TokenRequest
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.Matcher
@@ -29,7 +30,6 @@ import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import no.nav.security.mock.oauth2.MockOAuth2Server
-import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback

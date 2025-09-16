@@ -1,9 +1,9 @@
 package no.nav.security.mock.oauth2.e2e
 
+import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import no.nav.security.mock.oauth2.grant.TOKEN_EXCHANGE
 import no.nav.security.mock.oauth2.testutils.ClientAssertionType
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
 import no.nav.security.mock.oauth2.testutils.SubjectTokenType

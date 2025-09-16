@@ -295,7 +295,7 @@ open class MockOAuth2Server(
             TokenRequest
                 .Builder(
                     URI.create("http://mockgrant"),
-                    ClientID("mockclientid"),
+                    ClientSecretBasic(ClientID("mockclientid"), Secret("secret")),
                     mockGrant,
                 ).build()
         return this.config.tokenProvider.exchangeAccessToken(
