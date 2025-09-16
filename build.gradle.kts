@@ -14,7 +14,7 @@ val freemarkerVersion = "2.3.34"
 val kotestVersion = "5.9.1"
 val bouncyCastleVersion = "1.81"
 val springBootVersion = "3.5.5"
-val reactorTestVersion = "3.7.9"
+val reactorTestVersion = "3.7.11"
 val ktorVersion = "2.3.13"
 val jsonPathVersion = "2.9.0"
 
