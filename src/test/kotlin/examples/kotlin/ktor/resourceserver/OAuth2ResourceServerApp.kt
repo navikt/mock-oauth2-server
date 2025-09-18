@@ -106,7 +106,7 @@ class AuthConfig(
                 install(ContentNegotiation) {
                     jackson {
                         configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                        setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                        setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
                     }
                 }
             }

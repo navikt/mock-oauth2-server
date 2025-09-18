@@ -19,7 +19,7 @@ internal class HttpUrlExtensionsTest {
 
     private fun `verify oauth2 endpoint urls`(baseUrl: String) {
         val httpUrl = baseUrl.toHttpUrl()
-        httpUrl.toIssuerUrl() shouldBe "$baseUrl".toHttpUrl()
+        httpUrl.toIssuerUrl() shouldBe baseUrl.toHttpUrl()
         httpUrl.toWellKnownUrl() shouldBe "$baseUrl/.well-known/openid-configuration".toHttpUrl()
         httpUrl.toOAuth2AuthorizationServerMetadataUrl() shouldBe "$baseUrl/.well-known/oauth-authorization-server".toHttpUrl()
         httpUrl.toTokenEndpointUrl() shouldBe "$baseUrl/token".toHttpUrl()

@@ -99,7 +99,7 @@ internal fun OkHttpClient.post(tokenRequest: TokenRequest): String =
                 .build(),
         ).execute()
         .body
-        ?.string() ?: throw RuntimeException("could not get response body from url=${tokenRequest.url}")
+        .string()
 
 fun OkHttpClient.withSsl(
     ssl: Ssl,

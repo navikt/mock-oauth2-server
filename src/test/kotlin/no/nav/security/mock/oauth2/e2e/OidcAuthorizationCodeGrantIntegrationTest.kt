@@ -123,7 +123,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
         client.tokenRequest(code, pkce).asClue {
             it.code shouldBe 200
-            it.body?.string() shouldContain "id_token"
+            it.body.string() shouldContain "id_token"
         }
     }
 
@@ -143,7 +143,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         val invalidPkce = Pkce()
         client.tokenRequest(code, invalidPkce).asClue {
             it.code shouldBe 400
-            it.body?.string() shouldContain "code_verifier does not compute to code_challenge from request"
+            it.body.string() shouldContain "code_verifier does not compute to code_challenge from request"
         }
     }
 

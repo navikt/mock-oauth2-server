@@ -40,7 +40,7 @@ class ExampleAppWithClientCredentialsClient(
                                 .build(),
                         ).build(),
                 ).execute()
-        return tokenResponse.body?.string()?.let {
+        return tokenResponse.body.string().let {
             ObjectMapper().readValue<JsonNode>(it).get("access_token")?.textValue()
         }
     }

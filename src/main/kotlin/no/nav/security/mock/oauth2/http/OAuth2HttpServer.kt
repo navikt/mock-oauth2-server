@@ -6,9 +6,10 @@ import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.ChannelOption
+import io.netty.channel.MultiThreadIoEventLoopGroup
 import io.netty.channel.ServerChannel
 import io.netty.channel.SimpleChannelInboundHandler
-import io.netty.channel.nio.NioEventLoopGroup
+import io.netty.channel.nio.NioIoHandler
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.DefaultHttpResponse
@@ -71,8 +72,7 @@ interface OAuth2HttpServer : AutoCloseable {
     fun sslConfig(): Ssl?
 }
 
-class
-MockWebServerWrapper
+class MockWebServerWrapper
     @JvmOverloads
     constructor(
         val ssl: Ssl? = null,
@@ -139,8 +139,8 @@ class NettyWrapper
     constructor(
         val ssl: Ssl? = null,
     ) : OAuth2HttpServer {
-        private val masterGroup = NioEventLoopGroup()
-        private val workerGroup = NioEventLoopGroup()
+        private val masterGroup = MultiThreadIoEventLoopGroup(NioIoHandler.newFactory())
+        private val workerGroup = MultiThreadIoEventLoopGroup(NioIoHandler.newFactory())
         private var closeFuture: ChannelFuture? = null
         private lateinit var address: InetSocketAddress
         private var port by Delegates.notNull<Int>()

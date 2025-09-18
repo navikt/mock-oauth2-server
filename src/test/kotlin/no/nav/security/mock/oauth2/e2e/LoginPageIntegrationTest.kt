@@ -18,7 +18,7 @@ class LoginPageIntegrationTest {
     @Test
     fun `authorization with interactive login should return built-in login page`() {
         val server = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
-        val body = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).body?.string()
+        val body = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).body.string()
 
         body shouldNotBe null
         body shouldContain "<h2 class=\"title\">Mock OAuth2 Server Sign-in</h2>"
@@ -33,7 +33,7 @@ class LoginPageIntegrationTest {
                     loginPagePath = "./src/test/resources/login.example.html",
                 ),
             ).apply { start() }
-        val body = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).body?.string()
+        val body = client.get(server.authorizationEndpointUrl("default").authenticationRequest()).body.string()
 
         body shouldNotBe null
         body shouldContain "Mock OAuth2 Server Example"

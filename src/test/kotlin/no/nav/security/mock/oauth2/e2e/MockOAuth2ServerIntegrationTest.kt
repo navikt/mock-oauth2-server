@@ -49,9 +49,9 @@ class MockOAuth2ServerIntegrationTest {
             ).apply {
                 start()
             }
-        client.get(s.wellKnownUrl("someissuer")).body?.string() shouldContain s.issuerUrl("someissuer").toString()
-        client.get(s.url("/custom")).body?.string() shouldBe "custom route"
-        client.get(s.url("/someissuer/custom")).body?.string() shouldBe "custom route"
+        client.get(s.wellKnownUrl("someissuer")).body.string() shouldContain s.issuerUrl("someissuer").toString()
+        client.get(s.url("/custom")).body.string() shouldBe "custom route"
+        client.get(s.url("/someissuer/custom")).body.string() shouldBe "custom route"
     }
 
     @Test
@@ -146,7 +146,7 @@ class MockOAuth2ServerIntegrationTest {
                     ),
                 )
             val wellKnown = client.get(this.wellKnownUrl("default")).parse<WellKnown>()
-            val jwks = client.get(wellKnown.jwksUri.toHttpUrl()).body?.let { JWKSet.parse(it.string()) }
+            val jwks = client.get(wellKnown.jwksUri.toHttpUrl()).body.let { JWKSet.parse(it.string()) }
 
             jwks.shouldNotBeNull()
 
@@ -176,7 +176,7 @@ class MockOAuth2ServerIntegrationTest {
                 )
 
             val wellKnown = client.get(this.wellKnownUrl("default")).parse<WellKnown>()
-            val jwks = client.get(wellKnown.jwksUri.toHttpUrl()).body?.let { JWKSet.parse(it.string()) }
+            val jwks = client.get(wellKnown.jwksUri.toHttpUrl()).body.let { JWKSet.parse(it.string()) }
 
             jwks.shouldNotBeNull()
 

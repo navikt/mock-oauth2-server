@@ -92,11 +92,11 @@ internal class AuthorizationCodeHandler(
 
     private fun getLoginTokenCallbackOrDefault(
         code: AuthorizationCode,
-        OAuth2TokenCallback: OAuth2TokenCallback,
+        oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenCallback =
         takeLoginFromCache(code)?.let {
-            LoginOAuth2TokenCallback(it, OAuth2TokenCallback)
-        } ?: OAuth2TokenCallback
+            LoginOAuth2TokenCallback(it, oAuth2TokenCallback)
+        } ?: oAuth2TokenCallback
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
 
@@ -120,7 +120,7 @@ internal class AuthorizationCodeHandler(
                     try {
                         jsonMapper
                             .readTree(it)
-                            .fields()
+                            .properties()
                             .forEach { field ->
                                 put(field.key, jsonMapper.readValue(field.value.toString()))
                             }

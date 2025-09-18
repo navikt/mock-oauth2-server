@@ -92,11 +92,11 @@ internal class OAuth2HttpServerTest {
                     this.url("/header"),
                     Headers.headersOf("header1", "headervalue1"),
                 ).body
-                ?.string() shouldBe "headermatch"
+                .string() shouldBe "headermatch"
 
-            client.get(this.url("/1/2")).body?.string() shouldBe "pathmatch"
-            client.get(this.url("path?param1=value1&param2=value2")).body?.string() shouldBe "querymatch"
-            client.post(this.url("/form"), mapOf("formparam" to "formvalue1")).body?.string() shouldBe "bodymatch"
+            client.get(this.url("/1/2")).body.string() shouldBe "pathmatch"
+            client.get(this.url("path?param1=value1&param2=value2")).body.string() shouldBe "querymatch"
+            client.post(this.url("/form"), mapOf("formparam" to "formvalue1")).body.string() shouldBe "bodymatch"
             client.get(this.url("/notfound")).code shouldBe 404
             client.get(this.url("/redirect")).apply {
                 this.code shouldBe 302

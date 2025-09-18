@@ -43,7 +43,7 @@ class ExampleAppWithOpenIdConnect(
                                         .build(),
                                 ).build(),
                         ).execute()
-                val idToken: String = ObjectMapper().readValue<JsonNode>(tokenResponse.body!!.string()).get("id_token").textValue()
+                val idToken: String = ObjectMapper().readValue<JsonNode>(tokenResponse.body.string()).get("id_token").textValue()
                 val idTokenClaims: JWTClaimsSet = verifyJwt(idToken, metadata.issuer, retrieveJwks())
                 MockResponse()
                     .setResponseCode(200)

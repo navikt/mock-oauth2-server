@@ -78,8 +78,8 @@ abstract class AbstractExampleApp(
                     .build(),
             ).execute()
             .body
-            ?.string()
-            ?.let {
+            .string()
+            .let {
                 JWKSet.parse(it)
             } ?: throw RuntimeException("could not retrieve jwks")
 

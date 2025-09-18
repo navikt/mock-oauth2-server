@@ -68,7 +68,7 @@ class InteractiveLoginIntegrationTest {
         val loginUrl = server.authorizationEndpointUrl(issuerId).authenticationRequest()
         client.get(loginUrl).asClue {
             it.code shouldBe 200
-            it.body?.string() shouldContain "<html"
+            it.body.string() shouldContain "<html"
         }
 
         return client
