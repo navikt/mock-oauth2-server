@@ -52,7 +52,7 @@ fun main() {
             ),
         )
 
-    embeddedServer(Netty, port = 8080) {
+    embeddedServer(Netty, port = 9005) {
         module(authConfig)
     }.start(true)
 }

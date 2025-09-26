@@ -4,12 +4,12 @@ services:
   mock-oauth2-server:
     image: mock-oauth2-server:latest
     ports:
-      - "8080:8080"
+      - "9005:9005"
     volumes:
       - ./src/test/resources/config.json:/app/config.json
       - ./src/test/resources/login.example.html:/app/login/login.example.html
       - ./src/test/resources/static/:/app/static/
     environment:
       LOG_LEVEL: "debug"
-      SERVER_PORT: 8080
+      SERVER_PORT: 9005
       JSON_CONFIG_PATH: /app/config.json

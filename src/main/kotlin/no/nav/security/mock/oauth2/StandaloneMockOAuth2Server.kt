@@ -24,7 +24,7 @@ object StandaloneConfig {
             .fromEnv()
             ?.let { InetAddress.getByName(it) } ?: InetSocketAddress(0).address
 
-    fun port(): Int = (SERVER_PORT.fromEnv()?.toInt() ?: PORT.fromEnv()?.toInt()) ?: 8080
+    fun port(): Int = (SERVER_PORT.fromEnv()?.toInt() ?: PORT.fromEnv()?.toInt()) ?: 9005
 
     fun oauth2Config(): OAuth2Config =
         with(jsonFromEnv()) {

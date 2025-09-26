@@ -102,7 +102,7 @@ open class MockOAuth2Server(
 
     /**
      * Returns the authorization server's issuer identifier for the given [path].
-     * The identifier is a URL without query or fragment components, e.g. `http://localhost:8080/some-issuer`.
+     * The identifier is a URL without query or fragment components, e.g. `http://localhost:9005/some-issuer`.
      *
      * @param path The path or identifier for the issuer.
      */
@@ -141,7 +141,7 @@ open class MockOAuth2Server(
     /**
      * Returns the authorization server's well-known OpenID Connect metadata discovery URL for the given [issuerId].
      *
-     * E.g. `http://localhost:8080/some-issuer/.well-known/openid-configuration`.
+     * E.g. `http://localhost:9005/some-issuer/.well-known/openid-configuration`.
      *
      * See also [OpenID Provider metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
      *
@@ -152,7 +152,7 @@ open class MockOAuth2Server(
     /**
      * Returns the authorization server's well-known OAuth2 metadata discovery URL for the given [issuerId].
      *
-     * E.g. `http://localhost:8080/some-issuer/.well-known/oauth-authorization-server`.
+     * E.g. `http://localhost:9005/some-issuer/.well-known/oauth-authorization-server`.
      *
      * See also [RFC8414 - OAuth 2.0 Authorization Server Metadata](https://datatracker.ietf.org/doc/html/rfc8414).
      *
@@ -163,7 +163,7 @@ open class MockOAuth2Server(
     /**
      * Returns the authorization server's `token_endpoint` for the given [issuerId].
      *
-     * E.g. `http://localhost:8080/some-issuer/token`.
+     * E.g. `http://localhost:9005/some-issuer/token`.
      *
      * @param issuerId The path or identifier for the issuer.
      */
@@ -172,7 +172,7 @@ open class MockOAuth2Server(
     /**
      * Returns the authorization server's `jwks_uri` for the given [issuerId].
      *
-     * E.g. `http://localhost:8080/some-issuer/jwks`.
+     * E.g. `http://localhost:9005/some-issuer/jwks`.
      *
      * @param issuerId The path or identifier for the issuer.
      */
@@ -188,7 +188,7 @@ open class MockOAuth2Server(
     /**
      * Returns the authorization server's `authorization_endpoint` for the given [issuerId].
      *
-     * E.g. `http://localhost:8080/some-issuer/authorize`.
+     * E.g. `http://localhost:9005/some-issuer/authorize`.
      *
      * @param issuerId The path or identifier for the issuer.
      */
@@ -197,7 +197,7 @@ open class MockOAuth2Server(
     /**
      * Returns the authorization server's `end_session_endpoint` for the given [issuerId].
      *
-     * E.g. `http://localhost:8080/some-issuer/endsession`.
+     * E.g. `http://localhost:9005/some-issuer/endsession`.
      *
      * @param issuerId The path or identifier for the issuer.
      */
@@ -206,7 +206,7 @@ open class MockOAuth2Server(
     /**
      * Returns the authorization server's `revocation_endpoint` for the given [issuerId].
      *
-     * E.g. `http://localhost:8080/some-issuer/revoke`.
+     * E.g. `http://localhost:9005/some-issuer/revoke`.
      *
      * @param issuerId The path or identifier for the issuer.
      */
@@ -215,7 +215,7 @@ open class MockOAuth2Server(
     /**
      * Returns the authorization server's `userinfo_endpoint` for the given [issuerId].
      *
-     * E.g. `http://localhost:8080/some-issuer/userinfo`.
+     * E.g. `http://localhost:9005/some-issuer/userinfo`.
      *
      * @param issuerId The path or identifier for the issuer.
      */

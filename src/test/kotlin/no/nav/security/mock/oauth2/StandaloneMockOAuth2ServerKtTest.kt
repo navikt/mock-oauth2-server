@@ -29,7 +29,7 @@ internal class StandaloneMockOAuth2ServerKtTest {
         config.interactiveLogin shouldBe false
         config.httpServer should beInstanceOf<NettyWrapper>()
         hostname() shouldBe InetSocketAddress(0).address
-        port() shouldBe 8080
+        port() shouldBe 9005
     }
 
     @Test

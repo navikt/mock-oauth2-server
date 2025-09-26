@@ -34,7 +34,7 @@ import io.ktor.server.routing.param
 import io.ktor.server.routing.routing
 
 fun main() {
-    embeddedServer(Netty, port = 8080) {
+    embeddedServer(Netty, port = 9005) {
         module(
             AuthConfig(
                 listOf(
