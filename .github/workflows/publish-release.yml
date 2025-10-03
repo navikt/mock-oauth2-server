@@ -4,6 +4,7 @@ on:
     types: [published]
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME_DH: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
 jobs:
   publish-release:
     permissions:
@@ -25,7 +26,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish artifact
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish artifact and images
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
@@ -38,6 +45,7 @@ jobs:
         run: |
           NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
           IMAGE=${IMAGE_NAME}:${NEW_VERSION}
+          IMAGE_DH=${IMAGE_NAME_DH}:${NEW_VERSION}
           echo "Releasing new version ${NEW_VERSION} of $IMAGE"
           ./gradlew -Pversion=${NEW_VERSION} publishAllPublicationsToGithubPackagesRepository publishAndReleaseToMavenCentral --no-configuration-cache
-          ./gradlew jib --image="${IMAGE}"
+          ./gradlew jib --image="${IMAGE}" --image="${IMAGE_DH}"
