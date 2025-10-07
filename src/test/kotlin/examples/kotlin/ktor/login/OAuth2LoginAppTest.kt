@@ -53,15 +53,15 @@ internal class OAuth2LoginAppTest {
         port: Int,
         test: ApplicationEngine.() -> R,
     ): R {
-        val engine =
+        val server =
             embeddedServer(Netty, port = port) {
                 moduleFunction(this)
             }
-        engine.start()
+        server.start()
         try {
-            return engine.test()
+            return test(server.engine)
         } finally {
-            engine.stop(0L, 0L)
+            server.stop(0L, 0L)
         }
     }
 
