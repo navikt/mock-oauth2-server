@@ -15,7 +15,6 @@ import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
-import io.ktor.server.application.log
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.OAuthServerSettings
@@ -28,7 +27,6 @@ import io.ktor.server.resources.Resources
 import io.ktor.server.resources.href
 import io.ktor.server.resources.resource
 import io.ktor.server.response.respondText
-import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.param
 import io.ktor.server.routing.routing
@@ -76,7 +74,6 @@ fun Application.module(authConfig: AuthConfig) {
     }
 
     routing {
-        trace { application.log.info(it.buildText()) }
         authenticate("oauth2") {
             get {
                 call.respondText("nothing to see here really")
