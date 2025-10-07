@@ -15,7 +15,7 @@ val kotestVersion = "6.0.3"
 val bouncyCastleVersion = "1.82"
 val springBootVersion = "3.5.6"
 val reactorTestVersion = "3.7.11"
-val ktorVersion = "2.3.13"
+val ktorVersion = "3.3.0"
 val jsonPathVersion = "2.9.0"
 
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -29,6 +29,7 @@ plugins {
     id("com.google.cloud.tools.jib") version "3.4.5"
     id("com.vanniktech.maven.publish") version "0.34.0"
     id("org.jetbrains.dokka") version "2.0.0"
+    kotlin("plugin.serialization") version "2.2.0"
     `java-library`
     signing
 }
@@ -127,7 +128,7 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
     testImplementation("io.ktor:ktor-server-sessions:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-locations:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-resources:$ktorVersion")
     testImplementation("io.ktor:ktor-server-auth:$ktorVersion")
     testImplementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
     testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
@@ -135,7 +136,10 @@ dependencies {
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion"){
+        //Provides transitive vulnerable dependency maven:commons-codec:commons-codec:1.11 WS-2019-0379 6.5 Input Validation  Results powered by Mend.io
+        exclude("commons-codec", "commons-codec")
+    }
 }
 
 configurations {

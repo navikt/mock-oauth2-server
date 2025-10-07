@@ -9,10 +9,11 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.encodedPath
+import io.ktor.resources.Resource
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.OAuthAccessTokenResponse
@@ -21,17 +22,16 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.oauth
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.locations.KtorExperimentalLocationsAPI
-import io.ktor.server.locations.Location
-import io.ktor.server.locations.Locations
-import io.ktor.server.locations.location
-import io.ktor.server.locations.locations
-import io.ktor.server.locations.url
 import io.ktor.server.netty.Netty
+import io.ktor.server.resources.Resources
+import io.ktor.server.resources.href
+import io.ktor.server.resources.resource
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.param
 import io.ktor.server.routing.routing
+import io.ktor.server.util.url
+import kotlinx.serialization.Serializable
 
 fun main() {
     embeddedServer(Netty, port = 8080) {
@@ -54,19 +54,21 @@ fun main() {
     }.start(true)
 }
 
-@OptIn(KtorExperimentalLocationsAPI::class)
 fun Application.module(authConfig: AuthConfig) {
     val idProviders = authConfig.providers.map { it.settings }.associateBy { it.name }
 
-    install(Locations)
+    install(Resources)
     install(Authentication) {
         oauth("oauth2") {
             client = httpClient
             providerLookup = {
-                idProviders[application.locations.resolve<Login>(Login::class, this).type] ?: idProviders.values.first()
+                val t = this.parameters["type"].orEmpty()
+                idProviders[t] ?: idProviders.values.first()
             }
             urlProvider = {
-                url(Login(it.name))
+                url {
+                    encodedPath = application.href(Login(it.name))
+                }
             }
         }
     }
@@ -76,26 +78,32 @@ fun Application.module(authConfig: AuthConfig) {
             get {
                 call.respondText("nothing to see here really")
             }
-            location<Login> {
+            resource<Login> {
+                // /login/{type}?error=...
                 param("error") {
-                    handle {
-                        call.respondText(ContentType.Text.Html, HttpStatusCode.BadRequest) {
+                    get {
+                        call.respondText(
+                            ContentType.Text.Html,
+                            HttpStatusCode.BadRequest
+                        ) {
                             "received error on login: ${call.parameters.getAll("error").orEmpty()}"
                         }
                     }
                 }
-                handle {
+                // /login/{type}
+                get {
                     call.respondText("welcome ${call.subject()}")
                 }
             }
+
         }
     }
 }
 
-@Location("/login/{type?}")
-@OptIn(KtorExperimentalLocationsAPI::class)
+@Serializable
+@Resource("/login/{type?}")
 class Login(
-    val type: String = "",
+    val type: String? = "",
 )
 
 class AuthConfig(
