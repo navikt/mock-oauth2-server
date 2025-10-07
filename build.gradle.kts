@@ -24,7 +24,7 @@ plugins {
     application
     alias(libs.plugins.kotlin.jvm) // refers to plugin declared in gradle/libs.versions.toml
     id("se.patrikerdes.use-latest-versions") version "0.2.19"
-    id("com.github.ben-manes.versions") version "0.52.0"
+    id("com.github.ben-manes.versions") version "0.53.0"
     id("org.jmailen.kotlinter") version "5.2.0"
     id("com.google.cloud.tools.jib") version "3.4.5"
     id("com.vanniktech.maven.publish") version "0.34.0"
