@@ -1,9 +1,6 @@
 package examples.kotlin.ktor.login
 
 import io.kotest.assertions.asClue
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.UUIDVersion
-import io.kotest.matchers.string.beUUID
 import io.kotest.matchers.string.shouldMatch
 import io.ktor.client.request.prepareGet
 import io.ktor.server.application.Application

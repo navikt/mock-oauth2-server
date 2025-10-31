@@ -1,16 +1,12 @@
 package no.nav.security.mock.oauth2.grant
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.nimbusds.jwt.PlainJWT
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldMatch
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
-import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.subject
@@ -22,15 +18,16 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
-import java.util.stream.Stream
 
 internal class AuthorizationCodeHandlerTest {
     private val handler = AuthorizationCodeHandler(OAuth2TokenProvider(), RefreshTokenManager())
 
-    private fun HttpUrl.toOAuth2Request(headers: Headers = Headers.headersOf(), method: String = "GET", body: String? = null) = OAuth2HttpRequest(headers, method, this, body)
+    private fun HttpUrl.toOAuth2Request(
+        headers: Headers = Headers.headersOf(),
+        method: String = "GET",
+        body: String? = null,
+    ) = OAuth2HttpRequest(headers, method, this, body)
 
     @Test
     fun `authorization code response should contain required parameters`() {
@@ -42,7 +39,6 @@ internal class AuthorizationCodeHandlerTest {
                     redirectUri = "http://redirect",
                 ),
         ) {
-
             handler.authorizationCodeResponse(this.toOAuth2Request()).asClue {
                 it.impliedResponseType().impliesCodeFlow() shouldBe true
                 it.impliedResponseMode() shouldBe ResponseMode.QUERY

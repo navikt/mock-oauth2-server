@@ -41,24 +41,27 @@ data class Login(
     val claims: String? = null,
 ) {
     companion object {
-
         private fun defaultLoginClaimSetBuilder(request: OAuth2HttpRequest): JWTClaimsSet.Builder {
-            val issuerId = request.url.issuerId();
+            val issuerId = request.url.issuerId()
             val clientId = request.asAuthenticationRequest().clientID.value
 
-            val claimsBuilder = JWTClaimsSet.Builder()
-                .subject(UUID.randomUUID().toString())
-                .audience(clientId)
+            val claimsBuilder =
+                JWTClaimsSet
+                    .Builder()
+                    .subject(UUID.randomUUID().toString())
+                    .audience(clientId)
 
             when (issuerId) {
-                "idporten" -> claimsBuilder
-                    .claim("pid", "01010199999")
-                    .claim("amr", "mock-idp")
-                    .claim("acr", "eidas-loa-high")
-                "signicat" -> claimsBuilder
-                    .claim("nin", "01010199999")
-                    .claim("idp_issuer", "mock-idp")
-                else -> log.warn{ "Unknown issuer $issuerId, cannot guarantee valid claims" }
+                "idporten" ->
+                    claimsBuilder
+                        .claim("pid", "01010199999")
+                        .claim("amr", "mock-idp")
+                        .claim("acr", "eidas-loa-high")
+                "signicat" ->
+                    claimsBuilder
+                        .claim("nin", "01010199999")
+                        .claim("idp_issuer", "mock-idp")
+                else -> log.warn { "Unknown issuer $issuerId, cannot guarantee valid claims" }
             }
             return claimsBuilder
         }
@@ -66,7 +69,11 @@ data class Login(
         fun fromRequest(request: OAuth2HttpRequest): Login {
             val claimsBuilder = defaultLoginClaimSetBuilder(request)
 
-            request.asAuthenticationRequest().idTokenHint?.jwtClaimsSet?.writeTo(claimsBuilder)
+            request
+                .asAuthenticationRequest()
+                .idTokenHint
+                ?.jwtClaimsSet
+                ?.writeTo(claimsBuilder)
 
             val claims = claimsBuilder.build()
 
@@ -79,5 +86,4 @@ data class Login(
             this.claims.forEach { (key, value) -> builder.claim(key, value) }
         }
     }
-
 }

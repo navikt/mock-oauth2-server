@@ -33,9 +33,7 @@ internal class AuthorizationCodeHandler(
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = HashMap()
 
-    fun authorizationCodeResponse(
-        request: OAuth2HttpRequest
-    ): AuthenticationSuccessResponse {
+    fun authorizationCodeResponse(request: OAuth2HttpRequest): AuthenticationSuccessResponse {
         val authenticationRequest = request.asAuthenticationRequest()
         val login = Login.fromRequest(request)
         when {

@@ -1,8 +1,6 @@
 package no.nav.security.mock.oauth2.examples.openidconnect
 
-import com.nimbusds.jwt.JWTClaimsSet
 import io.kotest.assertions.asClue
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldMatch
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.testutils.uuidRegex
