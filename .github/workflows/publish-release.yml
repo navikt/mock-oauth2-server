@@ -18,20 +18,19 @@ jobs:
         uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # ratchet:actions/setup-java@v5
         with:
           java-version: 21
-          distribution: 'temurin'
-          cache: 'gradle'
+          distribution: "temurin"
+          cache: "gradle"
       - name: Login to GitHub Container Registry
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # ratchet:docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
+      #- name: Login to DockerHub
+      #  uses: docker/login-action@v3
+      #  with:
+      #    username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #    password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Publish artifact and images
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
@@ -48,4 +47,5 @@ jobs:
           IMAGE_DH=${IMAGE_NAME_DH}:${NEW_VERSION}
           echo "Releasing new version ${NEW_VERSION} of $IMAGE"
           ./gradlew -Pversion=${NEW_VERSION} publishAllPublicationsToGithubPackagesRepository publishAndReleaseToMavenCentral --no-configuration-cache
-          ./gradlew jib --image="${IMAGE}" --image="${IMAGE_DH}"
+          # ./gradlew jib --image="${IMAGE}" --image="${IMAGE_DH}"
+          ./gradlew jib --image="${IMAGE}"
