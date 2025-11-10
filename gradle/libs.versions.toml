@@ -1,6 +1,6 @@
 [versions]
 kotlinTarget = "1.9.0" # Minimum supported Kotlin version for consumers of the library
-kotlinToolchain = "2.2.20" # Actual version used by tooling within this project
+kotlinToolchain = "2.2.21" # Actual version used by tooling within this project
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinToolchain" }
