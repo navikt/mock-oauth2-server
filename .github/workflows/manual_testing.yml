@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout latest code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: add-arm64-architecture
 
