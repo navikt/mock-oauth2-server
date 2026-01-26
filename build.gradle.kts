@@ -2,7 +2,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
-val assertjVersion = "3.27.6"
+val assertjVersion = "3.27.7"
 val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.5.20"
 val nimbusSdkVersion = "11.29.2"
