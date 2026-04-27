@@ -74,6 +74,9 @@ data class RequestMappingTokenCallback(
     val issuerId: String,
     val requestMappings: List<RequestMapping>,
     val tokenExpiry: Long = Duration.ofHours(1).toSeconds(),
+    // Populated at runtime from the original auth request (e.g. login_hint, acr_values).
+    // Not part of the JSON config — defaults to empty on deserialization.
+    val extraParams: Map<String, String> = emptyMap(),
 ) : OAuth2TokenCallback {
     override fun issuerId(): String = issuerId
 
@@ -88,8 +91,14 @@ data class RequestMappingTokenCallback(
     override fun tokenExpiry(): Long = tokenExpiry
 
     private fun List<RequestMapping>.getClaims(tokenRequest: TokenRequest): Map<String, Any> {
-        val claims = firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
-        val templateParams = tokenRequest.toHTTPRequest().bodyAsFormParameters.mapValues { it.value.joinToString(separator = " ") }
+        // Convert extraParams to List-values for isMatch() compatibility
+        val extraParamsList = extraParams.mapValues { listOf(it.value) }
+        val claims = firstOrNull { it.isMatch(tokenRequest, extraParamsList) }?.claims ?: emptyMap()
+
+        // Merge token body params with auth-request params so ${login_hint} etc. resolve in claim templates
+        val templateParams =
+            tokenRequest.toHTTPRequest().bodyAsFormParameters
+                .mapValues { it.value.joinToString(separator = " ") } + extraParams
 
         // in case client_id is not set as form param but as basic auth, we add it to the template params in two different formats for backwards compatibility
         return claims.replaceValues(
@@ -113,8 +122,19 @@ data class RequestMapping(
     val claims: Map<String, Any> = emptyMap(),
     val typeHeader: String = JOSEObjectType.JWT.type,
 ) {
-    fun isMatch(tokenRequest: TokenRequest): Boolean =
-        tokenRequest.toHTTPRequest().bodyAsFormParameters[requestParam]?.any {
+    /**
+     * Checks whether this mapping matches the given token request.
+     *
+     * @param extraParams Additional params (e.g. from the original auth request such as login_hint)
+     *                    merged on top of the token request body before matching.
+     */
+    fun isMatch(
+        tokenRequest: TokenRequest,
+        extraParams: Map<String, List<String>> = emptyMap(),
+    ): Boolean {
+        val allParams = tokenRequest.toHTTPRequest().bodyAsFormParameters + extraParams
+        return allParams[requestParam]?.any {
             match == "*" || match == it || match.toRegex().matchEntire(it) != null
         } ?: false
+    }
 }
