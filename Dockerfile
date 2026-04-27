@@ -4,7 +4,7 @@
 # The build context is the repository root (one level above this file).
 # ─────────────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jdk-alpine AS builder
-WORKDIR /build
+WORKDIR /work
 
 # Copy Gradle wrapper and dependency metadata first so these layers
 # are cached even when only source code changes.
@@ -39,7 +39,7 @@ RUN addgroup -S app && adduser -S app -G app
 USER app
 
 # Copy the installDist output (bin/ + lib/).
-COPY --from=builder /build/build/install/mock-oauth2-server/ .
+COPY --from=builder /work/build/install/mock-oauth2-server/ .
 
 # Required for Netty on Java 24+ (safe no-op on earlier versions).
 # See https://netty.io/wiki/java-24-and-sun.misc.unsafe.html
