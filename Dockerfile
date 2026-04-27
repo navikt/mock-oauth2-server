@@ -12,7 +12,7 @@ COPY gradlew .
 COPY gradle/ gradle/
 COPY gradle.properties .
 COPY build.gradle.kts .
-COPY settings.gradle.kts .
+COPY settings.gradle .
 
 # Pre-fetch dependencies (best-effort; a failure here is not fatal).
 RUN ./gradlew dependencies --no-daemon -q 2>/dev/null || true
