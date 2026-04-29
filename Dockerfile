@@ -41,10 +41,6 @@ USER app
 # Copy the installDist output (bin/ + lib/).
 COPY --from=builder /work/build/install/mock-oauth2-server/ .
 
-# Required for Netty on Java 24+ (safe no-op on earlier versions).
-# See https://netty.io/wiki/java-24-and-sun.misc.unsafe.html
-ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-
 EXPOSE 8080
 
 ENTRYPOINT ["bin/mock-oauth2-server"]
