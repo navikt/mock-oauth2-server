@@ -363,6 +363,35 @@ and return a token response containing a token with the following claims:
 }
 ```
 
+For authorization code flow, auth request query parameters are preserved and merged into token callback matching.
+This means `RequestMappingTokenCallback` can match on auth request params such as `login_hint`, `acr_values`, `claims`, or any other extra auth request parameter.
+For example:
+
+```json
+{
+  "issuerId": "issuer1",
+  "tokenExpiry": 120,
+  "requestMappings": [
+    {
+      "requestParam": "login_hint",
+      "match": "anna@example.com",
+      "claims": {
+        "sub": "anna-uuid",
+        "email": "anna@example.com"
+      }
+    }
+  ]
+}
+```
+
+Those auth request params can also be used in claim templates, e.g.:
+
+```json
+"claims": {
+  "email": "${login_hint}"
+}
+```
+
 Earlier versions of this documentation used `scope` as `requestParam` in the example. The scope request parameter is no logner supported by nimbus due to [c960757](https://github.com/navikt/mock-oauth2-server/commit/c9607571743cc087b190112f2197f4ac0a27aef2), so the call back needs to be configured with a different key.
 
 Use variable `clientId` to set `sub` claim for Client Credentials Grant dynamically.
