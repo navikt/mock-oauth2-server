@@ -106,11 +106,15 @@ fun json(anyObject: Any): OAuth2HttpResponse =
         status = 200,
         body =
             when (anyObject) {
-                is String -> anyObject
-                else ->
+                is String -> {
+                    anyObject
+                }
+
+                else -> {
                     objectMapper
                         .enable(SerializationFeature.INDENT_OUTPUT)
                         .writeValueAsString(anyObject)
+                }
             },
     )
 
@@ -156,11 +160,13 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
                     ),
             )
         }
-        else ->
+
+        else -> {
             OAuth2HttpResponse(
                 headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authenticationSuccessResponse.toURI().toString()),
                 status = 302,
             )
+        }
     }
 
 fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {

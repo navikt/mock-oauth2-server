@@ -26,12 +26,26 @@ internal class OAuth2HttpServerTest {
     val requestHandler: RequestHandler = {
         log.debug("received request on url=${it.url}")
         when {
-            it.headers.contains("header1" to "headervalue1") -> ok("headermatch")
-            it.url.pathSegments == listOf("1", "2") -> ok("pathmatch")
-            it.url.query == "param1=value1&param2=value2" -> ok("querymatch")
-            it.body == "formparam=formvalue1" -> ok("bodymatch")
-            it.url.pathSegments.contains("redirect") ->
+            it.headers.contains("header1" to "headervalue1") -> {
+                ok("headermatch")
+            }
+
+            it.url.pathSegments == listOf("1", "2") -> {
+                ok("pathmatch")
+            }
+
+            it.url.query == "param1=value1&param2=value2" -> {
+                ok("querymatch")
+            }
+
+            it.body == "formparam=formvalue1" -> {
+                ok("bodymatch")
+            }
+
+            it.url.pathSegments.contains("redirect") -> {
                 redirect("http://someredirect")
+            }
+
             else -> {
                 OAuth2HttpResponse(status = 404)
             }
