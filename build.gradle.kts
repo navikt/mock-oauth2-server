@@ -2,20 +2,20 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
-val assertjVersion = "3.27.6"
+val assertjVersion = "3.27.7"
 val kotlinLoggingVersion = "3.0.5"
-val logbackVersion = "1.5.20"
-val nimbusSdkVersion = "11.29.2"
+val logbackVersion = "1.5.32"
+val nimbusSdkVersion = "11.37.1"
 val mockWebServerVersion = "5.2.1"
-val jacksonVersion = "2.20.0"
-val nettyVersion = "4.2.7.Final"
-val junitJupiterVersion = "6.0.0"
+val jacksonVersion = "2.21.3"
+val nettyVersion = "4.2.13.Final"
+val junitJupiterVersion = "6.0.3"
 val freemarkerVersion = "2.3.34"
-val kotestVersion = "6.0.4"
+val kotestVersion = "6.1.11"
 val bouncyCastleVersion = "1.84"
-val springBootVersion = "3.5.6"
-val reactorTestVersion = "3.7.11"
-val ktorVersion = "3.3.1"
+val springBootVersion = "3.5.14"
+val reactorTestVersion = "3.7.18"
+val ktorVersion = "3.4.3"
 val jsonPathVersion = "2.9.0"
 
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
@@ -24,12 +24,12 @@ plugins {
     application
     alias(libs.plugins.kotlin.jvm) // refers to plugin declared in gradle/libs.versions.toml
     id("se.patrikerdes.use-latest-versions") version "0.2.19"
-    id("com.github.ben-manes.versions") version "0.53.0"
-    id("org.jmailen.kotlinter") version "5.2.0"
-    id("com.google.cloud.tools.jib") version "3.4.5"
-    id("com.vanniktech.maven.publish") version "0.34.0"
-    id("org.jetbrains.dokka") version "2.0.0"
-    kotlin("plugin.serialization") version "2.2.21"
+    id("com.github.ben-manes.versions") version "0.54.0"
+    id("org.jmailen.kotlinter") version "5.4.2"
+    id("com.google.cloud.tools.jib") version "3.5.3"
+    id("com.vanniktech.maven.publish") version "0.36.0"
+    id("org.jetbrains.dokka") version "2.2.0"
+    kotlin("plugin.serialization") version "2.3.21"
     `java-library`
     signing
 }
@@ -83,7 +83,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
@@ -263,6 +263,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "8.14.1"
+        gradleVersion = "8.14.4"
     }
 }

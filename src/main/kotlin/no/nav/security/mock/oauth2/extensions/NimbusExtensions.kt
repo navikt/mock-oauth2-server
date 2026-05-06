@@ -155,6 +155,8 @@ fun ClientAuthentication.requirePrivateKeyJwt(
                 }
 
                 // all checks passed
-                else -> it
+                else -> {
+                    it
+                }
             }
         } ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "request must contain a valid client_assertion.")

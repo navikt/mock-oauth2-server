@@ -56,10 +56,13 @@ internal class AuthorizationCodeHandler(
                     authenticationRequest.responseMode,
                 )
             }
-            else -> throw OAuth2Exception(
-                OAuth2Error.INVALID_GRANT,
-                "hybrid og implicit flow not supported (yet).",
-            )
+
+            else -> {
+                throw OAuth2Exception(
+                    OAuth2Error.INVALID_GRANT,
+                    "hybrid og implicit flow not supported (yet).",
+                )
+            }
         }
     }
 

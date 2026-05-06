@@ -155,10 +155,12 @@ class OAuth2HttpRequestHandler(
                     refreshTokenManager.remove(token)
                 }
 
-                else -> throw OAuth2Exception(
-                    ErrorObject("unsupported_token_type", "unsupported token type: $hint", 400),
-                    "unsupported token type: $hint",
-                )
+                else -> {
+                    throw OAuth2Exception(
+                        ErrorObject("unsupported_token_type", "unsupported token type: $hint", 400),
+                        "unsupported token type: $hint",
+                    )
+                }
             }
             OAuth2HttpResponse(status = 200, body = "ok")
         }
@@ -203,7 +205,10 @@ class OAuth2HttpRequestHandler(
 
     private fun tokenCallbackFromQueueOrDefault(issuerId: String): OAuth2TokenCallback =
         when (issuerId) {
-            tokenCallbackQueue.peek()?.issuerId() -> tokenCallbackQueue.take()
+            tokenCallbackQueue.peek()?.issuerId() -> {
+                tokenCallbackQueue.take()
+            }
+
             else -> {
                 config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId } ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
             }
