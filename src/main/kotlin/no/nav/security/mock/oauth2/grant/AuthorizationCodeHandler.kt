@@ -32,6 +32,7 @@ internal class AuthorizationCodeHandler(
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = HashMap()
+    private val invalidatedCodes: MutableSet<AuthorizationCode> = HashSet()
 
     fun authorizationCodeResponse(
         authenticationRequest: AuthenticationRequest,
@@ -74,8 +75,17 @@ internal class AuthorizationCodeHandler(
         val tokenRequest = request.asNimbusTokenRequest()
         val code = tokenRequest.authorizationCode()
         log.debug("issuing token for code=$code")
+        if (code in invalidatedCodes) {
+            throw OAuth2Exception(OAuth2Error.INVALID_GRANT, "authorization code has been invalidated")
+        }
         val authenticationRequest = takeAuthenticationRequestFromCache(code)
-        authenticationRequest?.verifyPkce(tokenRequest)
+        try {
+            authenticationRequest?.verifyPkce(tokenRequest)
+        } catch (e: OAuth2Exception) {
+            codeToLoginCache.remove(code)
+            invalidatedCodes.add(code)
+            throw e
+        }
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest?.nonce?.value
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
