@@ -99,8 +99,14 @@ data class OAuth2HttpRequest(
         val xForwardedPort = this.headers["x-forwarded-port"]?.toInt() ?: -1
         val hostHeaderPort = parseHostHeader()?.second ?: -1
         return when {
-            xForwardedPort != -1 -> xForwardedPort
-            hostHeaderPort != -1 -> hostHeaderPort
+            xForwardedPort != -1 -> {
+                xForwardedPort
+            }
+
+            hostHeaderPort != -1 -> {
+                hostHeaderPort
+            }
+
             xForwardedProto != null -> {
                 if (xForwardedProto == "https") {
                     443
@@ -109,7 +115,9 @@ data class OAuth2HttpRequest(
                 }
             }
 
-            else -> originalUrl.port
+            else -> {
+                originalUrl.port
+            }
         }
     }
 
