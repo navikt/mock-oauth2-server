@@ -28,7 +28,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
 
       - name: Build Dokka
-        run: ./gradlew dokkaHtm -Pversion=${{ env.VERSION }}
+        run: ./gradlew dokkaGenerateHtml -Pversion=${{ env.VERSION }}
 
       - name: Publish documentation
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # ratchet:JamesIves/github-pages-deploy-action@v4.8.0
