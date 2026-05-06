@@ -3,7 +3,6 @@ package no.nav.security.mock.oauth2.e2e
 import com.nimbusds.oauth2.sdk.GrantType
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.grant.RefreshToken
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
@@ -30,7 +29,7 @@ class RevocationIntegrationTest {
             tokenResponseBeforeRefresh.idToken?.subject shouldBe initialSubject
             tokenResponseBeforeRefresh.accessToken?.subject shouldBe initialSubject
 
-            var refreshTokenResponse = refresh(tokenResponseBeforeRefresh.refreshToken)
+            val refreshTokenResponse = refresh(tokenResponseBeforeRefresh.refreshToken)
             refreshTokenResponse.accessToken?.subject shouldBe initialSubject
             val refreshToken = checkNotNull(refreshTokenResponse.refreshToken)
             val revocationResponse =
@@ -45,8 +44,18 @@ class RevocationIntegrationTest {
                 )
             revocationResponse.code shouldBe 200
 
-            refreshTokenResponse = refresh(tokenResponseBeforeRefresh.refreshToken)
-            refreshTokenResponse.accessToken?.subject shouldNotBe initialSubject
+            // after revocation, using the revoked refresh token must return 400 invalid_grant
+            val postRevocationResponse =
+                client.tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to refreshToken,
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                )
+            postRevocationResponse.code shouldBe 400
         }
     }
 

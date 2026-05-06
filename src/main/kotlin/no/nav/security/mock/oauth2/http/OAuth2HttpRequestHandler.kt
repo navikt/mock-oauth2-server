@@ -67,7 +67,9 @@ class OAuth2HttpRequestHandler(
             CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(config.tokenProvider),
             JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
             TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),
-            REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager, config.rotateRefreshToken),
+            REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager, config.rotateRefreshToken) { issuerId ->
+                if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.take() else null
+            },
             PASSWORD to PasswordGrantHandler(config.tokenProvider),
         )
 
@@ -173,7 +175,16 @@ class OAuth2HttpRequestHandler(
             post(TOKEN) {
                 log.debug("handle token request $it")
                 val grantType = it.grantType()
-                val tokenCallback: OAuth2TokenCallback = tokenCallbackFromQueueOrDefault(it.url.issuerId())
+                val issuerId = it.url.issuerId()
+                // For refresh_token grants the handler resolves the callback itself (stored vs enqueued priority).
+                // For all other grants consume from queue or fall back to config default.
+                val tokenCallback: OAuth2TokenCallback =
+                    if (grantType == REFRESH_TOKEN) {
+                        config.tokenCallbacks.firstOrNull { cb -> cb.issuerId() == issuerId }
+                            ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
+                    } else {
+                        tokenCallbackFromQueueOrDefault(issuerId)
+                    }
                 val grantHandler: GrantHandler = grantHandlers[grantType] ?: invalidGrant(grantType)
                 val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
                 json(tokenResponse)
