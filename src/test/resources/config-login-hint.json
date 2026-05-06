@@ -1,0 +1,51 @@
+{
+    "httpServer": "NettyWrapper",
+    "interactiveLogin": false,
+    "tokenCallbacks": [
+        {
+            "issuerId": "test-issuer",
+            "requestMappings": [
+                {
+                    "claims": {
+                        "email": "anna.mueller@example.com",
+                        "name": "Anna Müller",
+                        "sub": "7b1552ef-b40b-4ba6-badf-abeb6091da3c",
+                        "urn:telematik:claims:id": "X987654321",
+                        "urn:telematik:claims:organisation": "100000000001"
+                    },
+                    "match": ".*X987654321.*",
+                    "requestParam": "login_hint"
+                },
+                {
+                    "claims": {
+                        "email": "peter.mueller@example.com",
+                        "name": "Peter Müller",
+                        "sub": "893b1552ef-b40b-4ba6-badf-abeb6095af5d",
+                        "urn:telematik:claims:id": "F009635833",
+                        "urn:telematik:claims:organisation": "100000000002"
+                    },
+                    "match": "F009635833",
+                    "requestParam": "login_hint"
+                }
+            ],
+            "tokenExpiry": 3600
+        },
+        {
+            "issuerId": "default",
+            "requestMappings": [
+                {
+                    "claims": {
+                        "email": "detlef.default@example.com",
+                        "name": "Detlef Default",
+                        "sub": "7b1552ef-b40b-4ba6-badf-abeb6091da3c",
+                        "urn:telematik:claims:id": "X123456789",
+                        "urn:telematik:claims:organisation": "100000000001"
+                    },
+                    "match": "*",
+                    "requestParam": "client_id"
+                }
+            ],
+            "tokenExpiry": 3600
+        }
+    ]
+}

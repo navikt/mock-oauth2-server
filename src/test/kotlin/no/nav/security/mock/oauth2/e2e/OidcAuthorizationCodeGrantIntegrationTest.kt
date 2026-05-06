@@ -3,6 +3,7 @@ package no.nav.security.mock.oauth2.e2e
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.maps.shouldContainAll
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -13,12 +14,15 @@ import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.Pkce
 import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
+import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.token.RequestMapping
+import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
@@ -145,6 +149,136 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             it.code shouldBe 400
             it.body.string() shouldContain "code_verifier does not compute to code_challenge from request"
         }
+    }
+
+    @Test
+    fun `login_hint in auth request selects the correct requestMapping and returns matching claims in token`() {
+        val issuerId = "login-hint-issuer"
+        val server =
+            MockOAuth2Server(
+                OAuth2Config(
+                    tokenCallbacks =
+                        setOf(
+                            RequestMappingTokenCallback(
+                                issuerId = issuerId,
+                                requestMappings =
+                                    listOf(
+                                        RequestMapping(
+                                            requestParam = "login_hint",
+                                            match = "anna@example.com",
+                                            claims =
+                                                mapOf(
+                                                    "sub" to "anna-uuid",
+                                                    "email" to "anna@example.com",
+                                                    "urn:telematik:claims:id" to "X111111111",
+                                                ),
+                                        ),
+                                        RequestMapping(
+                                            requestParam = "login_hint",
+                                            match = "max@example.com",
+                                            claims =
+                                                mapOf(
+                                                    "sub" to "max-uuid",
+                                                    "email" to "max@example.com",
+                                                    "urn:telematik:claims:id" to "X222222222",
+                                                ),
+                                        ),
+                                    ),
+                            ),
+                        ),
+                ),
+            ).apply { start() }
+
+        val code =
+            client
+                .get(
+                    server.authorizationEndpointUrl(issuerId).authenticationRequest(
+                        clientId = "aml-app",
+                        extraQueryParams = mapOf("login_hint" to "anna@example.com"),
+                    ),
+                ).let { it.headers["location"]?.toHttpUrl()?.queryParameter("code") }
+
+        code.shouldNotBeNull()
+
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl(issuerId),
+                mutableMapOf(
+                    "client_id" to "aml-app",
+                    "grant_type" to "authorization_code",
+                    "redirect_uri" to "http://defaultRedirectUri",
+                    "code" to code,
+                ),
+            ).toTokenResponse()
+            .asClue { resp ->
+                resp.idToken.shouldNotBeNull()
+                resp.idToken!!.subject shouldBe "anna-uuid"
+                resp.idToken!!.claims shouldContainAll
+                    mapOf(
+                        "email" to "anna@example.com",
+                        "urn:telematik:claims:id" to "X111111111",
+                    )
+            }
+
+        server.shutdown()
+    }
+
+    @Test
+    fun `login_hint in auth request is substituted as dollar-brace template in token claims`() {
+        val issuerId = "template-issuer"
+        val server =
+            MockOAuth2Server(
+                OAuth2Config(
+                    tokenCallbacks =
+                        setOf(
+                            RequestMappingTokenCallback(
+                                issuerId = issuerId,
+                                requestMappings =
+                                    listOf(
+                                        RequestMapping(
+                                            requestParam = "grant_type",
+                                            match = "authorization_code",
+                                            claims =
+                                                mapOf(
+                                                    "sub" to "fixed-sub",
+                                                    // login_hint from the auth request should be substituted here
+                                                    "email" to "\${login_hint}",
+                                                ),
+                                        ),
+                                    ),
+                            ),
+                        ),
+                ),
+            ).apply { start() }
+
+        val code =
+            client
+                .get(
+                    server.authorizationEndpointUrl(issuerId).authenticationRequest(
+                        clientId = "aml-app",
+                        extraQueryParams = mapOf("login_hint" to "substituted@example.com"),
+                    ),
+                ).let { it.headers["location"]?.toHttpUrl()?.queryParameter("code") }
+
+        code.shouldNotBeNull()
+
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl(issuerId),
+                mutableMapOf(
+                    "client_id" to "aml-app",
+                    "grant_type" to "authorization_code",
+                    "redirect_uri" to "http://defaultRedirectUri",
+                    "code" to code,
+                ),
+            ).toTokenResponse()
+            .asClue { resp ->
+                resp.idToken.shouldNotBeNull()
+                resp.idToken!!.subject shouldBe "fixed-sub"
+                resp.idToken!!.claims shouldContainAll mapOf("email" to "substituted@example.com")
+            }
+
+        server.shutdown()
     }
 
     private fun OkHttpClient.tokenRequest(

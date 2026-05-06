@@ -1,0 +1,100 @@
+name: Build & Publish Docker Image
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches:
+      - main
+      - master
+
+env:
+  REGISTRY: ghcr.io
+  # github.repository resolves to "<owner>/<repo>" e.g. "d-lopes/mock-oauth2-server"
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ──────────────────────────────────────────
+  # Job 1: Run tests (keeps the publish job clean)
+  # ──────────────────────────────────────────
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Run tests
+        run: ./gradlew test --no-daemon
+
+  # ──────────────────────────────────────────
+  # Job 2: Build & push the image
+  # Runs on push to main/master or version tags.
+  # PRs only build (no push) to validate the Dockerfile.
+  # ──────────────────────────────────────────
+  publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # QEMU + Buildx enable multi-platform builds (amd64 + arm64)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Derive tags and labels from Git metadata:
+      #   push to main/master  → ghcr.io/<owner>/<repo>:latest
+      #   push tag v1.2.3      → ghcr.io/<owner>/<repo>:1.2.3
+      #                          ghcr.io/<owner>/<repo>:1.2
+      #                          ghcr.io/<owner>/<repo>:latest
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Cache layers in the GitHub Actions cache for faster subsequent builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
