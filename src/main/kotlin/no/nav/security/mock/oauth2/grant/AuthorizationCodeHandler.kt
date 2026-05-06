@@ -32,7 +32,6 @@ internal class AuthorizationCodeHandler(
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = HashMap()
-    private val invalidatedCodes: MutableSet<AuthorizationCode> = HashSet()
 
     fun authorizationCodeResponse(
         authenticationRequest: AuthenticationRequest,
@@ -75,19 +74,31 @@ internal class AuthorizationCodeHandler(
         val tokenRequest = request.asNimbusTokenRequest()
         val code = tokenRequest.authorizationCode()
         log.debug("issuing token for code=$code")
-        if (code in invalidatedCodes) {
-            throw OAuth2Exception(OAuth2Error.INVALID_GRANT, "authorization code has been invalidated")
-        }
-        val authenticationRequest = takeAuthenticationRequestFromCache(code)
+
+        // Peek before removing so that a failed PKCE check does not leave the code
+        // in the cache (where a second request could skip verification).
+        val authenticationRequest =
+            codeToAuthRequestCache[code]
+                ?: throw OAuth2Exception(
+                    OAuth2Error.INVALID_GRANT.setDescription("unknown, expired, or already-used authorization code"),
+                    "unknown, expired, or already-used authorization code",
+                )
+
+        // Verify PKCE before committing to remove the code. On failure, evict the
+        // code so a replay attempt also gets invalid_grant (no invalidatedCodes set needed).
         try {
-            authenticationRequest?.verifyPkce(tokenRequest)
+            authenticationRequest.verifyPkce(tokenRequest)
         } catch (e: OAuth2Exception) {
+            codeToAuthRequestCache.remove(code)
             codeToLoginCache.remove(code)
-            invalidatedCodes.add(code)
             throw e
         }
+
+        // PKCE passed — consume the code (one-time use).
+        codeToAuthRequestCache.remove(code)
+
         val scope: String? = tokenRequest.scope?.toString()
-        val nonce: String? = authenticationRequest?.nonce?.value
+        val nonce: String? = authenticationRequest.nonce?.value
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
@@ -112,8 +123,6 @@ internal class AuthorizationCodeHandler(
         } ?: oAuth2TokenCallback
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
-
-    private fun takeAuthenticationRequestFromCache(code: AuthorizationCode): AuthenticationRequest? = codeToAuthRequestCache.remove(code)
 
     private class LoginOAuth2TokenCallback(
         val login: Login,

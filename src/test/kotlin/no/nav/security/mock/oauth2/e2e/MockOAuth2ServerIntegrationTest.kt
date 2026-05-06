@@ -19,6 +19,7 @@ import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.WellKnown
 import no.nav.security.mock.oauth2.http.route
 import no.nav.security.mock.oauth2.testutils.audience
+import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
@@ -101,23 +102,37 @@ class MockOAuth2ServerIntegrationTest {
     @Test
     fun `token request with enqueued token callback should return claims from tokencallback (with exception of id_token and oidc rules)`() {
         val server = MockOAuth2Server().apply { start() }
+        val issuerId = "custom"
+
+        // GET the authorization endpoint (no login submitted) so no Login is cached.
+        // The enqueued callback's subject is then used directly in the token response.
+        val authorizationCode =
+            client
+                .get(
+                    server.authorizationEndpointUrl(issuerId).authenticationRequest(),
+                ).let { authResponse ->
+                    authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
+
+        checkNotNull(authorizationCode)
+
         server.enqueueCallback(
             DefaultOAuth2TokenCallback(
-                issuerId = "custom",
+                issuerId = issuerId,
                 subject = "yolo",
                 audience = listOf("myaud"),
             ),
         )
 
         client
-            .post(
-                server.tokenEndpointUrl("custom"),
+            .tokenRequest(
+                server.tokenEndpointUrl(issuerId),
                 mapOf(
                     "client_id" to "client1",
                     "client_secret" to "secret",
                     "grant_type" to "authorization_code",
                     "redirect_uri" to "http://mycallback",
-                    "code" to "1234",
+                    "code" to authorizationCode,
                 ),
             ).toTokenResponse()
             .asClue {

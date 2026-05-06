@@ -168,6 +168,15 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
         client.tokenRequest(code, pkce).asClue {
             it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should return invalid_grant for unknown or bogus authorization code`() {
+        client.tokenRequest("bogus-code-that-was-never-issued").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
         }
     }
 
