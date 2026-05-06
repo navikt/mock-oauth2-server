@@ -104,8 +104,6 @@ class MockOAuth2ServerIntegrationTest {
         val server = MockOAuth2Server().apply { start() }
         val issuerId = "custom"
 
-        // GET the authorization endpoint (no login submitted) so no Login is cached.
-        // The enqueued callback's subject is then used directly in the token response.
         val authorizationCode =
             client
                 .get(

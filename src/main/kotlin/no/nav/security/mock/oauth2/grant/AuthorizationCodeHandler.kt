@@ -75,8 +75,6 @@ internal class AuthorizationCodeHandler(
         val code = tokenRequest.authorizationCode()
         log.debug("issuing token for code=$code")
 
-        // Peek before removing so that a failed PKCE check does not leave the code
-        // in the cache (where a second request could skip verification).
         val authenticationRequest =
             codeToAuthRequestCache[code]
                 ?: throw OAuth2Exception(
@@ -84,8 +82,6 @@ internal class AuthorizationCodeHandler(
                     "unknown, expired, or already-used authorization code",
                 )
 
-        // Verify PKCE before committing to remove the code. On failure, evict the
-        // code so a replay attempt also gets invalid_grant (no invalidatedCodes set needed).
         try {
             authenticationRequest.verifyPkce(tokenRequest)
         } catch (e: OAuth2Exception) {
@@ -94,7 +90,6 @@ internal class AuthorizationCodeHandler(
             throw e
         }
 
-        // PKCE passed — consume the code (one-time use).
         codeToAuthRequestCache.remove(code)
 
         val scope: String? = tokenRequest.scope?.toString()
