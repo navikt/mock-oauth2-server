@@ -21,6 +21,7 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
 private val log = KotlinLogging.logger {}
@@ -30,8 +31,8 @@ internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
 ) : GrantHandler {
-    private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
-    private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = HashMap()
+    private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
+    private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
 
     fun authorizationCodeResponse(
         authenticationRequest: AuthenticationRequest,
@@ -76,7 +77,7 @@ internal class AuthorizationCodeHandler(
         log.debug("issuing token for code=$code")
 
         val authenticationRequest =
-            codeToAuthRequestCache[code]
+            codeToAuthRequestCache.remove(code)
                 ?: throw OAuth2Exception(
                     OAuth2Error.INVALID_GRANT.setDescription("unknown, expired, or already-used authorization code"),
                     "unknown, expired, or already-used authorization code",
@@ -85,12 +86,9 @@ internal class AuthorizationCodeHandler(
         try {
             authenticationRequest.verifyPkce(tokenRequest)
         } catch (e: OAuth2Exception) {
-            codeToAuthRequestCache.remove(code)
             codeToLoginCache.remove(code)
             throw e
         }
-
-        codeToAuthRequestCache.remove(code)
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
