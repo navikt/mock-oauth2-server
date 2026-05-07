@@ -107,7 +107,10 @@ class MockOAuth2ServerIntegrationTest {
         val authorizationCode =
             client
                 .get(
-                    server.authorizationEndpointUrl(issuerId).authenticationRequest(),
+                    server.authorizationEndpointUrl(issuerId).authenticationRequest(
+                        clientId = "client1",
+                        redirectUri = "http://mycallback",
+                    ),
                 ).let { authResponse ->
                     authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
                 }
