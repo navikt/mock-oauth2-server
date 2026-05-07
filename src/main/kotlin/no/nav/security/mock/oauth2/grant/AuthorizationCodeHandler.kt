@@ -79,8 +79,8 @@ internal class AuthorizationCodeHandler(
         val authenticationRequest =
             codeToAuthRequestCache.remove(code)
                 ?: throw OAuth2Exception(
-                    OAuth2Error.INVALID_GRANT.setDescription("unknown, expired, or already-used authorization code"),
-                    "unknown, expired, or already-used authorization code",
+                    OAuth2Error.INVALID_GRANT.setDescription("unknown or already-used authorization code"),
+                    "unknown or already-used authorization code",
                 )
 
         try {
