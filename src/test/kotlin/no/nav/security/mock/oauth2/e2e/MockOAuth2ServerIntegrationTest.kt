@@ -213,6 +213,23 @@ class MockOAuth2ServerIntegrationTest {
             }
     }
 
+    @Test
+    fun `token request with client_id via HTTP Basic auth should match requestmapping on client_id`() {
+        val server = MockOAuth2Server(OAuth2Config.fromJson(clientIdMappingConfigJson)).apply { start() }
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl("issuer1"),
+                "client1" to "secret",
+                mapOf("grant_type" to "client_credentials"),
+            ).toTokenResponse()
+            .accessToken
+            .asClue {
+                it.shouldNotBeNull()
+                it.claims shouldContainAll mapOf("sub" to "subByClientId", "aud" to listOf("audByClientId"))
+            }
+        server.shutdown()
+    }
+
     private infix fun WellKnown.urlsShouldStartWith(url: String) {
         issuer shouldStartWith url
         authorizationEndpoint shouldStartWith url
@@ -255,6 +272,29 @@ class MockOAuth2ServerIntegrationTest {
                     "aud": [
                       "audBySomeParam"
                     ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+        """.trimIndent()
+
+    @Language("json")
+    private val clientIdMappingConfigJson =
+        """
+        {
+          "httpServer": "MockWebServerWrapper",
+          "tokenCallbacks": [
+            {
+              "issuerId": "issuer1",
+              "requestMappings": [
+                {
+                  "requestParam": "client_id",
+                  "match": "client1",
+                  "claims": {
+                    "sub": "subByClientId",
+                    "aud": ["audByClientId"]
                   }
                 }
               ]

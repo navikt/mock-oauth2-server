@@ -113,8 +113,16 @@ data class RequestMapping(
     val claims: Map<String, Any> = emptyMap(),
     val typeHeader: String = JOSEObjectType.JWT.type,
 ) {
-    fun isMatch(tokenRequest: TokenRequest): Boolean =
-        tokenRequest.toHTTPRequest().bodyAsFormParameters[requestParam]?.any {
+    fun isMatch(tokenRequest: TokenRequest): Boolean {
+        val formValues = tokenRequest.toHTTPRequest().bodyAsFormParameters[requestParam]
+        val effectiveValues =
+            if (formValues == null && requestParam == "client_id") {
+                tokenRequest.clientIdAsString()?.let { listOf(it) }
+            } else {
+                formValues
+            }
+        return effectiveValues?.any {
             match == "*" || match == it || match.toRegex().matchEntire(it) != null
         } ?: false
+    }
 }
