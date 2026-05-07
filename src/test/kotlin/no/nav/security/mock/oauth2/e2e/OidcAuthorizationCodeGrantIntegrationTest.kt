@@ -153,7 +153,11 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         val code =
             client
                 .get(
-                    server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce),
+                    server.authorizationEndpointUrl("default").authenticationRequest(
+                        clientId = "client1",
+                        redirectUri = "http://mycallback",
+                        pkce = pkce,
+                    ),
                 ).let { authResponse ->
                     authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
                 }
