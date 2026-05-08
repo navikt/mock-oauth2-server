@@ -1,8 +1,16 @@
-[![Build](https://github.com/navikt/mock-oauth2-server/workflows/Build%20master/badge.svg)](https://github.com/navikt/mock-oauth2-server/actions) [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server)
+<p align="center">
+  <a href="https://github.com/navikt/mock-oauth2-server/actions"><img src="https://github.com/navikt/mock-oauth2-server/workflows/Build%20master/badge.svg" alt="Build"></a>
+  <a href="https://search.maven.org/artifact/no.nav.security/mock-oauth2-server"><img src="https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven" alt="Maven Central"></a>
+  <a href="https://github.com/navikt/mock-oauth2-server/packages/"><img src="https://img.shields.io/github/v/release/navikt/mock-oauth2-server?color=green&include_prereleases&label=Docker&logo=Docker" alt="Docker"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/kotlin-2.x-blue.svg?logo=kotlin" alt="Kotlin"></a>
+</p>
 
-# mock-oauth2-server
+<h1 align="center">mock-oauth2-server</h1>
 
-A scriptable OAuth2/OpenID Connect server for tests. Use it in JVM unit tests or run it as a standalone Docker container alongside your app.
+<p align="center">A scriptable OAuth2/OpenID Connect server for tests. Use it in JVM unit tests or run it as a standalone Docker container alongside your app.</p>
+
+---
 
 ## Quick Start
 
@@ -55,13 +63,18 @@ docker run -p 8080:8080 ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VE
 Token endpoint: `http://localhost:8080/default/token`
 Discovery: `http://localhost:8080/default/.well-known/openid-configuration`
 
+---
+
 ## What it does
 
 mock-oauth2-server lets you test applications that depend on a real OAuth2/OpenID Connect server without disabling security. It issues signed JWTs that are verifiable through standard JWKS and discovery endpoints, so your app does not need any special test configuration.
 
 It supports multi-issuer setups, all major OAuth2 grant types, token customization, and runs both embedded in JVM tests and as a standalone process in Docker Compose.
 
+> [!WARNING]
 > This server is for testing only. Do not use it in production.
+
+---
 
 ## Supported Flows
 
@@ -74,6 +87,8 @@ It supports multi-issuer setups, all major OAuth2 grant types, token customizati
   - usage should be avoided if possible as this grant is considered insecure and [removed in its entirety](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-13#section-3.4) from OAuth 2.1
 
 Issued JWT tokens are verifiable through standard mechanisms via OpenID Connect Discovery and OAuth2 Authorization Server Metadata endpoints. Multi-issuer setups are supported with no configuration — the first path segment in any request URL determines the issuer.
+
+---
 
 ## Usage
 
@@ -164,7 +179,8 @@ fun loginWithIdTokenForAcrClaimEqualsLevel4() {
 
 #### Verifying requests made to the server
 
-You can inspect requests the server received using `takeRequest()`. This is only available when using `MockWebServerWrapper` (the default), not `NettyWrapper`:
+> [!NOTE]
+> `takeRequest()` is only available when using `MockWebServerWrapper` (the default). It throws `UnsupportedOperationException` with `NettyWrapper`.
 
 ```kotlin
 val request = server.takeRequest()
@@ -266,6 +282,7 @@ services:
     hostname: host.docker.internal
 ```
 
+> [!NOTE]
 > Each service must use a different host port. Mapping two services to the same host port causes a `port is already allocated` error.
 
 ### Token Customization via JSON_CONFIG
@@ -372,8 +389,10 @@ val ssl = Ssl()
 val server = MockOAuth2Server(
     OAuth2Config(httpServer = MockWebServerWrapper(ssl))
 )
-// Add ssl.sslKeystore.keyStore to your client's truststore
 ```
+
+> [!TIP]
+> Add `ssl.sslKeystore.keyStore` to your client's truststore to trust the generated certificate.
 
 Bring your own keystore:
 
@@ -446,6 +465,8 @@ Browser based OAuth2 clients and SPAs can call the token, JWKS and other endpoin
 
 Point your browser to `http://localhost:8080/default/debugger` to open the OAuth2 client debugger. It implements the Authorization Code Flow and lets you inspect request parameters and token responses interactively.
 
+---
+
 ## Configuration Reference
 
 ### Standalone ENV variables
@@ -485,6 +506,8 @@ Additional token provider options:
 }
 ```
 
+---
+
 ## API Reference
 
 ### Well-known endpoints
@@ -496,7 +519,8 @@ GET /{issuerId}/.well-known/openid-configuration
 GET /{issuerId}/.well-known/oauth-authorization-server
 ```
 
-Example response for `http://localhost:8080/default/.well-known/openid-configuration`:
+<details>
+<summary>View example response for <code>http://localhost:8080/default/.well-known/openid-configuration</code></summary>
 
 ```json
 {
@@ -511,6 +535,8 @@ Example response for `http://localhost:8080/default/.well-known/openid-configura
 }
 ```
 
+</details>
+
 ### Endpoint notes
 
 **Introspect** (`POST /{issuerId}/introspect`) requires an `Authorization` header. Either `Authorization: Bearer <token>` or `Authorization: Basic <credentials>` is accepted. Requests without it will receive `400 invalid_client`.
@@ -520,7 +546,7 @@ Example response for `http://localhost:8080/default/.well-known/openid-configura
 ### Server URL methods (Kotlin/Java API)
 
 ```kotlin
-server.wellKnownUrl("default")                      // OIDC discovery URL
+server.wellKnownUrl("default")                         // OIDC discovery URL
 server.oauth2AuthorizationServerMetadataUrl("default") // OAuth2 AS metadata URL
 server.tokenEndpointUrl("default")
 server.jwksUrl("default")
@@ -528,12 +554,14 @@ server.userInfoUrl("default")
 server.introspectUrl("default")
 server.revocationEndpointUrl("default")
 server.endSessionEndpointUrl("default")
-server.baseUrl()                                    // server root URL
+server.baseUrl()                                       // server root URL
 ```
 
 ### Full API documentation
 
 [navikt.github.io/mock-oauth2-server](https://navikt.github.io/mock-oauth2-server/)
+
+---
 
 ## 👥 Contact
 
@@ -542,6 +570,8 @@ This project is maintained by [@navikt](https://github.com/navikt).
 To raise an issue or question, open an issue in this repository.
 
 For internal NAV contact, use the Slack channel `#nais`.
+
+---
 
 ## ✏️ Contributing
 
@@ -552,6 +582,8 @@ Fork the repo, check out a new branch, and build with:
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+
+---
 
 ## ⚖️ License
 
