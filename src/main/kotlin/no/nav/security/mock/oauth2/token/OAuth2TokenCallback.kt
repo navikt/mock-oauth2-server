@@ -117,7 +117,8 @@ data class RequestMapping(
         val formValues = tokenRequest.toHTTPRequest().bodyAsFormParameters[requestParam]
         val effectiveValues =
             if (formValues == null && requestParam == "client_id") {
-                tokenRequest.clientIdAsString()?.let { listOf(it) }
+                tokenRequest.clientAuthentication?.clientID?.value?.let { listOf(it) }
+                    ?: tokenRequest.clientID?.value?.let { listOf(it) }
             } else {
                 formValues
             }
