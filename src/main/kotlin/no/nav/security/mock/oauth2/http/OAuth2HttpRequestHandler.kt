@@ -176,12 +176,11 @@ class OAuth2HttpRequestHandler(
                 log.debug("handle token request $it")
                 val grantType = it.grantType()
                 val issuerId = it.url.issuerId()
-                // For refresh_token grants the handler resolves the callback itself (stored vs enqueued priority).
-                // For all other grants consume from queue or fall back to config default.
+                // For refresh_token grants the handler resolves the callback itself (stored vs enqueued priority),
+                // so the tokenCallback passed here is unused. For all other grants consume from queue or fall back to config default.
                 val tokenCallback: OAuth2TokenCallback =
                     if (grantType == REFRESH_TOKEN) {
-                        config.tokenCallbacks.firstOrNull { cb -> cb.issuerId() == issuerId }
-                            ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
+                        DefaultOAuth2TokenCallback(issuerId = issuerId)
                     } else {
                         tokenCallbackFromQueueOrDefault(issuerId)
                     }
