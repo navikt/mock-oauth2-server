@@ -362,8 +362,6 @@ and return a token response containing a token with the following claims:
 }
 ```
 
-Earlier versions of this documentation used `scope` as `requestParam` in the example. The scope request parameter is no logner supported by nimbus due to [c960757](https://github.com/navikt/mock-oauth2-server/commit/c9607571743cc087b190112f2197f4ac0a27aef2), so the call back needs to be configured with a different key.
-
 Use variable `clientId` to set `sub` claim for Client Credentials Grant dynamically.
 
 A token request with client credentials where `clientId = myClientId` and `tokenCallback`: 
