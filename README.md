@@ -338,6 +338,26 @@ Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting c
 }
 ```
 
+### Auto-added claims
+
+Every token issued by `DefaultOAuth2TokenCallback` automatically includes the following claims regardless of what you configure:
+
+| Claim | Value | When |
+|-------|-------|------|
+| `tid` | the `issuerId` (e.g. `"default"`) | always |
+| `azp` | the `client_id` from the token request | Authorization Code grant only |
+
+You can override `tid` by including it in your `claims` map. `azp` cannot be overridden for Authorization Code grants as it is added after your claims are applied.
+
+### `aud` claim resolution
+
+When using `DefaultOAuth2TokenCallback` the `aud` claim is resolved in the following order:
+
+1. The `audience` value passed explicitly to the constructor
+2. The `audience` parameter from the token request (e.g. in Token Exchange)
+3. The non-OIDC scopes from the request (e.g. for Client Credentials with scopes)
+4. Falls back to `"default"` if none of the above are present
+
 ### HTTPS
 
 #### In unit tests
