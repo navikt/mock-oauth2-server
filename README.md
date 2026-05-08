@@ -357,7 +357,7 @@ A token request to `http://localhost:8080/issuer1/token` with any `code` paramet
 ```json
 {
   "sub": "subByCode",
-  "aud": "audByCode",
+  "aud": ["audByCode"],
   "iss": "http://localhost:8080/issuer1",
   ...
 }
