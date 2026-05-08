@@ -508,6 +508,12 @@ Example response for `http://localhost:8080/default/.well-known/openid-configura
 }
 ```
 
+### Endpoint notes
+
+**Introspect** (`POST /{issuerId}/introspect`) requires an `Authorization` header. Either `Authorization: Bearer <token>` or `Authorization: Basic <credentials>` is accepted. Requests without it will receive `400 invalid_client`.
+
+**Revocation** (`POST /{issuerId}/revoke`) only supports `token_type_hint=refresh_token`. Passing any other value returns `400 unsupported_token_type`.
+
 ### Server URL methods (Kotlin/Java API)
 
 ```kotlin
