@@ -27,8 +27,7 @@ The motivation behind this library is to provide a setup such that application d
   * Start and stop server for each test
   * Sane defaults with minimal setup if you don't need token customization
   * Enqueue expected tokens if you need to customize token claims
-  * Enqueue expected responses
-  * Verify expected requests made to the server
+  * Verify expected requests made to the server (only available with `MockWebServerWrapper`, not `NettyWrapper`)
   * Customizable through exposure of underlying  [OkHttp MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) 
 * **Standalone support** - i.e. run as application in IDE, run inside your app, or as a Docker image (provided)
 * **OAuth2 Client Debugger** - e.g. support for triggering OIDC Auth Code Flow and receiving callback in debugger app, view token response from server (intended for standalone support)
@@ -417,7 +416,11 @@ docker run -p 8080:8080 $IMAGE_NAME
 
 #### Docker-Compose
 
-In order to get container-to-container networking to work smoothly alongside browser interaction you must specify a host entry in your `hosts` file, `127.0.0.1 host.docker.internal` and set `hostname` in the **mock-oauth2-server** service in your `docker-compose.yaml` file:
+When running `mock-oauth2-server` alongside your application in Docker Compose, there are two networking scenarios to consider:
+
+**Scenario 1: Container-to-container only (most common for integration tests)**
+
+Both services communicate over Docker's internal network. Your app references the mock server using the Docker Compose service name as the hostname:
 
 ```yaml
 version: '3.7'
@@ -426,12 +429,42 @@ services:
     build: .
     ports:
       - 8080:8080
+    environment:
+      # Reference mock-oauth2-server by its service name within the Docker network
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://mock-oauth2-server:8080/default/jwks
   mock-oauth2-server:
     image: ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
     ports:
+      - 8090:8080
+```
+
+In this setup, your app reaches the mock server at `http://mock-oauth2-server:8080` (internal Docker network), while you can access the mock server from your host machine at `http://localhost:8090`.
+
+**Scenario 2: Container-to-container + browser interaction (e.g. Authorization Code Flow with a browser)**
+
+If you also need a browser (running on your host) to interact with the mock server — for example during an OAuth2 Authorization Code Flow — the issuer URLs in tokens must be resolvable both from inside Docker and from your browser. In this case:
+
+1. Add `127.0.0.1 host.docker.internal` to your host machine's `/etc/hosts` file (on Linux; macOS and Windows Docker Desktop add this automatically).
+2. Set `hostname: host.docker.internal` on the mock server service so that issued tokens contain `host.docker.internal` as the issuer host, which is reachable from both containers and your browser.
+
+```yaml
+version: '3.7'
+services:
+  your_app:
+    build: .
+    ports:
       - 8080:8080
+    environment:
+      # Use host.docker.internal so the issuer is reachable from both container and browser
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://host.docker.internal:8090/default/jwks
+  mock-oauth2-server:
+    image: ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+    ports:
+      - 8090:8080
     hostname: host.docker.internal
 ```
+
+> **Note:** Each service must be mapped to a **different** host port. In the examples above, `your_app` uses host port `8080` and `mock-oauth2-server` uses host port `8090`. Mapping two services to the same host port (e.g. both on `8080`) will cause a `port is already allocated` error.
 
 #### Debugger
 
