@@ -1,7 +1,7 @@
 # Contributing
 
-This project is open to accept feature requests and contributions from the open source community.
-Please fork the repo and start a new branch to work on.
+This project is open to feature requests and contributions from the open source community.
+Please fork the repo and start a new branch for your changes.
 
 ## Prerequisites
 
