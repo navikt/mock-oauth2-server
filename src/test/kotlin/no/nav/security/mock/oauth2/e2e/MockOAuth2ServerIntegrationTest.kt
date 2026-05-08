@@ -215,19 +215,19 @@ class MockOAuth2ServerIntegrationTest {
 
     @Test
     fun `token request with client_id via HTTP Basic auth should match requestmapping on client_id`() {
-        val server = MockOAuth2Server(OAuth2Config.fromJson(clientIdMappingConfigJson)).apply { start() }
-        client
-            .tokenRequest(
-                server.tokenEndpointUrl("issuer1"),
-                "client1" to "secret",
-                mapOf("grant_type" to "client_credentials"),
-            ).toTokenResponse()
-            .accessToken
-            .asClue {
-                it.shouldNotBeNull()
-                it.claims shouldContainAll mapOf("sub" to "subByClientId", "aud" to listOf("audByClientId"))
-            }
-        server.shutdown()
+        withMockOAuth2Server(config = OAuth2Config.fromJson(clientIdMappingConfigJson)) {
+            client
+                .tokenRequest(
+                    tokenEndpointUrl("issuer1"),
+                    "client1" to "secret",
+                    mapOf("grant_type" to "client_credentials"),
+                ).toTokenResponse()
+                .accessToken
+                .asClue {
+                    it.shouldNotBeNull()
+                    it.claims shouldContainAll mapOf("sub" to "subByClientId", "aud" to listOf("audByClientId"))
+                }
+        }
     }
 
     private infix fun WellKnown.urlsShouldStartWith(url: String) {
