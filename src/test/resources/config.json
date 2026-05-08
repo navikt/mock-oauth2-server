@@ -10,7 +10,7 @@
       "requestMappings": [
         {
           "requestParam": "code",
-          "match": "code1",
+          "match": "*",
           "claims": {
             "sub": "subByCode",
             "aud": [

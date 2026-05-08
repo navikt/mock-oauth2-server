@@ -327,7 +327,7 @@ A token callback lets you define what claims are returned when a token request m
             "requestMappings": [
                 {
                     "requestParam": "code",
-                    "match": "code1",
+                    "match": "*",
                     "claims": {
                         "sub": "subByCode",
                         "aud": ["audByCode"]
@@ -352,7 +352,7 @@ A token callback lets you define what claims are returned when a token request m
 }
 ```
 
-A token request to `http://localhost:8080/issuer1/token` with parameter `code` equal to `code1` will return a token with:
+A token request to `http://localhost:8080/issuer1/token` with any `code` parameter will match the first `tokenCallback` and return a token with:
 
 ```json
 {
@@ -373,7 +373,7 @@ Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting c
     "requestMappings": [
         {
             "requestParam": "code",
-            "match": "code1",
+            "match": "*",
             "claims": {
                 "sub": "${clientId}",
                 "aud": ["audByCode"]
