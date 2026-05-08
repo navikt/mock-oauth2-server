@@ -9,6 +9,9 @@
 <h1 align="center">mock-oauth2-server</h1>
 <p align="center">Scriptable OAuth2/OpenID Connect server for JVM tests and Docker Compose.</p>
 
+> [!NOTE]
+> The latest stable version is shown in the Maven Central badge above. See the [release notes](https://github.com/navikt/mock-oauth2-server/releases) for what has changed.
+
 ---
 
 ## Table of Contents
@@ -592,6 +595,8 @@ This project is maintained by [@navikt](https://github.com/navikt).
 To raise an issue or question, open an issue in this repository.
 
 For internal NAV contact, use the Slack channel `#nais`.
+
+See the [release notes](https://github.com/navikt/mock-oauth2-server/releases) for the full version history.
 
 ---
 
