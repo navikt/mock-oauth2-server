@@ -31,6 +31,7 @@ The motivation behind this library is to provide a setup such that application d
   * Customizable through exposure of underlying  [OkHttp MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) 
 * **Standalone support** - i.e. run as application in IDE, run inside your app, or as a Docker image (provided)
 * **OAuth2 Client Debugger** - e.g. support for triggering OIDC Auth Code Flow and receiving callback in debugger app, view token response from server (intended for standalone support)
+* **Automatic CORS support** for browser based OAuth2 clients
 
 ## API Documentation
 
@@ -508,6 +509,26 @@ services:
 
 The debugger is a OAuth2 client implementing the `authorization_code` flow with a UI for debugging (e.g. request parameters).
 Point your browser to [http://localhost:8080/default/debugger](http://localhost:8080/default/debugger) to check it out.
+
+#### CORS
+
+The server automatically adds CORS headers to every response when an `Origin` header is present in the request. No configuration is required.
+
+For regular requests the server adds:
+
+```
+Access-Control-Allow-Origin: <origin>
+Access-Control-Allow-Credentials: true
+```
+
+For `OPTIONS` preflight requests the server additionally adds:
+
+```
+Access-Control-Allow-Headers: <requested-headers>
+Access-Control-Allow-Methods: POST, GET, OPTIONS
+```
+
+This means browser based OAuth2 clients and SPAs can call the token, JWKS and other endpoints directly without any proxy setup.
 
 ### Enabling HTTPS
 
