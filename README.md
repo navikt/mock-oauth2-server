@@ -7,8 +7,30 @@
 </p>
 
 <h1 align="center">mock-oauth2-server</h1>
+<p align="center">Scriptable OAuth2/OpenID Connect server for JVM tests and Docker Compose.</p>
 
-<p align="center">A scriptable OAuth2/OpenID Connect server for tests. Use it in JVM unit tests or run it as a standalone Docker container alongside your app.</p>
+---
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [What it does](#what-it-does)
+- [Supported Flows](#supported-flows)
+- [Usage](#usage)
+  - [In JVM Tests](#in-jvm-tests)
+  - [Standalone / Docker](#standalone--docker)
+  - [Docker Compose](#docker-compose)
+  - [Token Customization via JSON_CONFIG](#token-customization-via-json_config)
+  - [Auto-added claims](#auto-added-claims)
+  - [aud claim resolution](#aud-claim-resolution)
+  - [HTTPS](#https)
+  - [CORS](#cors)
+  - [Debugger](#debugger)
+- [Configuration Reference](#configuration-reference)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
+- [Contact](#contact)
+- [License](#license)
 
 ---
 
