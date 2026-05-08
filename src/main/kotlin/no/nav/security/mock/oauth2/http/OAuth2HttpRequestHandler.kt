@@ -68,7 +68,9 @@ class OAuth2HttpRequestHandler(
             JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
             TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),
             REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager, config.rotateRefreshToken) { issuerId ->
-                if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.take() else null
+                synchronized(tokenCallbackQueue) {
+                    if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
+                }
             },
             PASSWORD to PasswordGrantHandler(config.tokenProvider),
         )
@@ -213,14 +215,13 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.preflight() = options { OAuth2HttpResponse(status = 204) }
 
-    private fun tokenCallbackFromQueueOrDefault(issuerId: String): OAuth2TokenCallback =
-        when (issuerId) {
-            tokenCallbackQueue.peek()?.issuerId() -> {
-                tokenCallbackQueue.take()
+    private fun tokenCallbackFromQueueOrDefault(issuerId: String): OAuth2TokenCallback {
+        val queued =
+            synchronized(tokenCallbackQueue) {
+                if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
             }
-
-            else -> {
-                config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId } ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
-            }
-        }
+        return queued
+            ?: config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId }
+            ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
+    }
 }
