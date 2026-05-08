@@ -1,55 +1,20 @@
-[![Build](https://github.com/navikt/mock-oauth2-server/workflows/Build%20master/badge.svg)](https://github.com/navikt/mock-oauth2-server/actions) [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server) 
+[![Build](https://github.com/navikt/mock-oauth2-server/workflows/Build%20master/badge.svg)](https://github.com/navikt/mock-oauth2-server/actions) [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server)
 
 # mock-oauth2-server
-A scriptable/customizable web server for testing HTTP clients using OAuth2/OpenID Connect or applications with a dependency to a running OAuth2 server (i.e. APIs requiring signed JWTs from a known issuer).  The server also provides the necessary endpoints for token validation (endpoint for JWKS) and ID Provider metadata discovery ("well-known" endpoints providing  server metadata)
 
-**mock-oauth2-server** is written in Kotlin using the great [OkHttp MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) as the underlying server library and can be used in unit/integration tests in both **Java** and **Kotlin** or in any language as a standalone server in e.g. docker-compose.
+A scriptable OAuth2/OpenID Connect server for tests. Use it in JVM unit tests or run it as a standalone Docker container alongside your app.
 
-Even though the server aims to be compliant with regards to the supported OAuth2/OpenID Connect specifications, you should never use it for anything else than tests. That being said, when developing OAuth2 clients you should always verify that the expected requests are being made in your tests.
+## Quick Start
 
-## Motivation
-
-The motivation behind this library is to provide a setup such that application developers don't feel the need to disable security in their apps when running tests! If you have any issues with regards to OAuth2 and tokens et. al. and consider to disable "security" when running tests please submit an issue or a PR so that we can all help developers and security to live in harmony once again (if ever..)!
-
-## Features
-
-* **Multi-issuer/Multi-tenancy support**: the server can represent as many different Identity Providers/Token Issuers as you need (with different token issuer names) WITHOUT any setup!
-* **Implements OAuth2/OpenID Connect grants/flows**
-  * OpenID Connect Authorization Code Flow
-  * OAuth2 Client Credentials Grant
-  * OAuth2 JWT Bearer Grant (On-Behalf-Of flow)
-  * OAuth2 Token Exchange Grant
-  * OAuth2 Refresh Token Grant
-  * OAuth2 Resource Owner Password Credentials (Password Grant)
-    * *usage should be avoided if possible as this grant is considered insecure and [removed in its entirety](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-13#section-3.4) from OAuth 2.1*
-* **Issued JWT tokens are verifiable** through standard mechanisms with OpenID Connect Discovery / OAuth2 Authorization Server Metadata
-* **Unit/Integration test support**
-  * Start and stop server for each test
-  * Sane defaults with minimal setup if you don't need token customization
-  * Enqueue expected tokens if you need to customize token claims
-  * Verify expected requests made to the server (only available with `MockWebServerWrapper`, not `NettyWrapper`)
-  * Customizable through exposure of underlying  [OkHttp MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver) 
-* **Standalone support** - i.e. run as application in IDE, run inside your app, or as a Docker image (provided)
-* **OAuth2 Client Debugger** - e.g. support for triggering OIDC Auth Code Flow and receiving callback in debugger app, view token response from server (intended for standalone support)
-* **Automatic CORS support** for browser based OAuth2 clients
-
-## API Documentation
-
-[mock-oauth2-server](https://navikt.github.io/mock-oauth2-server/)
-
-## 📦 Install
+Add the dependency:
 
 **Gradle Kotlin DSL**
-
-Latest version [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server)
 
 ```kotlin
 testImplementation("no.nav.security:mock-oauth2-server:$mockOAuth2ServerVersion")
 ```
 
 **Maven**
-
-Latest version [![Maven Central](https://img.shields.io/maven-central/v/no.nav.security/mock-oauth2-server?color=green&logo=Apache%20Maven)](https://search.maven.org/artifact/no.nav.security/mock-oauth2-server)
 
 ```xml
 <dependency>
@@ -60,117 +25,111 @@ Latest version [![Maven Central](https://img.shields.io/maven-central/v/no.nav.s
 </dependency>
 ```
 
-**Docker**
-
-Latest version [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/navikt/mock-oauth2-server?color=green&include_prereleases&label=GitHub%20Package%20Registry&logo=Docker)](https://github.com/navikt/mock-oauth2-server/packages/)
-
-```
-docker pull ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
-```
-
-
-
-## ⌨️ Usage
-
-### Well-Known Configuration
-
-The **mock-oauth2-server** will supply different configurations depending on the url used against the server, more specifically the first **path** (or context root) element in your request url will specify the `issuerId`.
-
-A request to `http://localhost:8080/default/.well-known/openid-configuration` will yield an `issuerId` of `default` with the following configuration:
-
-```json
-{
-   "issuer":"http://localhost:8080/default",
-   "authorization_endpoint":"http://localhost:8080/default/authorize",
-   "end_session_endpoint" : "http://localhost:8080/default/endsession",
-   "revocation_endpoint" : "http://localhost:8080/default/revoke",
-   "token_endpoint":"http://localhost:8080/default/token",
-   "userinfo_endpoint":"http://localhost:8080/default/userinfo",
-   "jwks_uri":"http://localhost:8080/default/jwks",
-   "introspection_endpoint":"http://localhost:8080/default/introspect",
-   "response_types_supported":[
-     "code",
-     "none",
-     "id_token",
-     "token"
-   ],
-   "response_modes_supported":[
-     "query",
-     "fragment",
-     "form_post"
-   ],
-   "subject_types_supported":[
-     "public"
-   ],
-   "id_token_signing_alg_values_supported":[
-     "ES256",
-     "ES384",
-     "RS256",
-     "RS384",
-     "RS512",
-     "PS256",
-     "PS384",
-     "PS512"
-   ],
-   "code_challenge_methods_supported":[
-     "plain", 
-     "S256" 
-   ]
-}
-```
-
-The actual issuer value in a JWT will be `iss: "http://localhost:8080/default"`
-
-To use another issuer with id `anotherissuer` simply make a request to `http://localhost:8080/anotherissuer/.well-known/openid-configuration` and the configuration will change accordingly.
-
-The server also serves the OAuth2 Authorization Server Metadata endpoint defined in RFC 8414:
-
-`http://localhost:8080/default/.well-known/oauth-authorization-server`
-
-The corresponding API method is:
-
-```kotlin
-val metadataUrl = server.oauth2AuthorizationServerMetadataUrl("default").toString()
-```
-
-### Unit tests
-
-##### Setup test
-
-* Start the server at a random port
-* Get url for server metadata/configuration
-* Setup your app to use the OAuth2 server metadata and conduct your tests
-* Shutdown the server
+Start the server and issue a token in your test:
 
 ```kotlin
 val server = MockOAuth2Server()
 server.start()
-// Can be anything you choose - should uniquely identify your issuer if you have several
-val issuerId = "default"
-// Discovery url to authorization server metadata
-val wellKnownUrl = server.wellKnownUrl(issuerId).toString()
-// ......
-// Setup your app with metadata from wellKnownUrl and do your testing here
-// ......
+
+val token = server.issueToken(
+    issuerId = "default",
+    subject = "user123",
+    audience = "my-api",
+)
+
+// Point your app at the discovery URL
+val wellKnownUrl = server.wellKnownUrl("default").toString()
+
+// Attach the token to a request
+request.addHeader("Authorization", "Bearer ${token.serialize()}")
+
 server.shutdown()
 ```
 
-Alternatively use the `withMockOAuth2Server` DSL which handles start and shutdown automatically:
+Or run it as a Docker container:
+
+```
+docker run -p 8080:8080 ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+```
+
+Token endpoint: `http://localhost:8080/default/token`
+Discovery: `http://localhost:8080/default/.well-known/openid-configuration`
+
+## What it does
+
+mock-oauth2-server lets you test applications that depend on a real OAuth2/OpenID Connect server without disabling security. It issues signed JWTs that are verifiable through standard JWKS and discovery endpoints, so your app does not need any special test configuration.
+
+It supports multi-issuer setups, all major OAuth2 grant types, token customization, and runs both embedded in JVM tests and as a standalone process in Docker Compose.
+
+> This server is for testing only. Do not use it in production.
+
+## Supported Flows
+
+- OpenID Connect Authorization Code Flow
+- OAuth2 Client Credentials Grant
+- OAuth2 JWT Bearer Grant (On-Behalf-Of)
+- OAuth2 Token Exchange Grant
+- OAuth2 Refresh Token Grant
+- OAuth2 Resource Owner Password Credentials Grant (deprecated in OAuth 2.1, avoid if possible)
+
+## Usage
+
+### In JVM Tests
+
+#### Minimal setup
+
+```kotlin
+val server = MockOAuth2Server()
+server.start()
+
+val wellKnownUrl = server.wellKnownUrl("default").toString()
+// configure your app to use wellKnownUrl, run your test, then:
+
+server.shutdown()
+```
+
+Use `withMockOAuth2Server` to avoid manual start/shutdown:
 
 ```kotlin
 withMockOAuth2Server {
     val wellKnownUrl = wellKnownUrl("default").toString()
-    // Setup your app and do your testing here
+    // configure your app and run your test here
 }
 ```
 
-##### Testing an app requiring user login with OpenID Connect Authorization Code Flow
+#### Issuing tokens directly
 
-* Setup test like above
-* Make your test HTTP client follow redirects
-* Your callback (redirect_uri) endpoint should receive the callback request as required and be able to retrieve a token from the token endpoint.
+The simplest way to issue a token:
 
-If you need to get a login for a specific user you can use the `OAuth2TokenCallback` interface to provide your own or set values in the `DefaultOAuth2TokenCallback`
+```kotlin
+val token: SignedJWT = server.issueToken(
+    issuerId = "default",
+    subject = "user123",
+    audience = "my-api",
+    claims = mapOf("roles" to listOf("admin")),
+    expiry = 3600,
+)
+request.addHeader("Authorization", "Bearer ${token.serialize()}")
+```
+
+To issue a token with a custom callback object for full control:
+
+```kotlin
+val token: SignedJWT = server.issueToken(issuerId, "someclientid", DefaultOAuth2TokenCallback())
+```
+
+To issue a token for an external issuer URL that is still verifiable via this server's JWKS:
+
+```kotlin
+val token: SignedJWT = server.anyToken(
+    issuerUrl = "https://external-idp.example.com".toHttpUrl(),
+    claims = mapOf("sub" to "user123", "aud" to "my-api"),
+)
+```
+
+#### Testing Authorization Code Flow (user login)
+
+Enqueue a callback to control what is returned when your app exchanges the code:
 
 ```kotlin
 @Test
@@ -181,13 +140,13 @@ fun loginWithIdTokenForSubjectFoo() {
             subject = "foo"
         )
     )
-  // Invoke your app here and assert user foo is logged in
+    // Invoke your app here and assert user foo is logged in
 }
 ```
 
- If you need specific claims in the resulting `id_token` - e.g. `acr` or a custom claim you can also use the `OAuth2TokenCallback`:
+To set specific claims in the `id_token`:
 
-~~~kotlin
+```kotlin
 @Test
 fun loginWithIdTokenForAcrClaimEqualsLevel4() {
     server.enqueueCallback(
@@ -196,103 +155,122 @@ fun loginWithIdTokenForAcrClaimEqualsLevel4() {
             claims = mapOf("acr" to "Level4")
         )
     )
-  // Invoke your app here and assert acr=Level4 is present in id_token
+    // Invoke your app here and assert acr=Level4 is present in id_token
 }
-~~~
-
-
-##### Testing an API requiring access_token (e.g. a signed JWT)
-
-```kotlin
-val token: SignedJWT = oAuth2Server.issueToken(issuerId, "someclientid", DefaultOAuth2TokenCallback())
-//use your favourite HTTP client to invoke your API and attach the serialized token
-val request = // ....
-request.addHeader("Authorization", "Bearer ${token.serialize()}")
 ```
 
-A convenience overload lets you issue tokens without instantiating a callback object:
+#### Verifying requests made to the server
+
+You can inspect requests the server received using `takeRequest()`. This is only available when using `MockWebServerWrapper` (the default), not `NettyWrapper`:
 
 ```kotlin
-val token: SignedJWT = server.issueToken(
-    issuerId = "default",
-    subject = "user123",
-    audience = "my-api",
-    claims = mapOf("roles" to listOf("admin")),
-    expiry = 3600,
-)
+val request = server.takeRequest()
+assertThat(request.path).contains("/default/token")
 ```
 
-To issue a token with arbitrary claims for any issuer URL (including URLs outside the server's own namespace) use `anyToken()`. The resulting JWT is still verifiable via the server's JWKS endpoint:
+#### Controlling token time
 
 ```kotlin
-val token: SignedJWT = server.anyToken(
-    issuerUrl = "https://external-idp.example.com".toHttpUrl(),
-    claims = mapOf("sub" to "user123", "aud" to "my-api"),
-)
-```
-If you for some reason need to manipulate the system time/clock you can configure the OAuth2TokenProvider to use a specific time, resulting in the `iat` claim being set to that time:
-
-```kotlin
-@Test
-fun testWithSpecificTime() {
-    val server = MockOAuth2Server(
-        config = OAuth2Config(
-            tokenProvider = OAuth2TokenProvider(systemTime = Instant.parse("2020-01-21T00:00:00Z")
-        )
+val server = MockOAuth2Server(
+    config = OAuth2Config(
+        tokenProvider = OAuth2TokenProvider(systemTime = Instant.parse("2020-01-21T00:00:00Z"))
     )
-    val token = server.issueToken(issuerId = "issuer1")
-    // do whatever token testing you need to do here and assert the token has iat=2020-01-21T00:00:00Z
-}
+)
+val token = server.issueToken(issuerId = "issuer1")
+// token has iat=2020-01-21T00:00:00Z
 ```
 
-##### More examples 
+#### Multi-issuer setup
 
-Have a look at some examples in both Java and Kotlin in the src/test directory:
-* [Kotlin with the ktor framework](src/test/kotlin/examples/kotlin/ktor)
-* [Java with Spring Boot and Spring Security](src/test/java/examples/java/springboot/)
+The first path segment in any request URL is the `issuerId`. No configuration needed:
 
-### API
-
-##### Server URLs
-
-You can retrieve URLs from the server with the correct port and issuerId etc. by invoking one of the ` fun *Url(issuerId: String): HttpUrl` functions/methods: 
-
-```kotlin
-val server = MockOAuth2Server()
-server.start()
-val wellKnownUrl = server.wellKnownUrl("yourissuer")
-// will result in the following url:
-// http://localhost:<a random port>/yourissuer/.well-known/openid-configuration
+```
+http://localhost:8080/issuer-a/.well-known/openid-configuration  → issuerId = issuer-a
+http://localhost:8080/issuer-b/.well-known/openid-configuration  → issuerId = issuer-b
 ```
 
-### Standalone server
+Each issuer has its own discovery document, token endpoint, and JWKS.
 
-The standalone server will default to port `8080` and can be started by invoking `main()` in  `StandaloneMockOAuth2Server.kt` (in kotlin) or `StandaloneMockOAuth2ServerKt` (in Java)
+#### More examples
 
-On Windows, it's easier to run the server in docker while specifying the host as localhost, e.g. `docker run -p 8080:8080 -h localhost $IMAGE_NAME`
+- [Kotlin with the ktor framework](src/test/kotlin/examples/kotlin/ktor)
+- [Java with Spring Boot and Spring Security](src/test/java/examples/java/springboot/)
 
-> **Note**
-> If you want to check if the server is up and running you can visit `/isalive` and see if you get a 200 in return.
+### Standalone / Docker
 
-#### Configuration
+The standalone server defaults to port `8080`.
 
-The standalone server supports the following configuration by `ENV` variables:
+**Run with Docker:**
 
-| Variable                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `SERVER_HOSTNAME`       | Lets the standalone server bind to a specific hostname, by default it binds to `0.0.0.0`                                                                                                                                                                                                                                                                                                                                                                                               |
-| `SERVER_PORT` or `PORT` | The port that the standalone server will listen to, defaults to `8080`. The `PORT` environment variable may be used to [run the Docker image on Heroku](https://devcenter.heroku.com/articles/container-registry-and-runtime#pushing-an-existing-image) as per the documentation [here](https://devcenter.heroku.com/articles/setting-the-http-port-for-java-applications).                                                                                                            |
-| `JSON_CONFIG_PATH`      | The absolute path to a json file containing configuration about the OAuth2 part of the server (`OAuth2Config`). More details on the format below.                                                                                                                                                                                                                                                                                                                                      |
-| `JSON_CONFIG`           | The actual JSON content of `OAuth2Config`, this ENV var takes precedence over the `JSON_CONFIG_PATH` var. More details on the format below.                                                                                                                                                                                                                                                                                                                                            |
-| `LOG_LEVEL`             | How verbose the root logging output is, defaults to `INFO`                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `LOGBACK_CONFIG`        | You can override the default logging config in [logback-standalone.xml](src/main/resources/logback-standalone.xml) with a path to your own logback xml file.                                                                                                                                                                                                                                                                                                                           |
+```
+docker run -p 8080:8080 ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+```
 
-##### JSON_CONFIG 
+**Build locally:**
 
-The JSON_CONFIG lets you configure the contents of the [`OAuth2Config`](src/main/kotlin/no/nav/security/mock/oauth2/OAuth2Config.kt) class using JSON.
+```
+./gradlew -Djib.from.platforms=linux/amd64 jibDockerBuild
+docker run -p 8080:8080 $IMAGE_NAME
+```
 
+Health check: `GET /isalive` returns `200` when the server is ready.
 
-Example:
+On Windows, specify the host explicitly: `docker run -p 8080:8080 -h localhost $IMAGE_NAME`
+
+### Docker Compose
+
+When running `mock-oauth2-server` alongside your application in Docker Compose, there are two networking scenarios to consider.
+
+**Scenario 1: Container-to-container only (most common for integration tests)**
+
+Both services communicate over Docker's internal network. Your app references the mock server using the Docker Compose service name as the hostname:
+
+```yaml
+services:
+  your_app:
+    build: .
+    ports:
+      - 8080:8080
+    environment:
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://mock-oauth2-server:8080/default/jwks
+  mock-oauth2-server:
+    image: ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+    ports:
+      - 8090:8080
+```
+
+Your app reaches the mock server at `http://mock-oauth2-server:8080` (internal Docker network). From your host machine the mock server is at `http://localhost:8090`.
+
+**Scenario 2: Container-to-container + browser interaction (e.g. Authorization Code Flow)**
+
+If a browser also needs to reach the mock server, issuer URLs in tokens must be resolvable both from inside Docker and from your browser:
+
+1. Add `127.0.0.1 host.docker.internal` to your `/etc/hosts` file (Linux only; macOS and Windows Docker Desktop add this automatically).
+2. Set `hostname: host.docker.internal` on the mock server service.
+
+```yaml
+services:
+  your_app:
+    build: .
+    ports:
+      - 8080:8080
+    environment:
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://host.docker.internal:8090/default/jwks
+  mock-oauth2-server:
+    image: ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
+    ports:
+      - 8090:8080
+    hostname: host.docker.internal
+```
+
+> Each service must use a different host port. Mapping two services to the same host port causes a `port is already allocated` error.
+
+### Token Customization via JSON_CONFIG
+
+When running standalone or in Docker you can configure token callbacks via the `JSON_CONFIG` environment variable (or `JSON_CONFIG_PATH` pointing to a file). When neither is set the server looks for `config.json` in the current working directory.
+
+A token callback lets you define what claims are returned when a token request matches a given parameter:
+
 ```json
 {
     "interactiveLogin": true,
@@ -307,9 +285,7 @@ Example:
                     "match": "code1",
                     "claims": {
                         "sub": "subByCode",
-                        "aud": [
-                            "audByCode"
-                        ]
+                        "aud": ["audByCode"]
                     }
                 }
             ]
@@ -322,9 +298,7 @@ Example:
                     "match": "somevalue",
                     "claims": {
                         "sub": "subBySomeParam",
-                        "aud": [
-                            "audBySomeParam"
-                        ]
+                        "aud": ["audBySomeParam"]
                     }
                 }
             ]
@@ -333,223 +307,53 @@ Example:
 }
 ```
 
-A token provider can support different `signing` algorithms. Configure your token provider and
-add this to your config with preferred `JWS algorithm`:
-
-```json
-{
-  "tokenProvider" : {
-    "keyProvider" : {
-      "algorithm" : "ES256"
-    }
-  }
-}
-```
-
-A token provider can also support a static "systemTime", i.e. the time for when the token is issued (`iat` claim) if you have tests that require a specific time.
-The following configuration will set the system time to `2020-01-21T00:00:00Z`:
-
-```json
-{
-  "tokenProvider" : {
-    "systemTime" : "2020-01-21T00:00:00Z"
-  }
-}
-```
-
-| Property             | Description                                                                                                                                                                                                                                                                       |
-|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `interactiveLogin`   | `true` or `false`, enables login screen when redirecting to server `/authorize` endpoint                                                                                                                                                                                          |
-| `loginPagePath`      | An optional string refering to a html file that is served as login page. This page needs to contain a form that posts a `username` and optionally a `claims` field. See `src/test/resources/login.example.html` as an example.                                                     |
-| `staticAssetsPath`   | The path to a directory containing static resources/assets. Lets you serve your own static resources from the server. Resources are served under the `/static` URL path. E.g. http://localhost:8080/static/myimage.svg or by reference `/static/myimage.svg` from the login page. |                                                     |
-| `rotateRefreshToken` | `true` or `false`, setting to true will generate a new unique refresh token when using the `refresh_token` grant.                                                                                                                                                                 | 
-| `httpServer`         | A string identifying the httpserver to use. Must match one of the following enum values: `MockWebServerWrapper` or `NettyWrapper`                                                                                                                                                 |
-| `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) that lets you specify which token claims to return when a token request matches the specified condition.                                                      |
-
-*From the first JSON example above:* 
-
-A token request to `http://localhost:8080/issuer1/token` with parameter `code` equal to `code1` will match the first `tokenCallback`:
-
-```json
-{
-    "issuerId": "issuer1",
-    "tokenExpiry": 120,
-    "requestMappings": [
-        {
-            "requestParam": "code",
-            "match": "code1",
-            "claims": {
-                "sub": "subByCode",
-                "aud": [
-                    "audByCode"
-                ]
-            }
-        }
-    ]
-}
-```
-
-and return a token response containing a token with the following claims:
+A token request to `http://localhost:8080/issuer1/token` with parameter `code` equal to `code1` will return a token with:
 
 ```json
 {
   "sub": "subByCode",
   "aud": "audByCode",
-  "nbf": 1616416942,
-  "iss": "http://localhost:54905/issuer1",
-  "exp": 1616417062,
-  "iat": 1616416942,
-  "jti": "28697333-6f25-4b1f-b2c2-409ce010933a"
+  "iss": "http://localhost:8080/issuer1",
+  ...
 }
 ```
 
-Use variable `clientId` to set `sub` claim for Client Credentials Grant dynamically.
+The `match` field supports exact strings, `"*"` (matches any value), and full regular expressions.
 
-A token request with client credentials where `clientId = myClientId` and `tokenCallback`: 
+Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting client ID dynamically. All form parameters from the token request are available as template variables:
+
 ```json
 {
     "issuerId": "issuer1",
-    "tokenExpiry": 120,
     "requestMappings": [
         {
             "requestParam": "code",
             "match": "code1",
             "claims": {
                 "sub": "${clientId}",
-                "aud": [
-                    "audByCode"
-                ]
+                "aud": ["audByCode"]
             }
         }
     ]
 }
 ```
-will return a token response containing a token with the following claims:
 
+### HTTPS
 
-```json
-{
-  "sub": "myClientId",
-  "aud": "audByCode",
-  "nbf": 1616416942,
-  "iss": "http://localhost:54905/issuer1",
-  "exp": 1616417062,
-  "iat": 1616416942,
-  "jti": "28697333-6f25-4b1f-b2c2-409ce010933a"
-}
-```
+#### In unit tests
 
-#### Docker 
+Generate a keystore automatically:
 
-Build to local docker daemon
-
-```gradle
-./gradlew -Djib.from.platforms=linux/amd64 jibDockerBuild # or alternatively -Djib.from.platforms=linux/arm64 for ARM64
-```
-
-Run container
-
-```gradle
-docker run -p 8080:8080 $IMAGE_NAME
-```
-
-#### Docker-Compose
-
-When running `mock-oauth2-server` alongside your application in Docker Compose, there are two networking scenarios to consider:
-
-**Scenario 1: Container-to-container only (most common for integration tests)**
-
-Both services communicate over Docker's internal network. Your app references the mock server using the Docker Compose service name as the hostname:
-
-```yaml
-version: '3.7'
-services:
-  your_app:
-    build: .
-    ports:
-      - 8080:8080
-    environment:
-      # Reference mock-oauth2-server by its service name within the Docker network
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://mock-oauth2-server:8080/default/jwks
-  mock-oauth2-server:
-    image: ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
-    ports:
-      - 8090:8080
-```
-
-In this setup, your app reaches the mock server at `http://mock-oauth2-server:8080` (internal Docker network), while you can access the mock server from your host machine at `http://localhost:8090`.
-
-**Scenario 2: Container-to-container + browser interaction (e.g. Authorization Code Flow with a browser)**
-
-If you also need a browser (running on your host) to interact with the mock server — for example during an OAuth2 Authorization Code Flow — the issuer URLs in tokens must be resolvable both from inside Docker and from your browser. In this case:
-
-1. Add `127.0.0.1 host.docker.internal` to your host machine's `/etc/hosts` file (on Linux; macOS and Windows Docker Desktop add this automatically).
-2. Set `hostname: host.docker.internal` on the mock server service so that issued tokens contain `host.docker.internal` as the issuer host, which is reachable from both containers and your browser.
-
-```yaml
-version: '3.7'
-services:
-  your_app:
-    build: .
-    ports:
-      - 8080:8080
-    environment:
-      # Use host.docker.internal so the issuer is reachable from both container and browser
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://host.docker.internal:8090/default/jwks
-  mock-oauth2-server:
-    image: ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
-    ports:
-      - 8090:8080
-    hostname: host.docker.internal
-```
-
-> **Note:** Each service must be mapped to a **different** host port. In the examples above, `your_app` uses host port `8080` and `mock-oauth2-server` uses host port `8090`. Mapping two services to the same host port (e.g. both on `8080`) will cause a `port is already allocated` error.
-
-#### Debugger
-
-The debugger is a OAuth2 client implementing the `authorization_code` flow with a UI for debugging (e.g. request parameters).
-Point your browser to [http://localhost:8080/default/debugger](http://localhost:8080/default/debugger) to check it out.
-
-#### CORS
-
-The server automatically adds CORS headers to every response when an `Origin` header is present in the request. No configuration is required.
-
-For regular requests the server adds:
-
-```
-Access-Control-Allow-Origin: <origin>
-Access-Control-Allow-Credentials: true
-```
-
-For `OPTIONS` preflight requests the server additionally adds:
-
-```
-Access-Control-Allow-Headers: <requested-headers>
-Access-Control-Allow-Methods: POST, GET, OPTIONS
-```
-
-This means browser based OAuth2 clients and SPAs can call the token, JWKS and other endpoints directly without any proxy setup.
-
-### Enabling HTTPS
-
-In order to enable HTTPS you can either provide your own keystore or let the server generate one for you.
-
-#### Unit tests
-
-You need to supply the server with an SSL config, in order to do that you must specify your chosen server type in `OAuth2Config` and 
-pass in the SSL config to your server.
-
-*Generate keystore:*
 ```kotlin
 val ssl = Ssl()
 val server = MockOAuth2Server(
     OAuth2Config(httpServer = MockWebServerWrapper(ssl))
 )
+// Add ssl.sslKeystore.keyStore to your client's truststore
 ```
-*This will generate a SSL certificate for `localhost` and can be added to your client's truststore by getting the ssl config:
-`ssl.sslKeystore.keyStore`*
 
-*Bring your own:*
+Bring your own keystore:
+
 ```kotlin
 val ssl = Ssl(
     SslKeystore(
@@ -564,70 +368,176 @@ val server = MockOAuth2Server(
 )
 ```
 
-#### Docker / Standalone mode - JSON_CONFIG
+#### In Docker / standalone via JSON_CONFIG
 
-In order to enable HTTPS for the server in Docker or standalone mode
-you can either make the server generate the keystore or bring your own.
-
-*Generate keystore:*
+Generate keystore:
 
 ```json
 {
-  "httpServer" : {
-    "type" : "NettyWrapper",
-    "ssl" : {}
+  "httpServer": {
+    "type": "NettyWrapper",
+    "ssl": {}
   }
 }
 ```
 
-*Bring your own:*
+Bring your own:
 
 ```json
-
 {
-    "httpServer" : {
-        "type" : "NettyWrapper",
-        "ssl" : {
-            "keyPassword" : "",
-            "keystoreFile" : "src/test/resources/localhost.p12",
-            "keystoreType" : "PKCS12",
-            "keystorePassword" : "" 
+    "httpServer": {
+        "type": "NettyWrapper",
+        "ssl": {
+            "keyPassword": "",
+            "keystoreFile": "src/test/resources/localhost.p12",
+            "keystoreType": "PKCS12",
+            "keystorePassword": ""
         }
     }
 }
 ```
 
-A ready to use Docker Compose setup with SSL enabled is available at [`docker-compose-ssl.yaml`](docker-compose-ssl.yaml) in the root of this repository.
+A ready to use Docker Compose setup with SSL is available at [`docker-compose-ssl.yaml`](docker-compose-ssl.yaml) in the root of this repository.
 
-## Upgrading the gradle wrapper
-Find the newest version of gradle here: https://gradle.org/releases/
-Then run this command:
-```./gradlew wrapper --gradle-version $gradleVersion```
+### CORS
 
-Remeber to also update the gradle version in the build.gradle.kts file
-``` gradleVersion = "$gradleVersion"```
+The server automatically adds CORS headers to every response when an `Origin` header is present. No configuration is required.
 
+For regular requests:
+
+```
+Access-Control-Allow-Origin: <origin>
+Access-Control-Allow-Credentials: true
+```
+
+For `OPTIONS` preflight requests:
+
+```
+Access-Control-Allow-Headers: <requested-headers>
+Access-Control-Allow-Methods: POST, GET, OPTIONS
+```
+
+Browser based OAuth2 clients and SPAs can call the token, JWKS and other endpoints directly without any proxy setup.
+
+### Debugger
+
+Point your browser to `http://localhost:8080/default/debugger` to open the OAuth2 client debugger. It implements the Authorization Code Flow and lets you inspect request parameters and token responses interactively.
+
+## Configuration Reference
+
+### Standalone ENV variables
+
+| Variable                | Description                                                                                                                                                          |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `SERVER_HOSTNAME`       | Hostname to bind to. Defaults to the wildcard address (typically `0.0.0.0` or `::` depending on the JVM and OS).                                                    |
+| `SERVER_PORT` or `PORT` | Port to listen on. Defaults to `8080`. `PORT` is also accepted for Heroku compatibility.                                                                             |
+| `JSON_CONFIG`           | Full JSON content of `OAuth2Config`. Takes precedence over `JSON_CONFIG_PATH`.                                                                                       |
+| `JSON_CONFIG_PATH`      | Absolute path to a JSON file containing `OAuth2Config`.                                                                                                              |
+| `LOG_LEVEL`             | Root log level. Defaults to `INFO`.                                                                                                                                  |
+| `LOGBACK_CONFIG`        | Path to a custom logback XML file. Overrides the default [logback-standalone.xml](src/main/resources/logback-standalone.xml).                                        |
+
+When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a file named `config.json` in the current working directory before falling back to defaults.
+
+### JSON_CONFIG properties
+
+| Property             | Description                                                                                                                                                                                                                                                                       |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `interactiveLogin`   | `true` or `false`. Enables a login screen on the `/authorize` endpoint. Defaults to `true` in standalone mode, `false` in library mode.                                                                                                                                           |
+| `loginPagePath`      | Path to a custom HTML login page. The page must contain a form that posts `username` and optionally `claims`. See `src/test/resources/login.example.html` for an example.                                                                                                         |
+| `staticAssetsPath`   | Path to a directory of static assets served under `/static`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                                                                                                                    |
+| `rotateRefreshToken` | `true` or `false`. When `true`, a new refresh token is issued on each refresh grant, invalidating the previous one.                                                                                                                                                               |
+| `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper` (required for HTTPS). Can also be a JSON object: `{"type": "NettyWrapper", "ssl": {...}}`.                                                                    |
+| `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
+
+Additional token provider options:
+
+```json
+{
+  "tokenProvider": {
+    "keyProvider": {
+      "algorithm": "ES256"
+    },
+    "systemTime": "2020-01-21T00:00:00Z"
+  }
+}
+```
+
+## API Reference
+
+### Well-known endpoints
+
+The first path segment in any URL is the `issuerId`. Both OIDC and OAuth2 AS metadata endpoints are served:
+
+```
+GET /{issuerId}/.well-known/openid-configuration
+GET /{issuerId}/.well-known/oauth-authorization-server
+```
+
+Example response for `http://localhost:8080/default/.well-known/openid-configuration`:
+
+```json
+{
+   "issuer": "http://localhost:8080/default",
+   "authorization_endpoint": "http://localhost:8080/default/authorize",
+   "token_endpoint": "http://localhost:8080/default/token",
+   "jwks_uri": "http://localhost:8080/default/jwks",
+   "userinfo_endpoint": "http://localhost:8080/default/userinfo",
+   "introspection_endpoint": "http://localhost:8080/default/introspect",
+   "revocation_endpoint": "http://localhost:8080/default/revoke",
+   "end_session_endpoint": "http://localhost:8080/default/endsession"
+}
+```
+
+### Server URL methods (Kotlin/Java API)
+
+```kotlin
+server.wellKnownUrl("default")                      // OIDC discovery URL
+server.oauth2AuthorizationServerMetadataUrl("default") // OAuth2 AS metadata URL
+server.tokenEndpointUrl("default")
+server.jwksUrl("default")
+server.userInfoUrl("default")
+server.introspectUrl("default")
+server.revocationEndpointUrl("default")
+server.endSessionEndpointUrl("default")
+server.baseUrl()                                    // server root URL
+```
+
+### Full API documentation
+
+[navikt.github.io/mock-oauth2-server](https://navikt.github.io/mock-oauth2-server/)
+
+## Upgrading the Gradle wrapper
+
+Find the latest version at https://gradle.org/releases/ then run:
+
+```
+./gradlew wrapper --gradle-version $gradleVersion
+```
+
+Also update the version in `build.gradle.kts`:
+
+```
+gradleVersion = "$gradleVersion"
+```
 
 ## 👥 Contact
 
-This project is currently maintained by the organisation [@navikt](https://github.com/navikt).
+This project is maintained by [@navikt](https://github.com/navikt).
 
-If you need to raise an issue or question about this library, please create an issue here and tag it with the appropriate label.
+To raise an issue or question, open an issue in this repository.
 
-For contact requests within the [@navikt](https://github.com/navikt) org, you can use the Slack channel #pig_sikkerhet
-
-If you need to contact anyone directly, please see contributors.
+For internal NAV contact, use the Slack channel `#nais`.
 
 ## ✏️ Contributing
 
-To get started, please fork the repo and checkout a new branch. You can then build the library with the Gradle wrapper
+Fork the repo, check out a new branch, and build with:
 
-```shell script
+```shell
 ./gradlew build
 ```
 
-See more info in [CONTRIBUTING.md](CONTRIBUTING.md)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## ⚖️ License
-This library is licensed under the [MIT License](LICENSE.md)
 
+This library is licensed under the [MIT License](LICENSE.md).
