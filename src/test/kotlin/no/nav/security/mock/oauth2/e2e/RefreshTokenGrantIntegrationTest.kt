@@ -130,20 +130,19 @@ class RefreshTokenGrantIntegrationTest {
     fun `token request with bogus refresh_token should return 400 invalid_grant`() {
         withMockOAuth2Server {
             val issuerId = "idprovider"
-            val response =
-                client
-                    .tokenRequest(
-                        this.tokenEndpointUrl(issuerId),
-                        mapOf(
-                            "grant_type" to GrantType.REFRESH_TOKEN.value,
-                            "refresh_token" to "bogus-random-uuid",
-                            "client_id" to "id",
-                            "client_secret" to "secret",
-                        ),
-                    )
-
-            response.code shouldBe 400
-            response.body.string() shouldContain "invalid_grant"
+            client
+                .tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to "bogus-random-uuid",
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_grant"
+                }
         }
     }
 
@@ -156,20 +155,19 @@ class RefreshTokenGrantIntegrationTest {
             val initialResponse = this.runAuthCodeFlow(issuerA, "subject")
             val refreshToken = checkNotNull(initialResponse.refreshToken)
 
-            val response =
-                client
-                    .tokenRequest(
-                        this.tokenEndpointUrl(issuerB),
-                        mapOf(
-                            "grant_type" to GrantType.REFRESH_TOKEN.value,
-                            "refresh_token" to refreshToken,
-                            "client_id" to "id",
-                            "client_secret" to "secret",
-                        ),
-                    )
-
-            response.code shouldBe 400
-            response.body.string() shouldContain "invalid_grant"
+            client
+                .tokenRequest(
+                    this.tokenEndpointUrl(issuerB),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to refreshToken,
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_grant"
+                }
         }
     }
 
