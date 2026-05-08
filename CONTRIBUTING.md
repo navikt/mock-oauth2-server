@@ -15,6 +15,20 @@ To run a build simply execute the following:
 
 This will run all the steps defined in the `build.gradle.kts` file.
 
+## Upgrading the Gradle wrapper
+
+Find the latest version at https://gradle.org/releases/ then run:
+
+```
+./gradlew wrapper --gradle-version $gradleVersion
+```
+
+Also update the version in `build.gradle.kts`:
+
+```
+gradleVersion = "$gradleVersion"
+```
+
 
 ## Testing
 If you are adding a new feature or bug fix please ensure there is proper test coverage.

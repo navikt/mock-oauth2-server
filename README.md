@@ -506,20 +506,6 @@ server.baseUrl()                                    // server root URL
 
 [navikt.github.io/mock-oauth2-server](https://navikt.github.io/mock-oauth2-server/)
 
-## Upgrading the Gradle wrapper
-
-Find the latest version at https://gradle.org/releases/ then run:
-
-```
-./gradlew wrapper --gradle-version $gradleVersion
-```
-
-Also update the version in `build.gradle.kts`:
-
-```
-gradleVersion = "$gradleVersion"
-```
-
 ## 👥 Contact
 
 This project is maintained by [@navikt](https://github.com/navikt).
