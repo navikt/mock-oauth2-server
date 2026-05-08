@@ -67,10 +67,13 @@ It supports multi-issuer setups, all major OAuth2 grant types, token customizati
 
 - OpenID Connect Authorization Code Flow
 - OAuth2 Client Credentials Grant
-- OAuth2 JWT Bearer Grant (On-Behalf-Of)
+- OAuth2 JWT Bearer Grant (On-Behalf-Of flow)
 - OAuth2 Token Exchange Grant
 - OAuth2 Refresh Token Grant
-- OAuth2 Resource Owner Password Credentials Grant (deprecated in OAuth 2.1, avoid if possible)
+- OAuth2 Resource Owner Password Credentials Grant
+  - usage should be avoided if possible as this grant is considered insecure and [removed in its entirety](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-13#section-3.4) from OAuth 2.1
+
+Issued JWT tokens are verifiable through standard mechanisms via OpenID Connect Discovery and OAuth2 Authorization Server Metadata endpoints. Multi-issuer setups are supported with no configuration — the first path segment in any request URL determines the issuer.
 
 ## Usage
 
