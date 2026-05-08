@@ -122,6 +122,16 @@ The actual issuer value in a JWT will be `iss: "http://localhost:8080/default"`
 
 To use another issuer with id `anotherissuer` simply make a request to `http://localhost:8080/anotherissuer/.well-known/openid-configuration` and the configuration will change accordingly.
 
+The server also serves the OAuth2 Authorization Server Metadata endpoint defined in RFC 8414:
+
+`http://localhost:8080/default/.well-known/oauth-authorization-server`
+
+The corresponding API method is:
+
+```kotlin
+val metadataUrl = server.oauth2AuthorizationServerMetadataUrl("default").toString()
+```
+
 ### Unit tests
 
 ##### Setup test
