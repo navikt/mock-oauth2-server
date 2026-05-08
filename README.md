@@ -144,6 +144,15 @@ val wellKnownUrl = server.wellKnownUrl(issuerId).toString()
 server.shutdown()
 ```
 
+Alternatively use the `withMockOAuth2Server` DSL which handles start and shutdown automatically:
+
+```kotlin
+withMockOAuth2Server {
+    val wellKnownUrl = wellKnownUrl("default").toString()
+    // Setup your app and do your testing here
+}
+```
+
 ##### Testing an app requiring user login with OpenID Connect Authorization Code Flow
 
 * Setup test like above
@@ -188,6 +197,27 @@ val token: SignedJWT = oAuth2Server.issueToken(issuerId, "someclientid", Default
 //use your favourite HTTP client to invoke your API and attach the serialized token
 val request = // ....
 request.addHeader("Authorization", "Bearer ${token.serialize()}")
+```
+
+A convenience overload lets you issue tokens without instantiating a callback object:
+
+```kotlin
+val token: SignedJWT = server.issueToken(
+    issuerId = "default",
+    subject = "user123",
+    audience = "my-api",
+    claims = mapOf("roles" to listOf("admin")),
+    expiry = 3600,
+)
+```
+
+To issue a token with arbitrary claims for any issuer URL (including URLs outside the server's own namespace) use `anyToken()`. The resulting JWT is still verifiable via the server's JWKS endpoint:
+
+```kotlin
+val token: SignedJWT = server.anyToken(
+    issuerUrl = "https://external-idp.example.com".toHttpUrl(),
+    claims = mapOf("sub" to "user123", "aud" to "my-api"),
+)
 ```
 If you for some reason need to manipulate the system time/clock you can configure the OAuth2TokenProvider to use a specific time, resulting in the `iat` claim being set to that time:
 
