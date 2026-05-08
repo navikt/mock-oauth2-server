@@ -597,6 +597,8 @@ you can either make the server generate the keystore or bring your own.
 }
 ```
 
+A ready to use Docker Compose setup with SSL enabled is available at [`docker-compose-ssl.yaml`](docker-compose-ssl.yaml) in the root of this repository.
+
 ## Upgrading the gradle wrapper
 Find the newest version of gradle here: https://gradle.org/releases/
 Then run this command:
