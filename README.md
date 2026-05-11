@@ -587,7 +587,6 @@ server.endSessionEndpointUrl("default")                // http://localhost:8080/
 server.baseUrl()                                       // http://localhost:8080
 ```
 
-In unit tests the port is assigned randomly on `server.start()`, so always use these methods to obtain URLs rather than hardcoding them.
 
 ### Full API documentation
 
