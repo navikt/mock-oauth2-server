@@ -215,15 +215,23 @@ Have a look at some examples in both Java and Kotlin in the src/test directory:
 
 ##### Server URLs
 
-You can retrieve URLs from the server with the correct port and issuerId etc. by invoking one of the ` fun *Url(issuerId: String): HttpUrl` functions/methods: 
+You can retrieve URLs from the server with the correct port and issuerId by invoking one of the `fun *Url(issuerId: String): HttpUrl` functions/methods.
+
+The following example assumes the standalone server running on the default port `8080`:
 
 ```kotlin
-val server = MockOAuth2Server()
-server.start()
-val wellKnownUrl = server.wellKnownUrl("yourissuer")
-// will result in the following url:
-// http://localhost:<a random port>/yourissuer/.well-known/openid-configuration
+server.wellKnownUrl("default")                         // http://localhost:8080/default/.well-known/openid-configuration
+server.oauth2AuthorizationServerMetadataUrl("default") // http://localhost:8080/default/.well-known/oauth-authorization-server
+server.tokenEndpointUrl("default")                     // http://localhost:8080/default/token
+server.jwksUrl("default")                              // http://localhost:8080/default/jwks
+server.userInfoUrl("default")                          // http://localhost:8080/default/userinfo
+server.introspectUrl("default")                        // http://localhost:8080/default/introspect
+server.revocationEndpointUrl("default")                // http://localhost:8080/default/revoke
+server.endSessionEndpointUrl("default")                // http://localhost:8080/default/endsession
+server.baseUrl()                                       // http://localhost:8080
 ```
+
+In unit tests the port is assigned randomly on `server.start()`, so always use these methods to obtain URLs rather than hardcoding them.
 
 ### Standalone server
 
