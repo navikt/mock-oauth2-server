@@ -4,12 +4,13 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.PlainJWT
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 typealias RefreshToken = String
 typealias Nonce = String
 
 internal data class RefreshTokenManager(
-    private val cache: MutableMap<RefreshToken, OAuth2TokenCallback> = HashMap(),
+    private val cache: MutableMap<RefreshToken, OAuth2TokenCallback> = ConcurrentHashMap(),
 ) {
     operator fun get(refreshToken: RefreshToken) = cache[refreshToken]
 

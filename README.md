@@ -623,3 +623,37 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 ## ⚖️ License
 
 This library is licensed under the [MIT License](LICENSE.md).
+
+---
+
+## Migration guide
+
+### Migrating to 4.0.0
+
+#### Refresh token validation is now strict
+
+Previously, any arbitrary string passed as a `refresh_token` was silently accepted and used to mint a new token via the default callback. This has been fixed: unknown, expired, and revoked refresh tokens now fail with `400 invalid_grant`.
+
+**What this means for existing tests:**
+
+- Tests that passed a hardcoded or arbitrary string as `refresh_token` will now receive `400 invalid_grant` instead of a valid token response. Use a real refresh token obtained from a prior token request.
+- Tests that relied on refresh succeeding after revocation will now fail. This is the correct behavior.
+- Tests that presented a refresh token issued by issuer A to issuer B will now receive `400 invalid_grant`.
+
+**Example migration:**
+
+```kotlin
+// Before: arbitrary string was accepted
+val response = client.post(server.tokenEndpointUrl("default")) {
+    body = "grant_type=refresh_token&refresh_token=any-string"
+}
+
+// After: obtain a real refresh token first
+val tokenResponse = client.post(server.tokenEndpointUrl("default")) {
+    body = "grant_type=authorization_code&code=..."
+}
+val refreshToken = tokenResponse.body.refresh_token
+val response = client.post(server.tokenEndpointUrl("default")) {
+    body = "grant_type=refresh_token&refresh_token=$refreshToken"
+}
+```
