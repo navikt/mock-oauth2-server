@@ -9,12 +9,12 @@
       "tokenExpiry": 120,
       "requestMappings": [
         {
-          "requestParam": "scope",
-          "match": "scope1",
+          "requestParam": "code",
+          "match": "*",
           "claims": {
-            "sub": "subByScope",
+            "sub": "subByCode",
             "aud": [
-              "audByScope"
+              "audByCode"
             ]
           }
         }
