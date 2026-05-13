@@ -115,6 +115,46 @@ internal class OAuth2TokenCallbackTest {
         }
 
         @Test
+        fun `token request with client_id via HTTP Basic auth should match requestmapping on client_id`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = clientId,
+                                claims = mapOf("sub" to "subByClientId", "aud" to listOf("audByClientId")),
+                            ),
+                        ),
+                )
+            val requestWithBasicAuth = clientCredentialsRequest()
+            assertSoftly {
+                callback.subject(requestWithBasicAuth) shouldBe "subByClientId"
+                callback.audience(requestWithBasicAuth) shouldBe listOf("audByClientId")
+            }
+        }
+
+        @Test
+        fun `token request with client_id via HTTP Basic auth and wildcard requestmapping should match`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = "*",
+                                claims = mapOf("sub" to "wildcardSub"),
+                            ),
+                        ),
+                )
+            assertSoftly {
+                callback.subject(clientCredentialsRequest()) shouldBe "wildcardSub"
+            }
+        }
+
+        @Test
         fun `token request with request params matching requestmapping should return specific claims from callback with audience`() {
             val grantTypeShouldMatch = clientCredentialsRequest("audience" to "https://myapp.com/jwt/aud/xxx")
             assertSoftly {
