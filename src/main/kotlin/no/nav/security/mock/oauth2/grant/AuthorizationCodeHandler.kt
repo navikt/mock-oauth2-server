@@ -21,6 +21,7 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
 private val log = KotlinLogging.logger {}
@@ -30,8 +31,8 @@ internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
 ) : GrantHandler {
-    private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = HashMap()
-    private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = HashMap()
+    private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
+    private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
 
     fun authorizationCodeResponse(
         authenticationRequest: AuthenticationRequest,
@@ -74,10 +75,23 @@ internal class AuthorizationCodeHandler(
         val tokenRequest = request.asNimbusTokenRequest()
         val code = tokenRequest.authorizationCode()
         log.debug("issuing token for code=$code")
-        val authenticationRequest = takeAuthenticationRequestFromCache(code)
-        authenticationRequest?.verifyPkce(tokenRequest)
+
+        val authenticationRequest =
+            codeToAuthRequestCache.remove(code)
+                ?: throw OAuth2Exception(
+                    OAuth2Error.INVALID_GRANT.setDescription("unknown or already-used authorization code"),
+                    "unknown or already-used authorization code",
+                )
+
+        try {
+            authenticationRequest.verifyPkce(tokenRequest)
+        } catch (e: OAuth2Exception) {
+            codeToLoginCache.remove(code)
+            throw e
+        }
+
         val scope: String? = tokenRequest.scope?.toString()
-        val nonce: String? = authenticationRequest?.nonce?.value
+        val nonce: String? = authenticationRequest.nonce?.value
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
@@ -102,8 +116,6 @@ internal class AuthorizationCodeHandler(
         } ?: oAuth2TokenCallback
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
-
-    private fun takeAuthenticationRequestFromCache(code: AuthorizationCode): AuthenticationRequest? = codeToAuthRequestCache.remove(code)
 
     private class LoginOAuth2TokenCallback(
         val login: Login,
