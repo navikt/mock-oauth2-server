@@ -393,11 +393,46 @@ Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting c
 
 #### Built-in template variables
 
-In addition to form parameters, the following built-in variables are always available:
+The following template variables are always available in `requestMappings` claims without any extra configuration:
 
 | Variable | Value |
 |----------|-------|
-| `${clientId}` / `${client_id}` | The `client_id` from the token request |
+| `${clientId}` / `${client_id}` | the `client_id` from the token request |
+| `${uuid}` | a randomly generated UUID, consistent within one request but unique across requests |
+| `${subject}` / `${sub}` | the subject of the token; resolves to the interactive login username in the Authorization Code flow |
+
+`${uuid}` is useful for load testing or any scenario that requires unique identities without interactive login:
+
+```json
+{
+    "requestMappings": [
+        {
+            "requestParam": "grant_type",
+            "match": "*",
+            "claims": {
+                "sub": "${uuid}",
+                "jti": "${uuid}"
+            }
+        }
+    ]
+}
+```
+
+`${subject}` (or its alias `${sub}`) resolves to the username submitted on the interactive login page, making it possible to mirror the subject into other custom claims:
+
+```json
+{
+    "requestMappings": [
+        {
+            "requestParam": "grant_type",
+            "match": "authorization_code",
+            "claims": {
+                "preferred_username": "${subject}"
+            }
+        }
+    ]
+}
+```
 
 #### Interactive login: matching and templating on the login username
 
@@ -439,11 +474,41 @@ This allows a single `JSON_CONFIG` to serve different claim sets per user withou
 1. Claims set by a matching `requestMapping` take priority.
 2. Claims submitted on the login page can add new claims but cannot overwrite claims already set by the mapping.
 
+#### Custom `/authorize` query parameters as template variables
+
+In the Authorization Code flow, any non-standard query parameter passed to the `/authorize` endpoint is automatically forwarded as a template variable at `/token` time. Standard OIDC parameters (`client_id`, `scope`, `redirect_uri`, `state`, `nonce`, `response_type`, `response_mode`, `code_challenge`, `code_challenge_method`, `prompt`, `max_age`, `ui_locales`, `id_token_hint`, `login_hint`, `acr_values`) are excluded.
+
+This is useful when a broker (e.g. Keycloak) controls the token request but you can inject custom parameters into the upstream `/authorize` call:
+
+```json
+{
+    "requestMappings": [
+        {
+            "requestParam": "grant_type",
+            "match": "*",
+            "claims": {
+                "sub": "${userId}",
+                "email": "${userEmail}"
+            }
+        }
+    ]
+}
+```
+
+Then pass the parameters to `/authorize`:
+
+```
+GET /default/authorize?client_id=...&response_type=code&userId=alice123&userEmail=alice@example.com
+```
+
+The resulting token will contain `"sub": "alice123"` and `"email": "alice@example.com"`.
+
 **Template variable precedence** (highest wins):
 
 1. `client_id` / `clientId` — always authoritative
 2. Token POST body form parameters
-3. `${subject}` and other built-in variables
+3. Authorize query parameters (`${userId}`, `${userEmail}`, etc.)
+4. Built-in variables (`${subject}`, `${uuid}`)
 
 ### Auto-added claims
 
