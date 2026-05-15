@@ -7,18 +7,22 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldMatch
 import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.Pkce
 import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
+import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.token.RequestMapping
+import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
@@ -182,6 +186,145 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             it.code shouldBe 400
             it.body.string() shouldContain "invalid_grant"
         }
+    }
+
+    @Test
+    fun `authorization code flow with uuid template variable should produce a unique sub per request`() {
+        val uuidRegex = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+        val server = MockOAuth2Server(
+            OAuth2Config(
+                tokenCallbacks = setOf(
+                    RequestMappingTokenCallback(
+                        issuerId = "default",
+                        requestMappings = listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "*",
+                                claims = mapOf("sub" to "\${uuid}"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ).apply { start() }
+
+        fun doFlow(): String {
+            val code = client.get(
+                server.authorizationEndpointUrl("default").authenticationRequest(),
+            ).headers["location"]?.toHttpUrl()?.queryParameter("code")
+            code.shouldNotBeNull()
+            return client.tokenRequest(
+                server.tokenEndpointUrl("default"),
+                mutableMapOf(
+                    "client_id" to "client1",
+                    "client_secret" to "secret",
+                    "grant_type" to "authorization_code",
+                    "redirect_uri" to "http://defaultRedirectUri",
+                    "code" to code,
+                ),
+            ).toTokenResponse().accessToken?.subject!!
+        }
+
+        val sub1 = doFlow()
+        val sub2 = doFlow()
+
+        sub1 shouldMatch uuidRegex
+        sub2 shouldMatch uuidRegex
+        sub1 shouldNotBe sub2
+
+        server.shutdown()
+    }
+
+    @Test
+    fun `authorization code flow should forward custom authorize query params as template variables in token claims`() {
+        val server = MockOAuth2Server(
+            OAuth2Config(
+                tokenCallbacks = setOf(
+                    RequestMappingTokenCallback(
+                        issuerId = "default",
+                        requestMappings = listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "*",
+                                claims = mapOf("sub" to "\${userId}", "email" to "\${userEmail}"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ).apply { start() }
+
+        val code = client.get(
+            server.authorizationEndpointUrl("default").authenticationRequest(
+                extraParams = mapOf("userId" to "alice123", "userEmail" to "alice@example.com"),
+            ),
+        ).headers["location"]?.toHttpUrl()?.queryParameter("code")
+        code.shouldNotBeNull()
+
+        client.tokenRequest(
+            server.tokenEndpointUrl("default"),
+            mutableMapOf(
+                "client_id" to "client1",
+                "client_secret" to "secret",
+                "grant_type" to "authorization_code",
+                "redirect_uri" to "http://defaultRedirectUri",
+                "code" to code,
+            ),
+        ).toTokenResponse().accessToken.asClue {
+            it.shouldNotBeNull()
+            it.subject shouldBe "alice123"
+            it.claims["email"] shouldBe "alice@example.com"
+        }
+
+        server.shutdown()
+    }
+
+    @Test
+    fun `${subject} template variable should resolve to interactive login username in requestMappings claims`() {
+        val server = MockOAuth2Server(
+            OAuth2Config(
+                interactiveLogin = true,
+                tokenCallbacks = setOf(
+                    RequestMappingTokenCallback(
+                        issuerId = "default",
+                        requestMappings = listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "authorization_code",
+                                claims = mapOf(
+                                    "custom_sub" to "\${subject}",
+                                    "also_sub" to "\${sub}",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ).apply { start() }
+
+        val code = client.post(
+            server.authorizationEndpointUrl("default").authenticationRequest(),
+            mapOf("username" to "testuser"),
+        ).headers["location"]?.toHttpUrl()?.queryParameter("code")
+        code.shouldNotBeNull()
+
+        client.tokenRequest(
+            server.tokenEndpointUrl("default"),
+            mutableMapOf(
+                "client_id" to "client1",
+                "client_secret" to "secret",
+                "grant_type" to "authorization_code",
+                "redirect_uri" to "http://mycallback",
+                "code" to code,
+            ),
+        ).toTokenResponse().accessToken.asClue {
+            it.shouldNotBeNull()
+            it.subject shouldBe "testuser"
+            it.claims["custom_sub"] shouldBe "testuser"
+            it.claims["also_sub"] shouldBe "testuser"
+        }
+
+        server.shutdown()
     }
 
     private fun OkHttpClient.tokenRequest(
