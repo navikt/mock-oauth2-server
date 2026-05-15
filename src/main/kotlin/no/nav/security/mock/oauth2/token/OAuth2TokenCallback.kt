@@ -81,6 +81,7 @@ data class RequestMappingTokenCallback(
     companion object {
         const val SUBJECT_PARAM = "subject"
     }
+
     override fun issuerId(): String = issuerId
 
     override fun subject(tokenRequest: TokenRequest): String? = resolve(tokenRequest).claims["sub"] as? String
@@ -91,6 +92,15 @@ data class RequestMappingTokenCallback(
         resolve(tokenRequest).claims["aud"].toAudienceList()
 
     override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = resolve(tokenRequest).claims
+
+    /**
+     * Adds claims using [extraTemplateParams] as additional template variables (e.g. authorize params).
+     * Extra params are merged at lower precedence than form params and client_id.
+     */
+    fun addClaims(
+        tokenRequest: TokenRequest,
+        extraTemplateParams: Map<String, Any>,
+    ): Map<String, Any> = resolve(tokenRequest, extraTemplateParams = extraTemplateParams).claims
 
     override fun tokenExpiry(): Long = tokenExpiry
 
@@ -132,6 +142,7 @@ data class RequestMappingTokenCallback(
     private fun resolve(
         tokenRequest: TokenRequest,
         extraMatchParams: Map<String, String> = emptyMap(),
+        extraTemplateParams: Map<String, Any> = emptyMap(),
     ): ResolvedMapping {
         val rawFormParams: Map<String, List<String>> = tokenRequest.toHTTPRequest().bodyAsFormParameters
         val matched = requestMappings.firstOrNull { it.isMatch(rawFormParams, tokenRequest, extraMatchParams) }
@@ -139,10 +150,12 @@ data class RequestMappingTokenCallback(
         // Template variable precedence (highest to lowest):
         //   1. client_id / clientId  — always authoritative
         //   2. form params           — token POST body
-        //   3. extraMatchParams      — e.g. login subject
+        //   3. extraTemplateParams   — e.g. authorize params, built-in template vars
+        //   4. extraMatchParams      — e.g. login subject
         val templateParams =
             buildMap {
                 putAll(extraMatchParams)
+                putAll(extraTemplateParams)
                 putAll(rawFormParams.mapValues { it.value.joinToString(separator = " ") })
                 put("clientId", tokenRequest.clientIdAsString())
                 put("client_id", tokenRequest.clientIdAsString())
@@ -210,3 +223,27 @@ private fun Any?.toAudienceList(): List<String> =
         is List<*> -> filterIsInstance<String>()
         else -> emptyList()
     }
+
+/**
+ * Wraps an [OAuth2TokenCallback] so that custom query parameters from the `/authorize` request
+ * are available as template variables in claim values (e.g. `${user_id}`).
+ *
+ * Authorize params take precedence over token POST body params on key collision.
+ * Standard OIDC params (client_id, scope, etc.) are never forwarded.
+ *
+ * If the delegate is not a [RequestMappingTokenCallback] the authorize params have no effect
+ * and the delegate is returned unchanged.
+ */
+fun authorizeParamsTokenCallback(
+    delegate: OAuth2TokenCallback,
+    authorizeParams: Map<String, Any>,
+): OAuth2TokenCallback {
+    if (authorizeParams.isEmpty()) return delegate
+    return object : OAuth2TokenCallback by delegate {
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
+            when (delegate) {
+                is RequestMappingTokenCallback -> delegate.addClaims(tokenRequest, authorizeParams)
+                else -> delegate.addClaims(tokenRequest)
+            }
+    }
+}

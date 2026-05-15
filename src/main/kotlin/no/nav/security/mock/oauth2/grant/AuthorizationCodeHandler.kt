@@ -21,9 +21,9 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
+import no.nav.security.mock.oauth2.token.authorizeParamsTokenCallback
 import okhttp3.HttpUrl
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.collections.set
 
 private val log = KotlinLogging.logger {}
 private val jsonMapper: ObjectMapper = jacksonObjectMapper()
@@ -34,6 +34,7 @@ internal class AuthorizationCodeHandler(
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
+    private val codeToAuthorizeParamsCache: MutableMap<AuthorizationCode, Map<String, String>> = ConcurrentHashMap()
 
     fun authorizationCodeResponse(
         authenticationRequest: AuthenticationRequest,
@@ -47,6 +48,13 @@ internal class AuthorizationCodeHandler(
                 login?.also {
                     log.debug("adding user with username ${it.username} to cache")
                     codeToLoginCache[code] = login
+                }
+                val customParams = authenticationRequest.toParameters()
+                    .filterKeys { it !in STANDARD_AUTHORIZE_PARAMS }
+                    .mapValues { it.value.first() }
+                if (customParams.isNotEmpty()) {
+                    log.debug("storing custom authorize params for code {}: {}", code, customParams.keys)
+                    codeToAuthorizeParamsCache[code] = customParams
                 }
                 return AuthenticationSuccessResponse(
                     authenticationRequest.redirectionURI,
@@ -88,15 +96,17 @@ internal class AuthorizationCodeHandler(
             authenticationRequest.verifyPkce(tokenRequest)
         } catch (e: OAuth2Exception) {
             codeToLoginCache.remove(code)
+            codeToAuthorizeParamsCache.remove(code)
             throw e
         }
 
+        val authorizeParams = codeToAuthorizeParamsCache.remove(code) ?: emptyMap()
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
-        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce)
+        val resolvedCallback = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback, authorizeParams)
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, nonce)
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback, nonce)
+        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(resolvedCallback, nonce)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -111,22 +121,32 @@ internal class AuthorizationCodeHandler(
     private fun getLoginTokenCallbackOrDefault(
         code: AuthorizationCode,
         oAuth2TokenCallback: OAuth2TokenCallback,
+        authorizeParams: Map<String, String> = emptyMap(),
     ): OAuth2TokenCallback =
         takeLoginFromCache(code)?.let {
-            LoginOAuth2TokenCallback(it, oAuth2TokenCallback)
-        } ?: oAuth2TokenCallback
+            LoginOAuth2TokenCallback(it, oAuth2TokenCallback, authorizeParams)
+        } ?: authorizeParamsTokenCallback(oAuth2TokenCallback, authorizeParams)
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
 
     private class LoginOAuth2TokenCallback(
         val login: Login,
         val oAuth2TokenCallback: OAuth2TokenCallback,
+        private val authorizeParams: Map<String, String> = emptyMap(),
     ) : OAuth2TokenCallback {
         private val resolvedDelegate: OAuth2TokenCallback =
             when (oAuth2TokenCallback) {
-                is RequestMappingTokenCallback ->
-                    oAuth2TokenCallback.withExtraMatchParams(mapOf(RequestMappingTokenCallback.SUBJECT_PARAM to login.username))
-                else -> oAuth2TokenCallback
+                is RequestMappingTokenCallback -> {
+                    // extraMatchParams: authorize params + login username under "subject"
+                    // subject/sub built-ins are added after we know the resolved subject (via subjectResolver below)
+                    oAuth2TokenCallback.withExtraMatchParams(
+                        authorizeParams + mapOf(
+                            RequestMappingTokenCallback.SUBJECT_PARAM to login.username,
+                            "sub" to login.username,
+                        ),
+                    )
+                }
+                else -> authorizeParamsTokenCallback(oAuth2TokenCallback, authorizeParams)
             }
 
         private val subjectResolver: (TokenRequest) -> String =
@@ -162,5 +182,13 @@ internal class AuthorizationCodeHandler(
             }
 
         override fun tokenExpiry(): Long = resolvedDelegate.tokenExpiry()
+    }
+
+    companion object {
+        private val STANDARD_AUTHORIZE_PARAMS = setOf(
+            "client_id", "scope", "redirect_uri", "state", "nonce", "response_type",
+            "response_mode", "code_challenge", "code_challenge_method", "prompt",
+            "max_age", "ui_locales", "id_token_hint", "login_hint", "acr_values", "sub",
+        )
     }
 }
