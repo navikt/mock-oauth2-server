@@ -327,6 +327,199 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         server.shutdown()
     }
 
+    @Test
+    fun `standard OIDC params passed to authorize endpoint should not be forwarded as template variables`() {
+        val server = MockOAuth2Server(
+            OAuth2Config(
+                tokenCallbacks = setOf(
+                    RequestMappingTokenCallback(
+                        issuerId = "default",
+                        requestMappings = listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "authorization_code",
+                                claims = mapOf(
+                                    "state_claim" to "\${state}",
+                                    "nonce_claim" to "\${nonce}",
+                                    "scope_claim" to "\${scope}",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ).apply { start() }
+
+        val code = client.get(
+            server.authorizationEndpointUrl("default").authenticationRequest(),
+        ).headers["location"]?.toHttpUrl()?.queryParameter("code")
+        code.shouldNotBeNull()
+
+        client.tokenRequest(
+            server.tokenEndpointUrl("default"),
+            mutableMapOf(
+                "client_id" to "client1",
+                "client_secret" to "secret",
+                "grant_type" to "authorization_code",
+                "redirect_uri" to "http://mycallback",
+                "code" to code,
+            ),
+        ).toTokenResponse().accessToken.asClue {
+            it.shouldNotBeNull()
+            it.claims["state_claim"] shouldBe "\${state}"
+            it.claims["nonce_claim"] shouldBe "\${nonce}"
+            it.claims["scope_claim"] shouldBe "\${scope}"
+        }
+
+        server.shutdown()
+    }
+
+    @Test
+    fun `${subject} template variable should remain unreplaced when no interactive login is used`() {
+        val server = MockOAuth2Server(
+            OAuth2Config(
+                tokenCallbacks = setOf(
+                    RequestMappingTokenCallback(
+                        issuerId = "default",
+                        requestMappings = listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "authorization_code",
+                                claims = mapOf("mirrored_sub" to "\${subject}"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ).apply { start() }
+
+        val code = client.get(
+            server.authorizationEndpointUrl("default").authenticationRequest(),
+        ).headers["location"]?.toHttpUrl()?.queryParameter("code")
+        code.shouldNotBeNull()
+
+        client.tokenRequest(
+            server.tokenEndpointUrl("default"),
+            mutableMapOf(
+                "client_id" to "client1",
+                "client_secret" to "secret",
+                "grant_type" to "authorization_code",
+                "redirect_uri" to "http://mycallback",
+                "code" to code,
+            ),
+        ).toTokenResponse().accessToken.asClue {
+            it.shouldNotBeNull()
+            it.claims["mirrored_sub"] shouldBe "\${subject}"
+        }
+
+        server.shutdown()
+    }
+
+    @Test
+    fun `authorize param named sub should not override ${subject} built-in from interactive login`() {
+        val server = MockOAuth2Server(
+            OAuth2Config(
+                interactiveLogin = true,
+                tokenCallbacks = setOf(
+                    RequestMappingTokenCallback(
+                        issuerId = "default",
+                        requestMappings = listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "authorization_code",
+                                claims = mapOf("mirrored_sub" to "\${subject}"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ).apply { start() }
+
+        val code = client.post(
+            server.authorizationEndpointUrl("default").authenticationRequest(
+                extraParams = mapOf("sub" to "attacker"),
+            ),
+            mapOf("username" to "legitimateuser"),
+        ).headers["location"]?.toHttpUrl()?.queryParameter("code")
+        code.shouldNotBeNull()
+
+        client.tokenRequest(
+            server.tokenEndpointUrl("default"),
+            mutableMapOf(
+                "client_id" to "client1",
+                "client_secret" to "secret",
+                "grant_type" to "authorization_code",
+                "redirect_uri" to "http://mycallback",
+                "code" to code,
+            ),
+        ).toTokenResponse().accessToken.asClue {
+            it.shouldNotBeNull()
+            it.subject shouldBe "legitimateuser"
+            it.claims["mirrored_sub"] shouldBe "legitimateuser"
+        }
+
+        server.shutdown()
+    }
+
+    @Test
+    fun `custom authorize params should not be available after a failed PKCE verification`() {
+        val pkce = Pkce()
+        val server = MockOAuth2Server(
+            OAuth2Config(
+                tokenCallbacks = setOf(
+                    RequestMappingTokenCallback(
+                        issuerId = "default",
+                        requestMappings = listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "authorization_code",
+                                claims = mapOf("email" to "\${userEmail}"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ).apply { start() }
+
+        val code = client.get(
+            server.authorizationEndpointUrl("default").authenticationRequest(
+                pkce = pkce,
+                extraParams = mapOf("userEmail" to "alice@example.com"),
+            ),
+        ).headers["location"]?.toHttpUrl()?.queryParameter("code")
+        code.shouldNotBeNull()
+
+        val invalidPkce = Pkce()
+        client.tokenRequest(
+            server.tokenEndpointUrl("default"),
+            mutableMapOf(
+                "client_id" to "client1",
+                "client_secret" to "secret",
+                "grant_type" to "authorization_code",
+                "redirect_uri" to "http://mycallback",
+                "code" to code,
+                "code_verifier" to invalidPkce.verifier.value,
+            ),
+        ).asClue { it.code shouldBe 400 }
+
+        client.tokenRequest(
+            server.tokenEndpointUrl("default"),
+            mutableMapOf(
+                "client_id" to "client1",
+                "client_secret" to "secret",
+                "grant_type" to "authorization_code",
+                "redirect_uri" to "http://mycallback",
+                "code" to code,
+                "code_verifier" to pkce.verifier.value,
+            ),
+        ).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+
+        server.shutdown()
+    }
+
     private fun OkHttpClient.tokenRequest(
         code: String,
         pkce: Pkce? = null,
