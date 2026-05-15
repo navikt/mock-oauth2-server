@@ -85,17 +85,24 @@ data class RequestMappingTokenCallback(
 
     override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = requestMappings.getClaims(tokenRequest)
 
+    fun addClaims(tokenRequest: TokenRequest, extraTemplateParams: Map<String, Any>): Map<String, Any> =
+        requestMappings.getClaims(tokenRequest, extraTemplateParams)
+
     override fun tokenExpiry(): Long = tokenExpiry
 
-    private fun List<RequestMapping>.getClaims(tokenRequest: TokenRequest): Map<String, Any> {
+    private fun List<RequestMapping>.getClaims(
+        tokenRequest: TokenRequest,
+        extraTemplateParams: Map<String, Any> = emptyMap(),
+    ): Map<String, Any> {
         val claims = firstOrNull { it.isMatch(tokenRequest) }?.claims ?: emptyMap()
-        val templateParams = tokenRequest.toHTTPRequest().bodyAsFormParameters.mapValues { it.value.joinToString(separator = " ") }
+        val tokenFormParams = tokenRequest.toHTTPRequest().bodyAsFormParameters.mapValues { it.value.joinToString(separator = " ") }
 
         // in case client_id is not set as form param but as basic auth, we add it to the template params in two different formats for backwards compatibility
         return claims.replaceValues(
-            templateParams +
+            tokenFormParams +
                 mapOf("clientId" to tokenRequest.clientIdAsString()) +
-                mapOf("client_id" to tokenRequest.clientIdAsString()),
+                mapOf("client_id" to tokenRequest.clientIdAsString()) +
+                extraTemplateParams,
         )
     }
 
@@ -125,5 +132,29 @@ data class RequestMapping(
         return effectiveValues?.any {
             match == "*" || match == it || match.toRegex().matchEntire(it) != null
         } ?: false
+    }
+}
+
+/**
+ * Wraps an [OAuth2TokenCallback] so that custom query parameters from the `/authorize` request
+ * are available as template variables in claim values (e.g. `${user_id}`).
+ *
+ * Authorize params take precedence over token POST body params on key collision.
+ * Standard OIDC params (client_id, scope, etc.) are never forwarded.
+ *
+ * If the delegate is not a [RequestMappingTokenCallback] the authorize params have no effect
+ * and the delegate is returned unchanged.
+ */
+fun authorizeParamsTokenCallback(
+    delegate: OAuth2TokenCallback,
+    authorizeParams: Map<String, Any>,
+): OAuth2TokenCallback {
+    if (authorizeParams.isEmpty()) return delegate
+    return object : OAuth2TokenCallback by delegate {
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
+            when (delegate) {
+                is RequestMappingTokenCallback -> delegate.addClaims(tokenRequest, authorizeParams)
+                else -> delegate.addClaims(tokenRequest)
+            }
     }
 }
