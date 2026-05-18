@@ -250,6 +250,14 @@ The standalone server defaults to port `8080`.
 docker run -p 8080:8080 ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
 ```
 
+Images are also tagged by major and minor version, so you can pin to a release stream:
+
+| Tag | Resolves to |
+|-----|-------------|
+| `ghcr.io/navikt/mock-oauth2-server:3.1.4` | exact version |
+| `ghcr.io/navikt/mock-oauth2-server:3.1` | latest 3.1.x |
+| `ghcr.io/navikt/mock-oauth2-server:3` | latest 3.x.x |
+
 **Build locally:**
 
 ```
