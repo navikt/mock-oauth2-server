@@ -49,3 +49,10 @@ jobs:
           ./gradlew -Pversion=${NEW_VERSION} publishAllPublicationsToGithubPackagesRepository publishAndReleaseToMavenCentral --no-configuration-cache
           # ./gradlew jib --image="${IMAGE}" --image="${IMAGE_DH}"
           ./gradlew jib --image="${IMAGE}"
+          MAJOR=$(echo "${NEW_VERSION}" | cut -d "." -f1)
+          MINOR=$(echo "${NEW_VERSION}" | cut -d "." -f1-2)
+          docker pull "${IMAGE}"
+          docker tag "${IMAGE}" "${IMAGE_NAME}:${MAJOR}"
+          docker tag "${IMAGE}" "${IMAGE_NAME}:${MINOR}"
+          docker push "${IMAGE_NAME}:${MAJOR}"
+          docker push "${IMAGE_NAME}:${MINOR}"
