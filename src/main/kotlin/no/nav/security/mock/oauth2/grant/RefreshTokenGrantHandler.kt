@@ -2,13 +2,15 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.GrantType
+import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.RefreshTokenGrant
 import com.nimbusds.oauth2.sdk.TokenRequest
 import mu.KotlinLogging
+import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.expiresIn
+import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
-import no.nav.security.mock.oauth2.invalidGrant
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
@@ -19,6 +21,7 @@ internal class RefreshTokenGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
     private val rotateRefreshToken: Boolean = false,
+    private val enqueuedCallbackSupplier: ((issuerId: String) -> OAuth2TokenCallback?)? = null,
 ) : GrantHandler {
     override fun tokenResponse(
         request: OAuth2HttpRequest,
@@ -29,12 +32,21 @@ internal class RefreshTokenGrantHandler(
         var refreshToken = tokenRequest.refreshTokenGrant().refreshToken.value
         log.debug("issuing token for refreshToken=$refreshToken")
         val scope: String? = tokenRequest.scope?.toString()
-        val refreshTokenCallbackOrDefault = refreshTokenManager[refreshToken] ?: oAuth2TokenCallback
-        if (rotateRefreshToken) {
-            refreshToken = refreshTokenManager.rotate(refreshToken, refreshTokenCallbackOrDefault)
+        val issuerId = issuerUrl.issuerId()
+        val storedCallback = refreshTokenManager[refreshToken]
+        if (storedCallback != null && storedCallback.issuerId() != issuerId) {
+            throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, refreshTokenCallbackOrDefault)
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, refreshTokenCallbackOrDefault)
+        val enqueuedCallback = enqueuedCallbackSupplier?.invoke(issuerId)
+        val resolvedCallback =
+            enqueuedCallback
+                ?: storedCallback
+                ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
+        if (rotateRefreshToken) {
+            refreshToken = refreshTokenManager.rotate(refreshToken, resolvedCallback)
+        }
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback)
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -46,5 +58,7 @@ internal class RefreshTokenGrantHandler(
         )
     }
 
-    private fun TokenRequest.refreshTokenGrant(): RefreshTokenGrant = (this.authorizationGrant as? RefreshTokenGrant) ?: invalidGrant(GrantType.REFRESH_TOKEN)
+    private fun TokenRequest.refreshTokenGrant(): RefreshTokenGrant =
+        (this.authorizationGrant as? RefreshTokenGrant)
+            ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("grant_type ${GrantType.REFRESH_TOKEN} not supported."), "grant_type ${GrantType.REFRESH_TOKEN} not supported.")
 }
