@@ -35,6 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Release Drafter
-        uses: release-drafter/release-drafter@c2e2804cc59f45f57076a99af580d0fedb697927 # ratchet:release-drafter/release-drafter@v7
+        uses: release-drafter/release-drafter@693d20e7c1ce1a81d3a41962f85914253b518449 # ratchet:release-drafter/release-drafter@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
