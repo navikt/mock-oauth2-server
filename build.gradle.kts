@@ -144,7 +144,10 @@ dependencies {
 
 configurations {
     all {
-        resolutionStrategy.force("com.fasterxml.woodstox:woodstox-core:7.1.1")
+        resolutionStrategy.force(
+            "com.fasterxml.woodstox:woodstox-core:7.1.1",
+            "io.netty:netty-transport-native-epoll:$nettyVersion",
+        )
     }
 }
 
