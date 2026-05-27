@@ -17,6 +17,9 @@ categories:
   - title: '🧰 Maintenance'
     labels:
       - 'chore'
+  - title: '🔒 Security'
+    labels:
+      - 'security findings'
   - title: '⬆️ Dependency upgrades'
     labels:
       - 'bump'
