@@ -6,3 +6,17 @@ services:
     container_name: mock-oauth2-server
     ports:
       - "8080:8080"
+    volumes:
+      - ./src/test/resources/config.json:/app/config.json
+      - ./src/test/resources/login.example.html:/app/login/login.example.html
+      - ./src/test/resources/static/:/app/static/
+    environment:
+      LOG_LEVEL: "debug"
+      SERVER_PORT: 8080
+      JSON_CONFIG_PATH: /app/config.json
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/isalive" ]
+      start_period: 5s
+      retries: 10
+      interval: 2s
+      timeout: 1s
