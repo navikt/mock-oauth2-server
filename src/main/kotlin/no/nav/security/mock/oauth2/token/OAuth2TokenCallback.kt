@@ -132,8 +132,15 @@ data class RequestMapping(
         tokenRequest: TokenRequest,
         extraParams: Map<String, List<String>> = emptyMap(),
     ): Boolean {
-        val allParams = tokenRequest.toHTTPRequest().bodyAsFormParameters + extraParams
-        return allParams[requestParam]?.any {
+        val formValues = tokenRequest.toHTTPRequest().bodyAsFormParameters[requestParam] + extraParams
+        val effectiveValues =
+            if (formValues == null && requestParam == "client_id") {
+                tokenRequest.clientAuthentication?.clientID?.value?.let { listOf(it) }
+                    ?: tokenRequest.clientID?.value?.let { listOf(it) }
+            } else {
+                formValues
+            }
+        return effectiveValues?.any {
             match == "*" || match == it || match.toRegex().matchEntire(it) != null
         } ?: false
     }

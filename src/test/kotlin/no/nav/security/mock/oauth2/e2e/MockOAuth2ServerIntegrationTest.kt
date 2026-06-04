@@ -19,6 +19,7 @@ import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.WellKnown
 import no.nav.security.mock.oauth2.http.route
 import no.nav.security.mock.oauth2.testutils.audience
+import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
@@ -101,23 +102,38 @@ class MockOAuth2ServerIntegrationTest {
     @Test
     fun `token request with enqueued token callback should return claims from tokencallback (with exception of id_token and oidc rules)`() {
         val server = MockOAuth2Server().apply { start() }
+        val issuerId = "custom"
+
+        val authorizationCode =
+            client
+                .get(
+                    server.authorizationEndpointUrl(issuerId).authenticationRequest(
+                        clientId = "client1",
+                        redirectUri = "http://mycallback",
+                    ),
+                ).let { authResponse ->
+                    authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
+
+        checkNotNull(authorizationCode)
+
         server.enqueueCallback(
             DefaultOAuth2TokenCallback(
-                issuerId = "custom",
+                issuerId = issuerId,
                 subject = "yolo",
                 audience = listOf("myaud"),
             ),
         )
 
         client
-            .post(
-                server.tokenEndpointUrl("custom"),
+            .tokenRequest(
+                server.tokenEndpointUrl(issuerId),
                 mapOf(
                     "client_id" to "client1",
                     "client_secret" to "secret",
                     "grant_type" to "authorization_code",
                     "redirect_uri" to "http://mycallback",
-                    "code" to "1234",
+                    "code" to authorizationCode,
                 ),
             ).toTokenResponse()
             .asClue {
@@ -213,6 +229,23 @@ class MockOAuth2ServerIntegrationTest {
             }
     }
 
+    @Test
+    fun `token request with client_id via HTTP Basic auth should match requestmapping on client_id`() {
+        withMockOAuth2Server(config = OAuth2Config.fromJson(clientIdMappingConfigJson)) {
+            client
+                .tokenRequest(
+                    tokenEndpointUrl("issuer1"),
+                    "client1" to "secret",
+                    mapOf("grant_type" to "client_credentials"),
+                ).toTokenResponse()
+                .accessToken
+                .asClue {
+                    it.shouldNotBeNull()
+                    it.claims shouldContainAll mapOf("sub" to "subByClientId", "aud" to listOf("audByClientId"))
+                }
+        }
+    }
+
     private infix fun WellKnown.urlsShouldStartWith(url: String) {
         issuer shouldStartWith url
         authorizationEndpoint shouldStartWith url
@@ -255,6 +288,29 @@ class MockOAuth2ServerIntegrationTest {
                     "aud": [
                       "audBySomeParam"
                     ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+        """.trimIndent()
+
+    @Language("json")
+    private val clientIdMappingConfigJson =
+        """
+        {
+          "httpServer": "MockWebServerWrapper",
+          "tokenCallbacks": [
+            {
+              "issuerId": "issuer1",
+              "requestMappings": [
+                {
+                  "requestParam": "client_id",
+                  "match": "client1",
+                  "claims": {
+                    "sub": "subByClientId",
+                    "aud": ["audByClientId"]
                   }
                 }
               ]

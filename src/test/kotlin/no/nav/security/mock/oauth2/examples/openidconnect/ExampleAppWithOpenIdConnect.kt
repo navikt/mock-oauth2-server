@@ -24,6 +24,7 @@ class ExampleAppWithOpenIdConnect(
                     .setResponseCode(302)
                     .setHeader("Location", authenticationRequest().toURI())
             }
+
             "/callback" -> {
                 log.debug("got callback: $request")
                 val code = request.requestUrl?.queryParameter("code")!!
@@ -50,6 +51,7 @@ class ExampleAppWithOpenIdConnect(
                     .setHeader("Set-Cookie", "id_token=$idToken")
                     .setBody("logged in as ${idTokenClaims.subject}")
             }
+
             "/secured" -> {
                 getCookies(request)["id_token"]
                     ?.let {
@@ -60,7 +62,10 @@ class ExampleAppWithOpenIdConnect(
                             .setBody("welcome ${it.subject}")
                     } ?: MockResponse().setResponseCode(302).setHeader("Location", exampleApp.url("/login"))
             }
-            else -> MockResponse().setResponseCode(404)
+
+            else -> {
+                MockResponse().setResponseCode(404)
+            }
         }
 
     private fun getCookies(request: RecordedRequest): Map<String, String> =

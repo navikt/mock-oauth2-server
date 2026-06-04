@@ -279,6 +279,40 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             }
 
         server.shutdown()
+    fun `authorization code flow should not accept the same code after a failed PKCE verification`() {
+        val pkce = Pkce()
+        val code =
+            client
+                .get(
+                    server.authorizationEndpointUrl("default").authenticationRequest(
+                        clientId = "client1",
+                        redirectUri = "http://mycallback",
+                        pkce = pkce,
+                    ),
+                ).let { authResponse ->
+                    authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
+
+        code.shouldNotBeNull()
+
+        val invalidPkce = Pkce()
+        client.tokenRequest(code, invalidPkce).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "code_verifier does not compute to code_challenge from request"
+        }
+
+        client.tokenRequest(code, pkce).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should return invalid_grant for unknown or bogus authorization code`() {
+        client.tokenRequest("bogus-code-that-was-never-issued").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
     }
 
     private fun OkHttpClient.tokenRequest(

@@ -1,8 +1,6 @@
 services:
   mock-oauth2-server:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/navikt/mock-oauth2-server:latest
     ports:
       - "8080:8080"
     volumes:

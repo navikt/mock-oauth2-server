@@ -84,7 +84,7 @@ fun Application.module(authConfig: AuthConfig) {
                     get {
                         call.respondText(
                             ContentType.Text.Html,
-                            HttpStatusCode.BadRequest
+                            HttpStatusCode.BadRequest,
                         ) {
                             "received error on login: ${call.parameters.getAll("error").orEmpty()}"
                         }
@@ -95,7 +95,6 @@ fun Application.module(authConfig: AuthConfig) {
                     call.respondText("welcome ${call.subject()}")
                 }
             }
-
         }
     }
 }
