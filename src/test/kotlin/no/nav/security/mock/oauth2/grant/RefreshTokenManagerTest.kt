@@ -27,8 +27,8 @@ internal class RefreshTokenManagerTest {
         val tokenCallback = DefaultOAuth2TokenCallback()
 
         val refreshToken = mgr.refreshToken(tokenCallback, null)
-        mgr[refreshToken] shouldBe tokenCallback
+        mgr[refreshToken] shouldBe Pair(tokenCallback, emptyMap())
         val refreshToken2 = mgr.refreshToken(tokenCallback, "nonce123")
-        mgr[refreshToken2] shouldBe tokenCallback
+        mgr[refreshToken2] shouldBe Pair(tokenCallback, emptyMap())
     }
 }

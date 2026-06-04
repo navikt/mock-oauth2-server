@@ -170,7 +170,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                                                 mapOf(
                                                     "sub" to "anna-uuid",
                                                     "email" to "anna@example.com",
-                                                    "urn:telematik:claims:id" to "X111111111",
+                                                    "customId" to "X111111111",
                                                 ),
                                         ),
                                         RequestMapping(
@@ -180,7 +180,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                                                 mapOf(
                                                     "sub" to "max-uuid",
                                                     "email" to "max@example.com",
-                                                    "urn:telematik:claims:id" to "X222222222",
+                                                    "customId" to "X222222222",
                                                 ),
                                         ),
                                     ),
@@ -193,7 +193,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             client
                 .get(
                     server.authorizationEndpointUrl(issuerId).authenticationRequest(
-                        clientId = "aml-app",
+                        clientId = "my-app",
                         extraQueryParams = mapOf("login_hint" to "anna@example.com"),
                     ),
                 ).let { it.headers["location"]?.toHttpUrl()?.queryParameter("code") }
@@ -204,7 +204,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             .tokenRequest(
                 server.tokenEndpointUrl(issuerId),
                 mutableMapOf(
-                    "client_id" to "aml-app",
+                    "client_id" to "my-app",
                     "grant_type" to "authorization_code",
                     "redirect_uri" to "http://defaultRedirectUri",
                     "code" to code,
@@ -216,7 +216,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 resp.idToken!!.claims shouldContainAll
                     mapOf(
                         "email" to "anna@example.com",
-                        "urn:telematik:claims:id" to "X111111111",
+                        "customId" to "X111111111",
                     )
             }
 
@@ -255,7 +255,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             client
                 .get(
                     server.authorizationEndpointUrl(issuerId).authenticationRequest(
-                        clientId = "aml-app",
+                        clientId = "my-app",
                         extraQueryParams = mapOf("login_hint" to "substituted@example.com"),
                     ),
                 ).let { it.headers["location"]?.toHttpUrl()?.queryParameter("code") }
@@ -266,7 +266,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             .tokenRequest(
                 server.tokenEndpointUrl(issuerId),
                 mutableMapOf(
-                    "client_id" to "aml-app",
+                    "client_id" to "my-app",
                     "grant_type" to "authorization_code",
                     "redirect_uri" to "http://defaultRedirectUri",
                     "code" to code,
@@ -279,6 +279,9 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             }
 
         server.shutdown()
+    }
+
+    @Test
     fun `authorization code flow should not accept the same code after a failed PKCE verification`() {
         val pkce = Pkce()
         val code =

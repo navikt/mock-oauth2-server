@@ -10,7 +10,7 @@ typealias RefreshToken = String
 typealias Nonce = String
 
 internal data class RefreshTokenManager(
-    private val cache: MutableMap<RefreshToken, OAuth2TokenCallback> = ConcurrentHashMap(),
+    private val cache: MutableMap<RefreshToken, Pair<OAuth2TokenCallback, Map<String, String>>> = ConcurrentHashMap(),
 ) {
     operator fun get(refreshToken: RefreshToken) = cache[refreshToken]
 
@@ -19,20 +19,22 @@ internal data class RefreshTokenManager(
     fun refreshToken(
         tokenCallback: OAuth2TokenCallback,
         nonce: Nonce? = null,
+        authRequestParams: Map<String, String> = emptyMap(),
     ): RefreshToken {
         val jti = UUID.randomUUID().toString()
         // added for compatibility with keycloak js client which expects a jwt with nonce
         val refreshToken = nonce?.let { plainJWT(jti, nonce) } ?: jti
-        cache[refreshToken] = tokenCallback
+        cache[refreshToken] = Pair(tokenCallback, authRequestParams)
         return refreshToken
     }
 
     fun rotate(
         refreshToken: RefreshToken,
         fallbackTokenCallback: OAuth2TokenCallback,
+        authRequestParams: Map<String, String> = emptyMap(),
     ): RefreshToken {
-        val callback = cache.remove(refreshToken) ?: fallbackTokenCallback
-        return refreshToken(callback)
+        val (callback, params) = cache.remove(refreshToken) ?: Pair(fallbackTokenCallback, authRequestParams)
+        return refreshToken(callback, null, params)
     }
 
     private fun plainJWT(
