@@ -14,13 +14,21 @@ import java.util.UUID
 interface OAuth2TokenCallback {
     fun issuerId(): String
 
-    fun subject(tokenRequest: TokenRequest, authRequestParams: Map<String, String> = emptyMap()): String?
+    fun subject(tokenRequest: TokenRequest): String?
 
-    fun typeHeader(tokenRequest: TokenRequest, authRequestParams: Map<String, String> = emptyMap()): String
+    fun subject(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String? = subject(tokenRequest)
 
-    fun audience(tokenRequest: TokenRequest, authRequestParams: Map<String, String> = emptyMap()): List<String>
+    fun typeHeader(tokenRequest: TokenRequest): String
 
-    fun addClaims(tokenRequest: TokenRequest, authRequestParams: Map<String, String> = emptyMap()): Map<String, Any>
+    fun typeHeader(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String = typeHeader(tokenRequest)
+
+    fun audience(tokenRequest: TokenRequest): List<String>
+
+    fun audience(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): List<String> = audience(tokenRequest)
+
+    fun addClaims(tokenRequest: TokenRequest): Map<String, Any>
+
+    fun addClaims(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): Map<String, Any> = addClaims(tokenRequest)
 
     fun tokenExpiry(): Long
 }
@@ -39,15 +47,15 @@ open class DefaultOAuth2TokenCallback
     ) : OAuth2TokenCallback {
         override fun issuerId(): String = issuerId
 
-        override fun subject(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String =
+        override fun subject(tokenRequest: TokenRequest): String =
             when (GrantType.CLIENT_CREDENTIALS) {
                 tokenRequest.grantType() -> tokenRequest.clientIdAsString()
                 else -> subject
             }
 
-        override fun typeHeader(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String = typeHeader
+        override fun typeHeader(tokenRequest: TokenRequest): String = typeHeader
 
-        override fun audience(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): List<String> {
+        override fun audience(tokenRequest: TokenRequest): List<String> {
             val audienceParam = tokenRequest.audienceOrEmpty()
             return when {
                 audience != null -> audience
@@ -57,7 +65,7 @@ open class DefaultOAuth2TokenCallback
             }
         }
 
-        override fun addClaims(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): Map<String, Any> =
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
             mutableMapOf<String, Any>(
                 "tid" to issuerId,
             ).apply {
@@ -77,14 +85,22 @@ data class RequestMappingTokenCallback(
 ) : OAuth2TokenCallback {
     override fun issuerId(): String = issuerId
 
+    override fun subject(tokenRequest: TokenRequest): String? = subject(tokenRequest, emptyMap())
+
     override fun subject(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String? =
         requestMappings.getClaimOrNull(tokenRequest, "sub", authRequestParams)
+
+    override fun typeHeader(tokenRequest: TokenRequest): String = typeHeader(tokenRequest, emptyMap())
 
     override fun typeHeader(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String =
         requestMappings.getTypeHeader(tokenRequest, authRequestParams)
 
+    override fun audience(tokenRequest: TokenRequest): List<String> = audience(tokenRequest, emptyMap())
+
     override fun audience(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): List<String> =
         requestMappings.getClaimOrNull(tokenRequest, "aud", authRequestParams) ?: emptyList()
+
+    override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = addClaims(tokenRequest, emptyMap())
 
     override fun addClaims(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): Map<String, Any> =
         requestMappings.getClaims(tokenRequest, authRequestParams)
@@ -93,11 +109,11 @@ data class RequestMappingTokenCallback(
 
     private fun List<RequestMapping>.getClaims(
         tokenRequest: TokenRequest,
-        authRequestParams: Map<String, String> = emptyMap(),
+        authRequestParams: Map<String, String>,
     ): Map<String, Any> {
         // Convert authRequestParams to List-values for isMatch() compatibility
-        val extraParamsList = authRequestParams.mapValues { listOf(it.value) }
-        val claims = firstOrNull { it.isMatch(tokenRequest, extraParamsList) }?.claims ?: emptyMap()
+        val authRequestParamsList = authRequestParams.mapValues { listOf(it.value) }
+        val claims = firstOrNull { it.isMatch(tokenRequest, authRequestParamsList) }?.claims ?: emptyMap()
 
         // Merge token body params with auth-request params so ${login_hint} etc. resolve in claim templates
         val templateParams =
@@ -115,12 +131,12 @@ data class RequestMappingTokenCallback(
     private inline fun <reified T> List<RequestMapping>.getClaimOrNull(
         tokenRequest: TokenRequest,
         key: String,
-        authRequestParams: Map<String, String> = emptyMap(),
+        authRequestParams: Map<String, String>,
     ): T? = getClaims(tokenRequest, authRequestParams)[key] as? T
 
     private fun List<RequestMapping>.getTypeHeader(
         tokenRequest: TokenRequest,
-        authRequestParams: Map<String, String> = emptyMap(),
+        authRequestParams: Map<String, String>,
     ) = firstOrNull { it.isMatch(tokenRequest, authRequestParams.mapValues { entry -> listOf(entry.value) }) }?.typeHeader ?: JOSEObjectType.JWT.type
 }
 

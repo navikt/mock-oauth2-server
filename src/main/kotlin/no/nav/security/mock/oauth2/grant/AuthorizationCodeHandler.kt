@@ -134,11 +134,22 @@ internal class AuthorizationCodeHandler(
     ) : OAuth2TokenCallback {
         override fun issuerId(): String = oAuth2TokenCallback.issuerId()
 
+        override fun subject(tokenRequest: TokenRequest): String = login.username
+
         override fun subject(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String = login.username
 
-        override fun typeHeader(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String = oAuth2TokenCallback.typeHeader(tokenRequest, authRequestParams)
+        override fun typeHeader(tokenRequest: TokenRequest): String = oAuth2TokenCallback.typeHeader(tokenRequest)
 
-        override fun audience(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): List<String> = oAuth2TokenCallback.audience(tokenRequest, authRequestParams)
+        override fun typeHeader(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String =
+            oAuth2TokenCallback.typeHeader(tokenRequest, authRequestParams)
+
+        override fun audience(tokenRequest: TokenRequest): List<String> = oAuth2TokenCallback.audience(tokenRequest)
+
+        override fun audience(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): List<String> =
+            oAuth2TokenCallback.audience(tokenRequest, authRequestParams)
+
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
+            addClaims(tokenRequest, emptyMap())
 
         override fun addClaims(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): Map<String, Any> =
             oAuth2TokenCallback.addClaims(tokenRequest, authRequestParams).toMutableMap().apply {

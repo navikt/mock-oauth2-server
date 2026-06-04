@@ -36,6 +36,11 @@ internal class PasswordGrantHandler(
     private class PasswordGrantTokenCallback(
         private val tokenCallback: OAuth2TokenCallback,
     ) : OAuth2TokenCallback by tokenCallback {
+        override fun subject(tokenRequest: TokenRequest) =
+            tokenRequest.authorizationGrant
+                ?.let { it as? ResourceOwnerPasswordCredentialsGrant }
+                ?.username ?: tokenCallback.subject(tokenRequest)
+
         override fun subject(tokenRequest: TokenRequest, authRequestParams: Map<String, String>) =
             tokenRequest.authorizationGrant
                 ?.let { it as? ResourceOwnerPasswordCredentialsGrant }
