@@ -15,5 +15,3 @@ build/
 /compose/
 
 .kotlin
-
-docker-compose.local.yaml
