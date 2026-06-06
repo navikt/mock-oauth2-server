@@ -46,18 +46,19 @@ class RevocationIntegrationTest {
             revocationResponse.use { it.code shouldBe 200 }
 
             // after revocation, using the revoked refresh token must return 400 invalid_grant
-            client.tokenRequest(
-                this.tokenEndpointUrl(issuerId),
-                mapOf(
-                    "grant_type" to GrantType.REFRESH_TOKEN.value,
-                    "refresh_token" to refreshToken,
-                    "client_id" to "id",
-                    "client_secret" to "secret",
-                ),
-            ).use {
-                it.code shouldBe 400
-                it.body.string() shouldContain "invalid_grant"
-            }
+            client
+                .tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to refreshToken,
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_grant"
+                }
         }
     }
 

@@ -41,9 +41,11 @@ internal class PasswordGrantHandler(
                 ?.let { it as? ResourceOwnerPasswordCredentialsGrant }
                 ?.username ?: tokenCallback.subject(tokenRequest)
 
-        override fun subject(tokenRequest: TokenRequest, authRequestParams: Map<String, String>) =
-            tokenRequest.authorizationGrant
-                ?.let { it as? ResourceOwnerPasswordCredentialsGrant }
-                ?.username ?: tokenCallback.subject(tokenRequest, authRequestParams)
+        override fun subject(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ) = tokenRequest.authorizationGrant
+            ?.let { it as? ResourceOwnerPasswordCredentialsGrant }
+            ?.username ?: tokenCallback.subject(tokenRequest, authRequestParams)
     }
 }

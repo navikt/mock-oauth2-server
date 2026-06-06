@@ -20,7 +20,6 @@ import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
-import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import okhttp3.HttpUrl
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
@@ -94,14 +93,11 @@ internal class AuthorizationCodeHandler(
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
 
-        // Extract query params from the original auth request (e.g. login_hint, acr_values, claims)
-        // so that requestMappings in the token callback can match and template-resolve them.
         val authRequestParams: Map<String, String> =
             authenticationRequest
                 .toHTTPRequest()
                 .queryParameters
                 .mapValues { it.value.joinToString(separator = " ") }
-
 
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, authRequestParams)
@@ -136,22 +132,31 @@ internal class AuthorizationCodeHandler(
 
         override fun subject(tokenRequest: TokenRequest): String = login.username
 
-        override fun subject(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String = login.username
+        override fun subject(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): String = login.username
 
         override fun typeHeader(tokenRequest: TokenRequest): String = oAuth2TokenCallback.typeHeader(tokenRequest)
 
-        override fun typeHeader(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): String =
-            oAuth2TokenCallback.typeHeader(tokenRequest, authRequestParams)
+        override fun typeHeader(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): String = oAuth2TokenCallback.typeHeader(tokenRequest, authRequestParams)
 
         override fun audience(tokenRequest: TokenRequest): List<String> = oAuth2TokenCallback.audience(tokenRequest)
 
-        override fun audience(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): List<String> =
-            oAuth2TokenCallback.audience(tokenRequest, authRequestParams)
+        override fun audience(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): List<String> = oAuth2TokenCallback.audience(tokenRequest, authRequestParams)
 
-        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-            addClaims(tokenRequest, emptyMap())
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = addClaims(tokenRequest, emptyMap())
 
-        override fun addClaims(tokenRequest: TokenRequest, authRequestParams: Map<String, String>): Map<String, Any> =
+        override fun addClaims(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): Map<String, Any> =
             oAuth2TokenCallback.addClaims(tokenRequest, authRequestParams).toMutableMap().apply {
                 login.claims?.let {
                     try {

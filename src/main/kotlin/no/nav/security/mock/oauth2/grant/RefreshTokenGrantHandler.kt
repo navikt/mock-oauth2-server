@@ -43,6 +43,9 @@ internal class RefreshTokenGrantHandler(
                 ?: storedCallback
                 ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
 
+        // We preserve the original auth request parameters (e.g. login_hint) from the stored session
+        // even when a callback is enqueued. This ensures that enqueued callbacks (like RequestMappingTokenCallback)
+        // have access to the session context for claim matching and template substitution.
         val authRequestParams = storedAuthRequestParams
 
         if (rotateRefreshToken) {
@@ -63,5 +66,8 @@ internal class RefreshTokenGrantHandler(
 
     private fun TokenRequest.refreshTokenGrant(): RefreshTokenGrant =
         (this.authorizationGrant as? RefreshTokenGrant)
-            ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("grant_type ${GrantType.REFRESH_TOKEN} not supported."), "grant_type ${GrantType.REFRESH_TOKEN} not supported.")
+            ?: throw OAuth2Exception(
+                OAuth2Error.INVALID_GRANT.setDescription("grant_type ${GrantType.REFRESH_TOKEN} not supported."),
+                "grant_type ${GrantType.REFRESH_TOKEN} not supported.",
+            )
 }

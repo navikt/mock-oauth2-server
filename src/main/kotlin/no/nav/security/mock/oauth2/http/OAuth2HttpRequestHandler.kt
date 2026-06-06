@@ -67,11 +67,12 @@ class OAuth2HttpRequestHandler(
             CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(config.tokenProvider),
             JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
             TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),
-            REFRESH_TOKEN to RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager, config.rotateRefreshToken) { issuerId ->
-                synchronized(tokenCallbackQueue) {
-                    if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
-                }
-            },
+            REFRESH_TOKEN to
+                RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager, config.rotateRefreshToken) { issuerId ->
+                    synchronized(tokenCallbackQueue) {
+                        if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
+                    }
+                },
             PASSWORD to PasswordGrantHandler(config.tokenProvider),
         )
 

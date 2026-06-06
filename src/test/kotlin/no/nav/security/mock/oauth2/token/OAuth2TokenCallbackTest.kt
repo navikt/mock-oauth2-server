@@ -196,7 +196,6 @@ internal class OAuth2TokenCallbackTest {
 
     @Nested
     inner class AuthRequestParamPropagation {
-
         private val callbackWithLoginHintMappings =
             RequestMappingTokenCallback(
                 issuerId = "test-issuer",
