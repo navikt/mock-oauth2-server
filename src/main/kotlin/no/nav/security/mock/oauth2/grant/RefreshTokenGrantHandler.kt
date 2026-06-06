@@ -43,7 +43,7 @@ internal class RefreshTokenGrantHandler(
                 ?: storedCallback
                 ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
 
-        val authRequestParams = if (enqueuedCallback != null) emptyMap() else storedAuthRequestParams
+        val authRequestParams = storedAuthRequestParams
 
         if (rotateRefreshToken) {
             refreshToken = refreshTokenManager.rotate(refreshToken, resolvedCallback, authRequestParams)

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mock-oauth2-server:
     image: ghcr.io/navikt/mock-oauth2-server:latest

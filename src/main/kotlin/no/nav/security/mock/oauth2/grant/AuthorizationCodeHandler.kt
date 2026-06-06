@@ -92,16 +92,16 @@ internal class AuthorizationCodeHandler(
         }
 
         val scope: String? = tokenRequest.scope?.toString()
-        val nonce: String? = authenticationRequest?.nonce?.value
+        val nonce: String? = authenticationRequest.nonce?.value
 
         // Extract query params from the original auth request (e.g. login_hint, acr_values, claims)
         // so that requestMappings in the token callback can match and template-resolve them.
         val authRequestParams: Map<String, String> =
             authenticationRequest
-                ?.toHTTPRequest()
-                ?.queryParameters
-                ?.mapValues { it.value.joinToString(separator = " ") }
-                ?: emptyMap()
+                .toHTTPRequest()
+                .queryParameters
+                .mapValues { it.value.joinToString(separator = " ") }
+
 
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, authRequestParams)

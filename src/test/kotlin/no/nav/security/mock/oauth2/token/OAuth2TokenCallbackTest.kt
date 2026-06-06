@@ -194,11 +194,6 @@ internal class OAuth2TokenCallbackTest {
         }
     }
 
-    /**
-     * Tests for the extraParams feature: auth-request params (e.g. login_hint, acr_values)
-     * that are NOT present in the token request body but are propagated via
-     * RequestMappingTokenCallback.copy(extraParams = ...) from AuthorizationCodeHandler.
-     */
     @Nested
     inner class AuthRequestParamPropagation {
 
