@@ -33,7 +33,7 @@ internal class RefreshTokenGrantHandler(
         log.debug("issuing token for refreshToken=$refreshToken")
         val scope: String? = tokenRequest.scope?.toString()
         val issuerId = issuerUrl.issuerId()
-        val storedCallback = refreshTokenManager[refreshToken]
+        val (storedCallback, storedAuthRequestParams) = refreshTokenManager[refreshToken] ?: Pair(null, emptyMap())
         if (storedCallback != null && storedCallback.issuerId() != issuerId) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }
@@ -42,11 +42,17 @@ internal class RefreshTokenGrantHandler(
             enqueuedCallback
                 ?: storedCallback
                 ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
+
+        // We preserve the original auth request parameters (e.g. login_hint) from the stored session
+        // even when a callback is enqueued. This ensures that enqueued callbacks (like RequestMappingTokenCallback)
+        // have access to the session context for claim matching and template substitution.
+        val authRequestParams = storedAuthRequestParams
+
         if (rotateRefreshToken) {
-            refreshToken = refreshTokenManager.rotate(refreshToken, resolvedCallback)
+            refreshToken = refreshTokenManager.rotate(refreshToken, resolvedCallback, authRequestParams)
         }
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback)
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback)
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams)
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -60,5 +66,8 @@ internal class RefreshTokenGrantHandler(
 
     private fun TokenRequest.refreshTokenGrant(): RefreshTokenGrant =
         (this.authorizationGrant as? RefreshTokenGrant)
-            ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("grant_type ${GrantType.REFRESH_TOKEN} not supported."), "grant_type ${GrantType.REFRESH_TOKEN} not supported.")
+            ?: throw OAuth2Exception(
+                OAuth2Error.INVALID_GRANT.setDescription("grant_type ${GrantType.REFRESH_TOKEN} not supported."),
+                "grant_type ${GrantType.REFRESH_TOKEN} not supported.",
+            )
 }

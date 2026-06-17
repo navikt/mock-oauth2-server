@@ -16,24 +16,44 @@
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Quick Start](#quick-start)
 - [What it does](#what-it-does)
 - [Supported Flows](#supported-flows)
 - [Usage](#usage)
   - [In JVM Tests](#in-jvm-tests)
+    - [Minimal setup](#minimal-setup)
+    - [Issuing tokens directly](#issuing-tokens-directly)
+    - [Testing Authorization Code Flow (user login)](#testing-authorization-code-flow-user-login)
+    - [Verifying requests made to the server](#verifying-requests-made-to-the-server)
+    - [Controlling token time](#controlling-token-time)
+    - [Multi-issuer setup](#multi-issuer-setup)
+    - [More examples](#more-examples)
   - [Standalone / Docker](#standalone--docker)
   - [Docker Compose](#docker-compose)
-  - [Token Customization via JSON_CONFIG](#token-customization-via-json_config)
+  - [Token Customization via JSON\_CONFIG](#token-customization-via-json_config)
   - [Auto-added claims](#auto-added-claims)
-  - [aud claim resolution](#aud-claim-resolution)
+  - [`aud` claim resolution](#aud-claim-resolution)
   - [HTTPS](#https)
+    - [In unit tests](#in-unit-tests)
+    - [In Docker / standalone via JSON\_CONFIG](#in-docker--standalone-via-json_config)
   - [CORS](#cors)
   - [Debugger](#debugger)
+  - [Local testing support](#local-testing-support)
 - [Configuration Reference](#configuration-reference)
+  - [Standalone ENV variables](#standalone-env-variables)
+  - [JSON\_CONFIG properties](#json_config-properties)
 - [API Reference](#api-reference)
-- [Contributing](#contributing)
-- [Contact](#contact)
-- [License](#license)
+  - [Well-known endpoints](#well-known-endpoints)
+  - [Endpoint notes](#endpoint-notes)
+  - [Server URL methods (Kotlin/Java API)](#server-url-methods-kotlinjava-api)
+  - [Full API documentation](#full-api-documentation)
+- [👥 Contact](#-contact)
+- [✏️ Contributing](#️-contributing)
+- [⚖️ License](#️-license)
+- [Migration guide](#migration-guide)
+  - [Migrating to 4.0.0](#migrating-to-400)
+    - [Refresh token validation is now strict](#refresh-token-validation-is-now-strict)
 
 ---
 
@@ -371,6 +391,35 @@ A token request to `http://localhost:8080/issuer1/token` with any `code` paramet
 }
 ```
 
+For authorization code flow, auth request query parameters are preserved and merged into token callback matching.
+This means `RequestMappingTokenCallback` can match on auth request params such as `login_hint`, `acr_values`, `claims`, or any other extra auth request parameter.
+For example:
+
+```json
+{
+  "issuerId": "issuer1",
+  "tokenExpiry": 120,
+  "requestMappings": [
+    {
+      "requestParam": "login_hint",
+      "match": "anna@example.com",
+      "claims": {
+        "sub": "anna-uuid",
+        "email": "anna@example.com"
+      }
+    }
+  ]
+}
+```
+
+Those auth request params can also be used in claim templates, e.g.:
+
+```json
+"claims": {
+  "email": "${login_hint}"
+}
+```
+
 The `match` field supports exact strings, `"*"` (matches any value), and full regular expressions.
 
 Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting client ID dynamically. All form parameters from the token request are available as template variables:
@@ -497,6 +546,80 @@ Browser based OAuth2 clients and SPAs can call the token, JWKS and other endpoin
 ### Debugger
 
 Point your browser to `http://localhost:8080/default/debugger` to open the OAuth2 client debugger. It implements the Authorization Code Flow and lets you inspect request parameters and token responses interactively.
+
+### Local testing support
+
+A pre-configured setup for local testing is available. This uses `Dockerfile.local`, `docker-compose.local.yaml` and `src/test/resources/config-login-hint.json` (to support testing the claim mapping based on a `login_hint`).
+
+**Start the server:**
+
+```shell
+docker compose -f docker-compose.local.yaml up --build
+```
+
+**Example Flow:**
+
+1. **Authorization Request:**
+   Call the authorize endpoint with a `login_hint`.
+
+   ```shell
+   curl -v "http://localhost:8080/mock-issuer/authorize?client_id=my-app&state=1777472834735&redirect_uri=http://localhost:8080/&code_challenge=F_Fn6NYPHzYva3b9q628W7qkVczD2FprtyNFYR8J7_8&code_challenge_method=S256&response_type=code&nonce=8IBTHwOdqNKAWeKl7plt8g==&scope=openid&login_hint=F009635833"
+   ```
+
+2. **Authorization Response:**
+   The server redirects back with a `code` (inspect logs from the docker container or the `Location` header in the curl output).
+
+   ```http
+   HTTP/1.1 302 Found
+   Location: http://localhost:8080/?code=<GENERATED_AUTH_CODE>&state=1777472834735
+   ```
+
+3. **Token Request:**
+   Exchange the code for tokens.
+
+   ```shell
+   curl -X POST http://localhost:8080/mock-issuer/token \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "client_id=my-app" \
+     -d "code=<GENERATED_AUTH_CODE>" \
+     -d "grant_type=authorization_code"
+   ```
+
+4. **Token Response:**
+   The tokens contain claims derived from the `login_hint` based on the configuration.
+
+   ```json
+   {
+     "token_type" : "Bearer",
+     "id_token" : "eyJraWQiOiJtb2NrLWlzc3VlciI...",
+     "access_token" : "eyJraWQiOiJtb2NrLWlzc3V...",
+     "refresh_token" : "eyJhbGciOiJub25lIn0.ey...",
+     "expires_in" : 3599
+   }
+   ```
+
+   Go ahead and decode the the ID token with [jwt.io](https://jwt.io):
+
+   ```json
+    {
+        "sub": "0000000000-0000-0000-0000-00F009635833",
+        "aud": "my-app",
+        "nbf": 1780732111,
+        "iss": "http://localhost:8080/mock-issuer",
+        "name": "Mocked Username: F009635833",
+        "exp": 1780735711,
+        "iat": 1780732111,
+        "nonce": "8IBTHwOdqNKAWeKl7plt8g==",
+        "jti": "037dd92c-8969-48d0-ab73-6cd9bcec449a",
+        "email": "F009635833@example.com"
+    }
+   ```
+
+**Shutdown the server:**
+
+```shell
+docker compose -f docker-compose.local.yaml down
+```
 
 ---
 

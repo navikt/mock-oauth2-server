@@ -1,0 +1,60 @@
+{
+    "httpServer": "NettyWrapper",
+    "interactiveLogin": false,
+    "tokenCallbacks": [
+        {
+            "issuerId": "test-issuer",
+            "requestMappings": [
+                {
+                    "claims": {
+                        "email": "anna.mueller@example.com",
+                        "name": "Anna Müller",
+                        "sub": "7b1552ef-b40b-4ba6-badf-abeb6091da3c"
+                    },
+                    "match": ".*X987654321.*",
+                    "requestParam": "login_hint"
+                },
+                {
+                    "claims": {
+                        "email": "peter.mueller@example.com",
+                        "name": "Peter Müller",
+                        "sub": "893b1552ef-b40b-4ba6-badf-abeb6095af5d"
+                    },
+                    "match": "F009635833",
+                    "requestParam": "login_hint"
+                }
+            ],
+            "tokenExpiry": 3600
+        },
+        {
+            "issuerId": "mock-issuer",
+            "requestMappings": [
+                {
+                    "claims": {
+                        "email": "${login_hint}@example.com",
+                        "name": "Mocked Username: ${login_hint}",
+                        "sub": "0000000000-0000-0000-0000-00${login_hint}"
+                    },
+                    "match": "*",
+                    "requestParam": "login_hint"
+                }
+            ],
+            "tokenExpiry": 3600
+        },
+        {
+            "issuerId": "default",
+            "requestMappings": [
+                {
+                    "claims": {
+                        "email": "detlef.default@example.com",
+                        "name": "Detlef Default",
+                        "sub": "7b1552ef-b40b-4ba6-badf-abeb6091da3c"
+                    },
+                    "match": "*",
+                    "requestParam": "client_id"
+                }
+            ],
+            "tokenExpiry": 3600
+        }
+    ]
+}

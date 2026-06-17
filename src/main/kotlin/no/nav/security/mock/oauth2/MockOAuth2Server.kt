@@ -85,6 +85,10 @@ open class MockOAuth2Server(
     ) {
         log.debug("attempt to start server on port=$port")
         httpServer.start(inetAddress, port, router)
+
+        val issuerIds = config.tokenCallbacks.mapNotNull { it.issuerId() }.joinToString(", ")
+        log.debug("loaded settings - interactiveLogin: ${config.interactiveLogin}")
+        log.debug("loaded settings - issuerIds of configured token callbacks: $issuerIds")
     }
 
     /**
