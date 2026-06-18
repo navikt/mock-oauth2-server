@@ -39,8 +39,8 @@ interface OAuth2TokenCallback {
  *
  * Constraints for refresh-token reuse:
  * - Persisted params are sanitized and bounded before storage.
- * - Keys `claims`, `request`, and `client_assertion` are excluded from persisted storage.
- * - Value length is truncated, and count/total-size limits are enforced.
+ * - By default, keys `claims`, `request`, and `client_assertion` are excluded from persisted storage.
+ * - Value length is truncated, and count/total-size limits are enforced (see `AuthRequestParamsStoragePolicy`).
  *
  * Implementers should treat [authRequestParams] as optional context and handle missing keys defensively.
  */
