@@ -12,7 +12,6 @@ import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.options
 import no.nav.security.mock.oauth2.testutils.tokenRequest
-import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.Headers
 import org.junit.jupiter.api.Test
@@ -77,17 +76,14 @@ class CorsHeadersIntegrationTest {
     @Test
     fun `token response should allow all origins`() {
         withMockOAuth2Server {
-            val expectedSubject = "expectedSub"
             val issuerId = "idprovider"
-            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = expectedSubject))
 
             val response =
                 client.tokenRequest(
                     this.tokenEndpointUrl(issuerId),
                     Headers.headersOf("origin", origin),
                     mapOf(
-                        "grant_type" to GrantType.REFRESH_TOKEN.value,
-                        "refresh_token" to "canbewhatever",
+                        "grant_type" to GrantType.CLIENT_CREDENTIALS.value,
                         "client_id" to "id",
                         "client_secret" to "secret",
                     ),

@@ -195,9 +195,8 @@ internal class OAuth2TokenCallbackTest {
     }
 
     /**
-     * Tests for the extraParams feature: auth-request params (e.g. login_hint, acr_values)
-     * that are NOT present in the token request body but are propagated via
-     * RequestMappingTokenCallback.copy(extraParams = ...) from AuthorizationCodeHandler.
+     * Tests for propagation of auth-request params (e.g. login_hint, acr_values)
+     * that are NOT present in the token request body.
      */
     @Nested
     inner class AuthRequestParamPropagation {
@@ -243,9 +242,9 @@ internal class OAuth2TokenCallbackTest {
         @Test
         fun `login_hint in extraParams selects the correct mapping and returns matching claims`() {
             val tokenRequest = authCodeRequest()
-            val enriched = callbackWithLoginHintMappings.copy(extraParams = mapOf("login_hint" to "anna@example.com"))
+            val authRequestParams = mapOf("login_hint" to "anna@example.com")
 
-            enriched.addClaims(tokenRequest).asClue {
+            callbackWithLoginHintMappings.addClaims(tokenRequest, authRequestParams).asClue {
                 it shouldContainAll
                     mapOf(
                         "sub" to "anna-uuid",
@@ -253,15 +252,15 @@ internal class OAuth2TokenCallbackTest {
                         "urn:telematik:claims:id" to "X111111111",
                     )
             }
-            enriched.subject(tokenRequest) shouldBe "anna-uuid"
+            callbackWithLoginHintMappings.subject(tokenRequest, authRequestParams) shouldBe "anna-uuid"
         }
 
         @Test
         fun `different login_hint in extraParams selects a different mapping`() {
             val tokenRequest = authCodeRequest()
-            val enriched = callbackWithLoginHintMappings.copy(extraParams = mapOf("login_hint" to "max@example.com"))
+            val authRequestParams = mapOf("login_hint" to "max@example.com")
 
-            enriched.addClaims(tokenRequest).asClue {
+            callbackWithLoginHintMappings.addClaims(tokenRequest, authRequestParams).asClue {
                 it shouldContainAll
                     mapOf(
                         "sub" to "max-uuid",
@@ -269,18 +268,31 @@ internal class OAuth2TokenCallbackTest {
                         "urn:telematik:claims:id" to "X222222222",
                     )
             }
-            enriched.subject(tokenRequest) shouldBe "max-uuid"
+            callbackWithLoginHintMappings.subject(tokenRequest, authRequestParams) shouldBe "max-uuid"
         }
 
         @Test
         fun `absent login_hint falls through to next matching mapping (grant_type wildcard)`() {
             val tokenRequest = authCodeRequest()
-            // no extraParams -> login_hint mappings won't match -> falls through to grant_type mapping
-            val enriched = callbackWithLoginHintMappings.copy(extraParams = emptyMap())
+            // no auth request params -> login_hint mappings won't match -> falls through to grant_type mapping
 
-            enriched.addClaims(tokenRequest).asClue {
+            callbackWithLoginHintMappings.addClaims(tokenRequest, emptyMap()).asClue {
                 it shouldContainAll mapOf("sub" to "default-uuid", "email" to "default@example.com")
                 it shouldNotContainKey "urn:telematik:claims:id"
+            }
+        }
+
+        @Test
+        fun `stored auth request params take precedence over token body params for matching`() {
+            val tokenRequest = authCodeRequest("login_hint" to "max@example.com")
+            val authRequestParams = mapOf("login_hint" to "anna@example.com")
+
+            callbackWithLoginHintMappings.addClaims(tokenRequest, authRequestParams).asClue {
+                it shouldContainAll
+                    mapOf(
+                        "sub" to "anna-uuid",
+                        "email" to "anna@example.com",
+                    )
             }
         }
 
@@ -303,10 +315,10 @@ internal class OAuth2TokenCallbackTest {
                                     ),
                             ),
                         ),
-                    extraParams = mapOf("login_hint" to "substituted@example.com"),
                 )
+            val authRequestParams = mapOf("login_hint" to "substituted@example.com")
 
-            callbackWithTemplate.addClaims(tokenRequest).asClue {
+            callbackWithTemplate.addClaims(tokenRequest, authRequestParams).asClue {
                 it shouldContainAll
                     mapOf(
                         "email" to "substituted@example.com",
@@ -330,17 +342,17 @@ internal class OAuth2TokenCallbackTest {
                                     mapOf(
                                         "acr" to "gematik-ehealth-loa-high",
                                         "email" to "\${login_hint}",
-                                    ),
+                                ),
                             ),
                         ),
-                    extraParams =
-                        mapOf(
-                            "acr_values" to "gematik-ehealth-loa-high",
-                            "login_hint" to "multi@example.com",
-                        ),
+                )
+            val authRequestParams =
+                mapOf(
+                    "acr_values" to "gematik-ehealth-loa-high",
+                    "login_hint" to "multi@example.com",
                 )
 
-            callback.addClaims(tokenRequest).asClue {
+            callback.addClaims(tokenRequest, authRequestParams).asClue {
                 it shouldContainAll
                     mapOf(
                         "acr" to "gematik-ehealth-loa-high",
