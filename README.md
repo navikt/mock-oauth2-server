@@ -611,7 +611,7 @@ docker compose -f docker-compose.local.yaml up --build
    }
    ```
 
-   Go ahead and decode the the ID token with [jwt.io](https://jwt.io):
+   Go ahead and decode the ID token with [jwt.io](https://jwt.io):
 
    ```json
     {
