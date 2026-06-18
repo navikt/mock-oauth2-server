@@ -18,9 +18,12 @@ import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
+import no.nav.security.mock.oauth2.token.AuthRequestAwareOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
-import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
+import no.nav.security.mock.oauth2.token.resolveAudience
+import no.nav.security.mock.oauth2.token.resolveClaims
+import no.nav.security.mock.oauth2.token.resolveTypeHeader
 import okhttp3.HttpUrl
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
@@ -102,11 +105,10 @@ internal class AuthorizationCodeHandler(
                 .queryParameters
                 .mapValues { it.value.joinToString(separator = " ") }
 
-        val enrichedCallback = oAuth2TokenCallback.withAuthRequestParams(authRequestParams)
-        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, enrichedCallback)
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce)
+        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, authRequestParams)
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, authRequestParams)
+        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, authRequestParams)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -131,17 +133,29 @@ internal class AuthorizationCodeHandler(
     private class LoginOAuth2TokenCallback(
         val login: Login,
         val oAuth2TokenCallback: OAuth2TokenCallback,
-    ) : OAuth2TokenCallback {
+    ) : AuthRequestAwareOAuth2TokenCallback {
         override fun issuerId(): String = oAuth2TokenCallback.issuerId()
 
-        override fun subject(tokenRequest: TokenRequest): String = login.username
+        override fun subject(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): String = login.username
 
-        override fun typeHeader(tokenRequest: TokenRequest): String = oAuth2TokenCallback.typeHeader(tokenRequest)
+        override fun typeHeader(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): String = oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams)
 
-        override fun audience(tokenRequest: TokenRequest): List<String> = oAuth2TokenCallback.audience(tokenRequest)
+        override fun audience(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): List<String> = oAuth2TokenCallback.resolveAudience(tokenRequest, authRequestParams)
 
-        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-            oAuth2TokenCallback.addClaims(tokenRequest).toMutableMap().apply {
+        override fun addClaims(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): Map<String, Any> =
+            oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams).toMutableMap().apply {
                 login.claims?.let {
                     try {
                         jsonMapper
@@ -159,14 +173,3 @@ internal class AuthorizationCodeHandler(
         override fun tokenExpiry(): Long = oAuth2TokenCallback.tokenExpiry()
     }
 }
-
-/**
- * Returns a copy of this callback enriched with additional params from the original auth request.
- * For [RequestMappingTokenCallback] the extra params are available for both requestParam matching
- * and \${key} template substitution in claim values. Other callback types are returned unchanged.
- */
-private fun OAuth2TokenCallback.withAuthRequestParams(params: Map<String, String>): OAuth2TokenCallback =
-    when (this) {
-        is RequestMappingTokenCallback -> this.copy(extraParams = params)
-        else -> this
-    }
