@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.local
-    container_name: mock-oauth2-server
+    container_name: mock-oauth2-server-local
     ports:
       - "8080:8080"
     volumes:

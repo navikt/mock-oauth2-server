@@ -391,6 +391,48 @@ A token request to `http://localhost:8080/issuer1/token` with any `code` paramet
 }
 ```
 
+For authorization code flow, query parameters from the original authorize request are preserved and propagated into token callback matching and template resolution.
+This applies to built-in `RequestMappingTokenCallback` matching and to custom callbacks that implement `AuthRequestAwareOAuth2TokenCallback`.
+Mappings can use values such as `login_hint`, `acr_values`, `claims`, or custom authorization request parameters.
+
+```json
+{
+  "issuerId": "issuer1",
+  "tokenExpiry": 120,
+  "requestMappings": [
+    {
+      "requestParam": "login_hint",
+      "match": "anna@example.com",
+      "claims": {
+        "sub": "anna-uuid",
+        "email": "anna@example.com"
+      }
+    }
+  ]
+}
+```
+
+Those auth request parameters can also be used in claim templates, for example:
+
+```json
+"claims": {
+  "email": "${login_hint}"
+}
+```
+
+If the same key appears both in the token request body and in preserved auth request params, matching uses the preserved auth request value.
+
+For `refresh_token` grants, the server reuses auth request params preserved from the original authorization code flow. This means matching/template behavior stays stable across refresh, and the same precedence rule applies (preserved auth request values win over conflicting token-body values).
+
+When auth request params are persisted for refresh-token usage, a bounded subset is stored server-side:
+
+- the keys `claims`, `request`, and `client_assertion` are excluded
+- values are truncated to 512 characters
+- at most 20 params are kept
+- total stored key/value length is capped at 4096 characters
+
+Important: during the initial authorization-code token exchange, `claims`, `request`, and `client_assertion` can still be present in the auth request and therefore be available for matching/template substitution. These keys are excluded only from persisted server-side storage, so they are not available for refresh-token matching/template substitution.
+
 The `match` field supports exact strings, `"*"` (matches any value), and full regular expressions.
 
 Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting client ID dynamically. All form parameters from the token request are available as template variables:
@@ -619,6 +661,7 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 | `rotateRefreshToken` | `true` or `false`. When `true`, a new refresh token is issued on each refresh grant, invalidating the previous one.                                                                                                                                                               |
 | `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper` (required for HTTPS). Can also be a JSON object: `{"type": "NettyWrapper", "ssl": {...}}`.                                                                    |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
+| `authRequestParamsStoragePolicy` | Optional limits for persisting auth-request params used by `refresh_token` grants (`maxStoredParams`, `maxValueLength`, `maxTotalLength`, `excludedKeys`). Defaults: `20`, `512`, `4096`, and `claims/request/client_assertion`. |
 
 Additional token provider options:
 
@@ -629,6 +672,19 @@ Additional token provider options:
       "algorithm": "ES256"
     },
     "systemTime": "2020-01-21T00:00:00Z"
+  }
+}
+```
+
+Auth-request param storage policy for refresh-token reuse can also be configured:
+
+```json
+{
+  "authRequestParamsStoragePolicy": {
+    "maxStoredParams": 20,
+    "maxValueLength": 512,
+    "maxTotalLength": 4096,
+    "excludedKeys": ["claims", "request", "client_assertion"]
   }
 }
 ```
@@ -723,6 +779,14 @@ This library is licensed under the [MIT License](LICENSE.md).
 ## Migration guide
 
 ### Migrating to 4.0.0
+
+#### Authorization request params are now available in callback matching (backward compatible)
+
+For authorization code flow, parameters from the original authorize request (for example `login_hint`) are now preserved and used during token callback matching and claim template substitution.
+
+Existing `OAuth2TokenCallback` implementations remain valid. If you need access to preserved auth request params in a custom callback implementation, implement `AuthRequestAwareOAuth2TokenCallback` in addition to `OAuth2TokenCallback`.
+
+`OAuth2TokenProvider` also keeps previous method signatures and adds overloads that accept `authRequestParams` for advanced/custom usage.
 
 #### Refresh token validation is now strict
 

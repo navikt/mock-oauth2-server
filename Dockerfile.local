@@ -29,8 +29,8 @@ RUN ./gradlew installDist --no-daemon -x test
 FROM eclipse-temurin:21-jre-alpine
 
 LABEL org.opencontainers.image.title="mock-oauth2-server"
-LABEL org.opencontainers.image.description="Mock OAuth2/OIDC server – fork with login_hint propagation support"
-LABEL org.opencontainers.image.source="https://github.com/d-lopes/mock-oauth2-server"
+LABEL org.opencontainers.image.description="Mock OAuth2/OIDC server"
+LABEL org.opencontainers.image.source="https://github.com/navikt/mock-oauth2-server"
 
 WORKDIR /app
 
