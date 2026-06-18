@@ -200,7 +200,6 @@ internal class OAuth2TokenCallbackTest {
      */
     @Nested
     inner class AuthRequestParamPropagation {
-
         private val callbackWithLoginHintMappings =
             RequestMappingTokenCallback(
                 issuerId = "test-issuer",
@@ -342,7 +341,7 @@ internal class OAuth2TokenCallbackTest {
                                     mapOf(
                                         "acr" to "gematik-ehealth-loa-high",
                                         "email" to "\${login_hint}",
-                                ),
+                                    ),
                             ),
                         ),
                 )

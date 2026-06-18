@@ -12,8 +12,8 @@ import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
 import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
-import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.claims
+import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.shouldBeValidFor

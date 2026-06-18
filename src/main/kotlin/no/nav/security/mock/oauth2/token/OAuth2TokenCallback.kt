@@ -41,7 +41,6 @@ interface OAuth2TokenCallback {
  * - Persisted params are sanitized and bounded before storage.
  * - Keys `claims`, `request`, and `client_assertion` are excluded from persisted storage.
  * - Value length is truncated, and count/total-size limits are enforced.
- * - Limits can be configured via `OAuth2Config.authRequestParamsStoragePolicy`.
  *
  * Implementers should treat [authRequestParams] as optional context and handle missing keys defensively.
  */
@@ -213,7 +212,8 @@ data class RequestMappingTokenCallback(
         authRequestParams: Map<String, String>,
     ): String {
         val requestContext = tokenRequest.requestContext(authRequestParams)
-        return firstOrNull { it.isMatch(tokenRequest, requestContext.formParameters, requestContext.authRequestParamsList) }?.typeHeader ?: JOSEObjectType.JWT.type
+        return firstOrNull { it.isMatch(tokenRequest, requestContext.formParameters, requestContext.authRequestParamsList) }?.typeHeader
+            ?: JOSEObjectType.JWT.type
     }
 
     private data class RequestContext(
@@ -261,7 +261,10 @@ data class RequestMapping(
                 ?: if (formValues.isNotEmpty()) {
                     formValues
                 } else if (requestParam == "client_id") {
-                    tokenRequest.clientAuthentication?.clientID?.value?.let { listOf(it) }
+                    tokenRequest.clientAuthentication
+                        ?.clientID
+                        ?.value
+                        ?.let { listOf(it) }
                         ?: tokenRequest.clientID?.value?.let { listOf(it) }
                         ?: emptyList()
                 } else {

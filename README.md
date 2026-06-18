@@ -48,9 +48,9 @@
   - [Endpoint notes](#endpoint-notes)
   - [Server URL methods (Kotlin/Java API)](#server-url-methods-kotlinjava-api)
   - [Full API documentation](#full-api-documentation)
-- [👥 Contact](#-contact)
-- [✏️ Contributing](#️-contributing)
-- [⚖️ License](#️-license)
+- [👥 Contact](#contact)
+- [✏️ Contributing](#contributing)
+- [⚖️ License](#license)
 - [Migration guide](#migration-guide)
   - [Migrating to 4.0.0](#migrating-to-400)
     - [Refresh token validation is now strict](#refresh-token-validation-is-now-strict)
@@ -661,7 +661,6 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 | `rotateRefreshToken` | `true` or `false`. When `true`, a new refresh token is issued on each refresh grant, invalidating the previous one.                                                                                                                                                               |
 | `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper` (required for HTTPS). Can also be a JSON object: `{"type": "NettyWrapper", "ssl": {...}}`.                                                                    |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
-| `authRequestParamsStoragePolicy` | Optional limits for persisting auth-request params used by `refresh_token` grants (`maxStoredParams`, `maxValueLength`, `maxTotalLength`, `excludedKeys`). Defaults: `20`, `512`, `4096`, and `claims/request/client_assertion`. |
 
 Additional token provider options:
 
@@ -672,19 +671,6 @@ Additional token provider options:
       "algorithm": "ES256"
     },
     "systemTime": "2020-01-21T00:00:00Z"
-  }
-}
-```
-
-Auth-request param storage policy for refresh-token reuse can also be configured:
-
-```json
-{
-  "authRequestParamsStoragePolicy": {
-    "maxStoredParams": 20,
-    "maxValueLength": 512,
-    "maxTotalLength": 4096,
-    "excludedKeys": ["claims", "request", "client_assertion"]
   }
 }
 ```

@@ -3,7 +3,7 @@
     "interactiveLogin": false,
     "tokenCallbacks": [
         {
-            "issuerId": "test-issuer",
+            "issuerId": "mock-issuer",
             "requestMappings": [
                 {
                     "claims": {
