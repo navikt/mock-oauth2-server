@@ -60,5 +60,8 @@ internal class RefreshTokenGrantHandler(
 
     private fun TokenRequest.refreshTokenGrant(): RefreshTokenGrant =
         (this.authorizationGrant as? RefreshTokenGrant)
-            ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("grant_type ${GrantType.REFRESH_TOKEN} not supported."), "grant_type ${GrantType.REFRESH_TOKEN} not supported.")
+            ?: throw OAuth2Exception(
+                OAuth2Error.INVALID_GRANT.setDescription("grant_type ${GrantType.REFRESH_TOKEN} not supported."),
+                "grant_type ${GrantType.REFRESH_TOKEN} not supported.",
+            )
 }
