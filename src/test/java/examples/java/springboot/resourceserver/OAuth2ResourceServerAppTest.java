@@ -3,10 +3,12 @@ package examples.java.springboot.resourceserver;
 import examples.java.springboot.MockOAuth2ServerInitializer;
 import no.nav.security.mock.oauth2.MockOAuth2Server;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -21,10 +23,18 @@ import static examples.java.springboot.MockOAuth2ServerInitializer.MOCK_OAUTH_2_
 )
 @ContextConfiguration(initializers = {MockOAuth2ServerInitializer.class})
 public class OAuth2ResourceServerAppTest {
-    @Autowired
+    @LocalServerPort
+    private int port;
+
     private WebTestClient webClient;
+
     @Autowired
     private MockOAuth2Server mockOAuth2Server;
+
+    @BeforeEach
+    void setupWebClient() {
+        this.webClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+    }
 
     @Test
     @DisplayName("api should return 401 if no bearer token present")
