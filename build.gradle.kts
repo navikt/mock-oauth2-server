@@ -29,7 +29,7 @@ plugins {
     id("com.google.cloud.tools.jib") version "3.5.3"
     id("com.vanniktech.maven.publish") version "0.36.0"
     id("org.jetbrains.dokka") version "2.2.0"
-    kotlin("plugin.serialization") version "2.3.21"
+    alias(libs.plugins.kotlin.serialization)
     `java-library`
     signing
 }
@@ -45,13 +45,14 @@ java {
 
 kotlin {
     val kotlinTarget = libs.versions.kotlinTarget
-    val kotlinTargetVersion = kotlinTarget.map {
+    val kotlinLanguage = libs.versions.kotlinLanguage
+    val kotlinLanguageVersion = kotlinLanguage.map {
         KotlinVersion.fromVersion(it.toKotlinMinor())
     }
 
     compilerOptions {
-        languageVersion = kotlinTargetVersion
-        apiVersion = kotlinTargetVersion
+        languageVersion = kotlinLanguageVersion
+        apiVersion = kotlinLanguageVersion
         // Syncing Kotlin JVM target with Java plugin JVM target
         jvmTarget = JvmTarget.JVM_17
     }
