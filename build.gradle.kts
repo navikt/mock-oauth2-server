@@ -111,7 +111,7 @@ dependencies {
                 require("2.10.0")
             }
         }
-        testImplementation("org.yaml:snakeyaml:2.5") {
+        testImplementation("org.yaml:snakeyaml:2.6") {
             because("previous versions have security vulnerabilities")
         }
         add("api", "com.squareup.okio:okio") {
