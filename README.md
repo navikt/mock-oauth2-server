@@ -371,7 +371,7 @@ A token request to `http://localhost:8080/issuer1/token` with any `code` paramet
 }
 ```
 
-The `match` field supports exact strings, `"*"` (matches any value), and full regular expressions.
+The `match` field supports exact strings, `"*"` (matches any value), and full regular expressions. If the pattern is an invalid regular expression, it does not throw — regex evaluation is skipped, but exact-string matching still applies.
 
 Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting client ID dynamically. All form parameters from the token request are available as template variables:
 
@@ -390,6 +390,60 @@ Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting c
     ]
 }
 ```
+
+#### Built-in template variables
+
+In addition to form parameters, the following built-in variables are always available:
+
+| Variable | Value |
+|----------|-------|
+| `${clientId}` / `${client_id}` | The `client_id` from the token request |
+
+#### Interactive login: matching and templating on the login username
+
+When `interactiveLogin` is enabled, `requestMappings` can match on the username submitted at the login page using `"requestParam": "subject"`. The login username is also available as `${subject}` in claim values.
+
+This allows a single `JSON_CONFIG` to serve different claim sets per user without a custom login page:
+
+```json
+{
+    "interactiveLogin": true,
+    "tokenCallbacks": [
+        {
+            "issuerId": "default",
+            "requestMappings": [
+                {
+                    "requestParam": "subject",
+                    "match": "alice",
+                    "claims": {
+                        "role": "admin",
+                        "preferred_username": "${subject}"
+                    }
+                },
+                {
+                    "requestParam": "subject",
+                    "match": ".*",
+                    "claims": {
+                        "role": "user",
+                        "preferred_username": "${subject}"
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+**Claim precedence** when combining `requestMappings` with interactive login:
+
+1. Claims set by a matching `requestMapping` take priority.
+2. Claims submitted on the login page can add new claims but cannot overwrite claims already set by the mapping.
+
+**Template variable precedence** (highest wins):
+
+1. `client_id` / `clientId` — always authoritative
+2. Token POST body form parameters
+3. `${subject}` and other built-in variables
 
 ### Auto-added claims
 
@@ -628,32 +682,4 @@ This library is licensed under the [MIT License](LICENSE.md).
 
 ## Migration guide
 
-### Migrating to 4.0.0
-
-#### Refresh token validation is now strict
-
-Previously, any arbitrary string passed as a `refresh_token` was silently accepted and used to mint a new token via the default callback. This has been fixed: unknown, expired, and revoked refresh tokens now fail with `400 invalid_grant`.
-
-**What this means for existing tests:**
-
-- Tests that passed a hardcoded or arbitrary string as `refresh_token` will now receive `400 invalid_grant` instead of a valid token response. Use a real refresh token obtained from a prior token request.
-- Tests that relied on refresh succeeding after revocation will now fail. This is the correct behavior.
-- Tests that presented a refresh token issued by issuer A to issuer B will now receive `400 invalid_grant`.
-
-**Example migration:**
-
-```kotlin
-// Before: arbitrary string was accepted
-val response = client.post(server.tokenEndpointUrl("default")) {
-    body = "grant_type=refresh_token&refresh_token=any-string"
-}
-
-// After: obtain a real refresh token first
-val tokenResponse = client.post(server.tokenEndpointUrl("default")) {
-    body = "grant_type=authorization_code&code=..."
-}
-val refreshToken = tokenResponse.body.refresh_token
-val response = client.post(server.tokenEndpointUrl("default")) {
-    body = "grant_type=refresh_token&refresh_token=$refreshToken"
-}
-```
+See [MIGRATION.md](MIGRATION.md) for upgrade instructions between versions.
