@@ -1,6 +1,8 @@
 [versions]
 kotlinTarget = "1.9.0" # Minimum supported Kotlin version for consumers of the library
-kotlinToolchain = "2.3.21" # Actual version used by tooling within this project
+kotlinLanguage = "2.0" # Language level used by compiler (Kotlin 2.4 no longer supports 1.9 language mode)
+kotlinToolchain = "2.4.0" # Actual version used by tooling within this project
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinToolchain" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinToolchain" }
