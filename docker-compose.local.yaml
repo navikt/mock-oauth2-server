@@ -1,10 +1,13 @@
 services:
   mock-oauth2-server:
-    image: ghcr.io/navikt/mock-oauth2-server:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: mock-oauth2-server-local
     ports:
       - "8080:8080"
     volumes:
-      - ./config.json:/app/config.json
+      - ./src/test/resources/config-login-hint.json:/app/config.json
     environment:
       LOG_LEVEL: "debug"
       SERVER_PORT: 8080
