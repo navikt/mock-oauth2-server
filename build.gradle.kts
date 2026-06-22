@@ -15,7 +15,7 @@ val kotestVersion = "6.1.11"
 val bouncyCastleVersion = "1.84"
 val springBootVersion = "3.5.14"
 val reactorTestVersion = "3.7.18"
-val ktorVersion = "3.4.3"
+val ktorVersion = "3.5.0"
 val jsonPathVersion = "2.9.0"
 
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
