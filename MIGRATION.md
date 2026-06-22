@@ -12,6 +12,8 @@ In previous versions, claims submitted on the login page could overwrite claims 
 
 **Migration:** move the overriding claim into `requestMappings`, or remove the conflicting key from the mapping if you want the login-page claim to be used.
 
+For details, see the [README](https://github.com/navikt/mock-oauth2-server/blob/master/README.md#interactive-login-matching-and-templating-on-the-login-username) section on interactive login matching and templating.
+
 ## Migrating to 4.0.0
 
 ### Refresh token validation is now strict
