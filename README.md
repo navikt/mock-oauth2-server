@@ -31,6 +31,7 @@
   - [Debugger](#debugger)
 - [Configuration Reference](#configuration-reference)
 - [API Reference](#api-reference)
+- [Migration guide](#migration-guide)
 - [Contributing](#contributing)
 - [Contact](#contact)
 - [License](#license)
@@ -650,7 +651,7 @@ server.baseUrl()                                       // server root URL
 
 ---
 
-## 👥 Contact
+## Contact
 
 This project is maintained by [@navikt](https://github.com/navikt).
 
@@ -662,7 +663,7 @@ See the [release notes](https://github.com/navikt/mock-oauth2-server/releases) f
 
 ---
 
-## ✏️ Contributing
+## Contributing
 
 Fork the repo, check out a new branch, and build with:
 
@@ -674,7 +675,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ---
 
-## ⚖️ License
+## License
 
 This library is licensed under the [MIT License](LICENSE.md).
 
