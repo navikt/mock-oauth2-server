@@ -24,8 +24,17 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Get the tag name
-        run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
+      - name: Get the release version
+        # Use release event payload as source of truth for version.
+        # For `release: published`, `github.event.release.tag_name` contains the release tag.
+        # Fail fast if empty to avoid running Dokka with an empty version.
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          if [ -z "${VERSION}" ]; then
+            echo "VERSION is empty (github.event.release.tag_name missing). Failing early."
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
 
       - name: Build Dokka
         run: ./gradlew dokkaGenerateHtml -Pversion=${{ env.VERSION }}
