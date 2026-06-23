@@ -46,6 +46,9 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "[debug] github.event.release.tag_name='${NEW_VERSION}'"
+          echo "[debug] GITHUB_REF='${GITHUB_REF}'"
+          echo "[debug] GITHUB_REF_NAME='${GITHUB_REF_NAME}'"
           if [ -z "${NEW_VERSION}" ]; then
             echo "NEW_VERSION is empty (github.event.release.tag_name missing). Failing early."
             exit 1

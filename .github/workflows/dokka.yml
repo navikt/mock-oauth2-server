@@ -30,6 +30,9 @@ jobs:
         # Fail fast if empty to avoid running Dokka with an empty version.
         run: |
           VERSION="${{ github.event.release.tag_name }}"
+          echo "[debug] github.event.release.tag_name='${VERSION}'"
+          echo "[debug] GITHUB_REF='${GITHUB_REF}'"
+          echo "[debug] GITHUB_REF_NAME='${GITHUB_REF_NAME}'"
           if [ -z "${VERSION}" ]; then
             echo "VERSION is empty (github.event.release.tag_name missing). Failing early."
             exit 1
