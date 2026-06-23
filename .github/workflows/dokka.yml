@@ -38,10 +38,10 @@ jobs:
             echo "VERSION is empty (github.event.release.tag_name missing). Failing early."
             exit 1
           fi
-          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          printf 'VERSION=%s\n' "$VERSION" >> "$GITHUB_ENV"
 
       - name: Build Dokka
-        run: ./gradlew dokkaGenerateHtml -Pversion=${{ env.VERSION }}
+        run: ./gradlew dokkaGenerateHtml -Pversion="${{ env.VERSION }}"
 
       - name: Publish documentation
         uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # ratchet:JamesIves/github-pages-deploy-action@v4.8.0
