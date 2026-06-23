@@ -28,8 +28,9 @@ jobs:
         # Use release event payload as source of truth for version.
         # For `release: published`, `github.event.release.tag_name` contains the release tag.
         # Fail fast if empty to avoid running Dokka with an empty version.
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
           echo "[debug] github.event.release.tag_name='${VERSION}'"
           echo "[debug] GITHUB_REF='${GITHUB_REF}'"
           echo "[debug] GITHUB_REF_NAME='${GITHUB_REF_NAME}'"
