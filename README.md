@@ -16,44 +16,26 @@
 
 ## Table of Contents
 
-- [Table of Contents](#table-of-contents)
 - [Quick Start](#quick-start)
 - [What it does](#what-it-does)
 - [Supported Flows](#supported-flows)
 - [Usage](#usage)
   - [In JVM Tests](#in-jvm-tests)
-    - [Minimal setup](#minimal-setup)
-    - [Issuing tokens directly](#issuing-tokens-directly)
-    - [Testing Authorization Code Flow (user login)](#testing-authorization-code-flow-user-login)
-    - [Verifying requests made to the server](#verifying-requests-made-to-the-server)
-    - [Controlling token time](#controlling-token-time)
-    - [Multi-issuer setup](#multi-issuer-setup)
-    - [More examples](#more-examples)
   - [Standalone / Docker](#standalone--docker)
   - [Docker Compose](#docker-compose)
-  - [Token Customization via JSON\_CONFIG](#token-customization-via-json_config)
+  - [Token Customization via JSON_CONFIG](#token-customization-via-json_config)
   - [Auto-added claims](#auto-added-claims)
-  - [`aud` claim resolution](#aud-claim-resolution)
+  - [aud claim resolution](#aud-claim-resolution)
   - [HTTPS](#https)
-    - [In unit tests](#in-unit-tests)
-    - [In Docker / standalone via JSON\_CONFIG](#in-docker--standalone-via-json_config)
   - [CORS](#cors)
   - [Debugger](#debugger)
   - [Local testing support](#local-testing-support)
 - [Configuration Reference](#configuration-reference)
-  - [Standalone ENV variables](#standalone-env-variables)
-  - [JSON\_CONFIG properties](#json_config-properties)
 - [API Reference](#api-reference)
-  - [Well-known endpoints](#well-known-endpoints)
-  - [Endpoint notes](#endpoint-notes)
-  - [Server URL methods (Kotlin/Java API)](#server-url-methods-kotlinjava-api)
-  - [Full API documentation](#full-api-documentation)
-- [👥 Contact](#contact)
-- [✏️ Contributing](#contributing)
-- [⚖️ License](#license)
 - [Migration guide](#migration-guide)
-  - [Migrating to 4.0.0](#migrating-to-400)
-    - [Refresh token validation is now strict](#refresh-token-validation-is-now-strict)
+- [Contributing](#contributing)
+- [Contact](#contact)
+- [License](#license)
 
 ---
 
@@ -433,7 +415,7 @@ When auth request params are persisted for refresh-token usage, a bounded subset
 
 Important: during the initial authorization-code token exchange, `claims`, `request`, and `client_assertion` can still be present in the auth request and therefore be available for matching/template substitution. These keys are excluded only from persisted server-side storage, so they are not available for refresh-token matching/template substitution.
 
-The `match` field supports exact strings, `"*"` (matches any value), and full regular expressions.
+The `match` field supports exact strings, `"*"` (matches any value), and full regular expressions. If the pattern is an invalid regular expression, it does not throw — regex evaluation is skipped, but exact-string matching still applies.
 
 Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting client ID dynamically. All form parameters from the token request are available as template variables:
 
@@ -452,6 +434,60 @@ Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting c
     ]
 }
 ```
+
+#### Built-in template variables
+
+In addition to form parameters, the following built-in variables are always available:
+
+| Variable | Value |
+|----------|-------|
+| `${clientId}` / `${client_id}` | The `client_id` from the token request |
+
+#### Interactive login: matching and templating on the login username
+
+When `interactiveLogin` is enabled, `requestMappings` can match on the username submitted at the login page using `"requestParam": "subject"`. The login username is also available as `${subject}` in claim values.
+
+This allows a single `JSON_CONFIG` to serve different claim sets per user without a custom login page:
+
+```json
+{
+    "interactiveLogin": true,
+    "tokenCallbacks": [
+        {
+            "issuerId": "default",
+            "requestMappings": [
+                {
+                    "requestParam": "subject",
+                    "match": "alice",
+                    "claims": {
+                        "role": "admin",
+                        "preferred_username": "${subject}"
+                    }
+                },
+                {
+                    "requestParam": "subject",
+                    "match": ".*",
+                    "claims": {
+                        "role": "user",
+                        "preferred_username": "${subject}"
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+**Claim precedence** when combining `requestMappings` with interactive login:
+
+1. Claims set by a matching `requestMapping` take priority.
+2. Claims submitted on the login page can add new claims but cannot overwrite claims already set by the mapping.
+
+**Template variable precedence** (highest wins):
+
+1. `client_id` / `clientId` — always authoritative
+2. Token POST body form parameters
+3. `${subject}` and other built-in variables
 
 ### Auto-added claims
 
@@ -732,7 +768,7 @@ server.baseUrl()                                       // server root URL
 
 ---
 
-## 👥 Contact
+## Contact
 
 This project is maintained by [@navikt](https://github.com/navikt).
 
@@ -744,7 +780,7 @@ See the [release notes](https://github.com/navikt/mock-oauth2-server/releases) f
 
 ---
 
-## ✏️ Contributing
+## Contributing
 
 Fork the repo, check out a new branch, and build with:
 
@@ -756,7 +792,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ---
 
-## ⚖️ License
+## License
 
 This library is licensed under the [MIT License](LICENSE.md).
 
@@ -764,40 +800,4 @@ This library is licensed under the [MIT License](LICENSE.md).
 
 ## Migration guide
 
-### Migrating to 4.0.0
-
-#### Authorization request params are now available in callback matching (backward compatible)
-
-For authorization code flow, parameters from the original authorize request (for example `login_hint`) are now preserved and used during token callback matching and claim template substitution.
-
-Existing `OAuth2TokenCallback` implementations remain valid. If you need access to preserved auth request params in a custom callback implementation, implement `AuthRequestAwareOAuth2TokenCallback` in addition to `OAuth2TokenCallback`.
-
-`OAuth2TokenProvider` also keeps previous method signatures and adds overloads that accept `authRequestParams` for advanced/custom usage.
-
-#### Refresh token validation is now strict
-
-Previously, any arbitrary string passed as a `refresh_token` was silently accepted and used to mint a new token via the default callback. This has been fixed: unknown, expired, and revoked refresh tokens now fail with `400 invalid_grant`.
-
-**What this means for existing tests:**
-
-- Tests that passed a hardcoded or arbitrary string as `refresh_token` will now receive `400 invalid_grant` instead of a valid token response. Use a real refresh token obtained from a prior token request.
-- Tests that relied on refresh succeeding after revocation will now fail. This is the correct behavior.
-- Tests that presented a refresh token issued by issuer A to issuer B will now receive `400 invalid_grant`.
-
-**Example migration:**
-
-```kotlin
-// Before: arbitrary string was accepted
-val response = client.post(server.tokenEndpointUrl("default")) {
-    body = "grant_type=refresh_token&refresh_token=any-string"
-}
-
-// After: obtain a real refresh token first
-val tokenResponse = client.post(server.tokenEndpointUrl("default")) {
-    body = "grant_type=authorization_code&code=..."
-}
-val refreshToken = tokenResponse.body.refresh_token
-val response = client.post(server.tokenEndpointUrl("default")) {
-    body = "grant_type=refresh_token&refresh_token=$refreshToken"
-}
-```
+See [MIGRATION.md](MIGRATION.md) for upgrade instructions between versions.
