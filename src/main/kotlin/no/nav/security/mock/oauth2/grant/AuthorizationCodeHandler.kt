@@ -144,7 +144,10 @@ internal class AuthorizationCodeHandler(
         override fun subject(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
-        ): String = oAuth2TokenCallback.resolveSubject(tokenRequest, withLoginSubject(authRequestParams)) ?: login.username
+        ): String =
+            oAuth2TokenCallback
+                .resolveClaims(tokenRequest, withLoginSubject(authRequestParams))["sub"] as? String
+                ?: login.username
 
         override fun typeHeader(
             tokenRequest: TokenRequest,
