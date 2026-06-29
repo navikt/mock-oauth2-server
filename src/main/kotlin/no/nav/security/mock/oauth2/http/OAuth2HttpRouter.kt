@@ -118,7 +118,7 @@ internal class PathRouter(
         runCatching {
             routes.findHandler(request).invokeWith(request, interceptors)
         }.getOrElse {
-            exceptionHandler(request, it)
+            applyResponseInterceptors(request, exceptionHandler(request, it))
         }
 
     override fun toString(): String = routes.toString()
@@ -128,20 +128,21 @@ internal class PathRouter(
     private fun RequestHandler.invokeWith(
         request: OAuth2HttpRequest,
         interceptors: MutableList<Interceptor>,
+    ): OAuth2HttpResponse {
+        val filteredRequest =
+            interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
+                interceptor.intercept(next)
+            }
+        val response = this.invoke(filteredRequest)
+        return applyResponseInterceptors(request, response)
+    }
+
+    private fun applyResponseInterceptors(
+        request: OAuth2HttpRequest,
+        response: OAuth2HttpResponse,
     ): OAuth2HttpResponse =
-        if (interceptors.size > 0) {
-            val filteredRequest =
-                interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
-                    interceptor.intercept(next)
-                }
-            val res = this.invoke(filteredRequest)
-            val filteredResponse =
-                interceptors.filterIsInstance<ResponseInterceptor>().fold(res.copy()) { next, interceptor ->
-                    interceptor.intercept(request, next)
-                }
-            filteredResponse
-        } else {
-            this.invoke(request)
+        interceptors.filterIsInstance<ResponseInterceptor>().fold(response.copy()) { next, interceptor ->
+            interceptor.intercept(request, next)
         }
 
     private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
