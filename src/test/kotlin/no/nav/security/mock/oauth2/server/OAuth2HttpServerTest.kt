@@ -55,14 +55,14 @@ internal class OAuth2HttpServerTest {
     @Test
     fun `Netty server should start and serve requests`() {
         NettyWrapper().start(requestHandler).shouldServeRequests().stop()
-        NettyWrapper().start(port = 1234, requestHandler).shouldServeRequests().stop()
+        NettyWrapper().start(port = 0, requestHandler).shouldServeRequests().stop()
     }
 
     @Test
     fun `Netty server should start and serve requests with generated keystore and HTTPS enabled`() {
         val ssl = Ssl()
         NettyWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
-        NettyWrapper(ssl).start(port = 1234, requestHandler).shouldServeRequests(ssl).stop()
+        NettyWrapper(ssl).start(port = 0, requestHandler).shouldServeRequests(ssl).stop()
     }
 
     @Test
@@ -82,14 +82,14 @@ internal class OAuth2HttpServerTest {
     @Test
     fun `MockWebServer should start and serve requests`() {
         MockWebServerWrapper().start(requestHandler).shouldServeRequests().stop()
-        MockWebServerWrapper().start(port = 1234, requestHandler).shouldServeRequests().stop()
+        MockWebServerWrapper().start(port = 0, requestHandler).shouldServeRequests().stop()
     }
 
     @Test
     fun `MockWebServer should start and serve requests with generated keystore and HTTPS enabled`() {
         val ssl = Ssl()
         MockWebServerWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
-        MockWebServerWrapper(ssl).start(port = 1234, requestHandler).shouldServeRequests(ssl).stop()
+        MockWebServerWrapper(ssl).start(port = 0, requestHandler).shouldServeRequests(ssl).stop()
     }
 
     private fun OAuth2HttpServer.shouldServeRequests(ssl: Ssl? = null) =
