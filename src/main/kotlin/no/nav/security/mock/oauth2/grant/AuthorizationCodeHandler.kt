@@ -134,33 +134,42 @@ internal class AuthorizationCodeHandler(
     ) : AuthRequestAwareOAuth2TokenCallback {
         override fun issuerId(): String = oAuth2TokenCallback.issuerId()
 
+        private fun withLoginSubject(authRequestParams: Map<String, String>): Map<String, String> =
+            if (authRequestParams.containsKey("subject")) {
+                authRequestParams
+            } else {
+                authRequestParams + mapOf("subject" to login.username)
+            }
+
         override fun subject(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
-        ): String = login.username
+        ): String = oAuth2TokenCallback.resolveSubject(tokenRequest, withLoginSubject(authRequestParams)) ?: login.username
 
         override fun typeHeader(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
-        ): String = oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams)
+        ): String = oAuth2TokenCallback.resolveTypeHeader(tokenRequest, withLoginSubject(authRequestParams))
 
         override fun audience(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
-        ): List<String> = oAuth2TokenCallback.resolveAudience(tokenRequest, authRequestParams)
+        ): List<String> = oAuth2TokenCallback.resolveAudience(tokenRequest, withLoginSubject(authRequestParams))
 
         override fun addClaims(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
         ): Map<String, Any> =
-            oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams).toMutableMap().apply {
+            oAuth2TokenCallback.resolveClaims(tokenRequest, withLoginSubject(authRequestParams)).toMutableMap().apply {
                 login.claims?.let {
                     try {
                         jsonMapper
                             .readTree(it)
                             .properties()
                             .forEach { field ->
-                                put(field.key, jsonMapper.readValue(field.value.toString()))
+                                if (!containsKey(field.key)) {
+                                    put(field.key, jsonMapper.readValue(field.value.toString()))
+                                }
                             }
                     } catch (exception: JsonProcessingException) {
                         log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
