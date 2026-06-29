@@ -11,6 +11,7 @@ import no.nav.security.mock.oauth2.http.CorsInterceptor.HeaderNames.ACCESS_CONTR
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.options
+import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
@@ -106,15 +107,14 @@ class CorsHeadersIntegrationTest {
             client
                 .newCall(
                     Request.Builder().post(
-                        url = this.revocationEndpointUrl("default"),
-                        headers = Headers.headersOf("origin", origin),
-                        parameters =
-                            mapOf(
-                                "client_id" to "id",
-                                "client_secret" to "secret",
-                                "token" to "some-token",
-                                "token_type_hint" to "access_token",
-                            ),
+                        this.revocationEndpointUrl("default"),
+                        Headers.headersOf("origin", origin),
+                        mapOf(
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                            "token" to "some-token",
+                            "token_type_hint" to "access_token",
+                        ),
                     ),
                 ).execute()
                 .use {
