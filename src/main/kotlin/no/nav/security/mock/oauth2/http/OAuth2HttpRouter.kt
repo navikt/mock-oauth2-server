@@ -13,6 +13,15 @@ fun interface RequestInterceptor : Interceptor {
     fun intercept(request: OAuth2HttpRequest): OAuth2HttpRequest
 }
 
+/**
+ * Intercepts and optionally transforms an outgoing response.
+ *
+ * Response interceptors are applied to normal responses and are also attempted for
+ * responses produced by the router exception handler.
+ *
+ * If a response interceptor throws while intercepting an exception-handler response,
+ * the interceptor failure is ignored and the original error response is returned.
+ */
 fun interface ResponseInterceptor : Interceptor {
     fun intercept(
         request: OAuth2HttpRequest,
