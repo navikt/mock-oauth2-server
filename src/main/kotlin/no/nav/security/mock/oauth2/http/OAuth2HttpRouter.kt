@@ -116,9 +116,15 @@ internal class PathRouter(
 
     override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse =
         runCatching {
-            routes.findHandler(request).invokeWith(request, interceptors)
-        }.getOrElse {
-            applyResponseInterceptors(request, exceptionHandler(request, it))
+            val handlerResponse = routes.findHandler(request).invokeWith(request, interceptors)
+            applyResponseInterceptors(request, handlerResponse)
+        }.getOrElse { throwable ->
+            val errorResponse = exceptionHandler(request, throwable)
+            runCatching {
+                applyResponseInterceptors(request, errorResponse)
+            }.getOrElse {
+                errorResponse
+            }
         }
 
     override fun toString(): String = routes.toString()
@@ -133,8 +139,7 @@ internal class PathRouter(
             interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
                 interceptor.intercept(next)
             }
-        val response = this.invoke(filteredRequest)
-        return applyResponseInterceptors(request, response)
+        return this.invoke(filteredRequest)
     }
 
     private fun applyResponseInterceptors(
