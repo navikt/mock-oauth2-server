@@ -167,7 +167,7 @@ class OAuth2HttpRequestHandler(
                     )
                 }
             }
-            OAuth2HttpResponse(status = 200, body = "ok")
+            OAuth2HttpResponse(status = 200)
         }
 
     private fun Route.Builder.token() =

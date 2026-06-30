@@ -43,7 +43,10 @@ class RevocationIntegrationTest {
                         "token_type_hint" to "refresh_token",
                     ),
                 )
-            revocationResponse.use { it.code shouldBe 200 }
+            revocationResponse.use {
+                it.code shouldBe 200
+                it.body.string() shouldBe ""
+            }
 
             // after revocation, using the revoked refresh token must return 400 invalid_grant
             client
