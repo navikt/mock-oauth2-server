@@ -11,10 +11,12 @@ import no.nav.security.mock.oauth2.http.CorsInterceptor.HeaderNames.ACCESS_CONTR
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.options
+import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.Headers
+import okhttp3.Request
 import org.junit.jupiter.api.Test
 
 class CorsHeadersIntegrationTest {
@@ -96,6 +98,32 @@ class CorsHeadersIntegrationTest {
             response.code shouldBe 200
             response.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
             response.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
+        }
+    }
+
+    @Test
+    fun `revoke error response should allow origin`() {
+        withMockOAuth2Server {
+            client
+                .newCall(
+                    Request.Builder().post(
+                        this.revocationEndpointUrl("default"),
+                        Headers.headersOf("origin", origin),
+                        mapOf(
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                            "token" to "some-token",
+                            "token_type_hint" to "access_token",
+                        ),
+                    ),
+                ).execute()
+                .use {
+                    it.asClue {
+                        it.code shouldBe 400
+                        it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
+                        it.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
+                    }
+                }
         }
     }
 }

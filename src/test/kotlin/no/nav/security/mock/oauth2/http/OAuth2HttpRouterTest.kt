@@ -111,6 +111,58 @@ internal class OAuth2HttpRouterTest {
     }
 
     @Test
+    fun `response interceptors should be applied when route handler throws and exception handler returns a response`() {
+        val routes =
+            routes {
+                interceptors(
+                    ResponseInterceptor { _, response ->
+                        val headers =
+                            response.headers
+                                .newBuilder()
+                                .add("fromInterceptor", "fromInterceptor")
+                                .build()
+                        response.copy(headers = headers)
+                    },
+                )
+                exceptionHandler { _, _ ->
+                    OAuth2HttpResponse(status = 400, body = "fromExceptionHandler")
+                }
+                get("/boom") {
+                    error("boom")
+                }
+            }
+
+        routes.invoke(get("/boom")).asClue {
+            it.status shouldBe 400
+            it.headers shouldContain ("fromInterceptor" to "fromInterceptor")
+            it.body shouldBe "fromExceptionHandler"
+        }
+    }
+
+    @Test
+    fun `exception handler response should still be returned when response interceptor throws in error path`() {
+        val routes =
+            routes {
+                interceptors(
+                    ResponseInterceptor { _, _ ->
+                        error("interceptor boom")
+                    },
+                )
+                exceptionHandler { _, _ ->
+                    OAuth2HttpResponse(status = 400, body = "fromExceptionHandler")
+                }
+                get("/boom") {
+                    error("boom")
+                }
+            }
+
+        routes.invoke(get("/boom")).asClue {
+            it.status shouldBe 400
+            it.body shouldBe "fromExceptionHandler"
+        }
+    }
+
+    @Test
     fun `routes with wildcard should be matched`() {
         val routes =
             routes(

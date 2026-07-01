@@ -13,6 +13,15 @@ fun interface RequestInterceptor : Interceptor {
     fun intercept(request: OAuth2HttpRequest): OAuth2HttpRequest
 }
 
+/**
+ * Intercepts and optionally transforms an outgoing response.
+ *
+ * Response interceptors are applied to normal responses and are also attempted for
+ * responses produced by the router exception handler.
+ *
+ * If a response interceptor throws while intercepting an exception-handler response,
+ * the interceptor failure is ignored and the original error response is returned.
+ */
 fun interface ResponseInterceptor : Interceptor {
     fun intercept(
         request: OAuth2HttpRequest,
@@ -116,9 +125,15 @@ internal class PathRouter(
 
     override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse =
         runCatching {
-            routes.findHandler(request).invokeWith(request, interceptors)
-        }.getOrElse {
-            exceptionHandler(request, it)
+            val handlerResponse = routes.findHandler(request).invokeWith(request, interceptors)
+            applyResponseInterceptors(request, handlerResponse)
+        }.getOrElse { throwable ->
+            val errorResponse = exceptionHandler(request, throwable)
+            runCatching {
+                applyResponseInterceptors(request, errorResponse)
+            }.getOrElse {
+                errorResponse
+            }
         }
 
     override fun toString(): String = routes.toString()
@@ -128,20 +143,20 @@ internal class PathRouter(
     private fun RequestHandler.invokeWith(
         request: OAuth2HttpRequest,
         interceptors: MutableList<Interceptor>,
+    ): OAuth2HttpResponse {
+        val filteredRequest =
+            interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
+                interceptor.intercept(next)
+            }
+        return this.invoke(filteredRequest)
+    }
+
+    private fun applyResponseInterceptors(
+        request: OAuth2HttpRequest,
+        response: OAuth2HttpResponse,
     ): OAuth2HttpResponse =
-        if (interceptors.size > 0) {
-            val filteredRequest =
-                interceptors.filterIsInstance<RequestInterceptor>().fold(request) { next, interceptor ->
-                    interceptor.intercept(next)
-                }
-            val res = this.invoke(filteredRequest)
-            val filteredResponse =
-                interceptors.filterIsInstance<ResponseInterceptor>().fold(res.copy()) { next, interceptor ->
-                    interceptor.intercept(request, next)
-                }
-            filteredResponse
-        } else {
-            this.invoke(request)
+        interceptors.filterIsInstance<ResponseInterceptor>().fold(response.copy()) { next, interceptor ->
+            interceptor.intercept(request, next)
         }
 
     private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
