@@ -18,9 +18,12 @@ import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
+import no.nav.security.mock.oauth2.token.AuthRequestAwareOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
-import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
+import no.nav.security.mock.oauth2.token.resolveAudience
+import no.nav.security.mock.oauth2.token.resolveClaims
+import no.nav.security.mock.oauth2.token.resolveTypeHeader
 import okhttp3.HttpUrl
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
@@ -93,10 +96,17 @@ internal class AuthorizationCodeHandler(
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
+
+        val authRequestParams: Map<String, String> =
+            authenticationRequest
+                .toHTTPRequest()
+                .queryParameters
+                .mapValues { it.value.joinToString(separator = " ") }
+
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce)
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, authRequestParams)
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, authRequestParams)
+        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, authRequestParams)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -121,39 +131,48 @@ internal class AuthorizationCodeHandler(
     private class LoginOAuth2TokenCallback(
         val login: Login,
         val oAuth2TokenCallback: OAuth2TokenCallback,
-    ) : OAuth2TokenCallback {
-        private val resolvedDelegate: OAuth2TokenCallback =
-            when (oAuth2TokenCallback) {
-                is RequestMappingTokenCallback ->
-                    oAuth2TokenCallback.withExtraMatchParams(mapOf(RequestMappingTokenCallback.SUBJECT_PARAM to login.username))
-                else -> oAuth2TokenCallback
+    ) : AuthRequestAwareOAuth2TokenCallback {
+        override fun issuerId(): String = oAuth2TokenCallback.issuerId()
+
+        private fun withLoginSubject(authRequestParams: Map<String, String>): Map<String, String> =
+            if (authRequestParams.containsKey("subject")) {
+                authRequestParams
+            } else {
+                authRequestParams + mapOf("subject" to login.username)
             }
 
-        private val subjectResolver: (TokenRequest) -> String =
-            when (oAuth2TokenCallback) {
-                is RequestMappingTokenCallback -> { req -> resolvedDelegate.subject(req) ?: login.username }
-                else -> { _ -> login.username }
-            }
+        override fun subject(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): String =
+            oAuth2TokenCallback
+                .resolveClaims(tokenRequest, withLoginSubject(authRequestParams))["sub"] as? String
+                ?: login.username
 
-        override fun issuerId(): String = resolvedDelegate.issuerId()
+        override fun typeHeader(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): String = oAuth2TokenCallback.resolveTypeHeader(tokenRequest, withLoginSubject(authRequestParams))
 
-        override fun subject(tokenRequest: TokenRequest): String = subjectResolver(tokenRequest)
+        override fun audience(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): List<String> = oAuth2TokenCallback.resolveAudience(tokenRequest, withLoginSubject(authRequestParams))
 
-        override fun typeHeader(tokenRequest: TokenRequest): String = resolvedDelegate.typeHeader(tokenRequest)
-
-        override fun audience(tokenRequest: TokenRequest): List<String> = resolvedDelegate.audience(tokenRequest)
-
-        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-            resolvedDelegate.addClaims(tokenRequest).toMutableMap().apply {
-                // Claim precedence: mapping/callback claims win over login-page claims.
-                // login.claims can add new claims but cannot overwrite claims already set by the mapping.
+        override fun addClaims(
+            tokenRequest: TokenRequest,
+            authRequestParams: Map<String, String>,
+        ): Map<String, Any> =
+            oAuth2TokenCallback.resolveClaims(tokenRequest, withLoginSubject(authRequestParams)).toMutableMap().apply {
                 login.claims?.let {
                     try {
                         jsonMapper
                             .readTree(it)
                             .properties()
                             .forEach { field ->
-                                putIfAbsent(field.key, jsonMapper.readValue(field.value.toString()))
+                                if (!containsKey(field.key)) {
+                                    put(field.key, jsonMapper.readValue(field.value.toString()))
+                                }
                             }
                     } catch (exception: JsonProcessingException) {
                         log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
@@ -161,6 +180,6 @@ internal class AuthorizationCodeHandler(
                 }
             }
 
-        override fun tokenExpiry(): Long = resolvedDelegate.tokenExpiry()
+        override fun tokenExpiry(): Long = oAuth2TokenCallback.tokenExpiry()
     }
 }
