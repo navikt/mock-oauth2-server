@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.e2e
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nimbusds.oauth2.sdk.GrantType
 import io.kotest.assertions.asClue
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -246,6 +247,62 @@ class RefreshTokenGrantIntegrationTest {
         idToken.claims["email"] shouldBe "anna@example.com"
 
         server.shutdown()
+    }
+
+    @Test
+    fun `refresh_token grant should preserve interactive login subject and claims from authorization code flow`() {
+        withMockOAuth2Server {
+            val issuerId = "idprovider"
+            val initialSubject = "interactive-user"
+
+            val authorizationCode =
+                client
+                    .post(
+                        this.authorizationEndpointUrl("default").authenticationRequest(),
+                        mapOf(
+                            "username" to initialSubject,
+                            "claims" to jacksonObjectMapper().writeValueAsString(mapOf("claim1" to "value1")),
+                        ),
+                    ).let { authResponse ->
+                        authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                    }
+
+            authorizationCode.shouldNotBeNull()
+
+            val tokenResponseBeforeRefresh =
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                            "code" to authorizationCode,
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                            "redirect_uri" to "http://something",
+                        ),
+                    ).toTokenResponse()
+
+            tokenResponseBeforeRefresh.idToken?.subject shouldBe initialSubject
+            tokenResponseBeforeRefresh.idToken?.claims?.get("claim1") shouldBe "value1"
+
+            val refreshToken = checkNotNull(tokenResponseBeforeRefresh.refreshToken)
+            val refreshTokenResponse =
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.REFRESH_TOKEN.value,
+                            "refresh_token" to refreshToken,
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                        ),
+                    ).toTokenResponse()
+
+            refreshTokenResponse.idToken?.subject shouldBe initialSubject
+            refreshTokenResponse.accessToken?.subject shouldBe initialSubject
+            refreshTokenResponse.idToken?.claims?.get("claim1") shouldBe "value1"
+            refreshTokenResponse.accessToken?.claims?.get("claim1") shouldBe "value1"
+        }
     }
 
     @Test
