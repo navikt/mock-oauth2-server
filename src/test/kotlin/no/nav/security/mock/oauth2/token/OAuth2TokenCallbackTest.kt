@@ -203,6 +203,24 @@ internal class OAuth2TokenCallbackTest {
         }
 
         @Test
+        fun `token request with aud as string in requestmapping should return single-item audience list`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "client_credentials",
+                                claims = mapOf("sub" to "subByAudienceString", "aud" to "audience-as-string"),
+                            ),
+                        ),
+                )
+
+            callback.audience(clientCredentialsRequest()) shouldBe listOf("audience-as-string")
+        }
+
+        @Test
         fun `token request with custom parameters in token request should include claims with placeholder names`() {
             val request =
                 clientCredentialsRequest(
