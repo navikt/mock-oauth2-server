@@ -1,6 +1,5 @@
 package no.nav.security.mock.oauth2.token
 
-import com.nimbusds.oauth2.sdk.TokenRequest
 import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.maps.shouldContainAll
@@ -218,6 +217,35 @@ internal class OAuth2TokenCallbackTest {
                 )
 
             callback.audience(clientCredentialsRequest()) shouldBe listOf("audience-as-string")
+        }
+
+        @Test
+        fun `invalid regex in requestmapping should not throw and exact-string matching should still apply`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = "public-client[",
+                                claims = mapOf("sub" to "matched-by-exact-string"),
+                            ),
+                        ),
+                )
+            val request =
+                OAuth2HttpRequest(
+                    headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                    method = "POST",
+                    originalUrl = "http://localhost/token".toHttpUrl(),
+                    body =
+                        "grant_type=authorization_code&" +
+                            "client_id=public-client[&" +
+                            "code=code-123&" +
+                            "redirect_uri=http://localhost/callback",
+                ).asNimbusTokenRequest()
+
+            callback.subject(request) shouldBe "matched-by-exact-string"
         }
 
         @Test
