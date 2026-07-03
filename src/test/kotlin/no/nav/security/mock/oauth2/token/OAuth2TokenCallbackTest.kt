@@ -5,7 +5,10 @@ import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.maps.shouldContainAll
 import io.kotest.matchers.maps.shouldNotContainKey
 import io.kotest.matchers.shouldBe
+import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.testutils.nimbusTokenRequest
+import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
@@ -133,6 +136,34 @@ internal class OAuth2TokenCallbackTest {
             assertSoftly {
                 callback.subject(requestWithBasicAuth) shouldBe "subByClientId"
                 callback.audience(requestWithBasicAuth) shouldBe listOf("audByClientId")
+            }
+        }
+
+        @Test
+        fun `token request should match requestmapping on client_id when clientAuthentication is absent and clientID is present`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = "public-client",
+                                claims = mapOf("sub" to "subByClientIdFallback", "aud" to listOf("audByClientIdFallback")),
+                            ),
+                        ),
+                )
+            val requestWithoutClientAuthentication =
+                OAuth2HttpRequest(
+                    headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                    method = "POST",
+                    originalUrl = "http://localhost/token".toHttpUrl(),
+                    body = "grant_type=client_credentials&client_id=public-client",
+                ).asNimbusTokenRequest()
+
+            assertSoftly {
+                callback.subject(requestWithoutClientAuthentication) shouldBe "subByClientIdFallback"
+                callback.audience(requestWithoutClientAuthentication) shouldBe listOf("audByClientIdFallback")
             }
         }
 
@@ -292,6 +323,28 @@ internal class OAuth2TokenCallbackTest {
                         "sub" to "anna-uuid",
                         "email" to "anna@example.com",
                     )
+            }
+        }
+
+        @Test
+        fun `stored auth request params take precedence over token body params for template substitution`() {
+            val tokenRequest = authCodeRequest("login_hint" to "token-body@example.com")
+            val authRequestParams = mapOf("login_hint" to "auth-request@example.com")
+            val callbackWithTemplate =
+                RequestMappingTokenCallback(
+                    issuerId = "test-issuer",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "authorization_code",
+                                claims = mapOf("email" to "\${login_hint}"),
+                            ),
+                        ),
+                )
+
+            callbackWithTemplate.addClaims(tokenRequest, authRequestParams).asClue {
+                it shouldContainAll mapOf("email" to "auth-request@example.com")
             }
         }
 
