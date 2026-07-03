@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.token
 
+import com.nimbusds.oauth2.sdk.TokenRequest
 import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.maps.shouldContainAll
@@ -158,7 +159,11 @@ internal class OAuth2TokenCallbackTest {
                     headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
                     method = "POST",
                     originalUrl = "http://localhost/token".toHttpUrl(),
-                    body = "grant_type=client_credentials&client_id=public-client",
+                    body =
+                        "grant_type=authorization_code&" +
+                            "client_id=public-client&" +
+                            "code=code-123&" +
+                            "redirect_uri=http://localhost/callback",
                 ).asNimbusTokenRequest()
 
             assertSoftly {
