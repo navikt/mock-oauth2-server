@@ -243,6 +243,13 @@ data class RequestMapping(
     val claims: Map<String, Any> = emptyMap(),
     val typeHeader: String = JOSEObjectType.JWT.type,
 ) {
+    private val matchRegex: Regex? =
+        if (match == "*") {
+            null
+        } else {
+            runCatching { match.toRegex() }.getOrNull()
+        }
+
     /**
      * Checks whether this mapping matches the given token request.
      *
@@ -276,7 +283,7 @@ data class RequestMapping(
                     emptyList()
                 }
         return effectiveValues.any {
-            match == "*" || match == it || match.toRegex().matchEntire(it) != null
+            match == "*" || match == it || matchRegex?.matchEntire(it) != null
         }
     }
 }
