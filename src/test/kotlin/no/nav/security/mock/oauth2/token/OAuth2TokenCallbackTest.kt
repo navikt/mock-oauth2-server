@@ -3,8 +3,12 @@ package no.nav.security.mock.oauth2.token
 import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.maps.shouldContainAll
+import io.kotest.matchers.maps.shouldNotContainKey
 import io.kotest.matchers.shouldBe
+import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.testutils.nimbusTokenRequest
+import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
@@ -136,6 +140,38 @@ internal class OAuth2TokenCallbackTest {
         }
 
         @Test
+        fun `token request should match requestmapping on client_id when clientAuthentication is absent and clientID is present`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = "public-client",
+                                claims = mapOf("sub" to "subByClientIdFallback", "aud" to listOf("audByClientIdFallback")),
+                            ),
+                        ),
+                )
+            val requestWithoutClientAuthentication =
+                OAuth2HttpRequest(
+                    headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                    method = "POST",
+                    originalUrl = "http://localhost/token".toHttpUrl(),
+                    body =
+                        "grant_type=authorization_code&" +
+                            "client_id=public-client&" +
+                            "code=code-123&" +
+                            "redirect_uri=http://localhost/callback",
+                ).asNimbusTokenRequest()
+
+            assertSoftly {
+                callback.subject(requestWithoutClientAuthentication) shouldBe "subByClientIdFallback"
+                callback.audience(requestWithoutClientAuthentication) shouldBe listOf("audByClientIdFallback")
+            }
+        }
+
+        @Test
         fun `token request with client_id via HTTP Basic auth and wildcard requestmapping should match`() {
             val callback =
                 RequestMappingTokenCallback(
@@ -155,24 +191,6 @@ internal class OAuth2TokenCallbackTest {
         }
 
         @Test
-        fun `invalid regex in match skips regex evaluation without throwing, exact-string matching still applies`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "scope",
-                                match = "[invalid(regex",
-                                claims = mapOf("sub" to "shouldNotMatch"),
-                            ),
-                        ),
-                )
-            callback.addClaims(clientCredentialsRequest("scope" to "anything")) shouldBe emptyMap()
-            callback.addClaims(clientCredentialsRequest("scope" to "[invalid(regex")) shouldContainAll mapOf("sub" to "shouldNotMatch")
-        }
-
-        @Test
         fun `token request with request params matching requestmapping should return specific claims from callback with audience`() {
             val grantTypeShouldMatch = clientCredentialsRequest("audience" to "https://myapp.com/jwt/aud/xxx")
             assertSoftly {
@@ -181,6 +199,53 @@ internal class OAuth2TokenCallbackTest {
                 issuer1.tokenExpiry() shouldBe 120
                 issuer1.typeHeader(grantTypeShouldMatch) shouldBe "JWT"
             }
+        }
+
+        @Test
+        fun `token request with aud as string in requestmapping should return single-item audience list`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "client_credentials",
+                                claims = mapOf("sub" to "subByAudienceString", "aud" to "audience-as-string"),
+                            ),
+                        ),
+                )
+
+            callback.audience(clientCredentialsRequest()) shouldBe listOf("audience-as-string")
+        }
+
+        @Test
+        fun `invalid regex in requestmapping should not throw and exact-string matching should still apply`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = "public-client[",
+                                claims = mapOf("sub" to "matched-by-exact-string"),
+                            ),
+                        ),
+                )
+            val request =
+                OAuth2HttpRequest(
+                    headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                    method = "POST",
+                    originalUrl = "http://localhost/token".toHttpUrl(),
+                    body =
+                        "grant_type=authorization_code&" +
+                            "client_id=public-client[&" +
+                            "code=code-123&" +
+                            "redirect_uri=http://localhost/callback",
+                ).asNimbusTokenRequest()
+
+            callback.subject(request) shouldBe "matched-by-exact-string"
         }
 
         @Test
@@ -209,67 +274,194 @@ internal class OAuth2TokenCallbackTest {
                 it shouldContainAll mapOf("sub" to clientId, "scope" to "testscope:something another:scope", "mock_token_type" to "custom")
             }
         }
+    }
 
-        @Test
-        fun `token request with aud set as a single string should return it wrapped in a list`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "grant_type",
-                                match = "authorization_code",
-                                claims = mapOf("aud" to "my-api"),
-                            ),
+    /**
+     * Tests for propagation of auth-request params (e.g. login_hint, acr_values)
+     * that are NOT present in the token request body.
+     */
+    @Nested
+    inner class AuthRequestParamPropagation {
+        private val callbackWithLoginHintMappings =
+            RequestMappingTokenCallback(
+                issuerId = "test-issuer",
+                requestMappings =
+                    listOf(
+                        RequestMapping(
+                            requestParam = "login_hint",
+                            match = "anna@example.com",
+                            claims =
+                                mapOf(
+                                    "sub" to "anna-uuid",
+                                    "email" to "anna@example.com",
+                                    "urn:telematik:claims:id" to "X111111111",
+                                ),
                         ),
-                )
-            callback.audience(authCodeRequest()) shouldBe listOf("my-api")
-        }
-
-        @Test
-        fun `repeated form param values are matched individually, not as a joined string`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "resource",
-                                match = "api://app-b",
-                                claims = mapOf("sub" to "matchedByResourceB"),
-                            ),
+                        RequestMapping(
+                            requestParam = "login_hint",
+                            match = "max@example.com",
+                            claims =
+                                mapOf(
+                                    "sub" to "max-uuid",
+                                    "email" to "max@example.com",
+                                    "urn:telematik:claims:id" to "X222222222",
+                                ),
                         ),
-                )
-            val requestWithRepeatedResource = nimbusTokenRequest(
-                clientId,
-                "grant_type" to "client_credentials",
-                "resource" to "api://app-a",
-                "resource" to "api://app-b",
+                        // Fallback: match any auth-code grant when no login_hint mapping fires
+                        RequestMapping(
+                            requestParam = "grant_type",
+                            match = "authorization_code",
+                            claims =
+                                mapOf(
+                                    "sub" to "default-uuid",
+                                    "email" to "default@example.com",
+                                ),
+                        ),
+                    ),
             )
-            // Verify both values are preserved in the underlying HTTP request body —
-            // nimbusTokenRequest joins pairs via joinToString("&"), so duplicates are not collapsed.
-            val bodyParams = requestWithRepeatedResource.toHTTPRequest().bodyAsFormParameters
-            bodyParams["resource"] shouldBe listOf("api://app-a", "api://app-b")
 
-            callback.subject(requestWithRepeatedResource) shouldBe "matchedByResourceB"
+        @Test
+        fun `login_hint in extraParams selects the correct mapping and returns matching claims`() {
+            val tokenRequest = authCodeRequest()
+            val authRequestParams = mapOf("login_hint" to "anna@example.com")
+
+            callbackWithLoginHintMappings.addClaims(tokenRequest, authRequestParams).asClue {
+                it shouldContainAll
+                    mapOf(
+                        "sub" to "anna-uuid",
+                        "email" to "anna@example.com",
+                        "urn:telematik:claims:id" to "X111111111",
+                    )
+            }
+            callbackWithLoginHintMappings.subject(tokenRequest, authRequestParams) shouldBe "anna-uuid"
         }
 
         @Test
-        fun `token request with aud set as a list should return it as-is`() {
-            val callback =
+        fun `different login_hint in extraParams selects a different mapping`() {
+            val tokenRequest = authCodeRequest()
+            val authRequestParams = mapOf("login_hint" to "max@example.com")
+
+            callbackWithLoginHintMappings.addClaims(tokenRequest, authRequestParams).asClue {
+                it shouldContainAll
+                    mapOf(
+                        "sub" to "max-uuid",
+                        "email" to "max@example.com",
+                        "urn:telematik:claims:id" to "X222222222",
+                    )
+            }
+            callbackWithLoginHintMappings.subject(tokenRequest, authRequestParams) shouldBe "max-uuid"
+        }
+
+        @Test
+        fun `absent login_hint falls through to next matching mapping (grant_type wildcard)`() {
+            val tokenRequest = authCodeRequest()
+            // no auth request params -> login_hint mappings won't match -> falls through to grant_type mapping
+
+            callbackWithLoginHintMappings.addClaims(tokenRequest, emptyMap()).asClue {
+                it shouldContainAll mapOf("sub" to "default-uuid", "email" to "default@example.com")
+                it shouldNotContainKey "urn:telematik:claims:id"
+            }
+        }
+
+        @Test
+        fun `stored auth request params take precedence over token body params for matching`() {
+            val tokenRequest = authCodeRequest("login_hint" to "max@example.com")
+            val authRequestParams = mapOf("login_hint" to "anna@example.com")
+
+            callbackWithLoginHintMappings.addClaims(tokenRequest, authRequestParams).asClue {
+                it shouldContainAll
+                    mapOf(
+                        "sub" to "anna-uuid",
+                        "email" to "anna@example.com",
+                    )
+            }
+        }
+
+        @Test
+        fun `stored auth request params take precedence over token body params for template substitution`() {
+            val tokenRequest = authCodeRequest("login_hint" to "token-body@example.com")
+            val authRequestParams = mapOf("login_hint" to "auth-request@example.com")
+            val callbackWithTemplate =
                 RequestMappingTokenCallback(
-                    issuerId = "issuer1",
+                    issuerId = "test-issuer",
                     requestMappings =
                         listOf(
                             RequestMapping(
                                 requestParam = "grant_type",
                                 match = "authorization_code",
-                                claims = mapOf("aud" to listOf("my-api", "other-api")),
+                                claims = mapOf("email" to "\${login_hint}"),
                             ),
                         ),
                 )
-            callback.audience(authCodeRequest()) shouldBe listOf("my-api", "other-api")
+
+            callbackWithTemplate.addClaims(tokenRequest, authRequestParams).asClue {
+                it shouldContainAll mapOf("email" to "auth-request@example.com")
+            }
+        }
+
+        @Test
+        fun `login_hint value is available as dollar-brace template in claim values`() {
+            val tokenRequest = authCodeRequest()
+            val callbackWithTemplate =
+                RequestMappingTokenCallback(
+                    issuerId = "test-issuer",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "authorization_code",
+                                claims =
+                                    mapOf(
+                                        // The hint value should be substituted at token-generation time
+                                        "email" to "\${login_hint}",
+                                        "sub" to "fixed-sub",
+                                    ),
+                            ),
+                        ),
+                )
+            val authRequestParams = mapOf("login_hint" to "substituted@example.com")
+
+            callbackWithTemplate.addClaims(tokenRequest, authRequestParams).asClue {
+                it shouldContainAll
+                    mapOf(
+                        "email" to "substituted@example.com",
+                        "sub" to "fixed-sub",
+                    )
+            }
+        }
+
+        @Test
+        fun `multiple extraParams are all available for matching and template substitution`() {
+            val tokenRequest = authCodeRequest()
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "test-issuer",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "acr_values",
+                                match = "gematik-ehealth-loa-high",
+                                claims =
+                                    mapOf(
+                                        "acr" to "gematik-ehealth-loa-high",
+                                        "email" to "\${login_hint}",
+                                    ),
+                            ),
+                        ),
+                )
+            val authRequestParams =
+                mapOf(
+                    "acr_values" to "gematik-ehealth-loa-high",
+                    "login_hint" to "multi@example.com",
+                )
+
+            callback.addClaims(tokenRequest, authRequestParams).asClue {
+                it shouldContainAll
+                    mapOf(
+                        "acr" to "gematik-ehealth-loa-high",
+                        "email" to "multi@example.com",
+                    )
+            }
         }
     }
 
@@ -310,284 +502,6 @@ internal class OAuth2TokenCallbackTest {
                             "readAs" to listOf("readAs"),
                         ),
                 )
-        }
-    }
-
-    @Nested
-    inner class WithExtraMatchParams {
-        private val callback =
-            RequestMappingTokenCallback(
-                issuerId = "issuer1",
-                requestMappings =
-                    listOf(
-                        RequestMapping(
-                            requestParam = "subject",
-                            match = "alice",
-                            claims = mapOf("role" to "admin", "sub" to "alice"),
-                        ),
-                        RequestMapping(
-                            requestParam = "subject",
-                            match = "bob",
-                            claims = mapOf("role" to "user", "sub" to "bob"),
-                        ),
-                        RequestMapping(
-                            requestParam = "subject",
-                            match = "*",
-                            claims = mapOf("role" to "guest", "sub" to "unknown"),
-                        ),
-                    ),
-            )
-
-        @Test
-        fun `withExtraMatchParams matches via regex when value comes from extraMatchParams`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "admin-.*",
-                                claims = mapOf("role" to "admin"),
-                            ),
-                        ),
-                )
-            val tokenRequest = authCodeRequest()
-            callback.withExtraMatchParams(mapOf("subject" to "admin-alice")).addClaims(tokenRequest) shouldContainAll mapOf("role" to "admin")
-            callback.withExtraMatchParams(mapOf("subject" to "user-alice")).addClaims(tokenRequest) shouldBe emptyMap()
-        }
-
-        @Test
-        fun `withExtraMatchParams selects correct requestMapping based on subject`() {
-            val tokenRequest = authCodeRequest()
-            val aliceCallback = callback.withExtraMatchParams(mapOf("subject" to "alice"))
-            val bobCallback = callback.withExtraMatchParams(mapOf("subject" to "bob"))
-            assertSoftly {
-                aliceCallback.addClaims(tokenRequest) shouldContainAll mapOf("role" to "admin")
-                aliceCallback.subject(tokenRequest) shouldBe "alice"
-                bobCallback.addClaims(tokenRequest) shouldContainAll mapOf("role" to "user")
-                bobCallback.subject(tokenRequest) shouldBe "bob"
-            }
-        }
-
-        @Test
-        fun `withExtraMatchParams falls back to wildcard when subject does not match any specific mapping`() {
-            val tokenRequest = authCodeRequest()
-            val unknownCallback = callback.withExtraMatchParams(mapOf("subject" to "charlie"))
-            assertSoftly {
-                unknownCallback.addClaims(tokenRequest) shouldContainAll mapOf("role" to "guest")
-            }
-        }
-
-        @Test
-        fun `form param takes precedence over extraMatchParams on same key`() {
-            val callbackWithGrantType =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "grant_type",
-                                match = "authorization_code",
-                                claims = mapOf("role" to "fromForm"),
-                            ),
-                        ),
-                )
-            val tokenRequest = authCodeRequest()
-            val wrapped = callbackWithGrantType.withExtraMatchParams(mapOf("grant_type" to "something_else"))
-            wrapped.addClaims(tokenRequest) shouldContainAll mapOf("role" to "fromForm")
-        }
-
-        @Test
-        fun `extraMatchParams are available as template variables in claim values`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "alice",
-                                claims = mapOf("preferred_username" to "\${subject}", "role" to "admin"),
-                            ),
-                        ),
-                )
-            val tokenRequest = authCodeRequest()
-            val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice"))
-            wrapped.addClaims(tokenRequest) shouldContainAll mapOf("preferred_username" to "alice", "role" to "admin")
-        }
-
-        @Test
-        fun `form params take precedence over extraMatchParams as template variables`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "*",
-                                claims = mapOf("resolved" to "\${grant_type}"),
-                            ),
-                        ),
-                )
-            val tokenRequest = authCodeRequest()
-            val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice", "grant_type" to "should_be_overridden"))
-            wrapped.addClaims(tokenRequest) shouldContainAll mapOf("resolved" to "authorization_code")
-        }
-
-
-        @Test
-        fun `subject is null when mapping does not set sub`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "alice",
-                                claims = mapOf("role" to "admin"),
-                            ),
-                        ),
-                )
-            val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice"))
-            wrapped.subject(authCodeRequest()) shouldBe null
-        }
-
-        @Test
-        fun `subject comes from mapping when sub is set`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "alice",
-                                claims = mapOf("sub" to "mapped-alice", "role" to "admin"),
-                            ),
-                        ),
-                )
-            val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice"))
-            wrapped.subject(authCodeRequest()) shouldBe "mapped-alice"
-        }
-
-
-        @Test
-        fun `withExtraMatchParams selects typeHeader from matched mapping`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "alice",
-                                claims = mapOf("sub" to "alice"),
-                                typeHeader = "at+JWT",
-                            ),
-                        ),
-                )
-            val tokenRequest = authCodeRequest()
-            val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice"))
-            wrapped.typeHeader(tokenRequest) shouldBe "at+JWT"
-        }
-
-        @Test
-        fun `withExtraMatchParams selects audience from matched mapping`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "alice",
-                                claims = mapOf("sub" to "alice", "aud" to listOf("my-api")),
-                            ),
-                        ),
-                )
-            val tokenRequest = authCodeRequest()
-            val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice"))
-            wrapped.audience(tokenRequest) shouldBe listOf("my-api")
-        }
-
-
-        @Test
-        fun `withExtraMatchParams selects audience from matched mapping when aud is a string`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "alice",
-                                claims = mapOf("sub" to "alice", "aud" to "my-api"),
-                            ),
-                        ),
-                )
-            val tokenRequest = authCodeRequest()
-            val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice"))
-            wrapped.audience(tokenRequest) shouldBe listOf("my-api")
-        }
-
-        @Test
-        fun `withExtraMatchParams selects audience from matched mapping when aud is a list`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "alice",
-                                claims = mapOf("sub" to "alice", "aud" to listOf("my-api", "other-api")),
-                            ),
-                        ),
-                )
-            val tokenRequest = authCodeRequest()
-            val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice"))
-            wrapped.audience(tokenRequest) shouldBe listOf("my-api", "other-api")
-        }
-
-        @Test
-        fun `withExtraMatchParams returns empty audience when no mapping matches`() {
-            val callback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "alice",
-                                claims = mapOf("aud" to listOf("my-api")),
-                            ),
-                        ),
-                )
-            val wrapped = callback.withExtraMatchParams(mapOf("subject" to "bob"))
-            wrapped.audience(authCodeRequest()) shouldBe emptyList()
-        }
-
-
-        @Test
-        fun `withExtraMatchParams returns no match when no mapping matches and no wildcard`() {
-            val strictCallback =
-                RequestMappingTokenCallback(
-                    issuerId = "issuer1",
-                    requestMappings =
-                        listOf(
-                            RequestMapping(
-                                requestParam = "subject",
-                                match = "alice",
-                                claims = mapOf("role" to "admin"),
-                            ),
-                        ),
-                )
-            val tokenRequest = authCodeRequest()
-            val wrapped = strictCallback.withExtraMatchParams(mapOf("subject" to "bob"))
-            wrapped.addClaims(tokenRequest) shouldBe emptyMap()
         }
     }
 

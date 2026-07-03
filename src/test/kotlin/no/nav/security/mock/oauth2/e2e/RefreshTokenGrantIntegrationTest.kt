@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.e2e
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nimbusds.oauth2.sdk.GrantType
 import io.kotest.assertions.asClue
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -12,7 +13,9 @@ import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
 import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
+import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.client
+import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.shouldBeValidFor
 import no.nav.security.mock.oauth2.testutils.subject
@@ -20,6 +23,8 @@ import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.testutils.verifyWith
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
+import no.nav.security.mock.oauth2.token.RequestMapping
+import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -127,9 +132,205 @@ class RefreshTokenGrantIntegrationTest {
     }
 
     @Test
+    fun `rotated refresh token should persist enqueued callback when override is applied`() {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = true)) {
+            val issuerId = "idprovider"
+
+            val initialResponse = this.runAuthCodeFlow(issuerId, "initial-subject")
+            val firstRefreshToken = checkNotNull(initialResponse.refreshToken)
+
+            val enqueuedSubject = "queued-subject"
+            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = enqueuedSubject))
+
+            val firstRefreshResponse =
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.REFRESH_TOKEN.value,
+                            "refresh_token" to firstRefreshToken,
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                        ),
+                    ).toTokenResponse()
+
+            firstRefreshResponse.idToken!!.subject shouldBe enqueuedSubject
+
+            val secondRefreshToken = checkNotNull(firstRefreshResponse.refreshToken)
+            val secondRefreshResponse =
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.REFRESH_TOKEN.value,
+                            "refresh_token" to secondRefreshToken,
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                        ),
+                    ).toTokenResponse()
+
+            secondRefreshResponse.idToken!!.subject shouldBe enqueuedSubject
+        }
+    }
+
+    @Test
+    fun `refresh_token grant should reuse auth request params captured in authorization code flow`() {
+        val issuerId = "refresh-propagation-issuer"
+        val server =
+            MockOAuth2Server(
+                OAuth2Config(
+                    tokenCallbacks =
+                        setOf(
+                            RequestMappingTokenCallback(
+                                issuerId = issuerId,
+                                requestMappings =
+                                    listOf(
+                                        RequestMapping(
+                                            requestParam = "login_hint",
+                                            match = "anna@example.com",
+                                            claims =
+                                                mapOf(
+                                                    "sub" to "from-login-hint",
+                                                    "email" to "${'$'}{login_hint}",
+                                                ),
+                                        ),
+                                    ),
+                            ),
+                        ),
+                ),
+            ).apply { start() }
+
+        val authorizationCode =
+            client
+                .get(
+                    server.authorizationEndpointUrl(issuerId).authenticationRequest(
+                        clientId = "my-app",
+                        extraQueryParams = mapOf("login_hint" to "anna@example.com"),
+                    ),
+                ).use {
+                    it.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
+
+        authorizationCode.shouldNotBeNull()
+
+        val tokenResponseBeforeRefresh =
+            client
+                .tokenRequest(
+                    server.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                        "code" to authorizationCode,
+                        "client_id" to "my-app",
+                        "redirect_uri" to "http://defaultRedirectUri",
+                    ),
+                ).toTokenResponse()
+
+        val refreshToken = checkNotNull(tokenResponseBeforeRefresh.refreshToken)
+
+        val refreshTokenResponse =
+            client
+                .tokenRequest(
+                    server.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to refreshToken,
+                        "client_id" to "my-app",
+                        "client_secret" to "secret",
+                        // conflicting token-body param should not override stored auth request params
+                        "login_hint" to "max@example.com",
+                    ),
+                ).toTokenResponse()
+
+        val idToken = refreshTokenResponse.idToken
+        idToken.shouldNotBeNull()
+        idToken.subject shouldBe "from-login-hint"
+        idToken.claims["email"] shouldBe "anna@example.com"
+
+        server.shutdown()
+    }
+
+    @Test
+    fun `refresh_token grant should preserve interactive login subject and claims from authorization code flow`() {
+        withMockOAuth2Server {
+            val issuerId = "idprovider"
+            val initialSubject = "interactive-user"
+
+            val authorizationCode =
+                client
+                    .post(
+                        this.authorizationEndpointUrl("default").authenticationRequest(),
+                        mapOf(
+                            "username" to initialSubject,
+                            "claims" to jacksonObjectMapper().writeValueAsString(mapOf("claim1" to "value1")),
+                        ),
+                    ).let { authResponse ->
+                        authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                    }
+
+            authorizationCode.shouldNotBeNull()
+
+            val tokenResponseBeforeRefresh =
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                            "code" to authorizationCode,
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                            "redirect_uri" to "http://something",
+                        ),
+                    ).toTokenResponse()
+
+            tokenResponseBeforeRefresh.idToken?.subject shouldBe initialSubject
+            tokenResponseBeforeRefresh.idToken?.claims?.get("claim1") shouldBe "value1"
+
+            val refreshToken = checkNotNull(tokenResponseBeforeRefresh.refreshToken)
+            val refreshTokenResponse =
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl(issuerId),
+                        mapOf(
+                            "grant_type" to GrantType.REFRESH_TOKEN.value,
+                            "refresh_token" to refreshToken,
+                            "client_id" to "id",
+                            "client_secret" to "secret",
+                        ),
+                    ).toTokenResponse()
+
+            refreshTokenResponse.idToken?.subject shouldBe initialSubject
+            refreshTokenResponse.accessToken?.subject shouldBe initialSubject
+            refreshTokenResponse.idToken?.claims?.get("claim1") shouldBe "value1"
+            refreshTokenResponse.accessToken?.claims?.get("claim1") shouldBe "value1"
+        }
+    }
+
+    @Test
     fun `token request with bogus refresh_token should return 400 invalid_grant`() {
         withMockOAuth2Server {
             val issuerId = "idprovider"
+            client
+                .tokenRequest(
+                    this.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to "bogus-random-uuid",
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_grant"
+                }
+        }
+    }
+
+    @Test
+    fun `token request with bogus refresh_token should return 400 invalid_grant even when callback is enqueued`() {
+        withMockOAuth2Server {
+            val issuerId = "idprovider"
+            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = "queued-subject"))
+
             client
                 .tokenRequest(
                     this.tokenEndpointUrl(issuerId),
