@@ -152,6 +152,58 @@ class InteractiveLoginIntegrationTest {
         }
     }
 
+    @Test
+    fun `interactive login should prefer submitted username over authorize subject param`() {
+        val requestMappingCallback =
+            RequestMappingTokenCallback(
+                issuerId = issuerId,
+                requestMappings =
+                    listOf(
+                        RequestMapping(
+                            requestParam = "subject",
+                            match = "bob",
+                            claims = mapOf("role" to "user", "sub" to "bob"),
+                        ),
+                        RequestMapping(
+                            requestParam = "subject",
+                            match = "alice",
+                            claims = mapOf("role" to "admin", "sub" to "alice"),
+                        ),
+                    ),
+            )
+        MockOAuth2Server(
+            OAuth2Config(
+                interactiveLogin = true,
+                tokenCallbacks = setOf(requestMappingCallback),
+            ),
+        ).apply { start() }.let { srv ->
+            try {
+                val loginUrl = srv.authorizationEndpointUrl(issuerId).authenticationRequest(extraQueryParams = mapOf("subject" to "alice"))
+                val code =
+                    client
+                        .post(
+                            loginUrl,
+                            mapOf(
+                                "username" to "bob",
+                                "claims" to User(username = "bob").claimsAsJson(),
+                            ),
+                        ).let { authResponse ->
+                            authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                        }
+
+                code.shouldNotBeNull()
+
+                val response = fetchToken(code, srv)
+                response.idToken.shouldNotBeNull()
+                response.idToken.subject shouldBe "bob"
+                response.idToken.claims["sub"] shouldBe "bob"
+                response.idToken.claims["role"] shouldBe "user"
+            } finally {
+                srv.shutdown()
+            }
+        }
+    }
+
     companion object {
         @JvmStatic
         fun testUsers(): Stream<Arguments> =
