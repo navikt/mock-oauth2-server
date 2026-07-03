@@ -135,11 +135,12 @@ internal class AuthorizationCodeHandler(
         override fun issuerId(): String = oAuth2TokenCallback.issuerId()
 
         private fun withLoginSubject(authRequestParams: Map<String, String>): Map<String, String> =
-            if (authRequestParams.containsKey("subject")) {
-                authRequestParams
-            } else {
-                authRequestParams + mapOf("subject" to login.username)
-            }
+            authRequestParams + mapOf("subject" to login.username)
+
+        // Interactive login has an established contract:
+        // - request mappings may match on the submitted login username via requestParam="subject"
+        // - if a matching mapping provides "sub", that value wins
+        // - otherwise we fall back to the submitted login username as subject
 
         override fun subject(
             tokenRequest: TokenRequest,
