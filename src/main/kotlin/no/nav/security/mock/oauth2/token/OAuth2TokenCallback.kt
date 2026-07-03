@@ -175,7 +175,12 @@ data class RequestMappingTokenCallback(
     override fun audience(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
-    ): List<String> = requestMappings.getClaimOrNull(tokenRequest, "aud", authRequestParams) ?: emptyList()
+    ): List<String> =
+        when (val aud = requestMappings.getClaimOrNull<Any>(tokenRequest, "aud", authRequestParams)) {
+            is String -> listOf(aud)
+            is List<*> -> aud.filterIsInstance<String>()
+            else -> emptyList()
+        }
 
     override fun addClaims(
         tokenRequest: TokenRequest,
