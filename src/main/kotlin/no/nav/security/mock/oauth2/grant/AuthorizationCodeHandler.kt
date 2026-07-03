@@ -134,8 +134,7 @@ internal class AuthorizationCodeHandler(
     ) : AuthRequestAwareOAuth2TokenCallback {
         override fun issuerId(): String = oAuth2TokenCallback.issuerId()
 
-        private fun withLoginSubject(authRequestParams: Map<String, String>): Map<String, String> =
-            authRequestParams + mapOf("subject" to login.username)
+        private fun withLoginSubject(authRequestParams: Map<String, String>): Map<String, String> = authRequestParams + mapOf("subject" to login.username)
 
         // Interactive login has an established contract:
         // - request mappings may match on the submitted login username via requestParam="subject"
