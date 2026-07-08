@@ -124,9 +124,13 @@ internal class AuthorizationCodeHandler(
     ) : OAuth2TokenCallback {
         private val resolvedDelegate: OAuth2TokenCallback =
             when (oAuth2TokenCallback) {
-                is RequestMappingTokenCallback ->
+                is RequestMappingTokenCallback -> {
                     oAuth2TokenCallback.withExtraMatchParams(mapOf(RequestMappingTokenCallback.SUBJECT_PARAM to login.username))
-                else -> oAuth2TokenCallback
+                }
+
+                else -> {
+                    oAuth2TokenCallback
+                }
             }
 
         private val subjectResolver: (TokenRequest) -> String =
