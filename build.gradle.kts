@@ -1,3 +1,4 @@
+import org.gradle.api.artifacts.ComponentSelection
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
@@ -241,9 +242,9 @@ fun isNonStable(version: String): Boolean {
 tasks.named("dependencyUpdates", DependencyUpdatesTask::class.java).configure {
     this.resolutionStrategy {
         componentSelection {
-            all {
-                if (isNonStable(candidate.version)) {
-                    reject("Release candidate")
+            all { selection: ComponentSelection ->
+                if (isNonStable(selection.candidate.version)) {
+                    selection.reject("Release candidate")
                 }
             }
         }
