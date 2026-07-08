@@ -81,14 +81,14 @@ data class RequestMappingTokenCallback(
     companion object {
         const val SUBJECT_PARAM = "subject"
     }
+
     override fun issuerId(): String = issuerId
 
     override fun subject(tokenRequest: TokenRequest): String? = resolve(tokenRequest).claims["sub"] as? String
 
     override fun typeHeader(tokenRequest: TokenRequest): String = resolve(tokenRequest).typeHeader
 
-    override fun audience(tokenRequest: TokenRequest): List<String> =
-        resolve(tokenRequest).claims["aud"].toAudienceList()
+    override fun audience(tokenRequest: TokenRequest): List<String> = resolve(tokenRequest).claims["aud"].toAudienceList()
 
     override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = resolve(tokenRequest).claims
 
@@ -110,23 +110,18 @@ data class RequestMappingTokenCallback(
      * 2. Token request form parameters — override extra params on the same key
      * 3. [extraMatchParams] — used only when no form parameter exists for the key
      */
-    fun withExtraMatchParams(extraMatchParams: Map<String, String>): OAuth2TokenCallback =
-        ExtraMatchParamsWrapper(extraMatchParams)
+    fun withExtraMatchParams(extraMatchParams: Map<String, String>): OAuth2TokenCallback = ExtraMatchParamsWrapper(extraMatchParams)
 
     private inner class ExtraMatchParamsWrapper(
         private val extraMatchParams: Map<String, String>,
     ) : OAuth2TokenCallback by this@RequestMappingTokenCallback {
-        override fun subject(tokenRequest: TokenRequest): String? =
-            resolve(tokenRequest, extraMatchParams).claims["sub"] as? String
+        override fun subject(tokenRequest: TokenRequest): String? = resolve(tokenRequest, extraMatchParams).claims["sub"] as? String
 
-        override fun typeHeader(tokenRequest: TokenRequest): String =
-            resolve(tokenRequest, extraMatchParams).typeHeader
+        override fun typeHeader(tokenRequest: TokenRequest): String = resolve(tokenRequest, extraMatchParams).typeHeader
 
-        override fun audience(tokenRequest: TokenRequest): List<String> =
-            resolve(tokenRequest, extraMatchParams).claims["aud"].toAudienceList()
+        override fun audience(tokenRequest: TokenRequest): List<String> = resolve(tokenRequest, extraMatchParams).claims["aud"].toAudienceList()
 
-        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
-            resolve(tokenRequest, extraMatchParams).claims
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = resolve(tokenRequest, extraMatchParams).claims
     }
 
     private fun resolve(
@@ -182,11 +177,21 @@ data class RequestMapping(
     ): Boolean {
         val effectiveValues =
             when {
-                formParams[requestParam].isNullOrEmpty().not() -> formParams[requestParam]
-                requestParam == "client_id" ->
-                    tokenRequest.clientAuthentication?.clientID?.value?.let { listOf(it) }
+                formParams[requestParam].isNullOrEmpty().not() -> {
+                    formParams[requestParam]
+                }
+
+                requestParam == "client_id" -> {
+                    tokenRequest.clientAuthentication
+                        ?.clientID
+                        ?.value
+                        ?.let { listOf(it) }
                         ?: tokenRequest.clientID?.value?.let { listOf(it) }
-                else -> extraMatchParams[requestParam]?.let { listOf(it) }
+                }
+
+                else -> {
+                    extraMatchParams[requestParam]?.let { listOf(it) }
+                }
             }
         return effectiveValues?.any {
             match == "*" || match == it || matchRegex?.matchEntire(it) != null
