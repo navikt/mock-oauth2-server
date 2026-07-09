@@ -8,6 +8,7 @@ import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
+import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import okhttp3.HttpUrl
 
 internal class PasswordGrantHandler(
@@ -20,7 +21,11 @@ internal class PasswordGrantHandler(
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val scope: String? = tokenRequest.scope?.toString()
-        val passwordGrantTokenCallback = PasswordGrantTokenCallback(oAuth2TokenCallback)
+        val username =
+            tokenRequest.authorizationGrant
+                ?.let { it as? ResourceOwnerPasswordCredentialsGrant }
+                ?.username
+        val passwordGrantTokenCallback = PasswordGrantTokenCallback(oAuth2TokenCallback, username)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, passwordGrantTokenCallback)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, passwordGrantTokenCallback, null)
 
@@ -35,10 +40,29 @@ internal class PasswordGrantHandler(
 
     private class PasswordGrantTokenCallback(
         private val tokenCallback: OAuth2TokenCallback,
-    ) : OAuth2TokenCallback by tokenCallback {
-        override fun subject(tokenRequest: TokenRequest) =
-            tokenRequest.authorizationGrant
-                ?.let { it as? ResourceOwnerPasswordCredentialsGrant }
-                ?.username ?: tokenCallback.subject(tokenRequest)
+        private val username: String?,
+    ) : OAuth2TokenCallback {
+        private val resolvedDelegate: OAuth2TokenCallback =
+            when {
+                username != null && tokenCallback is RequestMappingTokenCallback -> {
+                    tokenCallback.withExtraMatchParams(mapOf(RequestMappingTokenCallback.SUBJECT_PARAM to username))
+                }
+
+                else -> {
+                    tokenCallback
+                }
+            }
+
+        override fun issuerId(): String = tokenCallback.issuerId()
+
+        override fun subject(tokenRequest: TokenRequest) = username ?: tokenCallback.subject(tokenRequest)
+
+        override fun typeHeader(tokenRequest: TokenRequest): String = resolvedDelegate.typeHeader(tokenRequest)
+
+        override fun audience(tokenRequest: TokenRequest): List<String> = resolvedDelegate.audience(tokenRequest)
+
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> = resolvedDelegate.addClaims(tokenRequest)
+
+        override fun tokenExpiry(): Long = tokenCallback.tokenExpiry()
     }
 }
