@@ -1,5 +1,49 @@
 # Migration guide
 
+## Migrating to 6.0.0
+
+### `logback-classic` and `kotlinx-serialization-json` are no longer bundled
+
+Both appeared in the published POM and ended up on consumers' classpaths. They are now test- and standalone-only.
+
+**Affected pattern:** relying on mock-oauth2-server to pull in an SLF4J binding or `kotlinx-serialization-json`.
+
+**Migration:** if your test logs went quiet, declare a binding yourself:
+
+```kotlin
+testRuntimeOnly("ch.qos.logback:logback-classic:<version>")
+```
+
+`slf4j-api` still comes transitively; only the binding is gone. If you used `kotlinx-serialization-json` without declaring it, add it explicitly. The standalone server and Docker image still ship with logback.
+
+### The debugger can no longer target an external identity provider
+
+The debugger callback POSTed to a `token_url` taken from a client-supplied cookie and rendered the response, so anyone could make the server call hosts they could not reach themselves. `POST /<issuer>/debugger` redirected to a client-supplied `authorize_url` the same way.
+
+**New behavior (6.0.0):** both endpoints come from the server. In the debugger form, the endpoint and `redirect_uri` fields are readonly; the rest stay editable. The `authorize_url`, `token_url`, `client_secret`, `client_auth_method` and `redirect_uri` form parameters are ignored.
+
+**Affected pattern:** using the debugger as a generic OAuth2 client against a third-party provider.
+
+**Migration:** none. Point a real client at the external provider instead. The debugger still works against this server's own issuers.
+
+If you construct `DebuggerRequestHandler` yourself, it now takes an `OAuth2HttpServer` instead of an `Ssl?`.
+
+### Jackson 3
+
+The library now uses Jackson 3 (`tools.jackson.*`) instead of Jackson 2 (`com.fasterxml.jackson.*`).
+
+**Consumers on Jackson 2 are unaffected.** Jackson 3 uses a different group ID and package, and still depends on `com.fasterxml.jackson.core:jackson-annotations:2.x`, so both can be on the classpath at once. The Ktor and Spring Boot example apps in this project's test suite stay on Jackson 2 and exercise that combination.
+
+**Affected pattern:** using the `no.nav.security.mock.oauth2.http.objectMapper` top-level property, or the `OAuth2TokenProviderDeserializer` and `OAuth2HttpServerDeserializer` classes nested in `OAuth2Config`.
+
+**Migration:** these are now `internal`, so the library no longer exposes Jackson types in its Kotlin API. Construct your own mapper if you used `objectMapper`.
+
+### `NettyWrapper` caps request bodies at 1 MiB
+
+Request bodies were aggregated with no limit, so any unauthenticated client could exhaust the heap by sending a large body to any endpoint.
+
+**New behavior (6.0.0):** `NettyWrapper` answers `413 Request Entity Too Large` above 1 MiB. Affects the standalone server and Docker image, which default to `NettyWrapper`. `MockWebServerWrapper` is unaffected.
+
 ## Migrating to 5.0.0
 
 ### Interactive login + `requestMappings`: claim precedence change
