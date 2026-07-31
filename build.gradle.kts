@@ -275,8 +275,4 @@ tasks {
         jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
         useJUnitPlatform()
     }
-
-    withType<Wrapper> {
-        gradleVersion = "8.14.4"
-    }
 }
