@@ -5,12 +5,16 @@ import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER_CALLBACK
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
+import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.removeAllEncodedQueryParams
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.toDebuggerUrl
+import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.http.ExceptionHandler
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
+import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.Route
 import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.html
@@ -19,20 +23,19 @@ import no.nav.security.mock.oauth2.http.routes
 import no.nav.security.mock.oauth2.http.templateMapper
 import okhttp3.Headers
 import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 
 private val log = KotlinLogging.logger { }
 private val client: OkHttpClient = OkHttpClient().newBuilder().build()
 
 class DebuggerRequestHandler(
+    httpServer: OAuth2HttpServer,
     sessionManager: SessionManager = SessionManager(),
-    ssl: Ssl? = null,
     route: Route =
         routes {
             exceptionHandler(handle(sessionManager))
             debuggerForm(sessionManager)
-            debuggerCallback(sessionManager, ssl)
+            debuggerCallback(sessionManager, httpServer::url, httpServer.sslConfig())
         },
 ) : Route by route
 
@@ -68,10 +71,11 @@ private fun Route.Builder.debuggerForm(sessionManager: SessionManager) =
         }
         post(DEBUGGER) {
             log.debug("handling POST request, return redirect")
-            val authorizeUrl = it.formParameters.get("authorize_url") ?: error("authorize_url is missing")
+            // the debugger only ever drives this server's own flow, so the endpoint comes from the request url
+            // and not from the submitted form, which would make this an open redirect
             val httpUrl =
-                authorizeUrl
-                    .toHttpUrl()
+                it.url
+                    .toAuthorizationEndpointUrl()
                     .newBuilder()
                     .encodedQuery(it.formParameters.parameterString)
                     .removeAllEncodedQueryParams("authorize_url", "token_url", "client_secret", "client_auth_method")
@@ -86,11 +90,15 @@ private fun Route.Builder.debuggerForm(sessionManager: SessionManager) =
 
 private fun Route.Builder.debuggerCallback(
     sessionManager: SessionManager,
+    serverUrl: (String) -> HttpUrl,
     ssl: Ssl? = null,
 ) = any(DEBUGGER_CALLBACK) {
     log.debug("handling ${it.method} request to debugger callback")
     val session = sessionManager.session(it)
-    val tokenUrl: HttpUrl = session["token_url"].toHttpUrl()
+    // the request is sent to the server's own bound address, never to a url derived from the request itself:
+    // request urls are proxy aware, so a client controlled Host header would otherwise pick the target
+    val target = serverUrl(it.url.tokenEndpointPath()).viaLoopbackIfWildcard()
+    val tokenUrl: HttpUrl = it.url.toTokenEndpointUrl()
     val code: String =
         it.url.queryParameter("code")
             ?: it.formParameters.get("code")
@@ -109,9 +117,14 @@ private fun Route.Builder.debuggerCallback(
         )
     val response =
         if (ssl != null) {
-            client.withSsl(ssl).post(request)
+            client.withSsl(ssl).post(request, target)
         } else {
-            client.post(request)
+            client.post(request, target)
         }
     html(templateMapper.debuggerCallbackHtml(request.toString(), response))
 }
+
+private fun HttpUrl.tokenEndpointPath(): String = issuerId().let { if (it.isEmpty()) TOKEN else "/$it$TOKEN" }
+
+// a server bound to a wildcard address reports it as its host, which is not connectable
+private fun HttpUrl.viaLoopbackIfWildcard(): HttpUrl = if (host in setOf("0.0.0.0", "::")) newBuilder().host("localhost").build() else this

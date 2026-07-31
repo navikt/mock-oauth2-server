@@ -12,11 +12,9 @@
             <div>
                 <form method="post">
                     <label for="authorize_url">Authorization Endpoint</label>
-                    <input class="u-full-width" type="text" placeholder="The Authorization endpoint of your ID provider"
-                           name="authorize_url" value="${url}">
-                    <label for="authorize_url">Token Endpoint</label>
-                    <input class="u-full-width" type="text" placeholder="The Token endpoint of your ID provider"
-                           name="token_url" value="${token_url}">
+                    <input class="u-full-width" type="text" name="authorize_url" value="${url}" readonly>
+                    <label for="token_url">Token Endpoint</label>
+                    <input class="u-full-width" type="text" name="token_url" value="${token_url}" readonly>
                     <label for="client_auth_method">Client Authentication Method</label>
                     <input class="u-full-width" type="text" placeholder="Client auth method" name="client_auth_method"
                            value="${client_auth_method}">

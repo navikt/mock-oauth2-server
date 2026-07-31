@@ -43,20 +43,20 @@ internal class TokenRequest(
             } +
             "\n\n$body"
 
-    private fun HttpUrl.toHostHeader(includeDefaultPort: Boolean = false): String {
-        val host = if (":" in host) "[$host]" else host
-        return if (includeDefaultPort || port != HttpUrl.defaultPort(scheme)) {
-            "$host:$port"
-        } else {
-            host
-        }
-    }
-
     private fun Map<String, String>.toKeyValueString(entrySeparator: String): String =
         this
             .map { "${it.key}=${it.value}" }
             .toList()
             .joinToString(entrySeparator)
+}
+
+internal fun HttpUrl.toHostHeader(includeDefaultPort: Boolean = false): String {
+    val host = if (":" in host) "[$host]" else host
+    return if (includeDefaultPort || port != HttpUrl.defaultPort(scheme)) {
+        "$host:$port"
+    } else {
+        host
+    }
 }
 
 internal data class ClientAuthentication(
@@ -88,13 +88,21 @@ internal data class ClientAuthentication(
 
 internal fun String.urlEncode(): String = URLEncoder.encode(this, StandardCharsets.UTF_8)
 
-internal fun OkHttpClient.post(tokenRequest: TokenRequest): String =
+// target is the address the request is actually sent to, while the headers reproduce the url the client
+// sees, so that the issued token carries the issuer a real client would get
+internal fun OkHttpClient.post(
+    tokenRequest: TokenRequest,
+    target: HttpUrl,
+): String =
     this
         .newCall(
             Request
                 .Builder()
                 .headers(tokenRequest.headers)
-                .url(tokenRequest.url)
+                .header("Host", tokenRequest.url.toHostHeader())
+                .header("x-forwarded-proto", tokenRequest.url.scheme)
+                .header("x-forwarded-port", tokenRequest.url.port.toString())
+                .url(target)
                 .post(tokenRequest.body.toRequestBody("application/x-www-form-urlencoded".toMediaType()))
                 .build(),
         ).execute()
