@@ -73,11 +73,20 @@ repositories {
     mavenCentral()
 }
 
+// Dependencies needed only when running the standalone server (Docker image via jib).
+// runtimeClasspath extends this, runtimeElements does not, so these stay out of the
+// published POM/module metadata and off library consumers' classpaths.
+val standaloneRuntime = configurations.dependencyScope("standaloneRuntime")
+configurations.runtimeClasspath {
+    extendsFrom(standaloneRuntime.get())
+}
+
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
+    add(standaloneRuntime.name, "ch.qos.logback:logback-classic:$logbackVersion")
+    testRuntimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-codec-http:$nettyVersion")
