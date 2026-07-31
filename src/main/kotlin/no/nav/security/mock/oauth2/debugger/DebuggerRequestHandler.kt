@@ -73,17 +73,20 @@ private fun Route.Builder.debuggerForm(sessionManager: SessionManager) =
             log.debug("handling POST request, return redirect")
             // the debugger only ever drives this server's own flow, so the endpoint comes from the request url
             // and not from the submitted form, which would make this an open redirect
+            val callbackUrl = it.url.toDebuggerCallbackUrl().toString()
             val httpUrl =
                 it.url
                     .toAuthorizationEndpointUrl()
                     .newBuilder()
                     .encodedQuery(it.formParameters.parameterString)
-                    .removeAllEncodedQueryParams("authorize_url", "token_url", "client_secret", "client_auth_method")
+                    .removeAllEncodedQueryParams("authorize_url", "token_url", "client_secret", "client_auth_method", "redirect_uri")
+                    // a callback elsewhere cannot validate state or nonce, as it never initiated the flow
+                    .addQueryParameter("redirect_uri", callbackUrl)
                     .build()
 
             log.debug("attempting to redirect to $httpUrl, setting received params in encrypted cookie")
             val session = sessionManager.session(it)
-            session.putAll(it.formParameters.map)
+            session.putAll(it.formParameters.map + ("redirect_uri" to callbackUrl))
             redirect(httpUrl.toString(), Headers.headersOf("Set-Cookie", session.asCookie()))
         }
     }

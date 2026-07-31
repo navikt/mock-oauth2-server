@@ -10,6 +10,7 @@ import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.SslKeystore
 import okhttp3.FormBody
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.mockwebserver.MockResponse
@@ -91,6 +92,7 @@ internal class DebuggerRequestHandlerTest {
                 FormBody
                     .Builder()
                     .add("authorize_url", "http://evil.example.com/authorize")
+                    .add("redirect_uri", "http://evil.example.com/callback")
                     .add("client_id", "debugger")
                     .add("scope", "openid")
                     .build()
@@ -105,7 +107,9 @@ internal class DebuggerRequestHandlerTest {
                 ).execute()
                 .use {
                     it.code shouldBe 302
-                    checkNotNull(it.header("Location")) shouldStartWith server.url("/default/authorize").toString()
+                    val location = checkNotNull(it.header("Location")).toHttpUrl()
+                    location.toString() shouldStartWith server.url("/default/authorize").toString()
+                    location.queryParameter("redirect_uri") shouldBe server.url("/default/debugger/callback").toString()
                 }
         } finally {
             server.shutdown()

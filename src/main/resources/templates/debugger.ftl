@@ -8,7 +8,7 @@
 
         <div class="docs-section" id="openid">
             <h6 class="docs-header">OpenID Connect</h6>
-            <p>Insert your parameters here to get a token from your Identity Provider</p>
+            <p>Insert your parameters here to run the Authorization Code Flow against this server</p>
             <div>
                 <form method="post">
                     <label for="authorize_url">Authorization Endpoint</label>
@@ -19,10 +19,10 @@
                     <input class="u-full-width" type="text" placeholder="Client auth method" name="client_auth_method"
                            value="${client_auth_method}">
                     <label for="client_id">Client Id</label>
-                    <input class="u-full-width" type="text" placeholder="Your registered client_id" name="client_id"
+                    <input class="u-full-width" type="text" placeholder="Any client_id, this server does not require registration" name="client_id"
                            value="${query.client_id}">
                     <label for="client_secret">Client Secret (used to acquire token when callback is received)</label>
-                    <input class="u-full-width" type="text" placeholder="Your registered client_secret"
+                    <input class="u-full-width" type="text" placeholder="Any client_secret, this server does not require registration"
                            name="client_secret" value="someSecret">
                     <label for="scope">Scope</label>
                     <input class="u-full-width" type="text"
@@ -42,11 +42,9 @@
                            placeholder="A nonce value to include in token (for replay protection)" name="nonce"
                            value="${query.nonce}">
                     <label for="redirect_uri">Redirect URI (callback)</label>
-                    <p style="margin-bottom: 0.5rem; color: grey">Should be a preregistered URL at your identity
-                        provider. If using the mock-oauth2-server any URL will suffice</p>
-                    <input class="u-full-width" type="text"
-                           placeholder="The location where code or token should be sent after login" name="redirect_uri"
-                           value="${query.redirect_uri}">
+                    <p style="margin-bottom: 0.5rem; color: grey">The debugger's own callback, which completes the
+                        flow and displays the token response</p>
+                    <input class="u-full-width" type="text" name="redirect_uri" value="${query.redirect_uri}" readonly>
                     <input class="button-primary" type="submit" value="Get a token">
                 </form>
             </div>
