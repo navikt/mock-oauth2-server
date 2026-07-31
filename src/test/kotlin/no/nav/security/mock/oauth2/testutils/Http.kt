@@ -1,7 +1,5 @@
 package no.nav.security.mock.oauth2.testutils
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import no.nav.security.mock.oauth2.extensions.keyValuesToMap
 import okhttp3.Credentials
 import okhttp3.FormBody
@@ -10,6 +8,8 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import tools.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.module.kotlin.readValue
 import java.net.URLEncoder
 import java.security.KeyStore
 import javax.net.ssl.SSLContext

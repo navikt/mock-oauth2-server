@@ -1,9 +1,5 @@
 package no.nav.security.mock.oauth2.grant
 
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.OAuth2Error
@@ -22,6 +18,10 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import okhttp3.HttpUrl
+import tools.jackson.core.JacksonException
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.module.kotlin.readValue
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
@@ -159,7 +159,7 @@ internal class AuthorizationCodeHandler(
                             .forEach { field ->
                                 putIfAbsent(field.key, jsonMapper.readValue(field.value.toString()))
                             }
-                    } catch (exception: JsonProcessingException) {
+                    } catch (exception: JacksonException) {
                         log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
                     }
                 }

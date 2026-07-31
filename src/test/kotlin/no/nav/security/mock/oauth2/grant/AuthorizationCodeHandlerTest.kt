@@ -1,6 +1,5 @@
 package no.nav.security.mock.oauth2.grant
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nimbusds.jwt.PlainJWT
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.ResponseMode
@@ -23,6 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.util.stream.Stream
 
 internal class AuthorizationCodeHandlerTest {

@@ -8,7 +8,12 @@ val kotlinLoggingVersion = "3.0.5"
 val logbackVersion = "1.6.0"
 val nimbusSdkVersion = "11.38.2"
 val mockWebServerVersion = "5.4.0"
-val jacksonVersion = "2.22.1"
+val jacksonVersion = "3.2.1"
+
+// Ktor and Spring Boot are Jackson 2 only, so the example apps in src/test pull it in
+// alongside the Jackson 3 used by the library itself. Their BOMs lag behind, so pin the
+// floor here rather than inheriting whatever they happen to resolve to.
+val jackson2TestVersion = "2.22.1"
 val nettyVersion = "4.2.16.Final"
 val junitJupiterVersion = "6.1.2"
 val freemarkerVersion = "2.3.34"
@@ -84,16 +89,17 @@ configurations.runtimeClasspath {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation("tools.jackson.core:jackson-databind:$jacksonVersion")
     add(standaloneRuntime.name, "ch.qos.logback:logback-classic:$logbackVersion")
     testRuntimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-codec-http:$nettyVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    implementation("tools.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:$jackson2TestVersion"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")

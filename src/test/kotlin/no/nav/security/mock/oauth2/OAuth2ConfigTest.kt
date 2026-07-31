@@ -1,6 +1,5 @@
 package no.nav.security.mock.oauth2
 
-import com.fasterxml.jackson.databind.JsonMappingException
 import com.nimbusds.jose.jwk.KeyType
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.Matcher
@@ -25,6 +24,7 @@ import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
+import tools.jackson.databind.DatabindException
 import java.io.File
 import java.security.KeyStore
 import java.security.cert.X509Certificate
@@ -37,7 +37,7 @@ internal class OAuth2ConfigTest {
     fun `create httpServer from json`() {
         OAuth2Config.fromJson(withNettyHttpServer).httpServer should beInstanceOf<NettyWrapper>()
         OAuth2Config.fromJson(withMockWebServerWrapper).httpServer should beInstanceOf<MockWebServerWrapper>()
-        shouldThrow<JsonMappingException> {
+        shouldThrow<DatabindException> {
             OAuth2Config.fromJson(withUnknownHttpServer)
         }
     }
@@ -79,7 +79,7 @@ internal class OAuth2ConfigTest {
 
     @Test
     fun `create config from json with an unsupported algorithm should throw Oauth2Exception`() {
-        shouldThrow<JsonMappingException> {
+        shouldThrow<DatabindException> {
             OAuth2Config.fromJson(signingJsonUnsupported)
         }.message shouldContain "Unsupported algorithm: EdDSA"
     }

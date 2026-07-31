@@ -1,6 +1,5 @@
 package no.nav.security.mock.oauth2.e2e
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.assertions.asClue
 import io.kotest.matchers.maps.shouldContainAll
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -23,6 +22,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.util.stream.Stream
 
 class InteractiveLoginIntegrationTest {
