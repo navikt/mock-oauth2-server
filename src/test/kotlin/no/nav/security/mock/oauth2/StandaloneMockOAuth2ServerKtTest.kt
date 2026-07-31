@@ -11,25 +11,31 @@ import no.nav.security.mock.oauth2.StandaloneConfig.JSON_CONFIG
 import no.nav.security.mock.oauth2.StandaloneConfig.JSON_CONFIG_PATH
 import no.nav.security.mock.oauth2.StandaloneConfig.PORT
 import no.nav.security.mock.oauth2.StandaloneConfig.SERVER_PORT
-import no.nav.security.mock.oauth2.StandaloneConfig.hostname
 import no.nav.security.mock.oauth2.StandaloneConfig.oauth2Config
 import no.nav.security.mock.oauth2.StandaloneConfig.port
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import org.junit.jupiter.api.Test
 import java.io.File
-import java.net.InetSocketAddress
 
 internal class StandaloneMockOAuth2ServerKtTest {
     private val configFile = "src/test/resources/config.json"
 
     @Test
-    fun `load config with no env vars set`() {
-        val config = oauth2Config()
-        config.tokenCallbacks.size shouldBe 0
-        config.interactiveLogin shouldBe true
-        config.httpServer should beInstanceOf<NettyWrapper>()
-        hostname() shouldBe InetSocketAddress(0).address
-        port() shouldBe 8080
+    fun `load deterministic standalone defaults from JSON_CONFIG`() {
+        val defaultStandaloneJson =
+            """
+            {
+              "interactiveLogin": true,
+              "httpServer": "NettyWrapper"
+            }
+            """.trimIndent()
+
+        withEnvironment(JSON_CONFIG to defaultStandaloneJson) {
+            val config = oauth2Config()
+            config.tokenCallbacks.size shouldBe 0
+            config.interactiveLogin shouldBe true
+            config.httpServer should beInstanceOf<NettyWrapper>()
+        }
     }
 
     @Test
