@@ -1,6 +1,5 @@
 package no.nav.security.mock.oauth2.debugger
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jose.EncryptionMethod
 import com.nimbusds.jose.JWEAlgorithm
 import com.nimbusds.jose.JWEHeader
@@ -11,6 +10,7 @@ import com.nimbusds.jose.crypto.DirectEncrypter
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.objectMapper
+import tools.jackson.module.kotlin.readValue
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 

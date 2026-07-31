@@ -1,12 +1,5 @@
 package no.nav.security.mock.oauth2
 
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.JWK
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
@@ -18,6 +11,13 @@ import no.nav.security.mock.oauth2.token.KeyProvider
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
+import tools.jackson.core.JsonParser
+import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ValueDeserializer
+import tools.jackson.databind.annotation.JsonDeserialize
+import tools.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.module.kotlin.readValue
 import java.io.File
 import java.time.Instant
 
@@ -35,7 +35,7 @@ data class OAuth2Config
         @JsonDeserialize(using = OAuth2HttpServerDeserializer::class)
         val httpServer: OAuth2HttpServer = MockWebServerWrapper(),
     ) {
-        class OAuth2TokenProviderDeserializer : JsonDeserializer<OAuth2TokenProvider>() {
+        internal class OAuth2TokenProviderDeserializer : ValueDeserializer<OAuth2TokenProvider>() {
             data class ProviderConfig(
                 val keyProvider: KeyProviderConfig?,
                 val systemTime: String?,
@@ -48,14 +48,14 @@ data class OAuth2Config
 
             override fun deserialize(
                 p: JsonParser,
-                ctxt: DeserializationContext?,
+                ctxt: DeserializationContext,
             ): OAuth2TokenProvider {
                 val node: JsonNode = p.readValueAsTree()
                 val config: ProviderConfig =
                     if (!node.isObject) {
                         return OAuth2TokenProvider()
                     } else {
-                        p.codec.treeToValue(node, ProviderConfig::class.java)
+                        ctxt.readTreeAsValue(node, ProviderConfig::class.java)
                     }
                 val jwks =
                     config.keyProvider?.initialKeys?.let {
@@ -77,7 +77,7 @@ data class OAuth2Config
             }
         }
 
-        class OAuth2HttpServerDeserializer : JsonDeserializer<OAuth2HttpServer>() {
+        internal class OAuth2HttpServerDeserializer : ValueDeserializer<OAuth2HttpServer>() {
             enum class ServerType {
                 MockWebServerWrapper,
                 NettyWrapper,
@@ -106,9 +106,9 @@ data class OAuth2Config
                 val node: JsonNode = p.readValueAsTree()
                 val serverConfig: ServerConfig =
                     if (node.isObject) {
-                        p.codec.treeToValue(node, ServerConfig::class.java)
+                        ctxt.readTreeAsValue(node, ServerConfig::class.java)
                     } else {
-                        ServerConfig(ServerType.valueOf(node.textValue()))
+                        ServerConfig(ServerType.valueOf(node.asString()))
                     }
                 val ssl: Ssl? = serverConfig.ssl?.ssl()
                 return when (serverConfig.type) {

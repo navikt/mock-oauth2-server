@@ -2,9 +2,6 @@ package no.nav.security.mock.oauth2.http
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
@@ -12,8 +9,11 @@ import io.netty.handler.codec.http.HttpHeaderNames
 import no.nav.security.mock.oauth2.templates.TemplateMapper
 import no.nav.security.mock.oauth2.token.KeyGenerator
 import okhttp3.Headers
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.module.kotlin.jacksonObjectMapper
 
-val objectMapper: ObjectMapper = jacksonObjectMapper()
+internal val objectMapper: ObjectMapper = jacksonObjectMapper()
+private val prettyWriter = objectMapper.writerWithDefaultPrettyPrinter()
 val templateMapper: TemplateMapper = TemplateMapper.create {}
 
 data class OAuth2HttpResponse(
@@ -111,9 +111,7 @@ fun json(anyObject: Any): OAuth2HttpResponse =
                 }
 
                 else -> {
-                    objectMapper
-                        .enable(SerializationFeature.INDENT_OUTPUT)
-                        .writeValueAsString(anyObject)
+                    prettyWriter.writeValueAsString(anyObject)
                 }
             },
     )
@@ -179,8 +177,7 @@ fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
             ),
         status = responseCode,
         body =
-            objectMapper
-                .enable(SerializationFeature.INDENT_OUTPUT)
+            prettyWriter
                 .writeValueAsString(error.toJSONObject())
                 .lowercase(),
     )

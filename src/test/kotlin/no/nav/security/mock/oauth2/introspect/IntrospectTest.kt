@@ -1,7 +1,5 @@
 package no.nav.security.mock.oauth2.introspect
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jose.JWSAlgorithm
 import io.kotest.assertions.asClue
 import io.kotest.assertions.throwables.shouldThrow
@@ -19,6 +17,8 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
+import tools.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.module.kotlin.readValue
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
