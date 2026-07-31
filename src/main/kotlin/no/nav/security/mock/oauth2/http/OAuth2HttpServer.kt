@@ -163,7 +163,7 @@ class NettyWrapper
                                 }
                                 ch.pipeline().addLast("codec", HttpServerCodec())
                                 ch.pipeline().addLast("keepAlive", HttpServerKeepAliveHandler())
-                                ch.pipeline().addLast("aggregator", HttpObjectAggregator(Int.MAX_VALUE))
+                                ch.pipeline().addLast("aggregator", HttpObjectAggregator(MAX_CONTENT_LENGTH))
                                 ch.pipeline().addLast("streamer", ChunkedWriteHandler())
                                 ch.pipeline().addLast("routes", RouterChannelHandler(requestHandler))
                             }
@@ -206,6 +206,11 @@ class NettyWrapper
         override fun sslConfig(): Ssl? = ssl
 
         private fun Ssl.nettySslHandler(): SslHandler = SslHandler(sslEngine())
+
+        companion object {
+            // OAuth2 request bodies are a few KB at most; cap aggregation so a large body cannot exhaust memory
+            private const val MAX_CONTENT_LENGTH = 1024 * 1024
+        }
 
         internal class RouterChannelHandler(
             val requestHandler: RequestHandler,

@@ -14,7 +14,10 @@ import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.withTrustStore
 import okhttp3.Headers
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.jupiter.api.Test
 import java.io.File
 
@@ -77,6 +80,25 @@ internal class OAuth2HttpServerTest {
                 ),
             )
         NettyWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
+    }
+
+    @Test
+    fun `Netty server should reject request bodies exceeding the max content length`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            val oversizedBody = "a".repeat(1024 * 1024 + 1)
+            httpClient
+                .newCall(
+                    Request
+                        .Builder()
+                        .url(server.url("/form"))
+                        .post(oversizedBody.toRequestBody("text/plain".toMediaType()))
+                        .build(),
+                ).execute()
+                .use { it.code shouldBe 413 }
+        } finally {
+            server.stop()
+        }
     }
 
     @Test

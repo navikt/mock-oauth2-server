@@ -1,6 +1,5 @@
 package no.nav.security.mock.oauth2
 
-import ch.qos.logback.classic.ClassicConstants
 import no.nav.security.mock.oauth2.StandaloneConfig.hostname
 import no.nav.security.mock.oauth2.StandaloneConfig.oauth2Config
 import no.nav.security.mock.oauth2.StandaloneConfig.port
@@ -49,7 +48,9 @@ object StandaloneConfig {
 }
 
 fun main() {
-    System.setProperty(ClassicConstants.CONFIG_FILE_PROPERTY, "LOGBACK_CONFIG".fromEnv("logback-standalone.xml"))
+    // Literal instead of ch.qos.logback.classic.ClassicConstants: logback is a runtime-only
+    // dependency of the standalone server and must not leak onto library consumers' classpath.
+    System.setProperty("logback.configurationFile", "LOGBACK_CONFIG".fromEnv("logback-standalone.xml"))
     MockOAuth2Server(
         oauth2Config(),
         route("/isalive") {

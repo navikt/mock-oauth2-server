@@ -241,12 +241,13 @@ internal class OAuth2TokenCallbackTest {
                             ),
                         ),
                 )
-            val requestWithRepeatedResource = nimbusTokenRequest(
-                clientId,
-                "grant_type" to "client_credentials",
-                "resource" to "api://app-a",
-                "resource" to "api://app-b",
-            )
+            val requestWithRepeatedResource =
+                nimbusTokenRequest(
+                    clientId,
+                    "grant_type" to "client_credentials",
+                    "resource" to "api://app-a",
+                    "resource" to "api://app-b",
+                )
             // Verify both values are preserved in the underlying HTTP request body —
             // nimbusTokenRequest joins pairs via joinToString("&"), so duplicates are not collapsed.
             val bodyParams = requestWithRepeatedResource.toHTTPRequest().bodyAsFormParameters
@@ -436,7 +437,6 @@ internal class OAuth2TokenCallbackTest {
             wrapped.addClaims(tokenRequest) shouldContainAll mapOf("resolved" to "authorization_code")
         }
 
-
         @Test
         fun `subject is null when mapping does not set sub`() {
             val callback =
@@ -472,7 +472,6 @@ internal class OAuth2TokenCallbackTest {
             val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice"))
             wrapped.subject(authCodeRequest()) shouldBe "mapped-alice"
         }
-
 
         @Test
         fun `withExtraMatchParams selects typeHeader from matched mapping`() {
@@ -512,7 +511,6 @@ internal class OAuth2TokenCallbackTest {
             val wrapped = callback.withExtraMatchParams(mapOf("subject" to "alice"))
             wrapped.audience(tokenRequest) shouldBe listOf("my-api")
         }
-
 
         @Test
         fun `withExtraMatchParams selects audience from matched mapping when aud is a string`() {
@@ -569,7 +567,6 @@ internal class OAuth2TokenCallbackTest {
             val wrapped = callback.withExtraMatchParams(mapOf("subject" to "bob"))
             wrapped.audience(authCodeRequest()) shouldBe emptyList()
         }
-
 
         @Test
         fun `withExtraMatchParams returns no match when no mapping matches and no wildcard`() {
