@@ -14,7 +14,10 @@ import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.withTrustStore
 import okhttp3.Headers
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.jupiter.api.Test
 import java.io.File
 
@@ -55,14 +58,14 @@ internal class OAuth2HttpServerTest {
     @Test
     fun `Netty server should start and serve requests`() {
         NettyWrapper().start(requestHandler).shouldServeRequests().stop()
-        NettyWrapper().start(port = 1234, requestHandler).shouldServeRequests().stop()
+        NettyWrapper().start(port = 0, requestHandler).shouldServeRequests().stop()
     }
 
     @Test
     fun `Netty server should start and serve requests with generated keystore and HTTPS enabled`() {
         val ssl = Ssl()
         NettyWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
-        NettyWrapper(ssl).start(port = 1234, requestHandler).shouldServeRequests(ssl).stop()
+        NettyWrapper(ssl).start(port = 0, requestHandler).shouldServeRequests(ssl).stop()
     }
 
     @Test
@@ -80,16 +83,35 @@ internal class OAuth2HttpServerTest {
     }
 
     @Test
+    fun `Netty server should reject request bodies exceeding the max content length`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            val oversizedBody = "a".repeat(1024 * 1024 + 1)
+            httpClient
+                .newCall(
+                    Request
+                        .Builder()
+                        .url(server.url("/form"))
+                        .post(oversizedBody.toRequestBody("text/plain".toMediaType()))
+                        .build(),
+                ).execute()
+                .use { it.code shouldBe 413 }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
     fun `MockWebServer should start and serve requests`() {
         MockWebServerWrapper().start(requestHandler).shouldServeRequests().stop()
-        MockWebServerWrapper().start(port = 1234, requestHandler).shouldServeRequests().stop()
+        MockWebServerWrapper().start(port = 0, requestHandler).shouldServeRequests().stop()
     }
 
     @Test
     fun `MockWebServer should start and serve requests with generated keystore and HTTPS enabled`() {
         val ssl = Ssl()
         MockWebServerWrapper(ssl).start(requestHandler).shouldServeRequests(ssl).stop()
-        MockWebServerWrapper(ssl).start(port = 1234, requestHandler).shouldServeRequests(ssl).stop()
+        MockWebServerWrapper(ssl).start(port = 0, requestHandler).shouldServeRequests(ssl).stop()
     }
 
     private fun OAuth2HttpServer.shouldServeRequests(ssl: Ssl? = null) =

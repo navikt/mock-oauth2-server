@@ -5,15 +5,15 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 val assertjVersion = "3.27.7"
 val kotlinLoggingVersion = "3.0.5"
-val logbackVersion = "1.5.37"
-val nimbusSdkVersion = "11.37.2"
+val logbackVersion = "1.6.0"
+val nimbusSdkVersion = "11.38.2"
 val mockWebServerVersion = "5.4.0"
-val jacksonVersion = "2.22.0"
-val nettyVersion = "4.2.15.Final"
-val junitJupiterVersion = "6.1.1"
+val jacksonVersion = "2.22.1"
+val nettyVersion = "4.2.16.Final"
+val junitJupiterVersion = "6.1.2"
 val freemarkerVersion = "2.3.34"
-val kotestVersion = "6.2.1"
-val bouncyCastleVersion = "1.84"
+val kotestVersion = "6.2.3"
+val bouncyCastleVersion = "1.85"
 val springBootVersion = "3.5.14"
 val reactorTestVersion = "3.8.6"
 val ktorVersion = "3.5.1"
@@ -73,11 +73,20 @@ repositories {
     mavenCentral()
 }
 
+// Dependencies needed only when running the standalone server (Docker image via jib).
+// runtimeClasspath extends this, runtimeElements does not, so these stay out of the
+// published POM/module metadata and off library consumers' classpaths.
+val standaloneRuntime = configurations.dependencyScope("standaloneRuntime")
+configurations.runtimeClasspath {
+    extendsFrom(standaloneRuntime.get())
+}
+
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
+    add(standaloneRuntime.name, "ch.qos.logback:logback-classic:$logbackVersion")
+    testRuntimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-codec-http:$nettyVersion")
@@ -85,7 +94,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
