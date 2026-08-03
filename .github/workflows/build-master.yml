@@ -38,3 +38,47 @@ jobs:
         uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # ratchet:release-drafter/release-drafter@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  publish-snapshot:
+    needs: build
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0 # need tags to derive the snapshot version
+      - name: Set up JDK 21
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # ratchet:actions/setup-java@v5.6.0
+        with:
+          java-version: 21
+          distribution: 'temurin'
+          cache: 'gradle'
+      - name: Derive snapshot version
+        id: version
+        run: |
+          LATEST=$(git tag --sort=-v:refname | head -n1)
+          if [ -z "${LATEST}" ]; then
+            echo "No tags found, cannot derive snapshot version."
+            exit 1
+          fi
+          MAJOR=$(echo "${LATEST}" | cut -d. -f1)
+          MINOR=$(echo "${LATEST}" | cut -d. -f2)
+          PATCH=$(echo "${LATEST}" | cut -d. -f3)
+          echo "version=${MAJOR}.${MINOR}.$((PATCH + 1))-SNAPSHOT" >> "$GITHUB_OUTPUT"
+      - name: Publish snapshot
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.version }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
+          # must be an armored (i.e. ascii) private key _only_ (no public key block)
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Publishing snapshot ${NEW_VERSION}"
+          ./gradlew -Pversion="${NEW_VERSION}" \
+            publishAllPublicationsToGitHubPackagesRepository \
+            publishToMavenCentral \
+            --no-configuration-cache
