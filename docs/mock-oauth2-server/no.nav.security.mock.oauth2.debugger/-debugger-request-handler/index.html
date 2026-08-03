@@ -43,7 +43,7 @@
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
         <div class="library-version" id="library-version">
-5.0.2        </div>
+6.0.0        </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
                 <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true"
@@ -107,10 +107,10 @@
   <div class="breadcrumbs"><a href="../../../index.html">mock-oauth2-server</a><span class="delimiter">/</span><a href="../index.html">no.nav.security.mock.oauth2.debugger</a><span class="delimiter">/</span><span class="current">DebuggerRequestHandler</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Debugger</span><wbr></wbr><span>Request</span><wbr></wbr><span><span>Handler</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">DebuggerRequestHandler</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sessionManager<span class="token operator">: </span><a href="../-session-manager/index.html">SessionManager</a><span class="token operator"> = </span>SessionManager()<span class="token punctuation">, </span></span><span class="parameter ">ssl<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.http/-ssl/index.html">Ssl</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">route<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.http/-route/index.html">Route</a><span class="token operator"> = </span>routes {
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">DebuggerRequestHandler</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">httpServer<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.http/-o-auth2-http-server/index.html">OAuth2HttpServer</a><span class="token punctuation">, </span></span><span class="parameter ">sessionManager<span class="token operator">: </span><a href="../-session-manager/index.html">SessionManager</a><span class="token operator"> = </span>SessionManager()<span class="token punctuation">, </span></span><span class="parameter ">route<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.http/-route/index.html">Route</a><span class="token operator"> = </span>routes {
             exceptionHandler(handle(sessionManager))
             debuggerForm(sessionManager)
-            debuggerCallback(sessionManager, ssl)
+            debuggerCallback(sessionManager, httpServer::url, httpServer.sslConfig())
         }</span></span><span class="token punctuation">)</span> : <a href="../../no.nav.security.mock.oauth2.http/-route/index.html">Route</a></div></div></div>
   </div>
   <div class="tabbedcontent">
@@ -118,20 +118,20 @@
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="tableheader">Constructors</h2>
-        <div class="table"><a data-name="1379745308%2FConstructors%2F-251573632" anchor-label="DebuggerRequestHandler" id="1379745308%2FConstructors%2F-251573632" data-filterable-set=":/main"></a>
+        <div class="table"><a data-name="-170664881%2FConstructors%2F-251573632" anchor-label="DebuggerRequestHandler" id="-170664881%2FConstructors%2F-251573632" data-filterable-set=":/main"></a>
           <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":/main" data-filterable-set=":/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-debugger-request-handler.html"><span>Debugger</span><wbr></wbr><span>Request</span><wbr></wbr><span><span>Handler</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1379745308%2FConstructors%2F-251573632"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-170664881%2FConstructors%2F-251573632"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sessionManager<span class="token operator">: </span><a href="../-session-manager/index.html">SessionManager</a><span class="token operator"> = </span>SessionManager()<span class="token punctuation">, </span></span><span class="parameter ">ssl<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.http/-ssl/index.html">Ssl</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">route<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.http/-route/index.html">Route</a><span class="token operator"> = </span>routes {
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">httpServer<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.http/-o-auth2-http-server/index.html">OAuth2HttpServer</a><span class="token punctuation">, </span></span><span class="parameter ">sessionManager<span class="token operator">: </span><a href="../-session-manager/index.html">SessionManager</a><span class="token operator"> = </span>SessionManager()<span class="token punctuation">, </span></span><span class="parameter ">route<span class="token operator">: </span><a href="../../no.nav.security.mock.oauth2.http/-route/index.html">Route</a><span class="token operator"> = </span>routes {
             exceptionHandler(handle(sessionManager))
             debuggerForm(sessionManager)
-            debuggerCallback(sessionManager, ssl)
+            debuggerCallback(sessionManager, httpServer::url, httpServer.sslConfig())
         }</span></span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
