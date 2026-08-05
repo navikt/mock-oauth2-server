@@ -193,6 +193,53 @@ data class RequestMappingTokenCallback(
 
     override fun tokenExpiry(): Long = tokenExpiry
 
+    /**
+     * Adds fallback values used when neither the token request nor preserved authorization-request context
+     * contains a key. Prefer [AuthRequestAwareOAuth2TokenCallback] for new integrations.
+     */
+    @Deprecated(
+        message = "Implement AuthRequestAwareOAuth2TokenCallback to receive authorization-request context directly.",
+        replaceWith = ReplaceWith("this"),
+    )
+    fun withExtraMatchParams(extraMatchParams: Map<String, String>): OAuth2TokenCallback =
+        object : AuthRequestAwareOAuth2TokenCallback {
+            override fun issuerId(): String = this@RequestMappingTokenCallback.issuerId()
+
+            override fun subject(
+                tokenRequest: TokenRequest,
+                authRequestParams: Map<String, String>,
+            ): String? = this@RequestMappingTokenCallback.subject(tokenRequest, mergedContext(tokenRequest, authRequestParams))
+
+            override fun typeHeader(
+                tokenRequest: TokenRequest,
+                authRequestParams: Map<String, String>,
+            ): String = this@RequestMappingTokenCallback.typeHeader(tokenRequest, mergedContext(tokenRequest, authRequestParams))
+
+            override fun audience(
+                tokenRequest: TokenRequest,
+                authRequestParams: Map<String, String>,
+            ): List<String> = this@RequestMappingTokenCallback.audience(tokenRequest, mergedContext(tokenRequest, authRequestParams))
+
+            override fun addClaims(
+                tokenRequest: TokenRequest,
+                authRequestParams: Map<String, String>,
+            ): Map<String, Any> = this@RequestMappingTokenCallback.addClaims(tokenRequest, mergedContext(tokenRequest, authRequestParams))
+
+            override fun tokenExpiry(): Long = this@RequestMappingTokenCallback.tokenExpiry()
+
+            private fun mergedContext(
+                tokenRequest: TokenRequest,
+                authRequestParams: Map<String, String>,
+            ): Map<String, String> {
+                val formParameters = tokenRequest.toHTTPRequest().bodyAsFormParameters
+                val fallbackParams =
+                    extraMatchParams.filterKeys {
+                        it != "client_id" && it !in authRequestParams && formParameters[it].isNullOrEmpty()
+                    }
+                return fallbackParams + authRequestParams
+            }
+        }
+
     private fun List<RequestMapping>.getClaims(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
@@ -270,22 +317,19 @@ data class RequestMapping(
         formParameters: Map<String, List<String>>,
         authRequestParams: Map<String, List<String>> = emptyMap(),
     ): Boolean {
-        val formValues = formParameters[requestParam] ?: emptyList()
-        val authRequestValues = authRequestParams[requestParam]
         val effectiveValues: List<String> =
-            authRequestValues
-                ?: if (formValues.isNotEmpty()) {
-                    formValues
-                } else if (requestParam == "client_id") {
-                    tokenRequest.clientAuthentication
-                        ?.clientID
-                        ?.value
-                        ?.let { listOf(it) }
-                        ?: tokenRequest.clientID?.value?.let { listOf(it) }
-                        ?: emptyList()
-                } else {
-                    emptyList()
-                }
+            if (requestParam == "client_id") {
+                tokenRequest.clientAuthentication
+                    ?.clientID
+                    ?.value
+                    ?.let { listOf(it) }
+                    ?: tokenRequest.clientID?.value?.let { listOf(it) }
+                    ?: emptyList()
+            } else {
+                authRequestParams[requestParam]
+                    ?: formParameters[requestParam]
+                    ?: emptyList()
+            }
         return effectiveValues.any {
             match == "*" || match == it || matchRegex?.matchEntire(it) != null
         }

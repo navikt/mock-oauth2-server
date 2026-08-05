@@ -401,7 +401,7 @@ Those auth request parameters can also be used in claim templates, for example:
 }
 ```
 
-If the same key appears both in the token request body and in preserved auth request params, matching uses the preserved auth request value.
+If the same key appears both in the token request body and in preserved auth request params, matching uses the preserved auth request value. `client_id` is the exception: it always resolves from the authenticated token request.
 
 For `refresh_token` grants, the server reuses auth request params preserved from the original authorization code flow. This means matching/template behavior stays stable across refresh, and the same precedence rule applies (preserved auth request values win over conflicting token-body values).
 

@@ -191,6 +191,49 @@ internal class OAuth2TokenCallbackTest {
         }
 
         @Test
+        fun `client_id mapping uses the token request client instead of authorization request context`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = clientId,
+                                claims = mapOf("sub" to "token-request-client"),
+                            ),
+                        ),
+                )
+
+            callback.subject(clientCredentialsRequest(), mapOf("client_id" to "untrusted-authorize-client")) shouldBe "token-request-client"
+        }
+
+        @Test
+        @Suppress("DEPRECATION")
+        fun `withExtraMatchParams remains available as fallback context without overriding client_id`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "subject",
+                                match = "alice",
+                                claims = mapOf("sub" to "alice"),
+                            ),
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = clientId,
+                                claims = mapOf("sub" to "token-request-client"),
+                            ),
+                        ),
+                )
+
+            callback.withExtraMatchParams(mapOf("subject" to "alice")).subject(authCodeRequest()) shouldBe "alice"
+            callback.withExtraMatchParams(mapOf("client_id" to "untrusted-client")).subject(clientCredentialsRequest()) shouldBe "token-request-client"
+        }
+
+        @Test
         fun `token request with request params matching requestmapping should return specific claims from callback with audience`() {
             val grantTypeShouldMatch = clientCredentialsRequest("audience" to "https://myapp.com/jwt/aud/xxx")
             assertSoftly {
