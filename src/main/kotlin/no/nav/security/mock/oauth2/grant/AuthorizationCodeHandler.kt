@@ -20,6 +20,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.resolveAudience
 import no.nav.security.mock.oauth2.token.resolveClaims
 import no.nav.security.mock.oauth2.token.resolveTypeHeader
+import no.nav.security.mock.oauth2.token.withSubject
 import okhttp3.HttpUrl
 import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
@@ -122,8 +123,8 @@ internal class AuthorizationCodeHandler(
         code: AuthorizationCode,
         oAuth2TokenCallback: OAuth2TokenCallback,
     ): OAuth2TokenCallback =
-        takeLoginFromCache(code)?.let {
-            LoginOAuth2TokenCallback(it, oAuth2TokenCallback)
+        takeLoginFromCache(code)?.let { login ->
+            LoginOAuth2TokenCallback(login, oAuth2TokenCallback)
         } ?: oAuth2TokenCallback
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
@@ -132,38 +133,35 @@ internal class AuthorizationCodeHandler(
         val login: Login,
         val oAuth2TokenCallback: OAuth2TokenCallback,
     ) : AuthRequestAwareOAuth2TokenCallback {
-        override fun issuerId(): String = oAuth2TokenCallback.issuerId()
-
-        private fun withLoginSubject(authRequestParams: Map<String, String>): Map<String, String> = authRequestParams + mapOf("subject" to login.username)
+        private val callbackWithSubject = oAuth2TokenCallback.withSubject(login.username)
 
         // Interactive login has an established contract:
         // - request mappings may match on the submitted login username via requestParam="subject"
         // - if a matching mapping provides "sub", that value wins
         // - otherwise we fall back to the submitted login username as subject
 
+        override fun issuerId(): String = callbackWithSubject.issuerId()
+
         override fun subject(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
-        ): String =
-            oAuth2TokenCallback
-                .resolveClaims(tokenRequest, withLoginSubject(authRequestParams))["sub"] as? String
-                ?: login.username
+        ): String = callbackWithSubject.resolveClaims(tokenRequest, authRequestParams)["sub"] as? String ?: login.username
 
         override fun typeHeader(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
-        ): String = oAuth2TokenCallback.resolveTypeHeader(tokenRequest, withLoginSubject(authRequestParams))
+        ): String = callbackWithSubject.resolveTypeHeader(tokenRequest, authRequestParams)
 
         override fun audience(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
-        ): List<String> = oAuth2TokenCallback.resolveAudience(tokenRequest, withLoginSubject(authRequestParams))
+        ): List<String> = callbackWithSubject.resolveAudience(tokenRequest, authRequestParams)
 
         override fun addClaims(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
         ): Map<String, Any> =
-            oAuth2TokenCallback.resolveClaims(tokenRequest, withLoginSubject(authRequestParams)).toMutableMap().apply {
+            callbackWithSubject.resolveClaims(tokenRequest, authRequestParams).toMutableMap().apply {
                 login.claims?.let {
                     try {
                         jsonMapper

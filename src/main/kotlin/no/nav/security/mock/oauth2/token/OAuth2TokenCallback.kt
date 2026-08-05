@@ -110,6 +110,59 @@ internal fun OAuth2TokenCallback.resolveClaims(
         else -> this.addClaims(tokenRequest)
     }
 
+internal fun OAuth2TokenCallback.withSubject(subject: String?): OAuth2TokenCallback =
+    if (subject == null) {
+        this
+    } else {
+        SubjectOAuth2TokenCallback(this, subject)
+    }
+
+private class SubjectOAuth2TokenCallback(
+    private val delegate: OAuth2TokenCallback,
+    private val subject: String,
+) : AuthRequestAwareOAuth2TokenCallback {
+    override fun issuerId(): String = delegate.issuerId()
+
+    override fun subject(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+    ): String? = delegate.resolveClaims(tokenRequest, context(authRequestParams))["sub"] as? String ?: subject
+
+    override fun typeHeader(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+    ): String = delegate.resolveTypeHeader(tokenRequest, context(authRequestParams))
+
+    override fun audience(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+    ): List<String> = delegate.resolveAudience(tokenRequest, context(authRequestParams))
+
+    override fun addClaims(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+    ): Map<String, Any> = delegate.resolveClaims(tokenRequest, context(authRequestParams))
+
+    override fun tokenExpiry(): Long = delegate.tokenExpiry()
+
+    private fun context(authRequestParams: Map<String, String>) = authRequestParams + (RequestMappingTokenCallback.SUBJECT_PARAM to subject)
+}
+
+private data class TokenRequestContext(
+    val formParameters: Map<String, List<String>>,
+    val authRequestParamsList: Map<String, List<String>>,
+    val templateParams: Map<String, String>,
+)
+
+private fun TokenRequest.requestContext(authRequestParams: Map<String, String>): TokenRequestContext {
+    val formParameters = toHTTPRequest().bodyAsFormParameters
+    return TokenRequestContext(
+        formParameters = formParameters,
+        authRequestParamsList = authRequestParams.mapValues { listOf(it.value) },
+        templateParams = formParameters.mapValues { it.value.joinToString(separator = " ") } + authRequestParams,
+    )
+}
+
 // TODO: for JwtBearerGrant and TokenExchange should be able to ovverride sub, make sub nullable and return some default
 open class DefaultOAuth2TokenCallback
     @JvmOverloads
@@ -270,21 +323,6 @@ data class RequestMappingTokenCallback(
         val requestContext = tokenRequest.requestContext(authRequestParams)
         return firstOrNull { it.isMatch(tokenRequest, requestContext.formParameters, requestContext.authRequestParamsList) }?.typeHeader
             ?: JOSEObjectType.JWT.type
-    }
-
-    private data class RequestContext(
-        val formParameters: Map<String, List<String>>,
-        val authRequestParamsList: Map<String, List<String>>,
-        val templateParams: Map<String, String>,
-    )
-
-    private fun TokenRequest.requestContext(authRequestParams: Map<String, String>): RequestContext {
-        val formParameters = toHTTPRequest().bodyAsFormParameters
-        return RequestContext(
-            formParameters = formParameters,
-            authRequestParamsList = authRequestParams.mapValues { listOf(it.value) },
-            templateParams = formParameters.mapValues { it.value.joinToString(separator = " ") } + authRequestParams,
-        )
     }
 }
 
