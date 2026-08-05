@@ -160,6 +160,10 @@ data class RequestMappingTokenCallback(
     val requestMappings: List<RequestMapping>,
     val tokenExpiry: Long = Duration.ofHours(1).toSeconds(),
 ) : AuthRequestAwareOAuth2TokenCallback {
+    companion object {
+        const val SUBJECT_PARAM = "subject"
+    }
+
     override fun issuerId(): String = issuerId
 
     override fun subject(
