@@ -70,7 +70,6 @@ internal class PasswordGrantHandler(
 
         override fun tokenExpiry(): Long = tokenCallback.tokenExpiry()
 
-        private fun Map<String, String>.withUsername(): Map<String, String> =
-            username?.let { this + ("subject" to it) } ?: this
+        private fun Map<String, String>.withUsername(): Map<String, String> = username?.let { this + ("subject" to it) } ?: this
     }
 }
