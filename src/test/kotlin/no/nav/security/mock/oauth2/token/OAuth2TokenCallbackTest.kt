@@ -209,12 +209,14 @@ internal class OAuth2TokenCallbackTest {
         }
 
         @Test
-        fun `request mapping accepts authorization request parameters`() {
+        @Suppress("DEPRECATION")
+        fun `legacy request mapping overloads remain available`() {
             val mapping = RequestMapping(requestParam = "subject", match = "alice")
             val request = authCodeRequest()
 
             mapping.isMatch(request) shouldBe false
-            mapping.isMatch(request, mapOf("subject" to listOf("alice"))) shouldBe true
+            mapping.isMatch(request, mapOf("subject" to "alice")) shouldBe true
+            mapping.isMatch(request.toHTTPRequest().bodyAsFormParameters, request, mapOf("subject" to "alice")) shouldBe true
         }
 
         @Test

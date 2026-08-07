@@ -299,7 +299,9 @@ data class RequestMappingTokenCallback(
         authRequestParams: Map<String, String>,
     ): Map<String, Any> {
         val requestContext = tokenRequest.requestContext(authRequestParams)
-        val claims = firstOrNull { it.isMatch(tokenRequest, requestContext.formParameters, requestContext.authRequestParamsList) }?.claims ?: emptyMap()
+        val claims =
+            firstOrNull { it.isMatchWithAuthRequestParams(tokenRequest, requestContext.formParameters, requestContext.authRequestParamsList) }?.claims
+                ?: emptyMap()
         val clientId = tokenRequest.clientIdAsString()
 
         // Merge token body params with auth-request params so ${login_hint} etc. resolve in claim templates
@@ -322,7 +324,7 @@ data class RequestMappingTokenCallback(
         authRequestParams: Map<String, String>,
     ): String {
         val requestContext = tokenRequest.requestContext(authRequestParams)
-        return firstOrNull { it.isMatch(tokenRequest, requestContext.formParameters, requestContext.authRequestParamsList) }?.typeHeader
+        return firstOrNull { it.isMatchWithAuthRequestParams(tokenRequest, requestContext.formParameters, requestContext.authRequestParamsList) }?.typeHeader
             ?: JOSEObjectType.JWT.type
     }
 }
@@ -340,19 +342,48 @@ data class RequestMapping(
             runCatching { match.toRegex() }.getOrNull()
         }
 
-    /**
-     * Checks whether this mapping matches the given token request.
-     *
-     * @param authRequestParams Additional params from the original auth request (e.g. login_hint)
-     *                    merged on top of the token request body before matching.
-     *                    `client_id` always resolves from the token request.
-     */
+    @Deprecated(
+        message = "Authorization-request context is supplied by AuthRequestAwareOAuth2TokenCallback.",
+        replaceWith = ReplaceWith("isMatchWithAuthRequestParams(tokenRequest, tokenRequest.toHTTPRequest().bodyAsFormParameters, emptyMap())"),
+    )
     fun isMatch(
         tokenRequest: TokenRequest,
-        authRequestParams: Map<String, List<String>> = emptyMap(),
-    ): Boolean = isMatch(tokenRequest, tokenRequest.toHTTPRequest().bodyAsFormParameters, authRequestParams)
+        extraMatchParams: Map<String, String> = emptyMap(),
+    ): Boolean = isMatch(tokenRequest.toHTTPRequest().bodyAsFormParameters, tokenRequest, extraMatchParams)
 
-    internal fun isMatch(
+    @Deprecated(
+        message = "Authorization-request context is supplied by AuthRequestAwareOAuth2TokenCallback.",
+        replaceWith = ReplaceWith("isMatchWithAuthRequestParams(tokenRequest, formParameters, emptyMap())"),
+    )
+    fun isMatch(
+        formParameters: Map<String, List<String>>,
+        tokenRequest: TokenRequest,
+        extraMatchParams: Map<String, String> = emptyMap(),
+    ): Boolean {
+        val effectiveValues =
+            when {
+                formParameters[requestParam].isNullOrEmpty().not() -> {
+                    formParameters[requestParam]
+                }
+
+                requestParam == "client_id" -> {
+                    tokenRequest.clientAuthentication
+                        ?.clientID
+                        ?.value
+                        ?.let { listOf(it) }
+                        ?: tokenRequest.clientID?.value?.let { listOf(it) }
+                }
+
+                else -> {
+                    extraMatchParams[requestParam]?.let { listOf(it) }
+                }
+            }
+        return effectiveValues?.any {
+            match == "*" || match == it || matchRegex?.matchEntire(it) != null
+        } ?: false
+    }
+
+    internal fun isMatchWithAuthRequestParams(
         tokenRequest: TokenRequest,
         formParameters: Map<String, List<String>>,
         authRequestParams: Map<String, List<String>> = emptyMap(),
