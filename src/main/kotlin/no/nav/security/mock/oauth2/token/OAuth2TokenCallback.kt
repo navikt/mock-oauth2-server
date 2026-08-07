@@ -36,6 +36,7 @@ interface OAuth2TokenCallback {
  *
  * Precedence:
  * - If a key exists both in token request body params and in [authRequestParams], [authRequestParams] wins.
+ * - `client_id` is the exception: it always resolves from the authenticated token request.
  *
  * Constraints for refresh-token reuse:
  * - Persisted params are sanitized and bounded before storage.
@@ -344,6 +345,7 @@ data class RequestMapping(
      *
      * @param authRequestParams Additional params from the original auth request (e.g. login_hint)
      *                    merged on top of the token request body before matching.
+     *                    `client_id` always resolves from the token request.
      */
     fun isMatch(
         tokenRequest: TokenRequest,

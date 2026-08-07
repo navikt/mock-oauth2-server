@@ -209,6 +209,15 @@ internal class OAuth2TokenCallbackTest {
         }
 
         @Test
+        fun `request mapping accepts authorization request parameters`() {
+            val mapping = RequestMapping(requestParam = "subject", match = "alice")
+            val request = authCodeRequest()
+
+            mapping.isMatch(request) shouldBe false
+            mapping.isMatch(request, mapOf("subject" to listOf("alice"))) shouldBe true
+        }
+
+        @Test
         @Suppress("DEPRECATION")
         fun `withExtraMatchParams remains available as fallback context without overriding client_id`() {
             val callback =
