@@ -29,6 +29,7 @@
   - [HTTPS](#https)
   - [CORS](#cors)
   - [Debugger](#debugger)
+  - [Local testing support](#local-testing-support)
 - [Configuration Reference](#configuration-reference)
 - [API Reference](#api-reference)
 - [Migration guide](#migration-guide)
@@ -597,6 +598,80 @@ Browser based OAuth2 clients and SPAs can call the token, JWKS and other endpoin
 ### Debugger
 
 Point your browser to `http://localhost:8080/default/debugger` to open the OAuth2 client debugger. It implements the Authorization Code Flow and lets you inspect request parameters and token responses interactively.
+
+### Local testing support
+
+A pre-configured setup for local testing is available. This uses `Dockerfile.local`, `docker-compose.local.yaml` and `src/test/resources/config-login-hint.json` (to support testing the claim mapping based on a `login_hint`).
+
+**Start the server:**
+
+```shell
+docker compose -f docker-compose.local.yaml up --build
+```
+
+**Example Flow:**
+
+1. **Authorization Request:**
+   Call the authorize endpoint with a `login_hint`.
+
+   ```shell
+   curl -v "http://localhost:8080/mock-issuer/authorize?client_id=my-app&state=1777472834735&redirect_uri=http://localhost:8080/&code_challenge=F_Fn6NYPHzYva3b9q628W7qkVczD2FprtyNFYR8J7_8&code_challenge_method=S256&response_type=code&nonce=8IBTHwOdqNKAWeKl7plt8g==&scope=openid&login_hint=F009635833"
+   ```
+
+2. **Authorization Response:**
+   The server redirects back with a `code` (inspect logs from the docker container or the `Location` header in the curl output).
+
+   ```http
+   HTTP/1.1 302 Found
+   Location: http://localhost:8080/?code=<GENERATED_AUTH_CODE>&state=1777472834735
+   ```
+
+3. **Token Request:**
+   Exchange the code for tokens.
+
+   ```shell
+   curl -X POST http://localhost:8080/mock-issuer/token \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "client_id=my-app" \
+     -d "code=<GENERATED_AUTH_CODE>" \
+     -d "grant_type=authorization_code"
+   ```
+
+4. **Token Response:**
+   The tokens contain claims derived from the `login_hint` based on the configuration.
+
+   ```json
+   {
+     "token_type" : "Bearer",
+     "id_token" : "eyJraWQiOiJtb2NrLWlzc3VlciI...",
+     "access_token" : "eyJraWQiOiJtb2NrLWlzc3V...",
+     "refresh_token" : "eyJhbGciOiJub25lIn0.ey...",
+     "expires_in" : 3599
+   }
+   ```
+
+   Go ahead and decode the ID token with [jwt.io](https://jwt.io):
+
+   ```json
+    {
+        "sub": "0000000000-0000-0000-0000-00F009635833",
+        "aud": "my-app",
+        "nbf": 1780732111,
+        "iss": "http://localhost:8080/mock-issuer",
+        "name": "Mocked Username: F009635833",
+        "exp": 1780735711,
+        "iat": 1780732111,
+        "nonce": "8IBTHwOdqNKAWeKl7plt8g==",
+        "jti": "037dd92c-8969-48d0-ab73-6cd9bcec449a",
+        "email": "F009635833@example.com"
+    }
+   ```
+
+**Shutdown the server:**
+
+```shell
+docker compose -f docker-compose.local.yaml down
+```
 
 ---
 
