@@ -481,6 +481,9 @@ This allows a single `JSON_CONFIG` to serve different claim sets per user withou
 
 1. Claims set by a matching `requestMapping` take priority.
 2. Claims submitted on the login page can add new claims but cannot overwrite claims already set by the mapping.
+3. Login-page `claims.sub` is ignored. The submitted username remains the subject unless a matching `requestMapping` provides `sub`.
+
+To copy the login username into a custom claim, use `${subject}` in a `requestMapping`, for example: `"external_subject": "${subject}"`.
 
 **Template variable precedence** (highest wins):
 
