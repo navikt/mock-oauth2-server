@@ -1,6 +1,5 @@
 package no.nav.security.mock.oauth2.e2e
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.nimbusds.oauth2.sdk.GrantType
 import io.kotest.assertions.asClue
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -29,6 +28,7 @@ import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
+import tools.jackson.module.kotlin.jacksonObjectMapper
 
 class RefreshTokenGrantIntegrationTest {
     private val client: OkHttpClient = client()
