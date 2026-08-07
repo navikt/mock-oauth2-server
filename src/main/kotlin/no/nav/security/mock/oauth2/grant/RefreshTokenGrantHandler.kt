@@ -33,20 +33,32 @@ internal class RefreshTokenGrantHandler(
         log.debug("issuing token for refreshToken=$refreshToken")
         val scope: String? = tokenRequest.scope?.toString()
         val issuerId = issuerUrl.issuerId()
-        val storedCallback = refreshTokenManager[refreshToken]
-        if (storedCallback != null && storedCallback.issuerId() != issuerId) {
+        val stored =
+            refreshTokenManager[refreshToken]
+                ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
+        val storedCallback = stored.callback
+        val storedAuthRequestParams = stored.authRequestParams
+        if (storedCallback.issuerId() != issuerId) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }
         val enqueuedCallback = enqueuedCallbackSupplier?.invoke(issuerId)
-        val resolvedCallback =
-            enqueuedCallback
-                ?: storedCallback
-                ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
-        if (rotateRefreshToken) {
-            refreshToken = refreshTokenManager.rotate(refreshToken, resolvedCallback)
+        val resolvedCallback = enqueuedCallback ?: storedCallback
+        if (resolvedCallback.issuerId() != issuerId) {
+            throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback)
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback)
+
+        val authRequestParams = storedAuthRequestParams
+        if (rotateRefreshToken) {
+            refreshToken =
+                refreshTokenManager.rotate(
+                    refreshToken = refreshToken,
+                    fallbackTokenCallback = resolvedCallback,
+                    authRequestParams = authRequestParams,
+                    callbackOverride = enqueuedCallback,
+                )
+        }
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams)
+        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",

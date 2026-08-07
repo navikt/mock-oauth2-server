@@ -372,6 +372,48 @@ A token request to `http://localhost:8080/issuer1/token` with any `code` paramet
 }
 ```
 
+For authorization code flow, query parameters from the original authorize request are preserved and propagated into token callback matching and template resolution.
+This applies to built-in `RequestMappingTokenCallback` matching and to custom callbacks that implement `AuthRequestAwareOAuth2TokenCallback`.
+Mappings can use values such as `login_hint`, `acr_values`, `claims`, or custom authorization request parameters.
+
+```json
+{
+  "issuerId": "issuer1",
+  "tokenExpiry": 120,
+  "requestMappings": [
+    {
+      "requestParam": "login_hint",
+      "match": "anna@example.com",
+      "claims": {
+        "sub": "anna-uuid",
+        "email": "anna@example.com"
+      }
+    }
+  ]
+}
+```
+
+Those auth request parameters can also be used in claim templates, for example:
+
+```json
+"claims": {
+  "email": "${login_hint}"
+}
+```
+
+If the same key appears both in the token request body and in preserved auth request params, matching uses the preserved auth request value. `client_id` is the exception: it always resolves from the authenticated token request.
+
+For `refresh_token` grants, the server reuses auth request params preserved from the original authorization code flow. This means matching/template behavior stays stable across refresh, and the same precedence rule applies (preserved auth request values win over conflicting token-body values).
+
+When auth request params are persisted for refresh-token usage, a bounded subset is stored server-side:
+
+- the keys `claims`, `request`, and `client_assertion` are excluded
+- values are truncated to 512 characters
+- at most 20 params are kept
+- total stored key/value length is capped at 4096 characters
+
+Important: during the initial authorization-code token exchange, `claims`, `request`, and `client_assertion` can still be present in the auth request and therefore be available for matching/template substitution. These keys are excluded only from persisted server-side storage, so they are not available for refresh-token matching/template substitution.
+
 The `match` field supports exact strings, `"*"` (matches any value), and full regular expressions. If the pattern is an invalid regular expression, it does not throw — regex evaluation is skipped, but exact-string matching still applies.
 
 Use `${clientId}` (or `${client_id}`) in claim values to insert the requesting client ID dynamically. All form parameters from the token request are available as template variables:
@@ -439,6 +481,9 @@ This allows a single `JSON_CONFIG` to serve different claim sets per user withou
 
 1. Claims set by a matching `requestMapping` take priority.
 2. Claims submitted on the login page can add new claims but cannot overwrite claims already set by the mapping.
+3. Login-page `claims.sub` is ignored. The submitted username remains the subject unless a matching `requestMapping` provides `sub`.
+
+To copy the login username into a custom claim, use `${subject}` in a `requestMapping`, for example: `"external_subject": "${subject}"`.
 
 **Template variable precedence** (highest wins):
 

@@ -42,6 +42,7 @@ internal class PasswordGrantHandler(
         private val tokenCallback: OAuth2TokenCallback,
         private val username: String?,
     ) : OAuth2TokenCallback {
+        @Suppress("DEPRECATION")
         private val resolvedDelegate: OAuth2TokenCallback =
             when {
                 username != null && tokenCallback is RequestMappingTokenCallback -> {
