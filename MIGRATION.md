@@ -50,7 +50,7 @@ Request bodies were aggregated with no limit, so any unauthenticated client coul
 
 In previous versions, claims submitted on the login page could overwrite claims set by a matching `requestMapping` (including `sub`). This could produce tokens where the JWT subject differed from the `sub` claim in the payload.
 
-**New behavior (5.0.0):** claims set by a matching `requestMapping` take priority. Login-page claims can add new claims but cannot overwrite claims already set by the mapping.
+**New behavior (5.0.0):** claims set by a matching `requestMapping` take priority. Login-page claims can add new claims but cannot overwrite claims already set by the mapping. Login-page `claims.sub` is ignored; use the submitted username as the subject, or `${subject}` in a `requestMapping` to copy it to a custom claim.
 
 **Affected pattern:** using `interactiveLogin: true` together with mappings/token callbacks, and relying on the login-page `claims` field to override specific claims (for example `sub`) that are also set in the matching `requestMapping`.
 

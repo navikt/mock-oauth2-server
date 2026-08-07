@@ -14,6 +14,8 @@ import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
+import no.nav.security.mock.oauth2.token.RequestMapping
+import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -89,6 +91,30 @@ internal class AuthorizationCodeHandlerTest {
             val claims = SignedJWT.parse(it.idToken).claims
             claims["acr"] shouldBe "value1"
             claims["abc"] shouldBe "value2"
+        }
+    }
+
+    @Test
+    fun `login claims cannot override subject but request mappings can copy it to custom claims`() {
+        val code = handler.retrieveAuthorizationCode(Login("foo", "{ \"sub\": \"untrusted\", \"department\": \"engineering\" }"))
+        val callback =
+            RequestMappingTokenCallback(
+                issuerId = "default",
+                requestMappings =
+                    listOf(
+                        RequestMapping(
+                            requestParam = "subject",
+                            match = "foo",
+                            claims = mapOf("external_subject" to "\${subject}"),
+                        ),
+                    ),
+            )
+
+        handler.tokenResponse(tokenRequest(code = code), "http://myissuer".toHttpUrl(), callback).asClue {
+            val claims = SignedJWT.parse(it.idToken).claims
+            SignedJWT.parse(it.idToken).subject shouldBe "foo"
+            claims["external_subject"] shouldBe "foo"
+            claims["department"] shouldBe "engineering"
         }
     }
 

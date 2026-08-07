@@ -31,6 +31,7 @@ import kotlin.collections.set
 
 private val log = KotlinLogging.logger {}
 private val jsonMapper: ObjectMapper = jacksonObjectMapper()
+private const val SUBJECT_CLAIM = "sub"
 
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
@@ -145,7 +146,7 @@ internal class AuthorizationCodeHandler(
         override fun subject(
             tokenRequest: TokenRequest,
             authRequestParams: Map<String, String>,
-        ): String = callbackWithSubject.resolveClaims(tokenRequest, authRequestParams)["sub"] as? String ?: login.username
+        ): String = callbackWithSubject.resolveClaims(tokenRequest, authRequestParams)[SUBJECT_CLAIM] as? String ?: login.username
 
         override fun typeHeader(
             tokenRequest: TokenRequest,
@@ -168,7 +169,7 @@ internal class AuthorizationCodeHandler(
                             .readTree(it)
                             .properties()
                             .forEach { field ->
-                                if (!containsKey(field.key)) {
+                                if (field.key != SUBJECT_CLAIM && !containsKey(field.key)) {
                                     put(field.key, jsonMapper.readValue(field.value.toString()))
                                 }
                             }
