@@ -75,6 +75,16 @@ interface AuthRequestAwareOAuth2TokenCallback : OAuth2TokenCallback {
     ): Map<String, Any>
 }
 
+internal interface AuthRequestParamsListAwareOAuth2TokenCallback : AuthRequestAwareOAuth2TokenCallback {
+    fun subject(tokenRequest: TokenRequest, authRequestParams: Map<String, String>, authRequestParamsList: Map<String, List<String>>): String?
+
+    fun typeHeader(tokenRequest: TokenRequest, authRequestParams: Map<String, String>, authRequestParamsList: Map<String, List<String>>): String
+
+    fun audience(tokenRequest: TokenRequest, authRequestParams: Map<String, String>, authRequestParamsList: Map<String, List<String>>): List<String>
+
+    fun addClaims(tokenRequest: TokenRequest, authRequestParams: Map<String, String>, authRequestParamsList: Map<String, List<String>>): Map<String, Any>
+}
+
 internal fun OAuth2TokenCallback.resolveSubject(
     tokenRequest: TokenRequest,
     authRequestParams: Map<String, String>,
@@ -111,6 +121,50 @@ internal fun OAuth2TokenCallback.resolveClaims(
         else -> this.addClaims(tokenRequest)
     }
 
+internal fun OAuth2TokenCallback.resolveSubject(
+    tokenRequest: TokenRequest,
+    authRequestParams: Map<String, String>,
+    authRequestParamsList: Map<String, List<String>>,
+): String? =
+    if (this is AuthRequestParamsListAwareOAuth2TokenCallback) {
+        subject(tokenRequest, authRequestParams, authRequestParamsList)
+    } else {
+        resolveSubject(tokenRequest, authRequestParams)
+    }
+
+internal fun OAuth2TokenCallback.resolveTypeHeader(
+    tokenRequest: TokenRequest,
+    authRequestParams: Map<String, String>,
+    authRequestParamsList: Map<String, List<String>>,
+): String =
+    if (this is AuthRequestParamsListAwareOAuth2TokenCallback) {
+        typeHeader(tokenRequest, authRequestParams, authRequestParamsList)
+    } else {
+        resolveTypeHeader(tokenRequest, authRequestParams)
+    }
+
+internal fun OAuth2TokenCallback.resolveAudience(
+    tokenRequest: TokenRequest,
+    authRequestParams: Map<String, String>,
+    authRequestParamsList: Map<String, List<String>>,
+): List<String> =
+    if (this is AuthRequestParamsListAwareOAuth2TokenCallback) {
+        audience(tokenRequest, authRequestParams, authRequestParamsList)
+    } else {
+        resolveAudience(tokenRequest, authRequestParams)
+    }
+
+internal fun OAuth2TokenCallback.resolveClaims(
+    tokenRequest: TokenRequest,
+    authRequestParams: Map<String, String>,
+    authRequestParamsList: Map<String, List<String>>,
+): Map<String, Any> =
+    if (this is AuthRequestParamsListAwareOAuth2TokenCallback) {
+        addClaims(tokenRequest, authRequestParams, authRequestParamsList)
+    } else {
+        resolveClaims(tokenRequest, authRequestParams)
+    }
+
 internal fun OAuth2TokenCallback.withSubject(subject: String?): OAuth2TokenCallback =
     if (subject == null) {
         this
@@ -121,32 +175,60 @@ internal fun OAuth2TokenCallback.withSubject(subject: String?): OAuth2TokenCallb
 private class SubjectOAuth2TokenCallback(
     private val delegate: OAuth2TokenCallback,
     private val subject: String,
-) : AuthRequestAwareOAuth2TokenCallback {
+) : AuthRequestParamsListAwareOAuth2TokenCallback {
     override fun issuerId(): String = delegate.issuerId()
 
     override fun subject(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
-    ): String? = delegate.resolveClaims(tokenRequest, context(authRequestParams))["sub"] as? String ?: subject
+    ): String? =
+        (delegate as? RequestMappingTokenCallback)?.resolveSubject(tokenRequest, context(authRequestParams)) ?: subject
+
+    override fun subject(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>>,
+    ): String? =
+        (delegate as? RequestMappingTokenCallback)?.resolveSubject(tokenRequest, context(authRequestParams), listContext(authRequestParamsList)) ?: subject
 
     override fun typeHeader(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
     ): String = delegate.resolveTypeHeader(tokenRequest, context(authRequestParams))
 
+    override fun typeHeader(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>>,
+    ): String = delegate.resolveTypeHeader(tokenRequest, context(authRequestParams), listContext(authRequestParamsList))
+
     override fun audience(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
     ): List<String> = delegate.resolveAudience(tokenRequest, context(authRequestParams))
+
+    override fun audience(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>>,
+    ): List<String> = delegate.resolveAudience(tokenRequest, context(authRequestParams), listContext(authRequestParamsList))
 
     override fun addClaims(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
     ): Map<String, Any> = delegate.resolveClaims(tokenRequest, context(authRequestParams))
 
+    override fun addClaims(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>>,
+    ): Map<String, Any> = delegate.resolveClaims(tokenRequest, context(authRequestParams), listContext(authRequestParamsList))
+
     override fun tokenExpiry(): Long = delegate.tokenExpiry()
 
     private fun context(authRequestParams: Map<String, String>) = authRequestParams + (RequestMappingTokenCallback.SUBJECT_PARAM to subject)
+
+    private fun listContext(authRequestParams: Map<String, List<String>>) = authRequestParams + (RequestMappingTokenCallback.SUBJECT_PARAM to listOf(subject))
 }
 
 private data class TokenRequestContext(
@@ -155,11 +237,14 @@ private data class TokenRequestContext(
     val templateParams: Map<String, String>,
 )
 
-private fun TokenRequest.requestContext(authRequestParams: Map<String, String>): TokenRequestContext {
+private fun TokenRequest.requestContext(
+    authRequestParams: Map<String, String>,
+    authRequestParamsList: Map<String, List<String>> = authRequestParams.mapValues { listOf(it.value) },
+): TokenRequestContext {
     val formParameters = toHTTPRequest().bodyAsFormParameters
     return TokenRequestContext(
         formParameters = formParameters,
-        authRequestParamsList = authRequestParams.mapValues { listOf(it.value) },
+        authRequestParamsList = authRequestParamsList,
         templateParams = formParameters.mapValues { it.value.joinToString(separator = " ") } + authRequestParams,
     )
 }
@@ -213,7 +298,7 @@ data class RequestMappingTokenCallback(
     val issuerId: String,
     val requestMappings: List<RequestMapping>,
     val tokenExpiry: Long = Duration.ofHours(1).toSeconds(),
-) : AuthRequestAwareOAuth2TokenCallback {
+) : AuthRequestParamsListAwareOAuth2TokenCallback {
     companion object {
         const val SUBJECT_PARAM = "subject"
     }
@@ -225,10 +310,22 @@ data class RequestMappingTokenCallback(
         authRequestParams: Map<String, String>,
     ): String? = requestMappings.getClaimOrNull(tokenRequest, "sub", authRequestParams)
 
+    override fun subject(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>>,
+    ): String? = requestMappings.getClaimOrNull(tokenRequest, "sub", authRequestParams, authRequestParamsList)
+
     override fun typeHeader(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
     ): String = requestMappings.getTypeHeader(tokenRequest, authRequestParams)
+
+    override fun typeHeader(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>>,
+    ): String = requestMappings.getTypeHeader(tokenRequest, authRequestParams, authRequestParamsList)
 
     override fun audience(
         tokenRequest: TokenRequest,
@@ -240,10 +337,27 @@ data class RequestMappingTokenCallback(
             else -> emptyList()
         }
 
+    override fun audience(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>>,
+    ): List<String> =
+        when (val aud = requestMappings.getClaimOrNull<Any>(tokenRequest, "aud", authRequestParams, authRequestParamsList)) {
+            is String -> listOf(aud)
+            is List<*> -> aud.filterIsInstance<String>()
+            else -> emptyList()
+        }
+
     override fun addClaims(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
     ): Map<String, Any> = requestMappings.getClaims(tokenRequest, authRequestParams)
+
+    override fun addClaims(
+        tokenRequest: TokenRequest,
+        authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>>,
+    ): Map<String, Any> = requestMappings.getClaims(tokenRequest, authRequestParams, authRequestParamsList)
 
     override fun tokenExpiry(): Long = tokenExpiry
 
@@ -297,8 +411,9 @@ data class RequestMappingTokenCallback(
     private fun List<RequestMapping>.getClaims(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>> = authRequestParams.mapValues { listOf(it.value) },
     ): Map<String, Any> {
-        val requestContext = tokenRequest.requestContext(authRequestParams)
+        val requestContext = tokenRequest.requestContext(authRequestParams, authRequestParamsList)
         val claims =
             firstOrNull { it.isMatchWithAuthRequestParams(tokenRequest, requestContext.formParameters, requestContext.authRequestParamsList) }?.claims
                 ?: emptyMap()
@@ -317,13 +432,15 @@ data class RequestMappingTokenCallback(
         tokenRequest: TokenRequest,
         key: String,
         authRequestParams: Map<String, String>,
-    ): T? = getClaims(tokenRequest, authRequestParams)[key] as? T
+        authRequestParamsList: Map<String, List<String>> = authRequestParams.mapValues { listOf(it.value) },
+    ): T? = getClaims(tokenRequest, authRequestParams, authRequestParamsList)[key] as? T
 
     private fun List<RequestMapping>.getTypeHeader(
         tokenRequest: TokenRequest,
         authRequestParams: Map<String, String>,
+        authRequestParamsList: Map<String, List<String>> = authRequestParams.mapValues { listOf(it.value) },
     ): String {
-        val requestContext = tokenRequest.requestContext(authRequestParams)
+        val requestContext = tokenRequest.requestContext(authRequestParams, authRequestParamsList)
         return firstOrNull { it.isMatchWithAuthRequestParams(tokenRequest, requestContext.formParameters, requestContext.authRequestParamsList) }?.typeHeader
             ?: JOSEObjectType.JWT.type
     }
@@ -342,28 +459,23 @@ data class RequestMapping(
             runCatching { match.toRegex() }.getOrNull()
         }
 
-    @Deprecated(
-        message = "Authorization-request context is supplied by AuthRequestAwareOAuth2TokenCallback.",
-        replaceWith = ReplaceWith("isMatchWithAuthRequestParams(tokenRequest, tokenRequest.toHTTPRequest().bodyAsFormParameters, emptyMap())"),
-    )
     fun isMatch(
         tokenRequest: TokenRequest,
-        extraMatchParams: Map<String, String> = emptyMap(),
-    ): Boolean = isMatch(tokenRequest.toHTTPRequest().bodyAsFormParameters, tokenRequest, extraMatchParams)
+        authRequestParams: Map<String, List<String>> = emptyMap(),
+    ): Boolean = isMatchWithAuthRequestParams(tokenRequest, tokenRequest.toHTTPRequest().bodyAsFormParameters, authRequestParams)
 
     @Deprecated(
         message = "Authorization-request context is supplied by AuthRequestAwareOAuth2TokenCallback.",
-        replaceWith = ReplaceWith("isMatchWithAuthRequestParams(tokenRequest, formParameters, emptyMap())"),
     )
     fun isMatch(
-        formParameters: Map<String, List<String>>,
+        formParams: Map<String, List<String>>,
         tokenRequest: TokenRequest,
         extraMatchParams: Map<String, String> = emptyMap(),
     ): Boolean {
         val effectiveValues =
             when {
-                formParameters[requestParam].isNullOrEmpty().not() -> {
-                    formParameters[requestParam]
+                formParams[requestParam].isNullOrEmpty().not() -> {
+                    formParams[requestParam]
                 }
 
                 requestParam == "client_id" -> {

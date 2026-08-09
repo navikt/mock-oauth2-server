@@ -13,6 +13,7 @@ import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
+import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMapping
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
@@ -116,6 +117,34 @@ internal class AuthorizationCodeHandlerTest {
             claims["external_subject"] shouldBe "foo"
             claims["department"] shouldBe "engineering"
         }
+    }
+
+    @Test
+    fun `interactive login does not invoke arbitrary callback claims while resolving subject`() {
+        val callback =
+            object : OAuth2TokenCallback {
+                var addClaimsCalls = 0
+
+                override fun issuerId() = "default"
+
+                override fun subject(tokenRequest: com.nimbusds.oauth2.sdk.TokenRequest): String? = null
+
+                override fun typeHeader(tokenRequest: com.nimbusds.oauth2.sdk.TokenRequest) = "JWT"
+
+                override fun audience(tokenRequest: com.nimbusds.oauth2.sdk.TokenRequest) = listOf("audience")
+
+                override fun addClaims(tokenRequest: com.nimbusds.oauth2.sdk.TokenRequest): Map<String, Any> {
+                    addClaimsCalls++
+                    return emptyMap()
+                }
+
+                override fun tokenExpiry() = 3600L
+            }
+        val code = handler.retrieveAuthorizationCode(Login("foo"))
+
+        handler.tokenResponse(tokenRequest(code = code), "http://myissuer".toHttpUrl(), callback)
+
+        callback.addClaimsCalls shouldBe 2
     }
 
     @ParameterizedTest

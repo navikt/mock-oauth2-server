@@ -215,8 +215,28 @@ internal class OAuth2TokenCallbackTest {
             val request = authCodeRequest()
 
             mapping.isMatch(request) shouldBe false
-            mapping.isMatch(request, mapOf("subject" to "alice")) shouldBe true
-            mapping.isMatch(request.toHTTPRequest().bodyAsFormParameters, request, mapOf("subject" to "alice")) shouldBe true
+            mapping.isMatch(request, mapOf("subject" to listOf("alice"))) shouldBe true
+            mapping.isMatch(
+                formParams = request.toHTTPRequest().bodyAsFormParameters,
+                tokenRequest = request,
+                extraMatchParams = mapOf("subject" to "alice"),
+            ) shouldBe true
+        }
+
+        @Test
+        fun `list-valued authorization request params match any repeated value`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings = listOf(RequestMapping(requestParam = "resource", match = "second", claims = mapOf("sub" to "matched"))),
+                )
+            val request = authCodeRequest()
+
+            callback.resolveClaims(
+                request,
+                mapOf("resource" to "first second"),
+                mapOf("resource" to listOf("first", "second")),
+            )["sub"] shouldBe "matched"
         }
 
         @Test

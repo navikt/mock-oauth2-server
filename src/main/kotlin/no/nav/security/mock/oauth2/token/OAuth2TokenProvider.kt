@@ -68,6 +68,22 @@ class OAuth2TokenProvider
             oAuth2TokenCallback.tokenExpiry(),
         ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams))
 
+        internal fun idToken(
+            tokenRequest: TokenRequest,
+            issuerUrl: HttpUrl,
+            oAuth2TokenCallback: OAuth2TokenCallback,
+            nonce: String? = null,
+            authRequestParams: Map<String, String>,
+            authRequestParamsList: Map<String, List<String>>,
+        ) = defaultClaims(
+            issuerUrl,
+            oAuth2TokenCallback.resolveSubject(tokenRequest, authRequestParams, authRequestParamsList),
+            listOf(tokenRequest.clientIdAsString()),
+            nonce,
+            oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams, authRequestParamsList),
+            oAuth2TokenCallback.tokenExpiry(),
+        ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams, authRequestParamsList))
+
         fun accessToken(
             tokenRequest: TokenRequest,
             issuerUrl: HttpUrl,
@@ -89,6 +105,22 @@ class OAuth2TokenProvider
             oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams),
             oAuth2TokenCallback.tokenExpiry(),
         ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams))
+
+        internal fun accessToken(
+            tokenRequest: TokenRequest,
+            issuerUrl: HttpUrl,
+            oAuth2TokenCallback: OAuth2TokenCallback,
+            nonce: String? = null,
+            authRequestParams: Map<String, String>,
+            authRequestParamsList: Map<String, List<String>>,
+        ) = defaultClaims(
+            issuerUrl,
+            oAuth2TokenCallback.resolveSubject(tokenRequest, authRequestParams, authRequestParamsList),
+            oAuth2TokenCallback.resolveAudience(tokenRequest, authRequestParams, authRequestParamsList),
+            nonce,
+            oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams, authRequestParamsList),
+            oAuth2TokenCallback.tokenExpiry(),
+        ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams, authRequestParamsList))
 
         fun exchangeAccessToken(
             tokenRequest: TokenRequest,

@@ -488,8 +488,10 @@ To copy the login username into a custom claim, use `${subject}` in a `requestMa
 **Template variable precedence** (highest wins):
 
 1. `client_id` / `clientId` — always authoritative
-2. Token POST body form parameters
-3. `${subject}` and other built-in variables
+2. `${subject}` from interactive login
+3. Preserved authorization-request parameters
+4. Token POST body form parameters
+5. Other built-in variables
 
 ### Auto-added claims
 
