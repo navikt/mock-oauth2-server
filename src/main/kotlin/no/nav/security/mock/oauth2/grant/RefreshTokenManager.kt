@@ -13,6 +13,7 @@ internal data class StoredRefreshToken(
     val callback: OAuth2TokenCallback,
     val authRequestParams: Map<String, String>,
     val nonce: Nonce? = null,
+    val authRequestParamsList: Map<String, List<String>> = authRequestParams.mapValues { listOf(it.value) },
 )
 
 private const val DEFAULT_MAX_STORED_AUTH_REQUEST_PARAMS = 20
@@ -47,22 +48,25 @@ internal data class RefreshTokenManager(
         tokenCallback: OAuth2TokenCallback,
         nonce: Nonce? = null,
         authRequestParams: Map<String, String> = emptyMap(),
+        authRequestParamsList: Map<String, List<String>> = authRequestParams.mapValues { listOf(it.value) },
     ): RefreshToken =
         refreshTokenInternal(
             tokenCallback = tokenCallback,
             nonce = nonce,
             sanitizedAuthRequestParams = sanitizeAuthRequestParams(authRequestParams),
+            sanitizedAuthRequestParamsList = sanitizeAuthRequestParamsList(authRequestParamsList),
         )
 
     private fun refreshTokenInternal(
         tokenCallback: OAuth2TokenCallback,
         nonce: Nonce? = null,
         sanitizedAuthRequestParams: Map<String, String>,
+        sanitizedAuthRequestParamsList: Map<String, List<String>>,
     ): RefreshToken {
         val jti = UUID.randomUUID().toString()
         // added for compatibility with keycloak js client which expects a jwt with nonce
         val refreshToken = nonce?.let { plainJWT(jti, nonce) } ?: jti
-        cache[refreshToken] = StoredRefreshToken(tokenCallback, sanitizedAuthRequestParams, nonce)
+        cache[refreshToken] = StoredRefreshToken(tokenCallback, sanitizedAuthRequestParams, nonce, sanitizedAuthRequestParamsList)
         return refreshToken
     }
 
@@ -73,12 +77,13 @@ internal data class RefreshTokenManager(
         callbackOverride: OAuth2TokenCallback? = null,
     ): RefreshToken {
         val storedWithSanitizedParams =
-            cache.remove(refreshToken)
+                cache.remove(refreshToken)
                 ?: StoredRefreshToken(fallbackTokenCallback, sanitizeAuthRequestParams(authRequestParams))
         return refreshTokenInternal(
             tokenCallback = callbackOverride ?: storedWithSanitizedParams.callback,
             nonce = storedWithSanitizedParams.nonce,
             sanitizedAuthRequestParams = storedWithSanitizedParams.authRequestParams,
+            sanitizedAuthRequestParamsList = storedWithSanitizedParams.authRequestParamsList,
         )
     }
 
@@ -100,6 +105,26 @@ internal data class RefreshTokenManager(
 
             if (sanitized.size >= authRequestParamsStoragePolicy.maxStoredParams) break
             if (totalLength >= authRequestParamsStoragePolicy.maxTotalLength) break
+        }
+
+        return sanitized
+    }
+
+    private fun sanitizeAuthRequestParamsList(authRequestParams: Map<String, List<String>>): Map<String, List<String>> {
+        var totalLength = 0
+        val sanitized = linkedMapOf<String, List<String>>()
+
+        for ((key, values) in authRequestParams) {
+            if (sanitized.size >= authRequestParamsStoragePolicy.maxStoredParams) break
+            if (totalLength >= authRequestParamsStoragePolicy.maxTotalLength) break
+            if (key in authRequestParamsStoragePolicy.excludedKeys) continue
+
+            val boundedValues = values.map { it.take(authRequestParamsStoragePolicy.maxValueLength) }
+            val nextLength = totalLength + key.length + boundedValues.sumOf { it.length }
+            if (nextLength > authRequestParamsStoragePolicy.maxTotalLength) continue
+
+            sanitized[key] = boundedValues
+            totalLength = nextLength
         }
 
         return sanitized

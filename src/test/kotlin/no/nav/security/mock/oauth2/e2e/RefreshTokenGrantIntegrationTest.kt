@@ -250,6 +250,78 @@ class RefreshTokenGrantIntegrationTest {
     }
 
     @Test
+    fun `refresh_token grant preserves repeated authorization request params for matching`() {
+        val issuerId = "repeated-params-issuer"
+        val server =
+            MockOAuth2Server(
+                OAuth2Config(
+                    tokenCallbacks =
+                        setOf(
+                            RequestMappingTokenCallback(
+                                issuerId = issuerId,
+                                requestMappings =
+                                    listOf(
+                                        RequestMapping(
+                                            requestParam = "resource",
+                                            match = "https://second.example",
+                                            claims = mapOf("sub" to "matched-repeated-resource", "resource" to "${'$'}{resource}"),
+                                        ),
+                                    ),
+                            ),
+                        ),
+                ),
+            ).apply { start() }
+
+        val authorizationCode =
+            client
+                .get(
+                    server.authorizationEndpointUrl(issuerId)
+                        .authenticationRequest(clientId = "my-app")
+                        .newBuilder()
+                        .addQueryParameter("resource", "https://first.example")
+                        .addQueryParameter("resource", "https://second.example")
+                        .build(),
+                ).use {
+                    it.code shouldBe 302
+                    it.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
+
+        authorizationCode.shouldNotBeNull()
+
+        val initialResponse =
+            client
+                .tokenRequest(
+                    server.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                        "code" to authorizationCode,
+                        "client_id" to "my-app",
+                        "redirect_uri" to "http://defaultRedirectUri",
+                    ),
+                ).toTokenResponse()
+
+        initialResponse.idToken!!.subject shouldBe "matched-repeated-resource"
+        initialResponse.idToken.claims["resource"] shouldBe "https://first.example https://second.example"
+
+        val refreshResponse =
+            client
+                .tokenRequest(
+                    server.tokenEndpointUrl(issuerId),
+                    mapOf(
+                        "grant_type" to GrantType.REFRESH_TOKEN.value,
+                        "refresh_token" to checkNotNull(initialResponse.refreshToken),
+                        "client_id" to "my-app",
+                        "client_secret" to "secret",
+                    ),
+                ).toTokenResponse()
+
+        refreshResponse.idToken!!.subject shouldBe "matched-repeated-resource"
+        refreshResponse.idToken.claims["resource"] shouldBe "https://first.example https://second.example"
+
+        server.shutdown()
+    }
+
+    @Test
     fun `refresh_token grant should preserve interactive login subject and claims from authorization code flow`() {
         withMockOAuth2Server {
             val issuerId = "idprovider"

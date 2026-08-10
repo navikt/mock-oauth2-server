@@ -38,6 +38,7 @@ internal class RefreshTokenGrantHandler(
                 ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
         val storedCallback = stored.callback
         val storedAuthRequestParams = stored.authRequestParams
+        val storedAuthRequestParamsList = stored.authRequestParamsList
         if (storedCallback.issuerId() != issuerId) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }
@@ -57,8 +58,10 @@ internal class RefreshTokenGrantHandler(
                     callbackOverride = enqueuedCallback,
                 )
         }
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams)
-        val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams)
+        val idToken: SignedJWT =
+            tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams, storedAuthRequestParamsList)
+        val accessToken: SignedJWT =
+            tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams, storedAuthRequestParamsList)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
