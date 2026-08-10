@@ -215,7 +215,7 @@ internal class OAuth2TokenCallbackTest {
             val request = authCodeRequest()
 
             mapping.isMatch(request) shouldBe false
-            mapping.isMatch(request, mapOf("subject" to listOf("alice"))) shouldBe true
+            mapping.isMatch(request, mapOf("subject" to "alice")) shouldBe true
             mapping.isMatch(
                 formParams = request.toHTTPRequest().bodyAsFormParameters,
                 tokenRequest = request,

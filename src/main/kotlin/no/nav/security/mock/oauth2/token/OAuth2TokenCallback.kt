@@ -461,8 +461,8 @@ data class RequestMapping(
 
     fun isMatch(
         tokenRequest: TokenRequest,
-        authRequestParams: Map<String, List<String>> = emptyMap(),
-    ): Boolean = isMatchWithAuthRequestParams(tokenRequest, tokenRequest.toHTTPRequest().bodyAsFormParameters, authRequestParams)
+        extraMatchParams: Map<String, String> = emptyMap(),
+    ): Boolean = isMatch(tokenRequest.toHTTPRequest().bodyAsFormParameters, tokenRequest, extraMatchParams)
 
     @Deprecated(
         message = "Authorization-request context is supplied by AuthRequestAwareOAuth2TokenCallback.",
