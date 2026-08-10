@@ -59,30 +59,21 @@ class OAuth2TokenProvider
             oAuth2TokenCallback: OAuth2TokenCallback,
             nonce: String? = null,
             authRequestParams: Map<String, String>,
-        ) = defaultClaims(
-            issuerUrl,
-            oAuth2TokenCallback.resolveSubject(tokenRequest, authRequestParams),
-            listOf(tokenRequest.clientIdAsString()),
-            nonce,
-            oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams),
-            oAuth2TokenCallback.tokenExpiry(),
-        ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams))
+        ) = idToken(authRequestContext(tokenRequest, authRequestParams), issuerUrl, oAuth2TokenCallback, nonce)
 
         internal fun idToken(
-            tokenRequest: TokenRequest,
+            context: AuthRequestContext,
             issuerUrl: HttpUrl,
             oAuth2TokenCallback: OAuth2TokenCallback,
             nonce: String? = null,
-            authRequestParams: Map<String, String>,
-            authRequestParamsList: Map<String, List<String>>,
         ) = defaultClaims(
             issuerUrl,
-            oAuth2TokenCallback.resolveSubject(tokenRequest, authRequestParams, authRequestParamsList),
-            listOf(tokenRequest.clientIdAsString()),
+            oAuth2TokenCallback.resolveSubject(context),
+            listOf(context.tokenRequest.clientIdAsString()),
             nonce,
-            oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams, authRequestParamsList),
+            oAuth2TokenCallback.resolveClaims(context),
             oAuth2TokenCallback.tokenExpiry(),
-        ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams, authRequestParamsList))
+        ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(context))
 
         fun accessToken(
             tokenRequest: TokenRequest,
@@ -97,30 +88,21 @@ class OAuth2TokenProvider
             oAuth2TokenCallback: OAuth2TokenCallback,
             nonce: String? = null,
             authRequestParams: Map<String, String>,
-        ) = defaultClaims(
-            issuerUrl,
-            oAuth2TokenCallback.resolveSubject(tokenRequest, authRequestParams),
-            oAuth2TokenCallback.resolveAudience(tokenRequest, authRequestParams),
-            nonce,
-            oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams),
-            oAuth2TokenCallback.tokenExpiry(),
-        ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams))
+        ) = accessToken(authRequestContext(tokenRequest, authRequestParams), issuerUrl, oAuth2TokenCallback, nonce)
 
         internal fun accessToken(
-            tokenRequest: TokenRequest,
+            context: AuthRequestContext,
             issuerUrl: HttpUrl,
             oAuth2TokenCallback: OAuth2TokenCallback,
             nonce: String? = null,
-            authRequestParams: Map<String, String>,
-            authRequestParamsList: Map<String, List<String>>,
         ) = defaultClaims(
             issuerUrl,
-            oAuth2TokenCallback.resolveSubject(tokenRequest, authRequestParams, authRequestParamsList),
-            oAuth2TokenCallback.resolveAudience(tokenRequest, authRequestParams, authRequestParamsList),
+            oAuth2TokenCallback.resolveSubject(context),
+            oAuth2TokenCallback.resolveAudience(context),
             nonce,
-            oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams, authRequestParamsList),
+            oAuth2TokenCallback.resolveClaims(context),
             oAuth2TokenCallback.tokenExpiry(),
-        ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams, authRequestParamsList))
+        ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(context))
 
         fun exchangeAccessToken(
             tokenRequest: TokenRequest,
@@ -135,18 +117,20 @@ class OAuth2TokenProvider
             claimsSet: JWTClaimsSet,
             oAuth2TokenCallback: OAuth2TokenCallback,
             authRequestParams: Map<String, String>,
-        ) = systemTime.orNow().let { now ->
-            JWTClaimsSet
-                .Builder(claimsSet)
-                .issuer(issuerUrl.toString())
-                .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
-                .notBeforeTime(Date.from(now))
-                .issueTime(Date.from(now))
-                .jwtID(UUID.randomUUID().toString())
-                .audience(oAuth2TokenCallback.resolveAudience(tokenRequest, authRequestParams))
-                .addClaims(oAuth2TokenCallback.resolveClaims(tokenRequest, authRequestParams))
-                .build()
-                .sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(tokenRequest, authRequestParams))
+        ) = authRequestContext(tokenRequest, authRequestParams).let { context ->
+            systemTime.orNow().let { now ->
+                JWTClaimsSet
+                    .Builder(claimsSet)
+                    .issuer(issuerUrl.toString())
+                    .expirationTime(Date.from(now.plusSeconds(oAuth2TokenCallback.tokenExpiry())))
+                    .notBeforeTime(Date.from(now))
+                    .issueTime(Date.from(now))
+                    .jwtID(UUID.randomUUID().toString())
+                    .audience(oAuth2TokenCallback.resolveAudience(context))
+                    .addClaims(oAuth2TokenCallback.resolveClaims(context))
+                    .build()
+                    .sign(issuerUrl.issuerId(), oAuth2TokenCallback.resolveTypeHeader(context))
+            }
         }
 
         @JvmOverloads

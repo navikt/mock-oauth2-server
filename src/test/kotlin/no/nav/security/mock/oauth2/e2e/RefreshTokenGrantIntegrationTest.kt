@@ -275,7 +275,8 @@ class RefreshTokenGrantIntegrationTest {
         val authorizationCode =
             client
                 .get(
-                    server.authorizationEndpointUrl(issuerId)
+                    server
+                        .authorizationEndpointUrl(issuerId)
                         .authenticationRequest(clientId = "my-app")
                         .newBuilder()
                         .addQueryParameter("resource", "https://first.example")

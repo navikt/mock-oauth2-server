@@ -89,6 +89,60 @@ internal class RefreshTokenManagerTest {
     }
 
     @Test
+    fun `refreshToken derives flattened and multi-value params from the same sanitized context`() {
+        val policy = AuthRequestParamsStoragePolicy(maxTotalLength = 20)
+        val mgr = RefreshTokenManager(authRequestParamsStoragePolicy = policy)
+        val tokenCallback = DefaultOAuth2TokenCallback()
+
+        val refreshToken =
+            mgr.refreshToken(
+                tokenCallback,
+                authRequestParams = mapOf("resource" to "first second", "kept" to "value"),
+                authRequestParamsList = mapOf("resource" to listOf("first", "second"), "kept" to listOf("value")),
+            )
+
+        mgr[refreshToken].asClue {
+            it shouldNotBe null
+            it!!.authRequestParams shouldBe mapOf("resource" to "first second")
+            it.authRequestParamsList shouldBe mapOf("resource" to listOf("first", "second"))
+        }
+    }
+
+    @Test
+    fun `rotate preserves sanitized multi-value params`() {
+        val mgr = RefreshTokenManager()
+        val tokenCallback = DefaultOAuth2TokenCallback()
+        val refreshToken =
+            mgr.refreshToken(
+                tokenCallback,
+                authRequestParams = mapOf("resource" to "first second"),
+                authRequestParamsList = mapOf("resource" to listOf("first", "second")),
+            )
+
+        val rotated = mgr.rotate(refreshToken, DefaultOAuth2TokenCallback())
+
+        mgr[rotated]!!.authRequestParamsList shouldBe mapOf("resource" to listOf("first", "second"))
+    }
+
+    @Test
+    fun `rotate fallback preserves provided multi-value params`() {
+        val mgr = RefreshTokenManager()
+
+        val rotated =
+            mgr.rotate(
+                refreshToken = "missing",
+                fallbackTokenCallback = DefaultOAuth2TokenCallback(),
+                authRequestParams = mapOf("resource" to "first second"),
+                authRequestParamsList = mapOf("resource" to listOf("first", "second")),
+            )
+
+        mgr[rotated].asClue {
+            it!!.authRequestParams shouldBe mapOf("resource" to "first second")
+            it.authRequestParamsList shouldBe mapOf("resource" to listOf("first", "second"))
+        }
+    }
+
+    @Test
     fun `rotate should preserve nonce and keep jwt format`() {
         val mgr = RefreshTokenManager()
         val tokenCallback = DefaultOAuth2TokenCallback()

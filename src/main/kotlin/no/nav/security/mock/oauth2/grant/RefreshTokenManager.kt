@@ -20,6 +20,7 @@ private const val DEFAULT_MAX_STORED_AUTH_REQUEST_PARAMS = 20
 private const val DEFAULT_MAX_STORED_AUTH_REQUEST_PARAM_VALUE_LENGTH = 512
 private const val DEFAULT_MAX_STORED_AUTH_REQUEST_PARAMS_TOTAL_LENGTH = 4096
 private val DEFAULT_AUTH_REQUEST_PARAMS_EXCLUDED_FROM_STORAGE = setOf("claims", "request", "client_assertion")
+private const val AUTH_REQUEST_PARAMS_FLATTENING_SEPARATOR = " "
 
 data class AuthRequestParamsStoragePolicy
     @JvmOverloads
@@ -50,12 +51,14 @@ internal data class RefreshTokenManager(
         authRequestParams: Map<String, String> = emptyMap(),
         authRequestParamsList: Map<String, List<String>> = authRequestParams.mapValues { listOf(it.value) },
     ): RefreshToken =
-        refreshTokenInternal(
-            tokenCallback = tokenCallback,
-            nonce = nonce,
-            sanitizedAuthRequestParams = sanitizeAuthRequestParams(authRequestParams),
-            sanitizedAuthRequestParamsList = sanitizeAuthRequestParamsList(authRequestParamsList),
-        )
+        sanitizeAuthRequestContext(authRequestParamsList).let { sanitized ->
+            refreshTokenInternal(
+                tokenCallback = tokenCallback,
+                nonce = nonce,
+                sanitizedAuthRequestParams = sanitized.flattenedParams,
+                sanitizedAuthRequestParamsList = sanitized.multiValueParams,
+            )
+        }
 
     private fun refreshTokenInternal(
         tokenCallback: OAuth2TokenCallback,
@@ -74,11 +77,14 @@ internal data class RefreshTokenManager(
         refreshToken: RefreshToken,
         fallbackTokenCallback: OAuth2TokenCallback,
         authRequestParams: Map<String, String> = emptyMap(),
+        authRequestParamsList: Map<String, List<String>> = authRequestParams.mapValues { listOf(it.value) },
         callbackOverride: OAuth2TokenCallback? = null,
     ): RefreshToken {
         val storedWithSanitizedParams =
-                cache.remove(refreshToken)
-                ?: StoredRefreshToken(fallbackTokenCallback, sanitizeAuthRequestParams(authRequestParams))
+            cache.remove(refreshToken)
+                ?: sanitizeAuthRequestContext(authRequestParamsList).let { sanitized ->
+                    StoredRefreshToken(fallbackTokenCallback, sanitized.flattenedParams, authRequestParamsList = sanitized.multiValueParams)
+                }
         return refreshTokenInternal(
             tokenCallback = callbackOverride ?: storedWithSanitizedParams.callback,
             nonce = storedWithSanitizedParams.nonce,
@@ -87,30 +93,12 @@ internal data class RefreshTokenManager(
         )
     }
 
-    private fun sanitizeAuthRequestParams(authRequestParams: Map<String, String>): Map<String, String> {
-        var totalLength = 0
-        val sanitized = linkedMapOf<String, String>()
+    private data class SanitizedAuthRequestContext(
+        val flattenedParams: Map<String, String>,
+        val multiValueParams: Map<String, List<String>>,
+    )
 
-        for ((key, value) in authRequestParams) {
-            if (sanitized.size >= authRequestParamsStoragePolicy.maxStoredParams) break
-            if (totalLength >= authRequestParamsStoragePolicy.maxTotalLength) break
-            if (key in authRequestParamsStoragePolicy.excludedKeys) continue
-
-            val boundedValue = value.take(authRequestParamsStoragePolicy.maxValueLength)
-            val nextLength = totalLength + key.length + boundedValue.length
-            if (nextLength > authRequestParamsStoragePolicy.maxTotalLength) continue
-
-            sanitized[key] = boundedValue
-            totalLength = nextLength
-
-            if (sanitized.size >= authRequestParamsStoragePolicy.maxStoredParams) break
-            if (totalLength >= authRequestParamsStoragePolicy.maxTotalLength) break
-        }
-
-        return sanitized
-    }
-
-    private fun sanitizeAuthRequestParamsList(authRequestParams: Map<String, List<String>>): Map<String, List<String>> {
+    private fun sanitizeAuthRequestContext(authRequestParams: Map<String, List<String>>): SanitizedAuthRequestContext {
         var totalLength = 0
         val sanitized = linkedMapOf<String, List<String>>()
 
@@ -120,14 +108,20 @@ internal data class RefreshTokenManager(
             if (key in authRequestParamsStoragePolicy.excludedKeys) continue
 
             val boundedValues = values.map { it.take(authRequestParamsStoragePolicy.maxValueLength) }
-            val nextLength = totalLength + key.length + boundedValues.sumOf { it.length }
+            // The total limit applies to the flattened form used by callbacks and templates.
+            val scalarValue = boundedValues.joinToString(separator = AUTH_REQUEST_PARAMS_FLATTENING_SEPARATOR)
+            val nextLength = totalLength + key.length + scalarValue.length
             if (nextLength > authRequestParamsStoragePolicy.maxTotalLength) continue
 
             sanitized[key] = boundedValues
             totalLength = nextLength
         }
 
-        return sanitized
+        val list = sanitized.mapValues { (_, values) -> values.toList() }.toMap()
+        return SanitizedAuthRequestContext(
+            flattenedParams = list.mapValues { (_, values) -> values.joinToString(separator = AUTH_REQUEST_PARAMS_FLATTENING_SEPARATOR) }.toMap(),
+            multiValueParams = list,
+        )
     }
 
     private fun plainJWT(

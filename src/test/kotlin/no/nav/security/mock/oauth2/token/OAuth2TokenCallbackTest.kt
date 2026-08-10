@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.token
 
+import com.nimbusds.oauth2.sdk.TokenRequest
 import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.maps.shouldContainAll
@@ -206,6 +207,62 @@ internal class OAuth2TokenCallbackTest {
                 )
 
             callback.subject(clientCredentialsRequest(), mapOf("client_id" to "untrusted-authorize-client")) shouldBe "token-request-client"
+        }
+
+        @Test
+        fun `auth request aware callbacks receive the token request client_id`() {
+            val callback =
+                object : AuthRequestAwareOAuth2TokenCallback {
+                    override fun issuerId() = "issuer1"
+
+                    override fun subject(
+                        tokenRequest: TokenRequest,
+                        authRequestParams: Map<String, String>,
+                    ) = authRequestParams["client_id"]
+
+                    override fun typeHeader(
+                        tokenRequest: TokenRequest,
+                        authRequestParams: Map<String, String>,
+                    ) = "JWT"
+
+                    override fun audience(
+                        tokenRequest: TokenRequest,
+                        authRequestParams: Map<String, String>,
+                    ) = emptyList<String>()
+
+                    override fun addClaims(
+                        tokenRequest: TokenRequest,
+                        authRequestParams: Map<String, String>,
+                    ) = emptyMap<String, Any>()
+
+                    override fun tokenExpiry() = 3600L
+                }
+
+            callback.resolveSubject(clientCredentialsRequest(), mapOf("client_id" to "untrusted-authorize-client")) shouldBe clientId
+        }
+
+        @Test
+        fun `list aware callbacks receive the token request client_id`() {
+            val callback =
+                object : AuthRequestParamsListAwareOAuth2TokenCallback {
+                    override fun issuerId() = "issuer1"
+
+                    override fun subject(context: AuthRequestContext) = context.multiValueParams["client_id"]?.single()
+
+                    override fun typeHeader(context: AuthRequestContext) = "JWT"
+
+                    override fun audience(context: AuthRequestContext) = emptyList<String>()
+
+                    override fun addClaims(context: AuthRequestContext) = emptyMap<String, Any>()
+
+                    override fun tokenExpiry() = 3600L
+                }
+
+            callback.resolveSubject(
+                clientCredentialsRequest(),
+                mapOf("client_id" to "untrusted-authorize-client"),
+                mapOf("client_id" to listOf("untrusted-authorize-client", "another-client")),
+            ) shouldBe clientId
         }
 
         @Test

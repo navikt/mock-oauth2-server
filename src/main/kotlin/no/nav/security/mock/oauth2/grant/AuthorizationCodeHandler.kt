@@ -3,7 +3,6 @@ package no.nav.security.mock.oauth2.grant
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.OAuth2Error
-import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
 import mu.KotlinLogging
@@ -14,10 +13,11 @@ import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.login.Login
-import no.nav.security.mock.oauth2.token.AuthRequestAwareOAuth2TokenCallback
+import no.nav.security.mock.oauth2.token.AuthRequestContext
 import no.nav.security.mock.oauth2.token.AuthRequestParamsListAwareOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
+import no.nav.security.mock.oauth2.token.authRequestContext
 import no.nav.security.mock.oauth2.token.resolveAudience
 import no.nav.security.mock.oauth2.token.resolveClaims
 import no.nav.security.mock.oauth2.token.resolveSubject
@@ -105,10 +105,9 @@ internal class AuthorizationCodeHandler(
         val authRequestParams = authRequestParamsList.mapValues { it.value.joinToString(separator = " ") }
 
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
-        val idToken: SignedJWT =
-            tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, authRequestParams, authRequestParamsList)
-        val accessToken: SignedJWT =
-            tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, authRequestParams, authRequestParamsList)
+        val authContext = authRequestContext(tokenRequest, authRequestParams, authRequestParamsList)
+        val idToken: SignedJWT = tokenProvider.idToken(authContext, issuerUrl, loginTokenCallbackOrDefault, nonce)
+        val accessToken: SignedJWT = tokenProvider.accessToken(authContext, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val refreshToken: RefreshToken =
             refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, authRequestParams, authRequestParamsList)
 
@@ -145,49 +144,13 @@ internal class AuthorizationCodeHandler(
 
         override fun issuerId(): String = callbackWithSubject.issuerId()
 
-        override fun subject(
-            tokenRequest: TokenRequest,
-            authRequestParams: Map<String, String>,
-        ): String = callbackWithSubject.resolveSubject(tokenRequest, authRequestParams) ?: login.username
+        override fun subject(context: AuthRequestContext): String = callbackWithSubject.resolveSubject(context) ?: login.username
 
-        override fun subject(
-            tokenRequest: TokenRequest,
-            authRequestParams: Map<String, String>,
-            authRequestParamsList: Map<String, List<String>>,
-        ): String = callbackWithSubject.resolveSubject(tokenRequest, authRequestParams, authRequestParamsList) ?: login.username
+        override fun typeHeader(context: AuthRequestContext): String = callbackWithSubject.resolveTypeHeader(context)
 
-        override fun typeHeader(
-            tokenRequest: TokenRequest,
-            authRequestParams: Map<String, String>,
-        ): String = callbackWithSubject.resolveTypeHeader(tokenRequest, authRequestParams)
+        override fun audience(context: AuthRequestContext): List<String> = callbackWithSubject.resolveAudience(context)
 
-        override fun typeHeader(
-            tokenRequest: TokenRequest,
-            authRequestParams: Map<String, String>,
-            authRequestParamsList: Map<String, List<String>>,
-        ): String = callbackWithSubject.resolveTypeHeader(tokenRequest, authRequestParams, authRequestParamsList)
-
-        override fun audience(
-            tokenRequest: TokenRequest,
-            authRequestParams: Map<String, String>,
-        ): List<String> = callbackWithSubject.resolveAudience(tokenRequest, authRequestParams)
-
-        override fun audience(
-            tokenRequest: TokenRequest,
-            authRequestParams: Map<String, String>,
-            authRequestParamsList: Map<String, List<String>>,
-        ): List<String> = callbackWithSubject.resolveAudience(tokenRequest, authRequestParams, authRequestParamsList)
-
-        override fun addClaims(
-            tokenRequest: TokenRequest,
-            authRequestParams: Map<String, String>,
-        ): Map<String, Any> = withLoginClaims(callbackWithSubject.resolveClaims(tokenRequest, authRequestParams))
-
-        override fun addClaims(
-            tokenRequest: TokenRequest,
-            authRequestParams: Map<String, String>,
-            authRequestParamsList: Map<String, List<String>>,
-        ): Map<String, Any> = withLoginClaims(callbackWithSubject.resolveClaims(tokenRequest, authRequestParams, authRequestParamsList))
+        override fun addClaims(context: AuthRequestContext): Map<String, Any> = withLoginClaims(callbackWithSubject.resolveClaims(context))
 
         private fun withLoginClaims(claims: Map<String, Any>): Map<String, Any> =
             claims.toMutableMap().apply {

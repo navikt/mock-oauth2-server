@@ -13,6 +13,7 @@ import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
+import no.nav.security.mock.oauth2.token.authRequestContext
 import okhttp3.HttpUrl
 
 private val log = KotlinLogging.logger {}
@@ -55,13 +56,13 @@ internal class RefreshTokenGrantHandler(
                     refreshToken = refreshToken,
                     fallbackTokenCallback = resolvedCallback,
                     authRequestParams = authRequestParams,
+                    authRequestParamsList = storedAuthRequestParamsList,
                     callbackOverride = enqueuedCallback,
                 )
         }
-        val idToken: SignedJWT =
-            tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams, storedAuthRequestParamsList)
-        val accessToken: SignedJWT =
-            tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback, null, authRequestParams, storedAuthRequestParamsList)
+        val authContext = authRequestContext(tokenRequest, authRequestParams, storedAuthRequestParamsList)
+        val idToken: SignedJWT = tokenProvider.idToken(authContext, issuerUrl, resolvedCallback)
+        val accessToken: SignedJWT = tokenProvider.accessToken(authContext, issuerUrl, resolvedCallback)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
