@@ -18,8 +18,8 @@ private val log = KotlinLogging.logger { }
 internal fun Route.Builder.userInfo(tokenProvider: OAuth2TokenProvider) =
     get(USER_INFO) {
         log.debug("received request to userinfo endpoint, returning claims from token")
-        val claims = it.verifyBearerToken(tokenProvider).claims
-        json(claims)
+        val claims = it.verifyBearerToken(tokenProvider)
+        json(claims.toJSONObject())
     }
 
 private fun OAuth2HttpRequest.verifyBearerToken(tokenProvider: OAuth2TokenProvider): JWTClaimsSet =
