@@ -56,7 +56,11 @@ internal class UserInfoTest {
 
         routes { userInfo(tokenProvider) }.invoke(request).asClue {
             it.status shouldBe 200
-            it.parse<Map<String, Any>>() shouldContainAll claims
+            val response = it.parse<Map<String, Any>>()
+            response shouldContainAll claims
+            response["iat"] shouldBe yesterday.epochSecond
+            response["nbf"] shouldBe yesterday.epochSecond
+            response["exp"] shouldBe yesterday.plus(1, ChronoUnit.HOURS).epochSecond
         }
     }
 
