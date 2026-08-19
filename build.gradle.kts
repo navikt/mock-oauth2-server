@@ -14,7 +14,7 @@ val jacksonVersion = "3.2.1"
 // alongside the Jackson 3 used by the library itself. Their BOMs lag behind, so pin the
 // floor here rather than inheriting whatever they happen to resolve to.
 val jackson2TestVersion = "2.22.1"
-val nettyVersion = "4.2.16.Final"
+val nettyVersion = "4.2.17.Final"
 val junitJupiterVersion = "6.1.2"
 val freemarkerVersion = "2.3.34"
 val kotestVersion = "6.2.3"
