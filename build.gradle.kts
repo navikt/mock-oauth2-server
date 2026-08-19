@@ -22,7 +22,6 @@ val bouncyCastleVersion = "1.85"
 val springBootVersion = "3.5.14"
 val reactorTestVersion = "3.8.6"
 val ktorVersion = "3.5.1"
-val jsonPathVersion = "2.9.0"
 
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
@@ -35,6 +34,7 @@ plugins {
     id("com.google.cloud.tools.jib") version "3.5.4"
     id("com.vanniktech.maven.publish") version "0.37.0"
     id("org.jetbrains.dokka") version "2.2.0"
+    id("io.github.usefulness.maven-sympathy") version "0.3.0"
     alias(libs.plugins.kotlin.serialization)
     `java-library`
     signing
@@ -52,8 +52,17 @@ java {
 kotlin {
     val kotlinTarget = libs.versions.kotlinTarget
     val kotlinLanguage = libs.versions.kotlinLanguage
+    val kotlinToolchain = libs.versions.kotlinToolchain
     val kotlinLanguageVersion = kotlinLanguage.map {
         KotlinVersion.fromVersion(it.toKotlinMinor())
+    }
+
+    // Consumers must be able to compile against what we publish, and we must be able to build it.
+    require(kotlinLanguage.get().toVersionRank() <= kotlinTarget.get().toVersionRank()) {
+        "kotlinLanguage (${kotlinLanguage.get()}) must not exceed kotlinTarget (${kotlinTarget.get()})"
+    }
+    require(kotlinTarget.get().toVersionRank() <= kotlinToolchain.get().toVersionRank()) {
+        "kotlinTarget (${kotlinTarget.get()}) must not exceed kotlinToolchain (${kotlinToolchain.get()})"
     }
 
     compilerOptions {
@@ -72,6 +81,10 @@ kotlin {
 // 1.7.21 => 1.7, 1.9 => 1.9
 fun String.toKotlinMinor() = split(".").take(2).joinToString(".")
 
+// 2.1.21 => 2001021, orders versions with unequal part counts
+fun String.toVersionRank() =
+    (split(".").map { it.toInt() } + listOf(0, 0)).take(3).fold(0) { rank, part -> rank * 1000 + part }
+
 apply(plugin = "org.jmailen.kotlinter")
 
 repositories {
@@ -84,6 +97,29 @@ repositories {
 val standaloneRuntime = configurations.dependencyScope("standaloneRuntime")
 configurations.runtimeClasspath {
     extendsFrom(standaloneRuntime.get())
+}
+
+// Smoke test on the kotlin-stdlib version we publish, which the normal test suite never uses.
+// Keep it on plain JUnit: Kotest, Spring and Ktor have Kotlin floors of their own.
+val minStdlibTest = testing.suites.register<JvmTestSuite>("minStdlibTest") {
+    useJUnitJupiter(junitJupiterVersion)
+    dependencies {
+        // Depend on the project the way a consumer does, so we get the versions we publish
+        implementation(project())
+        runtimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
+    }
+}
+
+configurations.named("minStdlibTestRuntimeClasspath") {
+    val floor = libs.versions.kotlinTarget.get()
+    resolutionStrategy.force(
+        "org.jetbrains.kotlin:kotlin-stdlib:$floor",
+        "org.jetbrains.kotlin:kotlin-reflect:$floor",
+    )
+}
+
+tasks.check {
+    dependsOn(minStdlibTest)
 }
 
 dependencies {
@@ -113,33 +149,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-client:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
-    constraints {
-        testImplementation("com.jayway.jsonpath:json-path") {
-            version {
-                require(jsonPathVersion)
-            }
-        }
-    }
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     constraints {
-        testImplementation("org.xmlunit:xmlunit-core") {
-            because("previous versions have security vulnerabilities")
-            version {
-                require("2.10.0")
-            }
-        }
         testImplementation("org.yaml:snakeyaml:2.6") {
             because("previous versions have security vulnerabilities")
-        }
-        add("api", "com.squareup.okio:okio") {
-            version {
-                require("3.4.0")
-            }
-        }
-        add("testImplementation", "com.google.guava:guava") {
-            version {
-                require("32.1.2-jre")
-            }
         }
     }
     testImplementation("io.projectreactor:reactor-test:$reactorTestVersion")
@@ -163,6 +176,7 @@ configurations {
     all {
         resolutionStrategy.force(
             "com.fasterxml.woodstox:woodstox-core:7.2.1",
+            // Netty pins epoll a patch behind netty-codec-http. Keep them on the same version.
             "io.netty:netty-transport-native-epoll:$nettyVersion",
         )
     }

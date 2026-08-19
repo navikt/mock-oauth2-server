@@ -38,6 +38,16 @@ The library now uses Jackson 3 (`tools.jackson.*`) instead of Jackson 2 (`com.fa
 
 **Migration:** these are now `internal`, so the library no longer exposes Jackson types in its Kotlin API. Construct your own mapper if you used `objectMapper`.
 
+### Kotlin 2.2.21 is the minimum runtime
+
+Jackson 3 brought in `jackson-module-kotlin` 3.x, which references `kotlin.time.Instant`. That class arrived in `kotlin-stdlib` 2.1.20. Releases 6.0.0 and 6.0.1 still declared `kotlin-stdlib` 1.9.0, so consumers who took that version could fail with `NoClassDefFoundError: kotlin/time/Instant`.
+
+**New behavior (6.0.2):** the published `kotlin-stdlib` and `kotlin-reflect` version is 2.2.21, matching what okhttp already asks for.
+
+**Affected pattern:** none directly. Kotlin consumers already needed a 2.0 compiler for 6.x, and the stdlib is backwards compatible.
+
+**Migration:** upgrade to 6.0.2. Nothing else, unless you pinned `kotlin-stdlib` below 2.2.21 yourself — raise it.
+
 ### `NettyWrapper` caps request bodies at 1 MiB
 
 Request bodies were aggregated with no limit, so any unauthenticated client could exhaust the heap by sending a large body to any endpoint.
