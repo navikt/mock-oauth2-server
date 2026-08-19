@@ -1,7 +1,8 @@
 [versions]
-kotlinTarget = "1.9.0" # Minimum supported Kotlin version for consumers of the library
-kotlinLanguage = "2.0" # Language level used by compiler (Kotlin 2.4 no longer supports 1.9 language mode)
-kotlinToolchain = "2.4.10" # Actual version used by tooling within this project
+# Keep kotlinLanguage <= kotlinTarget <= kotlinToolchain.
+kotlinLanguage = "2.0" # Language and API level we compile at, so the oldest compiler consumers can use
+kotlinTarget = "2.2.21" # kotlin-stdlib we publish in the POM. Must not be below the stdlib any api dependency declares, currently okhttp. Verified by minStdlibTest
+kotlinToolchain = "2.4.10" # Compiler this project builds with. Not visible to consumers
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinToolchain" }
