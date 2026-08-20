@@ -9,6 +9,7 @@ val logbackVersion = "1.6.0"
 val nimbusSdkVersion = "11.38.2"
 val mockWebServerVersion = "5.4.0"
 val jacksonVersion = "3.2.1"
+val jackson2TestVersion = "2.22.1"
 val nettyVersion = "4.2.17.Final"
 val junitJupiterVersion = "6.1.2"
 val freemarkerVersion = "2.3.34"
@@ -172,14 +173,31 @@ dependencies {
 
 configurations {
     all {
-        resolutionStrategy.force(
-            "com.fasterxml.woodstox:woodstox-core:7.2.1",
-            "io.netty:netty-codec-http:$nettyVersion",
-            "io.netty:netty-codec-dns:$nettyVersion",
-            "io.netty:netty-codec-http3:$nettyVersion",
-            // Netty pins epoll a patch behind netty-codec-http. Keep them on the same version.
-            "io.netty:netty-transport-native-epoll:$nettyVersion",
-        )
+        resolutionStrategy {
+            force(
+                "com.fasterxml.woodstox:woodstox-core:7.2.1",
+                // Security (test/build-scope transitive deps flagged by Dependabot).
+                // These are not part of the published artifact (runtimeClasspath uses Jackson 3 only).
+                // Jackson 2 (com.fasterxml.*): test scope is already pinned via the jackson-bom
+                // platform, but Dokka's generator config isn't, so force it here too.
+                "com.fasterxml.jackson.core:jackson-databind:$jackson2TestVersion", // GHSA-5jmj-h7xm-6q6v et al
+                "com.fasterxml.jackson.core:jackson-core:$jackson2TestVersion", // GHSA-r7wm-3cxj-wff9
+                "org.apache.httpcomponents.client5:httpclient5:5.6.3", // GHSA-hjcp-jmpx-g3qm, via ktor-client-apache5
+                "org.apache.httpcomponents.core5:httpcore5:5.4.3", // GHSA-hf6x-8p5f-cgmf
+                "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3", // GHSA-v3jc-474w-2wm6
+                "org.apache.logging.log4j:log4j-api:2.25.5", // GHSA-qv9r-c865-cp47, via spring-boot-starter-logging
+                "org.jsoup:jsoup:1.23.1", // GHSA-pmhh-3w7g-xqp8, via spring-boot-starter-test
+            )
+            // Netty ships all modules in lockstep; transitive deps drag in older/mixed
+            // versions (4.1.x/4.2.15) with CVEs in codec-http2/http3/dns. Align the whole
+            // group on the version of our direct netty-codec-http dependency.
+            eachDependency {
+                if (requested.group == "io.netty") {
+                    useVersion(nettyVersion)
+                    because("align all netty modules; fixes GHSA-93wv-jw9v-4972, GHSA-hpcc-26xq-25fv, GHSA-mfg7-5gfp-c4w3")
+                }
+            }
+        }
     }
 }
 
