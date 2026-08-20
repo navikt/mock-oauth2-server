@@ -14,9 +14,10 @@ val junitJupiterVersion = "6.1.2"
 val freemarkerVersion = "2.3.34"
 val kotestVersion = "6.2.3"
 val bouncyCastleVersion = "1.85"
+val httpCore5Version = "5.4.3"
 val springBootVersion = "4.1.0"
 val reactorTestVersion = "3.8.6"
-val ktorVersion = "3.5.1"
+val ktorVersion = "3.5.2"
 
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
 
@@ -127,6 +128,8 @@ dependencies {
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-codec-http:$nettyVersion")
+    implementation("io.netty:netty-codec-dns:$nettyVersion")
+    implementation("io.netty:netty-codec-http3:$nettyVersion")
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
@@ -164,12 +167,16 @@ dependencies {
         //Provides transitive vulnerable dependency maven:commons-codec:commons-codec:1.11 WS-2019-0379 6.5 Input Validation  Results powered by Mend.io
         exclude("commons-codec", "commons-codec")
     }
+    testImplementation("org.apache.httpcomponents.core5:httpcore5-h2:$httpCore5Version")
 }
 
 configurations {
     all {
         resolutionStrategy.force(
             "com.fasterxml.woodstox:woodstox-core:7.2.1",
+            "io.netty:netty-codec-http:$nettyVersion",
+            "io.netty:netty-codec-dns:$nettyVersion",
+            "io.netty:netty-codec-http3:$nettyVersion",
             // Netty pins epoll a patch behind netty-codec-http. Keep them on the same version.
             "io.netty:netty-transport-native-epoll:$nettyVersion",
         )
