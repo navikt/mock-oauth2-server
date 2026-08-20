@@ -42,7 +42,7 @@ class ExampleAppWithOpenIdConnect(
                                         .build(),
                                 ).build(),
                         ).execute()
-                val idToken: String = jacksonObjectMapper.readValue<Map<String, String>>(tokenResponse.body.string()).getValue("id_token")
+                val idToken: String = jacksonObjectMapper.readValue<no.nav.security.mock.oauth2.http.OAuth2TokenResponse>(tokenResponse.body.string()).idToken ?: error("missing id_token in token response")
                 val idTokenClaims: JWTClaimsSet = verifyJwt(idToken, metadata.issuer, retrieveJwks())
                 MockResponse()
                     .setResponseCode(200)
