@@ -1,6 +1,7 @@
 package no.nav.security.mock.oauth2.examples.clientcredentials
 
 import no.nav.security.mock.oauth2.examples.AbstractExampleApp
+import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.Request
@@ -39,7 +40,7 @@ class ExampleAppWithClientCredentialsClient(
                         ).build(),
                 ).execute()
         return tokenResponse.body.string().let {
-            jacksonObjectMapper.readValue<no.nav.security.mock.oauth2.http.OAuth2TokenResponse>(it).accessToken
+            jacksonObjectMapper.readValue<OAuth2TokenResponse>(it).accessToken
         }
     }
 }
