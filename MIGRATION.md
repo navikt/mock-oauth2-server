@@ -32,7 +32,7 @@ If you construct `DebuggerRequestHandler` yourself, it now takes an `OAuth2HttpS
 
 The library now uses Jackson 3 (`tools.jackson.*`) instead of Jackson 2 (`com.fasterxml.jackson.*`).
 
-**Consumers on Jackson 2 are unaffected.** Jackson 3 uses a different group ID and package, and still depends on `com.fasterxml.jackson.core:jackson-annotations:2.x`, so both can be on the classpath at once. The Ktor and Spring Boot example apps in this project's test suite stay on Jackson 2 and exercise that combination.
+**Consumers on Jackson 2 are unaffected.** Jackson 3 uses a different group ID and package, and still depends on `com.fasterxml.jackson.core:jackson-annotations:2.x`. Imports from `com.fasterxml.jackson.annotation.*` (for example `@JsonProperty` and `@JsonInclude`) are still correct and expected with Jackson 3.
 
 **Affected pattern:** using the `no.nav.security.mock.oauth2.http.objectMapper` top-level property, or the `OAuth2TokenProviderDeserializer` and `OAuth2HttpServerDeserializer` classes nested in `OAuth2Config`.
 

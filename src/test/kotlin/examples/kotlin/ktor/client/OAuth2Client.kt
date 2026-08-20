@@ -4,7 +4,6 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.DeserializationFeature
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -13,7 +12,8 @@ import io.ktor.client.request.header
 import io.ktor.http.Headers
 import io.ktor.http.Parameters
 import io.ktor.http.headersOf
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.jackson3.jackson
+import tools.jackson.databind.DeserializationFeature
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
 import java.security.interfaces.RSAPrivateKey
@@ -29,7 +29,9 @@ val httpClient =
         install(ContentNegotiation) {
             jackson {
                 configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
+                changeDefaultPropertyInclusion { inclusion ->
+                    inclusion.withValueInclusion(JsonInclude.Include.NON_NULL)
+                }
             }
         }
     }

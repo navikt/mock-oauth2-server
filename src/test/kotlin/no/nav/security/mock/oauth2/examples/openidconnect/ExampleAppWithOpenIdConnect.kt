@@ -1,16 +1,15 @@
 package no.nav.security.mock.oauth2.examples.openidconnect
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.examples.AbstractExampleApp
+import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
+import tools.jackson.module.kotlin.readValue
 
 private val log = KotlinLogging.logger {}
 
@@ -44,7 +43,8 @@ class ExampleAppWithOpenIdConnect(
                                         .build(),
                                 ).build(),
                         ).execute()
-                val idToken: String = ObjectMapper().readValue<JsonNode>(tokenResponse.body.string()).get("id_token").textValue()
+                val idToken: String =
+                    jacksonObjectMapper.readValue<OAuth2TokenResponse>(tokenResponse.body.string()).idToken ?: error("missing id_token in token response")
                 val idTokenClaims: JWTClaimsSet = verifyJwt(idToken, metadata.issuer, retrieveJwks())
                 MockResponse()
                     .setResponseCode(200)

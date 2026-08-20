@@ -1,6 +1,5 @@
 package no.nav.security.mock.oauth2.examples
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.JWKSet
@@ -24,6 +23,7 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.net.URI
 import java.util.HashSet
 
@@ -32,6 +32,8 @@ private val log = KotlinLogging.logger {}
 abstract class AbstractExampleApp(
     oauth2DiscoveryUrl: String,
 ) {
+    protected val jacksonObjectMapper = jacksonObjectMapper()
+
     val oauth2Client: OkHttpClient =
         OkHttpClient()
             .newBuilder()
@@ -119,7 +121,7 @@ abstract class AbstractExampleApp(
         MockResponse()
             .setResponseCode(200)
             .setHeader("Content-Type", "application/json")
-            .setBody(ObjectMapper().writeValueAsString(value))
+            .setBody(jacksonObjectMapper.writeValueAsString(value))
 
     abstract fun handleRequest(request: RecordedRequest): MockResponse
 }
