@@ -14,7 +14,7 @@ val junitJupiterVersion = "6.1.2"
 val freemarkerVersion = "2.3.34"
 val kotestVersion = "6.2.3"
 val bouncyCastleVersion = "1.85"
-val springBootVersion = "3.5.14"
+val springBootVersion = "4.1.0"
 val reactorTestVersion = "3.8.6"
 val ktorVersion = "3.5.1"
 
