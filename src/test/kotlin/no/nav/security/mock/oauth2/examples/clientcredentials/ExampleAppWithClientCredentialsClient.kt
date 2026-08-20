@@ -39,7 +39,7 @@ class ExampleAppWithClientCredentialsClient(
                         ).build(),
                 ).execute()
         return tokenResponse.body.string().let {
-            jacksonObjectMapper.readValue<Map<String, String?>>(it)["access_token"]
+            jacksonObjectMapper.readValue<no.nav.security.mock.oauth2.http.OAuth2TokenResponse>(it).accessToken
         }
     }
 }
