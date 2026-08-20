@@ -2,7 +2,6 @@ package examples.kotlin.ktor.login
 
 import com.auth0.jwt.JWT
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.databind.DeserializationFeature
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -11,7 +10,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.encodedPath
 import io.ktor.resources.Resource
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.jackson3.jackson
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
@@ -32,6 +31,7 @@ import io.ktor.server.routing.param
 import io.ktor.server.routing.routing
 import io.ktor.server.util.url
 import kotlinx.serialization.Serializable
+import tools.jackson.databind.DeserializationFeature
 
 fun main() {
     embeddedServer(Netty, port = 8080) {
@@ -141,7 +141,9 @@ internal val httpClient =
         install(ContentNegotiation) {
             jackson {
                 configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
+                changeDefaultPropertyInclusion { inclusion ->
+                    inclusion.withValueInclusion(JsonInclude.Include.NON_NULL)
+                }
             }
         }
     }

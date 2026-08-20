@@ -9,11 +9,6 @@ val logbackVersion = "1.6.0"
 val nimbusSdkVersion = "11.38.2"
 val mockWebServerVersion = "5.4.0"
 val jacksonVersion = "3.2.1"
-
-// Ktor and Spring Boot are Jackson 2 only, so the example apps in src/test pull it in
-// alongside the Jackson 3 used by the library itself. Their BOMs lag behind, so pin the
-// floor here rather than inheriting whatever they happen to resolve to.
-val jackson2TestVersion = "2.22.1"
 val nettyVersion = "4.2.17.Final"
 val junitJupiterVersion = "6.1.2"
 val freemarkerVersion = "2.3.34"
@@ -135,9 +130,6 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    testImplementation(platform("com.fasterxml.jackson:jackson-bom:$jackson2TestVersion"))
-    testImplementation("com.fasterxml.jackson.core:jackson-databind")
-    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
@@ -166,7 +158,7 @@ dependencies {
     testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-client-core:$ktorVersion")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    testImplementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
+    testImplementation("io.ktor:ktor-serialization-jackson3:$ktorVersion")
     testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion"){
         //Provides transitive vulnerable dependency maven:commons-codec:commons-codec:1.11 WS-2019-0379 6.5 Input Validation  Results powered by Mend.io

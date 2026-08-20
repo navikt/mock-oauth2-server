@@ -4,14 +4,12 @@ import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwt.interfaces.Payload
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.DeserializationFeature
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.prepareGet
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.jackson3.jackson
 import io.ktor.server.application.Application
-import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
@@ -26,6 +24,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import tools.jackson.databind.DeserializationFeature
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
@@ -106,7 +105,9 @@ class AuthConfig(
                 install(ContentNegotiation) {
                     jackson {
                         configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                        setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
+                        changeDefaultPropertyInclusion { inclusion ->
+                            inclusion.withValueInclusion(JsonInclude.Include.NON_NULL)
+                        }
                     }
                 }
             }
