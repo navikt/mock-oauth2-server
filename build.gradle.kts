@@ -175,7 +175,7 @@ configurations {
     all {
         resolutionStrategy {
             force(
-                "com.fasterxml.woodstox:woodstox-core:7.2.1",
+                "com.fasterxml.woodstox:woodstox-core:7.2.2",
                 // Security (test/build-scope transitive deps flagged by Dependabot).
                 // These are not part of the published artifact (runtimeClasspath uses Jackson 3 only).
                 // Jackson 2 (com.fasterxml.*): test scope is already pinned via the jackson-bom
