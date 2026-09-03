@@ -86,7 +86,6 @@ internal class OAuth2HttpServerTest {
     fun `Netty server should serve requests with an IPv6 Host header instead of dropping the connection`() {
         val server = NettyWrapper().start(requestHandler)
         try {
-            // bracketed IPv6 literal, with and without a port, and a malformed one
             listOf("[::1]:8080", "[::1]", "[::1", "[::1]:99999").forEach { hostHeader ->
                 httpClient
                     .get(server.url("/1/2"), Headers.headersOf("Host", hostHeader))
