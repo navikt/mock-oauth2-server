@@ -19,6 +19,7 @@ import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import java.net.URI
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -121,15 +122,7 @@ data class OAuth2HttpRequest(
         }
     }
 
-    private fun parseHostHeader(): Pair<String, Int>? {
-        val hostHeader = this.headers["host"]
-        if (hostHeader != null) {
-            val hostPort = hostHeader.split(":")
-            val port = if (hostPort.size == 2) hostPort[1].toInt() else -1
-            return hostPort[0] to port
-        }
-        return null
-    }
+    private fun parseHostHeader(): Pair<String, Int>? = hostAndPortFromHostHeader(this.headers["host"])
 
     data class Parameters(
         val parameterString: String?,
@@ -139,3 +132,24 @@ data class OAuth2HttpRequest(
         fun get(name: String): String? = map[name]
     }
 }
+
+/**
+ * Splits an HTTP `Host` header into host and port, returning `null` for a missing, blank or
+ * unparseable header and `-1` as the port when there is no explicit, in-range one. Bracketed
+ * IPv6 literals are handled by [URI]; anything it rejects falls back to a plain colon split.
+ */
+internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? {
+    val header = hostHeader?.takeIf { it.isNotBlank() } ?: return null
+
+    runCatching { URI("//$header") }.getOrNull()?.let { uri ->
+        if (uri.host != null) return uri.host to uri.port.asHostHeaderPort()
+    }
+
+    if (header.startsWith("[")) return null
+
+    val hostPort = header.split(":")
+    val port = if (hostPort.size == 2) hostPort[1].toIntOrNull()?.asHostHeaderPort() ?: -1 else -1
+    return hostPort[0] to port
+}
+
+private fun Int.asHostHeaderPort(): Int = if (this in 1..65535) this else -1
