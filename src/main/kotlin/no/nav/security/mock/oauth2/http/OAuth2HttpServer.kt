@@ -281,19 +281,15 @@ class NettyWrapper
                 HttpUrl
                     .Builder()
                     .scheme(scheme)
-                    .host(hostAndPortFromHostHeader()?.first ?: address.hostName)
-                    .port(hostAndPortFromHostHeader()?.second ?: port)
+                    .host(hostHeaderWithExplicitPort()?.first ?: address.hostName)
+                    .port(hostHeaderWithExplicitPort()?.second ?: port)
                     .build()
                     .resolve(this.uri())!!
 
-            private fun FullHttpRequest.hostAndPortFromHostHeader(): Pair<String, Int>? =
-                this.headers()["Host"]?.let {
-                    if (it.substringAfter(":").toIntOrNull() != null) {
-                        it.substringBefore(":") to it.substringAfter(":").toInt()
-                    } else {
-                        null
-                    }
-                }
+            // Only override the connection's host/port when the Host header carries an explicit,
+            // usable port; a bare host (port -1) leaves both builder calls on their fallbacks.
+            private fun FullHttpRequest.hostHeaderWithExplicitPort(): Pair<String, Int>? =
+                hostAndPortFromHostHeader(this.headers()["Host"])?.takeIf { (_, port) -> port != -1 }
 
             private fun HttpHeaders.toOkHttpHeaders(): Headers {
                 val headers = Headers.headersOf().newBuilder()
