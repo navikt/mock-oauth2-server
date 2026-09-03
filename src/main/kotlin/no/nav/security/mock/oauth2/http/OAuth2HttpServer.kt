@@ -286,8 +286,6 @@ class NettyWrapper
                     .build()
                     .resolve(this.uri())!!
 
-            // Only override the connection's host/port when the Host header carries an explicit,
-            // usable port; a bare host (port -1) leaves both builder calls on their fallbacks.
             private fun FullHttpRequest.hostHeaderWithExplicitPort(): Pair<String, Int>? =
                 hostAndPortFromHostHeader(this.headers()["Host"])?.takeIf { (_, port) -> port != -1 }
 

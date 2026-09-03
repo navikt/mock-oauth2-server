@@ -134,16 +134,9 @@ data class OAuth2HttpRequest(
 }
 
 /**
- * Splits an HTTP `Host` header (RFC 9110 §7.2) into its host and port components.
- *
- * Returns `null` for a missing, blank or unparseable header. The port is `-1` when the header
- * carries none or an out-of-range one - the "no explicit port" sentinel the callers expect;
- * it is never a value okhttp's `HttpUrl.Builder.port` would reject.
- *
- * Bracketed IPv6 literals (`[::1]`, `[::1]:8080`) are delegated to [URI], which knows the
- * `[...]` grammar; anything [URI] rejects or does not treat as a server-based authority
- * (e.g. registry-style names with underscores) falls back to a plain colon split so
- * previously working Host headers keep working.
+ * Splits an HTTP `Host` header into host and port, returning `null` for a missing, blank or
+ * unparseable header and `-1` as the port when there is no explicit, in-range one. Bracketed
+ * IPv6 literals are handled by [URI]; anything it rejects falls back to a plain colon split.
  */
 internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? {
     val header = hostHeader?.takeIf { it.isNotBlank() } ?: return null
@@ -152,8 +145,6 @@ internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? 
         if (uri.host != null) return uri.host to uri.port.asHostHeaderPort()
     }
 
-    // URI could not parse it. A bracketed literal it rejected (unclosed bracket,
-    // non-numeric port, ...) is not something the colon split can salvage either.
     if (header.startsWith("[")) return null
 
     val hostPort = header.split(":")
@@ -161,5 +152,4 @@ internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? 
     return hostPort[0] to port
 }
 
-/** A port is only meaningful when it is a real TCP port; anything else becomes the `-1` sentinel. */
 private fun Int.asHostHeaderPort(): Int = if (this in 1..65535) this else -1
