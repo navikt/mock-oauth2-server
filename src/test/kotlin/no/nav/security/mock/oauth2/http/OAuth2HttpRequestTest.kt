@@ -185,7 +185,7 @@ internal class OAuth2HttpRequestTest {
             .proxyAwareUrl()
             .toString() shouldBe "https://[::1]/mypath?query=1"
 
-        // a malformed or out-of-range Host header falls back to the original url instead of throwing (issue #1022)
+        // a malformed or out-of-range Host header falls back to the original url instead of throwing
         "http://localhost:8080/mypath?query=1"
             .get("host", "[::1")
             .proxyAwareUrl()
