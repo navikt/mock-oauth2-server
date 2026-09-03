@@ -174,6 +174,87 @@ internal class OAuth2HttpRequestTest {
                 originalUrl = "https://somehost/mypath?query=1".toHttpUrl(),
             )
         req8.proxyAwareUrl().toString() shouldBe "https://oauth2/mypath?query=1"
+
+        // IPv6 host header with port
+        val req9 =
+            OAuth2HttpRequest(
+                headers =
+                    Headers.headersOf(
+                        "host",
+                        "[::1]:8080",
+                    ),
+                method = "GET",
+                originalUrl = "http://[::1]:8080/mypath?query=1".toHttpUrl(),
+            )
+        req9.proxyAwareUrl().toString() shouldBe "http://[::1]:8080/mypath?query=1"
+
+        // IPv6 host header without port
+        val req10 =
+            OAuth2HttpRequest(
+                headers =
+                    Headers.headersOf(
+                        "host",
+                        "[::1]",
+                        "x-forwarded-proto",
+                        "https",
+                    ),
+                method = "GET",
+                originalUrl = "http://[::1]:8080/mypath?query=1".toHttpUrl(),
+            )
+        req10.proxyAwareUrl().toString() shouldBe "https://[::1]/mypath?query=1"
+
+        // malformed IPv6 host header must not throw - fall back to the original url (issue #1022)
+        val req11 =
+            OAuth2HttpRequest(
+                headers =
+                    Headers.headersOf(
+                        "host",
+                        "[::1",
+                    ),
+                method = "GET",
+                originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
+            )
+        req11.proxyAwareUrl().toString() shouldBe "http://localhost:8080/mypath?query=1"
+
+        // IPv6 host header with an out-of-range port must not throw either (issue #1022)
+        val req12 =
+            OAuth2HttpRequest(
+                headers =
+                    Headers.headersOf(
+                        "host",
+                        "[::1]:99999",
+                    ),
+                method = "GET",
+                originalUrl = "http://localhost:8080/mypath?query=1".toHttpUrl(),
+            )
+        req12.proxyAwareUrl().toString() shouldBe "http://[::1]:8080/mypath?query=1"
+    }
+
+    @Test
+    fun `hostAndPortFromHostHeader splits host and port for all Host header shapes`() {
+        hostAndPortFromHostHeader(null) shouldBe null
+        hostAndPortFromHostHeader("") shouldBe null
+        hostAndPortFromHostHeader("   ") shouldBe null
+
+        hostAndPortFromHostHeader("localhost") shouldBe ("localhost" to -1)
+        hostAndPortFromHostHeader("fakedings.nais.io:666") shouldBe ("fakedings.nais.io" to 666)
+
+        hostAndPortFromHostHeader("[::1]") shouldBe ("[::1]" to -1)
+        hostAndPortFromHostHeader("[::1]:8080") shouldBe ("[::1]" to 8080)
+        hostAndPortFromHostHeader("[2001:db8::1]:443") shouldBe ("[2001:db8::1]" to 443)
+
+        // unparseable input must not throw
+        hostAndPortFromHostHeader("[::1") shouldBe null
+        hostAndPortFromHostHeader("[::1]:notaport") shouldBe null
+        hostAndPortFromHostHeader("oauth2:notaport") shouldBe ("oauth2" to -1)
+
+        // out-of-range ports collapse to the "no port" sentinel so HttpUrl.Builder never rejects them
+        hostAndPortFromHostHeader("[::1]:99999") shouldBe ("[::1]" to -1)
+        hostAndPortFromHostHeader("[::1]:0") shouldBe ("[::1]" to -1)
+        hostAndPortFromHostHeader("oauth2:99999") shouldBe ("oauth2" to -1)
+
+        // registry-style host java.net.URI refuses still works via the colon split
+        hostAndPortFromHostHeader("mock_oauth2_server:8080") shouldBe ("mock_oauth2_server" to 8080)
     }
 
     @Test

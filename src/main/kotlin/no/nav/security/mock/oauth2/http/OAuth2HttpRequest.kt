@@ -19,6 +19,7 @@ import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import java.net.URI
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -121,15 +122,7 @@ data class OAuth2HttpRequest(
         }
     }
 
-    private fun parseHostHeader(): Pair<String, Int>? {
-        val hostHeader = this.headers["host"]
-        if (hostHeader != null) {
-            val hostPort = hostHeader.split(":")
-            val port = if (hostPort.size == 2) hostPort[1].toInt() else -1
-            return hostPort[0] to port
-        }
-        return null
-    }
+    private fun parseHostHeader(): Pair<String, Int>? = hostAndPortFromHostHeader(this.headers["host"])
 
     data class Parameters(
         val parameterString: String?,
@@ -139,3 +132,34 @@ data class OAuth2HttpRequest(
         fun get(name: String): String? = map[name]
     }
 }
+
+/**
+ * Splits an HTTP `Host` header (RFC 9110 §7.2) into its host and port components.
+ *
+ * Returns `null` for a missing, blank or unparseable header. The port is `-1` when the header
+ * carries none or an out-of-range one - the "no explicit port" sentinel the callers expect;
+ * it is never a value okhttp's `HttpUrl.Builder.port` would reject.
+ *
+ * Bracketed IPv6 literals (`[::1]`, `[::1]:8080`) are delegated to [URI], which knows the
+ * `[...]` grammar; anything [URI] rejects or does not treat as a server-based authority
+ * (e.g. registry-style names with underscores) falls back to a plain colon split so
+ * previously working Host headers keep working.
+ */
+internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? {
+    val header = hostHeader?.takeIf { it.isNotBlank() } ?: return null
+
+    runCatching { URI("//$header") }.getOrNull()?.let { uri ->
+        if (uri.host != null) return uri.host to uri.port.asHostHeaderPort()
+    }
+
+    // URI could not parse it. A bracketed literal it rejected (unclosed bracket,
+    // non-numeric port, ...) is not something the colon split can salvage either.
+    if (header.startsWith("[")) return null
+
+    val hostPort = header.split(":")
+    val port = if (hostPort.size == 2) hostPort[1].toIntOrNull()?.asHostHeaderPort() ?: -1 else -1
+    return hostPort[0] to port
+}
+
+/** A port is only meaningful when it is a real TCP port; anything else becomes the `-1` sentinel. */
+private fun Int.asHostHeaderPort(): Int = if (this in 1..65535) this else -1
