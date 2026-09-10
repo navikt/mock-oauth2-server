@@ -185,7 +185,7 @@ configurations {
                 "org.apache.httpcomponents.client5:httpclient5:5.6.3", // GHSA-hjcp-jmpx-g3qm, via ktor-client-apache5
                 "org.apache.httpcomponents.core5:httpcore5:5.4.3", // GHSA-hf6x-8p5f-cgmf
                 "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3", // GHSA-v3jc-474w-2wm6
-                "org.apache.logging.log4j:log4j-api:2.25.5", // GHSA-qv9r-c865-cp47, via spring-boot-starter-logging
+                "org.apache.logging.log4j:log4j-api:2.26.1", // GHSA-qv9r-c865-cp47, via spring-boot-starter-logging
                 "org.jsoup:jsoup:1.23.2", // GHSA-pmhh-3w7g-xqp8, via spring-boot-starter-test
             )
             // Netty ships all modules in lockstep; transitive deps drag in older/mixed
