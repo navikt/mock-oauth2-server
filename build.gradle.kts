@@ -17,7 +17,7 @@ val kotestVersion = "6.2.4"
 val bouncyCastleVersion = "1.85"
 val httpCore5Version = "5.4.3"
 val springBootVersion = "4.1.1"
-val reactorTestVersion = "3.8.6"
+val reactorTestVersion = "3.8.7"
 val ktorVersion = "3.5.2"
 
 val mainClassKt = "no.nav.security.mock.oauth2.StandaloneMockOAuth2ServerKt"
