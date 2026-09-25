@@ -182,7 +182,7 @@ configurations {
                 // platform, but Dokka's generator config isn't, so force it here too.
                 "com.fasterxml.jackson.core:jackson-databind:$jackson2TestVersion", // GHSA-5jmj-h7xm-6q6v et al
                 "com.fasterxml.jackson.core:jackson-core:$jackson2TestVersion", // GHSA-r7wm-3cxj-wff9
-                "org.apache.httpcomponents.client5:httpclient5:5.6.3", // GHSA-hjcp-jmpx-g3qm, via ktor-client-apache5
+                "org.apache.httpcomponents.client5:httpclient5:5.6.4", // GHSA-hjcp-jmpx-g3qm, via ktor-client-apache5
                 "org.apache.httpcomponents.core5:httpcore5:5.4.3", // GHSA-hf6x-8p5f-cgmf
                 "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3", // GHSA-v3jc-474w-2wm6
                 "org.apache.logging.log4j:log4j-api:2.26.1", // GHSA-qv9r-c865-cp47, via spring-boot-starter-logging
