@@ -149,7 +149,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     constraints {
-        testImplementation("org.yaml:snakeyaml:2.6") {
+        testImplementation("org.yaml:snakeyaml:2.7") {
             because("previous versions have security vulnerabilities")
         }
     }
