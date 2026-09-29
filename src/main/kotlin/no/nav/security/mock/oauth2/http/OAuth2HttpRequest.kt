@@ -19,6 +19,7 @@ import no.nav.security.mock.oauth2.extensions.toUserInfoUrl
 import no.nav.security.mock.oauth2.missingParameter
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import java.net.URI
 
 data class OAuth2HttpRequest(
     val headers: Headers,
@@ -80,24 +81,23 @@ data class OAuth2HttpRequest(
             userInfoEndpoint = this.proxyAwareUrl().toUserInfoUrl().toString(),
         )
 
-    internal fun proxyAwareUrl(): HttpUrl =
-        HttpUrl
+    internal fun proxyAwareUrl(): HttpUrl {
+        val (host, hostHeaderPort) = parseHostHeader() ?: (originalUrl.host to -1)
+        return HttpUrl
             .Builder()
             .scheme(resolveScheme())
-            .host(resolveHost())
-            .port(resolvePort())
+            .host(host)
+            .port(resolvePort(hostHeaderPort))
             .encodedPath(originalUrl.encodedPath)
             .query(originalUrl.query)
             .build()
+    }
 
     private fun resolveScheme(): String = headers["x-forwarded-proto"] ?: originalUrl.scheme
 
-    private fun resolveHost() = parseHostHeader()?.first ?: originalUrl.host
-
-    private fun resolvePort(): Int {
+    private fun resolvePort(hostHeaderPort: Int): Int {
         val xForwardedProto = this.headers["x-forwarded-proto"]
         val xForwardedPort = this.headers["x-forwarded-port"]?.toInt() ?: -1
-        val hostHeaderPort = parseHostHeader()?.second ?: -1
         return when {
             xForwardedPort != -1 -> {
                 xForwardedPort
@@ -121,15 +121,7 @@ data class OAuth2HttpRequest(
         }
     }
 
-    private fun parseHostHeader(): Pair<String, Int>? {
-        val hostHeader = this.headers["host"]
-        if (hostHeader != null) {
-            val hostPort = hostHeader.split(":")
-            val port = if (hostPort.size == 2) hostPort[1].toInt() else -1
-            return hostPort[0] to port
-        }
-        return null
-    }
+    private fun parseHostHeader(): Pair<String, Int>? = hostAndPortFromHostHeader(this.headers["host"])
 
     data class Parameters(
         val parameterString: String?,
@@ -139,3 +131,42 @@ data class OAuth2HttpRequest(
         fun get(name: String): String? = map[name]
     }
 }
+
+/**
+ * Splits an HTTP `Host` header into host and port, returning `null` for a missing, blank or
+ * unparseable header and `-1` as the port when there is no explicit, in-range one.
+ */
+internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? {
+    if (hostHeader.isNullOrBlank()) {
+        return null
+    }
+
+    val uri = runCatching { URI("//$hostHeader") }.getOrNull() ?: return null
+    if (uri.rawAuthority != hostHeader || uri.rawUserInfo != null) {
+        return null
+    }
+
+    if (hostHeader.startsWith("[")) {
+        val host = uri.host ?: return null
+        return host to uri.port.asHostHeaderPort()
+    }
+
+    val parts = hostHeader.split(":", limit = 3)
+    val host = parts[0]
+    if (runCatching { HttpUrl.Builder().host(host) }.isSuccess) {
+        when (parts.size) {
+            1 -> {
+                return host to -1
+            }
+
+            2 -> {
+                val port = parts[1].toIntOrNull()?.asHostHeaderPort() ?: -1
+                return host to port
+            }
+        }
+    }
+
+    return null
+}
+
+private fun Int.asHostHeaderPort(): Int = if (this in 1..65535) this else -1
