@@ -137,30 +137,36 @@ data class OAuth2HttpRequest(
  * unparseable header and `-1` as the port when there is no explicit, in-range one.
  */
 internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? {
-    val header = hostHeader?.takeIf { it.isNotBlank() } ?: return null
-    val uri = runCatching { URI("//$header") }.getOrNull() ?: return null
-    if (uri.rawAuthority != header || uri.rawUserInfo != null) {
+    if (hostHeader.isNullOrBlank()) {
         return null
     }
 
-    if (header.startsWith("[")) {
+    val uri = runCatching { URI("//$hostHeader") }.getOrNull() ?: return null
+    if (uri.rawAuthority != hostHeader || uri.rawUserInfo != null) {
+        return null
+    }
+
+    if (hostHeader.startsWith("[")) {
         val host = uri.host ?: return null
         return host to uri.port.asHostHeaderPort()
     }
 
-    val parts = header.split(":", limit = 3)
-    if (parts.size > 2 || parts[0].isEmpty()) {
-        return null
-    }
-
+    val parts = hostHeader.split(":", limit = 3)
     val host = parts[0]
-    if (runCatching { HttpUrl.Builder().host(host) }.isFailure) {
-        return null
+    if (runCatching { HttpUrl.Builder().host(host) }.isSuccess) {
+        when (parts.size) {
+            1 -> {
+                return host to -1
+            }
+
+            2 -> {
+                val port = parts[1].toIntOrNull()?.asHostHeaderPort() ?: -1
+                return host to port
+            }
+        }
     }
 
-    val port = parts.getOrNull(1)?.toIntOrNull()?.asHostHeaderPort() ?: -1
-
-    return host to port
+    return null
 }
 
 private fun Int.asHostHeaderPort(): Int = if (this in 1..65535) this else -1
