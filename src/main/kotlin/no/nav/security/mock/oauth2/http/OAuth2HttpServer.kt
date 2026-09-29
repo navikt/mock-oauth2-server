@@ -277,14 +277,16 @@ class NettyWrapper
                 scheme: String,
                 address: InetSocketAddress,
                 port: Int,
-            ): HttpUrl =
-                HttpUrl
+            ): HttpUrl {
+                val (host, hostPort) = hostHeaderWithExplicitPort() ?: (address.hostName to port)
+                return HttpUrl
                     .Builder()
                     .scheme(scheme)
-                    .host(hostHeaderWithExplicitPort()?.first ?: address.hostName)
-                    .port(hostHeaderWithExplicitPort()?.second ?: port)
+                    .host(host)
+                    .port(hostPort)
                     .build()
                     .resolve(this.uri())!!
+            }
 
             private fun FullHttpRequest.hostHeaderWithExplicitPort(): Pair<String, Int>? =
                 hostAndPortFromHostHeader(this.headers()["Host"])?.takeIf { (_, port) -> port != -1 }

@@ -185,12 +185,13 @@ internal class OAuth2HttpRequestTest {
             .proxyAwareUrl()
             .toString() shouldBe "https://[::1]/mypath?query=1"
 
-        // a malformed or out-of-range Host header falls back to the original url instead of throwing
+        // a malformed Host header falls back to the original url instead of throwing
         "http://localhost:8080/mypath?query=1"
             .get("host", "[::1")
             .proxyAwareUrl()
             .toString() shouldBe "http://localhost:8080/mypath?query=1"
 
+        // an out-of-range port keeps the IPv6 host and uses the original port
         "http://localhost:8080/mypath?query=1"
             .get("host", "[::1]:99999")
             .proxyAwareUrl()
@@ -212,14 +213,22 @@ internal class OAuth2HttpRequestTest {
 
         hostAndPortFromHostHeader("[::1") shouldBe null
         hostAndPortFromHostHeader("[::1]:notaport") shouldBe null
+        hostAndPortFromHostHeader("[::1]:8080/path") shouldBe null
         hostAndPortFromHostHeader("oauth2:notaport") shouldBe ("oauth2" to -1)
+        hostAndPortFromHostHeader("oauth2:8080/path") shouldBe null
+        hostAndPortFromHostHeader("localhost:8080@evil.example") shouldBe null
+        hostAndPortFromHostHeader("a<b") shouldBe null
+        hostAndPortFromHostHeader("a%zz") shouldBe null
+        hostAndPortFromHostHeader("localhost:80:90") shouldBe null
+        hostAndPortFromHostHeader("::1") shouldBe null
+        hostAndPortFromHostHeader(":8080") shouldBe null
 
         // out-of-range ports collapse to -1 so HttpUrl.Builder never rejects them
         hostAndPortFromHostHeader("[::1]:99999") shouldBe ("[::1]" to -1)
         hostAndPortFromHostHeader("[::1]:0") shouldBe ("[::1]" to -1)
         hostAndPortFromHostHeader("oauth2:99999") shouldBe ("oauth2" to -1)
 
-        // registry-style names java.net.URI refuses still work via the colon split
+        // registry-style names java.net.URI refuses still work
         hostAndPortFromHostHeader("mock_oauth2_server:8080") shouldBe ("mock_oauth2_server" to 8080)
     }
 
