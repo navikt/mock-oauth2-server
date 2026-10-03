@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  mock-oauth2-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: mock-oauth2-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src/test/resources/config-login-hint.json:/app/config.json
+    environment:
+      LOG_LEVEL: "debug"
+      SERVER_PORT: 8080
+      JSON_CONFIG_PATH: /app/config.json
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/isalive" ]
+      start_period: 5s
+      retries: 10
+      interval: 2s
+      timeout: 1s
