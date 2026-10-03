@@ -69,8 +69,9 @@
   <div>Authorize URL used: <a id="authUrlUsed" href="#">–</a></div>
   <pre id="tokenResponse">No token response yet.</pre>
   <div>
-    <a id="jwtio" href="#" target="_blank" rel="noopener">[ Open id_token in jwt.io ]</a>
-    <button id="copyIdToken" type="button">Copy id_token</button>
+    <span id="noTokenHint" class="muted">Run step 1 first — the jwt.io link activates once a real id_token is received.</span>
+    <a id="jwtio" href="#" target="_blank" rel="noopener" style="display:none">[ Open id_token in jwt.io ]</a>
+    <button id="copyIdToken" type="button" disabled>Copy id_token</button>
     <button id="refresh" type="button" disabled>3. Exchange refresh_token</button>
   </div>
 </fieldset>
@@ -162,11 +163,17 @@ async function postToken(body, cfg) {
   return JSON.parse(text);
 }
 
+function setTokenLink(idToken) {
+  const hasId = !!idToken;
+  if (hasId) $("jwtio").href = "https://www.jwt.io#" + idToken;
+  $("jwtio").style.display = hasId ? "" : "none";
+  $("noTokenHint").style.display = hasId ? "none" : "";
+  $("copyIdToken").disabled = !hasId;
+}
+
 function renderTokens(data) {
   $("tokenResponse").textContent = JSON.stringify(data, null, 2);
-  if (data.id_token) {
-    $("jwtio").href = "https://www.jwt.io#" + data.id_token;
-  }
+  setTokenLink(data.id_token);
   $("refresh").disabled = !data.refresh_token;
 }
 
@@ -183,6 +190,7 @@ async function exchangeCode(code, cfg) {
     renderTokens(await postToken(body, cfg));
     setStatus("OK — tokens received.", "ok");
   } catch (e) {
+    setTokenLink(null);
     setStatus("Token request failed: " + e.message, "err");
   }
 }
@@ -210,6 +218,7 @@ async function doRefresh() {
     renderTokens(await postToken(body, cfg));
     setStatus("OK — refreshed tokens received.", "ok");
   } catch (e) {
+    setTokenLink(null);
     setStatus("Refresh failed: " + e.message, "err");
   }
 }
