@@ -446,6 +446,53 @@ This allows a single `JSON_CONFIG` to serve different claim sets per user withou
 2. Token POST body form parameters
 3. `${subject}` and other built-in variables
 
+#### Authorize params: matching and templating on `login_hint`
+
+`requestMappings` can also match on authorize-request query parameters such as `login_hint` (or `acr_values` for assurance level). The params are captured when the authorization code is issued and stay with the grant: they are preserved across refresh-token issuance and rotation, and usable as `${login_hint}` / `${acr_values}` template variables in claim values. Comma-separated values can be indexed with `${param[0]}`, `${param[1]}`, ... (an out-of-range index leaves the placeholder as-is).
+
+Only allowlisted params (`login_hint`, `acr_values`) are captured — blank or oversized values are dropped, and `client_id` can never be spoofed this way. When interactive login is enabled, the submitted username is additionally merged as `subject` (it wins if a captured param already set it), so mappings can combine both: username for `sub`, `login_hint` for the remaining claims.
+
+Example `JSON_CONFIG`:
+
+```json
+{
+    "interactiveLogin": false,
+    "tokenCallbacks": [
+        {
+            "issuerId": "demo",
+            "requestMappings": [
+                {
+                    "requestParam": "login_hint",
+                    "match": "anna@example.com",
+                    "claims": {
+                        "sub": "anna-uuid",
+                        "email": "anna@example.com"
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+Verify it manually against a standalone server (`JSON_CONFIG_PATH` pointing at the file above, port 8080):
+
+1. Start an auth request carrying a `login_hint` (non-interactive mode returns the code as a `302` immediately):
+   ```bash
+   curl -s -D - -o /dev/null "http://localhost:8080/demo/authorize?client_id=my-app&redirect_uri=http://localhost/cb&response_type=code&scope=openid&login_hint=anna@example.com"
+   ```
+   Copy the `code=...` value from the `Location` header.
+2. Exchange the code:
+   ```bash
+   curl -s -X POST http://localhost:8080/demo/token \
+     -d grant_type=authorization_code -d code=<CODE> \
+     -d client_id=my-app -d client_secret=secret \
+     -d redirect_uri=http://localhost/cb
+   ```
+3. Decode the `id_token` payload (e.g. paste it into jwt.io) and confirm `sub` is `anna-uuid` with `email` `anna@example.com`.
+4. Repeat with an unmatched hint (e.g. `login_hint=nobody`) to confirm the fallthrough: default subject, no mapping claims, no error.
+5. To confirm refresh preservation, exchange the `refresh_token` from step 2 (`grant_type=refresh_token`) — the new `id_token` must carry the same mapped claims.
+
 ### Auto-added claims
 
 Every token issued by `DefaultOAuth2TokenCallback` automatically includes the following claims regardless of what you configure:
