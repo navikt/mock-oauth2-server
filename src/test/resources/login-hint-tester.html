@@ -165,7 +165,7 @@ async function postToken(body, cfg) {
 
 function setTokenLink(idToken) {
   const hasId = !!idToken;
-  if (hasId) $("jwtio").href = "https://www.jwt.io#" + idToken;
+  if (hasId) $("jwtio").href = "https://www.jwt.io/#token=" + idToken;
   $("jwtio").style.display = hasId ? "" : "none";
   $("noTokenHint").style.display = hasId ? "none" : "";
   $("copyIdToken").disabled = !hasId;

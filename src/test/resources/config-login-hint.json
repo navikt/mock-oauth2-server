@@ -32,9 +32,9 @@
             "requestMappings": [
                 {
                     "claims": {
-                        "email": "${login_hint}@example.com",
-                        "name": "Mocked Username: ${login_hint}",
-                        "sub": "0000000000-0000-0000-0000-00${login_hint}"
+                        "email": "${login_hint[0]}",
+                        "name": "Mocked Username: ${login_hint[1]}",
+                        "sub": "0000000000-0000-0000-0000-00${login_hint[1]}"
                     },
                     "match": "*",
                     "requestParam": "login_hint"
