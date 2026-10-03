@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mock-oauth2-server — login_hint manual tester</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+  fieldset { margin-bottom: 1rem; }
+  label { display: block; margin: 0.4rem 0; }
+  input[type=text] { width: 100%; max-width: 560px; }
+  button { margin: 0.3rem 0.4rem 0.3rem 0; padding: 0.4rem 0.9rem; }
+  button.primary { font-weight: bold; }
+  pre { background: #f4f4f4; padding: 0.8rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  .ok { color: green; } .err { color: red; }
+  .muted { color: #666; font-size: 0.9em; }
+  #expected { font-style: italic; }
+</style>
+</head>
+<body>
+<h1>login_hint manual tester</h1>
+<p class="muted">
+  Click-through helper for the authorize-params feature. It is served by the mock
+  server itself under <code>/static/</code>, so <code>redirect_uri</code> can simply
+  point back at this page: fill in the fields, press
+  <b>Authorize &amp; log in</b> — the page redirects to
+  <code>/&lt;issuer&gt;/authorize</code>, then automatically exchanges the returned
+  <code>code</code> at <code>/&lt;issuer&gt;/token</code>. Works in non-interactive
+  mode directly, and with <code>interactiveLogin: true</code> via the server login
+  form in between. Exchange config round-trips inside <code>state</code>.
+</p>
+
+<fieldset>
+  <legend>Server &amp; client</legend>
+  <label>Base URL <input type="text" id="baseUrl" value="http://localhost:8080"></label>
+  <label>Issuer ID <input type="text" id="issuerId" value="test-issuer"></label>
+  <label>client_id <input type="text" id="clientId" value="my-app"></label>
+  <label>client_secret <input type="text" id="clientSecret" value="secret"></label>
+  <label>redirect_uri <input type="text" id="redirectUri" value=""></label>
+  <button id="resetRedirect" type="button">Use this page as redirect_uri</button>
+  <label>scope <input type="text" id="scope" value="openid"></label>
+</fieldset>
+
+<fieldset>
+  <legend>Authorize params</legend>
+  <label>login_hint <input type="text" id="loginHint" value="userX987654321x"></label>
+  <label>acr_values <input type="text" id="acrValues" value=""></label>
+  <div>
+    <button type="button" data-preset="anna">Anna (login_hint regex)</button>
+    <button type="button" data-preset="template">Template (any hint)</button>
+    <button type="button" data-preset="fallthrough">Fallthrough (no match)</button>
+  </div>
+  <p id="expected" class="muted"></p>
+</fieldset>
+
+<fieldset>
+  <legend>Actions</legend>
+  <button id="authorize" type="button" class="primary">1. Authorize &amp; log in →</button>
+  <button id="copyAuthUrl" type="button">Copy authorize URL</button>
+  <label>Pasted code (fallback if auto-exchange missed it)
+    <input type="text" id="manualCode" value="">
+  </label>
+  <button id="exchangeManual" type="button">2. Exchange pasted code</button>
+</fieldset>
+
+<fieldset>
+  <legend>Result</legend>
+  <p id="status" class="muted">Idle.</p>
+  <div>Authorize URL used: <a id="authUrlUsed" href="#">–</a></div>
+  <pre id="tokenResponse">No token response yet.</pre>
+  <div>
+    <a id="jwtio" href="#" target="_blank" rel="noopener">[ Open id_token in jwt.io ]</a>
+    <button id="copyIdToken" type="button">Copy id_token</button>
+    <button id="refresh" type="button" disabled>3. Exchange refresh_token</button>
+  </div>
+</fieldset>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const FIELDS = ["baseUrl", "issuerId", "clientId", "clientSecret", "redirectUri", "scope", "loginHint", "acrValues"];
+const LS_KEY = "loginHintTester.v1";
+
+const PRESETS = {
+  anna: {
+    issuerId: "test-issuer", loginHint: "userX987654321x",
+    expected: "Expect sub 7b1552ef-b40b-4ba6-badf-abeb6091da3c, email anna.mueller@example.com."
+  },
+  template: {
+    issuerId: "mock-issuer", loginHint: "foo",
+    expected: "Expect email foo@example.com, name “Mocked Username: foo” (template substitution)."
+  },
+  fallthrough: {
+    issuerId: "test-issuer", loginHint: "nobody",
+    expected: "Expect default subject, no mapping claims, no error."
+  }
+};
+
+function saveForm() {
+  const data = {};
+  FIELDS.forEach((f) => (data[f] = $(f).value));
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch (e) { /* ignore */ }
+}
+
+function loadForm() {
+  try {
+    const data = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+    FIELDS.forEach((f) => { if (data[f] !== undefined) $(f).value = data[f]; });
+  } catch (e) { /* ignore */ }
+}
+
+function packState() {
+  const cfg = {
+    b: $("baseUrl").value, i: $("issuerId").value,
+    c: $("clientId").value, s: $("clientSecret").value, r: $("redirectUri").value
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(cfg))))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function unpackState(state) {
+  const padded = state.replace(/-/g, "+").replace(/_/g, "/");
+  return JSON.parse(decodeURIComponent(escape(atob(padded))));
+}
+
+function tokenEndpoint(cfg) {
+  return cfg.b.replace(/\/+$/, "") + "/" + encodeURIComponent(cfg.i) + "/token";
+}
+
+function buildAuthorizeUrl() {
+  saveForm();
+  const base = $("baseUrl").value.replace(/\/+$/, "");
+  const issuer = encodeURIComponent($("issuerId").value);
+  const params = new URLSearchParams({
+    client_id: $("clientId").value,
+    response_type: "code",
+    redirect_uri: $("redirectUri").value,
+    response_mode: "query",
+    scope: $("scope").value,
+    state: packState(),
+    nonce: Math.random().toString(36).slice(2)
+  });
+  if ($("loginHint").value) params.set("login_hint", $("loginHint").value);
+  if ($("acrValues").value) params.set("acr_values", $("acrValues").value);
+  return base + "/" + issuer + "/authorize?" + params.toString();
+}
+
+function setStatus(text, cls) {
+  const el = $("status");
+  el.textContent = text;
+  el.className = cls || "muted";
+}
+
+async function postToken(body, cfg) {
+  const res = await fetch(tokenEndpoint(cfg), {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString()
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error("HTTP " + res.status + ": " + text);
+  return JSON.parse(text);
+}
+
+function renderTokens(data) {
+  $("tokenResponse").textContent = JSON.stringify(data, null, 2);
+  if (data.id_token) {
+    $("jwtio").href = "https://www.jwt.io#" + data.id_token;
+  }
+  $("refresh").disabled = !data.refresh_token;
+}
+
+async function exchangeCode(code, cfg) {
+  setStatus("Exchanging code…");
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code: code,
+    client_id: cfg.c,
+    client_secret: cfg.s,
+    redirect_uri: cfg.r
+  });
+  try {
+    renderTokens(await postToken(body, cfg));
+    setStatus("OK — tokens received.", "ok");
+  } catch (e) {
+    setStatus("Token request failed: " + e.message, "err");
+  }
+}
+
+async function doRefresh() {
+  let data;
+  try {
+    data = JSON.parse($("tokenResponse").textContent);
+  } catch (e) {
+    setStatus("No token response to refresh.", "err");
+    return;
+  }
+  if (!data.refresh_token) { setStatus("No refresh_token present.", "err"); return; }
+  let cfg;
+  try { cfg = JSON.parse(sessionStorage.getItem("loginHintTester.cfg")); }
+  catch (e) { setStatus("Lost exchange config — re-run step 1.", "err"); return; }
+  setStatus("Refreshing…");
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: data.refresh_token,
+    client_id: cfg.c,
+    client_secret: cfg.s
+  });
+  try {
+    renderTokens(await postToken(body, cfg));
+    setStatus("OK — refreshed tokens received.", "ok");
+  } catch (e) {
+    setStatus("Refresh failed: " + e.message, "err");
+  }
+}
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  $("issuerId").value = p.issuerId;
+  $("loginHint").value = p.loginHint;
+  $("expected").textContent = p.expected;
+  saveForm();
+}
+
+function copyText(text, what) {
+  const done = () => setStatus(what + " copied.", "ok");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => setStatus("Copy failed.", "err"));
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { setStatus("Copy failed.", "err"); }
+    document.body.removeChild(ta);
+  }
+}
+
+// --- wiring ---
+$("authorize").addEventListener("click", () => { window.location.href = buildAuthorizeUrl(); });
+$("copyAuthUrl").addEventListener("click", () => copyText(buildAuthorizeUrl(), "Authorize URL"));
+$("resetRedirect").addEventListener("click", () => {
+  $("redirectUri").value = window.location.href.split(/[?#]/)[0];
+  saveForm();
+});
+$("exchangeManual").addEventListener("click", () => {
+  const code = $("manualCode").value.trim();
+  if (!code) { setStatus("Paste a code first.", "err"); return; }
+  exchangeCode(code, {
+    b: $("baseUrl").value, i: $("issuerId").value,
+    c: $("clientId").value, s: $("clientSecret").value, r: $("redirectUri").value
+  });
+});
+$("refresh").addEventListener("click", doRefresh);
+$("copyIdToken").addEventListener("click", () => {
+  try {
+    copyText(JSON.parse($("tokenResponse").textContent).id_token, "id_token");
+  } catch (e) { setStatus("No id_token to copy.", "err"); }
+});
+document.querySelectorAll("[data-preset]").forEach((btn) =>
+  btn.addEventListener("click", () => applyPreset(btn.dataset.preset)));
+FIELDS.forEach((f) => $(f).addEventListener("change", saveForm));
+
+// --- init: restore form, handle redirect-back ---
+loadForm();
+if (!$("redirectUri").value) $("redirectUri").value = window.location.href.split(/[?#]/)[0];
+applyPreset("anna");
+
+(function handleReturn() {
+  const q = new URLSearchParams(window.location.search);
+  if (q.get("error")) {
+    setStatus("Authorize failed: " + q.get("error") + " — " + (q.get("error_description") || ""), "err");
+  } else if (q.get("code")) {
+    const code = q.get("code");
+    let cfg = null;
+    try { cfg = unpackState(q.get("state") || ""); } catch (e) { /* fall back to form */ }
+    if (!cfg || !cfg.b) {
+      cfg = {
+        b: $("baseUrl").value, i: $("issuerId").value,
+        c: $("clientId").value, s: $("clientSecret").value, r: $("redirectUri").value
+      };
+    }
+    sessionStorage.setItem("loginHintTester.cfg", JSON.stringify(cfg));
+    $("authUrlUsed").textContent = "(returned via redirect; see address bar history)";
+    window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+    exchangeCode(code, cfg);
+    return;
+  }
+  window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+})();
+</script>
+</body>
+</html>

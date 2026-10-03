@@ -1,6 +1,7 @@
 {
     "httpServer": "NettyWrapper",
     "interactiveLogin": false,
+    "staticAssetsPath": "/app/static",
     "tokenCallbacks": [
         {
             "issuerId": "test-issuer",

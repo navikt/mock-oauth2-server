@@ -10,6 +10,7 @@ services:
       - "8080:8080"
     volumes:
       - ./src/test/resources/config-login-hint.json:/app/config.json
+      - ./src/test/resources:/app/static
     environment:
       LOG_LEVEL: "debug"
       SERVER_PORT: 8080
