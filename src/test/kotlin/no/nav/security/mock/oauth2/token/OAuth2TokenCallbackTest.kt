@@ -586,6 +586,102 @@ internal class OAuth2TokenCallbackTest {
             val wrapped = strictCallback.withExtraMatchParams(mapOf("subject" to "bob"))
             wrapped.addClaims(tokenRequest) shouldBe emptyMap()
         }
+
+        @Test
+        fun `client_id in extraMatchParams cannot spoof client identity when matching`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = "evil-client",
+                                claims = mapOf("sub" to "evil-sub"),
+                            ),
+                            RequestMapping(
+                                requestParam = "client_id",
+                                match = "clientId",
+                                claims = mapOf("sub" to "real-sub"),
+                            ),
+                        ),
+                )
+            val wrapped = callback.withExtraMatchParams(mapOf("client_id" to "evil-client"))
+            wrapped.subject(authCodeRequest()) shouldBe "real-sub"
+        }
+
+        @Test
+        fun `client_id template always resolves to the authenticated token-request client`() {
+            val callback =
+                RequestMappingTokenCallback(
+                    issuerId = "issuer1",
+                    requestMappings =
+                        listOf(
+                            RequestMapping(
+                                requestParam = "grant_type",
+                                match = "authorization_code",
+                                claims = mapOf("sub" to "\${client_id}", "client" to "\${clientId}"),
+                            ),
+                        ),
+                )
+            val wrapped =
+                callback.withExtraMatchParams(
+                    mapOf("client_id" to "evil-client", "clientId" to "evil-client"),
+                )
+            wrapped.addClaims(authCodeRequest()) shouldContainAll mapOf("sub" to "clientId", "client" to "clientId")
+        }
+    }
+
+    @Nested
+    inner class SanitizeAuthorizeParams {
+        @Test
+        fun `only allowlisted params survive sanitization`() {
+            sanitizeAuthorizeParams(
+                mapOf(
+                    "login_hint" to "anna@example.com",
+                    "acr_values" to "loa-high",
+                    "client_id" to "evil-client",
+                    "state" to "xyz",
+                ),
+            ) shouldBe
+                mapOf(
+                    "login_hint" to "anna@example.com",
+                    "acr_values" to "loa-high",
+                )
+        }
+
+        @Test
+        fun `blanks and overlong values are dropped`() {
+            sanitizeAuthorizeParams(
+                mapOf(
+                    "login_hint" to "ok@example.com",
+                    "acr_values" to "   ",
+                ),
+            ) shouldBe mapOf("login_hint" to "ok@example.com")
+
+            sanitizeAuthorizeParams(
+                mapOf("login_hint" to "a".repeat(MAX_AUTHORIZE_PARAM_VALUE_LENGTH + 1)),
+            ) shouldBe emptyMap()
+        }
+
+        @Test
+        fun `key count is bounded`() {
+            val manyJunkKeys = (1..20).associate { "junk$it" to "x" }
+            val result =
+                sanitizeAuthorizeParams(
+                    manyJunkKeys +
+                        mapOf(
+                            "login_hint" to "anna@example.com",
+                            "acr_values" to "loa-high",
+                        ),
+                )
+            result shouldBe
+                mapOf(
+                    "login_hint" to "anna@example.com",
+                    "acr_values" to "loa-high",
+                )
+            (result.size <= MAX_AUTHORIZE_PARAM_KEYS) shouldBe true
+        }
     }
 
     @Nested

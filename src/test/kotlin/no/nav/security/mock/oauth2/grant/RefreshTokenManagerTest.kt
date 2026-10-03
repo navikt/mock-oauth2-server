@@ -27,8 +27,19 @@ internal class RefreshTokenManagerTest {
         val tokenCallback = DefaultOAuth2TokenCallback()
 
         val refreshToken = mgr.refreshToken(tokenCallback, null)
-        mgr[refreshToken] shouldBe tokenCallback
+        mgr[refreshToken] shouldBe Pair(tokenCallback, emptyMap())
         val refreshToken2 = mgr.refreshToken(tokenCallback, "nonce123")
-        mgr[refreshToken2] shouldBe tokenCallback
+        mgr[refreshToken2] shouldBe Pair(tokenCallback, emptyMap())
+    }
+
+    @Test
+    fun `rotation should carry extra match params forward`() {
+        val mgr = RefreshTokenManager()
+        val tokenCallback = DefaultOAuth2TokenCallback()
+        val extras = mapOf("login_hint" to "anna@example.com")
+        val refreshToken = mgr.refreshToken(tokenCallback, null, extras)
+
+        val rotated = mgr.rotate(refreshToken, DefaultOAuth2TokenCallback())
+        mgr[rotated] shouldBe Pair(tokenCallback, extras)
     }
 }

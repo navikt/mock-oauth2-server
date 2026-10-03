@@ -215,3 +215,31 @@ private fun Any?.toAudienceList(): List<String> =
         is List<*> -> filterIsInstance<String>()
         else -> emptyList()
     }
+
+/**
+ * Authorize-request params allowed to participate in request-mapping matching and `${...}`
+ * template substitution. Everything else (in particular `client_id`/`clientId`, which always
+ * come from the authenticated token request) is dropped at the capture seam.
+ */
+internal val allowedAuthorizeParams: Set<String> = setOf("login_hint", "acr_values")
+
+/** Documented bounds keeping refresh storage from growing unboundedly. */
+internal const val MAX_AUTHORIZE_PARAM_KEYS = 10
+internal const val MAX_AUTHORIZE_PARAM_VALUE_LENGTH = 1024
+
+/**
+ * Sanitizes raw authorize-request params for use as extra match params:
+ * keeps allowlisted keys only, drops blanks and overlong values, and applies the
+ * documented bounds above.
+ */
+internal fun sanitizeAuthorizeParams(params: Map<String, String>): Map<String, String> {
+    if (params.isEmpty()) return emptyMap()
+    val sanitized = LinkedHashMap<String, String>()
+    for ((key, value) in params) {
+        if (sanitized.size >= MAX_AUTHORIZE_PARAM_KEYS) break
+        if (key !in allowedAuthorizeParams) continue
+        if (value.isBlank() || value.length > MAX_AUTHORIZE_PARAM_VALUE_LENGTH) continue
+        sanitized[key] = value
+    }
+    return sanitized
+}
