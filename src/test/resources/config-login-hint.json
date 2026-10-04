@@ -7,22 +7,24 @@
             "issuerId": "test-issuer",
             "requestMappings": [
                 {
+                    "description": "Handles a login_hint containing the identifier X987654321 and issues tokens with Anna Mueller's fixed claims, regardless of the rest of the hint value.",
+                    "requestParam": "login_hint",
+                    "match": ".*X987654321.*",
                     "claims": {
                         "email": "anna.mueller@example.com",
                         "name": "Anna Müller",
                         "sub": "7b1552ef-b40b-4ba6-badf-abeb6091da3c"
-                    },
-                    "match": ".*X987654321.*",
-                    "requestParam": "login_hint"
+                    }
                 },
                 {
+                    "description": "Handles a login_hint exactly equal to the identifier F009635833 and issues tokens with Peter Mueller's fixed claims.",
+                    "requestParam": "login_hint",
+                    "match": "F009635833",
                     "claims": {
                         "email": "peter.mueller@example.com",
                         "name": "Peter Müller",
                         "sub": "893b1552ef-b40b-4ba6-badf-abeb6095af5d"
-                    },
-                    "match": "F009635833",
-                    "requestParam": "login_hint"
+                    }
                 }
             ],
             "tokenExpiry": 3600
@@ -31,13 +33,24 @@
             "issuerId": "mock-issuer",
             "requestMappings": [
                 {
+                    "description": "Handles a login_hint carrying an email address and a userid separated by a comma, e.g. 'anna@example.com,00112233'. The email claim comes from the part before the comma, name and subject from the part after it. Only matches when both parts contain actual text; anything else falls through to the mapping below.",
+                    "requestParam": "login_hint",
+                    "match": ".*\\S.*,.*\\S.*",
                     "claims": {
                         "email": "${login_hint[0]}",
                         "name": "Mocked Username: ${login_hint[1]}",
                         "sub": "0000000000-0000-0000-0000-00${login_hint[1]}"
-                    },
-                    "match": "*",
-                    "requestParam": "login_hint"
+                    }
+                },
+                {
+                    "description": "Handles any other login_hint by treating the whole value as a username: '@example.com' is appended for the email claim, while name and subject use the raw value. This preserves the original single-value behavior.",
+                    "requestParam": "login_hint",
+                    "match": ".+",
+                    "claims": {
+                        "email": "${login_hint}@example.com",
+                        "name": "Mocked Username: ${login_hint}",
+                        "sub": "0000000000-0000-0000-0000-00${login_hint}"
+                    }
                 }
             ],
             "tokenExpiry": 3600
@@ -46,13 +59,14 @@
             "issuerId": "default",
             "requestMappings": [
                 {
+                    "description": "Catch-all for this issuer: issues tokens with Detlef Default's fixed claims for any client, regardless of other parameters.",
+                    "requestParam": "client_id",
+                    "match": "*",
                     "claims": {
                         "email": "detlef.default@example.com",
                         "name": "Detlef Default",
                         "sub": "7b1552ef-b40b-4ba6-badf-abeb6091da3c"
-                    },
-                    "match": "*",
-                    "requestParam": "client_id"
+                    }
                 }
             ],
             "tokenExpiry": 3600
