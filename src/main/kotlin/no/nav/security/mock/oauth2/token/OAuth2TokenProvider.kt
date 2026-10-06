@@ -194,7 +194,12 @@ class OAuth2TokenProvider
         private fun SignedJWT.verify(issuerUrl: HttpUrl): JWTClaimsSet {
             val jwtProcessor =
                 DefaultJWTProcessor<SecurityContext?>().apply {
-                    jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
+                    jwsTypeVerifier =
+                        DefaultJOSEObjectTypeVerifier(
+                            JOSEObjectType("JWT"),
+                            JOSEObjectType("at+jwt"),
+                            JOSEObjectType("application/at+jwt"),
+                        )
                     jwsKeySelector = JWSVerificationKeySelector(keyProvider.algorithm(), keyProvider)
                     jwtClaimsSetVerifier =
                         object : DefaultJWTClaimsVerifier<SecurityContext?>(
