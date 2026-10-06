@@ -12,11 +12,15 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.INTROSPECT
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.routes
+import no.nav.security.mock.oauth2.testutils.nimbusTokenRequest
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.KeyProvider
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import tools.jackson.module.kotlin.readValue
 import java.time.Instant
@@ -24,6 +28,26 @@ import java.time.temporal.ChronoUnit
 
 internal class IntrospectTest {
     private val rs384TokenProvider = OAuth2TokenProvider(keyProvider = KeyProvider(initialKeys = emptyList(), algorithm = JWSAlgorithm.RS384.name))
+
+    @ParameterizedTest
+    @ValueSource(strings = ["JWT", "at+jwt", "application/at+jwt"])
+    fun `introspect should return active from bearer token for allowed typ headers`(typeHeader: String) {
+        val issuerUrl = "http://localhost/default"
+        val tokenProvider = OAuth2TokenProvider()
+        val token =
+            tokenProvider.accessToken(
+                tokenRequest = nimbusTokenRequest("yolo", "grant_type" to "client_credentials"),
+                issuerUrl = issuerUrl.toHttpUrl(),
+                oAuth2TokenCallback = DefaultOAuth2TokenCallback(typeHeader = typeHeader, claims = mapOf()),
+            )
+        val request = request("$issuerUrl$INTROSPECT", token.serialize())
+
+        routes { introspect(tokenProvider) }.invoke(request).asClue {
+            it.status shouldBe 200
+            val response = it.parse<Map<String, Any>>()
+            response shouldContain ("active" to true)
+        }
+    }
 
     @Test
     fun `introspect should return active and claims from bearer token`() {

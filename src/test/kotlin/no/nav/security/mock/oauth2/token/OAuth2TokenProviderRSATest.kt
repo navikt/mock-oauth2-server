@@ -157,6 +157,28 @@ internal class OAuth2TokenProviderRSATest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["JWT", "at+jwt", "application/at+jwt"])
+    fun `token with allowed typ headers should validate with verify function`(typeHeader: String) {
+        val token =
+            tokenProvider.accessToken(
+                tokenRequest =
+                    nimbusTokenRequest(
+                        "client1",
+                        "grant_type" to "client_credentials",
+                        "scope" to "scope1",
+                    ),
+                issuerUrl = "http://localhost/default".toHttpUrl(),
+                oAuth2TokenCallback = DefaultOAuth2TokenCallback(typeHeader = typeHeader),
+            )
+
+        token.header.type.type shouldBe typeHeader
+
+        tokenProvider.verify("http://localhost/default".toHttpUrl(), token.serialize()).toJSONObject().asClue {
+            it shouldBe token.jwtClaimsSet.toJSONObject()
+        }
+    }
+
     private fun OAuth2TokenProvider.clientCredentialsToken(issuerUrl: String): SignedJWT =
         accessToken(
             tokenRequest =
