@@ -13,6 +13,7 @@ import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
+import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import okhttp3.HttpUrl
 
 private val log = KotlinLogging.logger {}
@@ -33,17 +34,24 @@ internal class RefreshTokenGrantHandler(
         log.debug("issuing token for refreshToken=$refreshToken")
         val scope: String? = tokenRequest.scope?.toString()
         val issuerId = issuerUrl.issuerId()
-        val storedCallback = refreshTokenManager[refreshToken]
+        val (storedCallback, storedExtras) = refreshTokenManager[refreshToken] ?: Pair(null, emptyMap())
         if (storedCallback != null && storedCallback.issuerId() != issuerId) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }
         val enqueuedCallback = enqueuedCallbackSupplier?.invoke(issuerId)
+        // Re-apply the stored authorize params so the resolved callback matches and substitutes
+        // templates against the original session context. No-op for callbacks that do not
+        // support extra match params; idempotent for already-wrapped callbacks.
         val resolvedCallback =
-            enqueuedCallback
-                ?: storedCallback
-                ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
+            (
+                enqueuedCallback
+                    ?: storedCallback
+                    ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
+            ).let {
+                if (it is RequestMappingTokenCallback) it.withExtraMatchParams(storedExtras) else it
+            }
         if (rotateRefreshToken) {
-            refreshToken = refreshTokenManager.rotate(refreshToken, resolvedCallback)
+            refreshToken = refreshTokenManager.rotate(refreshToken, resolvedCallback, storedExtras)
         }
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback)

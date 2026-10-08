@@ -16,25 +16,44 @@
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Quick Start](#quick-start)
 - [What it does](#what-it-does)
 - [Supported Flows](#supported-flows)
 - [Usage](#usage)
   - [In JVM Tests](#in-jvm-tests)
+    - [Minimal setup](#minimal-setup)
+    - [Issuing tokens directly](#issuing-tokens-directly)
+    - [Testing Authorization Code Flow (user login)](#testing-authorization-code-flow-user-login)
+    - [Verifying requests made to the server](#verifying-requests-made-to-the-server)
+    - [Controlling token time](#controlling-token-time)
+    - [Multi-issuer setup](#multi-issuer-setup)
+    - [More examples](#more-examples)
   - [Standalone / Docker](#standalone--docker)
   - [Docker Compose](#docker-compose)
-  - [Token Customization via JSON_CONFIG](#token-customization-via-json_config)
+  - [Token Customization via JSON\_CONFIG](#token-customization-via-json_config)
+    - [Built-in template variables](#built-in-template-variables)
+    - [Interactive login: matching and templating on the login username](#interactive-login-matching-and-templating-on-the-login-username)
+    - [Authorize params: matching and templating on `login_hint`](#authorize-params-matching-and-templating-on-login_hint)
   - [Auto-added claims](#auto-added-claims)
-  - [aud claim resolution](#aud-claim-resolution)
+  - [`aud` claim resolution](#aud-claim-resolution)
   - [HTTPS](#https)
+    - [In unit tests](#in-unit-tests)
+    - [In Docker / standalone via JSON\_CONFIG](#in-docker--standalone-via-json_config)
   - [CORS](#cors)
   - [Debugger](#debugger)
 - [Configuration Reference](#configuration-reference)
+  - [Standalone ENV variables](#standalone-env-variables)
+  - [JSON\_CONFIG properties](#json_config-properties)
 - [API Reference](#api-reference)
-- [Migration guide](#migration-guide)
-- [Contributing](#contributing)
+  - [Well-known endpoints](#well-known-endpoints)
+  - [Endpoint notes](#endpoint-notes)
+  - [Server URL methods (Kotlin/Java API)](#server-url-methods-kotlinjava-api)
+  - [Full API documentation](#full-api-documentation)
 - [Contact](#contact)
+- [Contributing](#contributing)
 - [License](#license)
+- [Migration guide](#migration-guide)
 
 ---
 
@@ -445,6 +464,63 @@ This allows a single `JSON_CONFIG` to serve different claim sets per user withou
 1. `client_id` / `clientId` — always authoritative
 2. Token POST body form parameters
 3. `${subject}` and other built-in variables
+
+#### Authorize params: matching and templating on `login_hint`
+
+`requestMappings` can also match on authorize-request query parameters such as `login_hint` (or `acr_values` for assurance level). The params are captured when the authorization code is issued and stay with the grant: they are preserved across refresh-token issuance and rotation, and usable as `${login_hint}` / `${acr_values}` template variables in claim values. Comma-separated values can be indexed with `${param[0]}`, `${param[1]}`, ... (an out-of-range index leaves the placeholder as-is).
+
+Only allowlisted params (`login_hint`, `acr_values`) are captured — blank or oversized values are dropped, and `client_id` can never be spoofed this way. When interactive login is enabled, the submitted username is additionally merged as `subject` (it wins if a captured param already set it), so mappings can combine both: username for `sub`, `login_hint` for the remaining claims.
+
+Example `JSON_CONFIG`:
+
+```json
+{
+    "interactiveLogin": false,
+    "tokenCallbacks": [
+        {
+            "issuerId": "demo",
+            "requestMappings": [
+                {
+                    "requestParam": "login_hint",
+                    "match": "anna@example.com",
+                    "claims": {
+                        "sub": "anna-uuid",
+                        "email": "anna@example.com"
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+The fastest way to verify this is the click-through test page served by the server itself (`src/test/resources/login-hint-tester.html`, exposed under `/static/` via `staticAssetsPath` — the `docker-compose.local.yaml` setup in this repo wires it up with its `config-login-hint.json`):
+
+1. Start the server:
+   ```bash
+   docker compose -f docker-compose.local.yaml up --build
+   ```
+2. Open `http://localhost:8080/static/login-hint-tester.html` and pick a preset — mapping selection, template substitution (comma-separated hints demo `${login_hint[0]}` / `${login_hint[1]}` indexing), or fallthrough — or type your own `login_hint` / `acr_values`.
+3. Press **Authorize & log in**. The page redirects through `/<issuer>/authorize` (via the server login form when `interactiveLogin` is enabled) and automatically exchanges the returned code at `/<issuer>/token`.
+4. Inspect the token response, follow **Open id_token in jwt.io** to see the mapped claims, and press **Exchange refresh_token** to confirm they survive refresh rotation.
+
+The same flow via curl against a standalone server (`JSON_CONFIG_PATH` pointing at the file above, port 8080, non-interactive mode returns the code as a `302` immediately):
+
+1. Start an auth request carrying a `login_hint`:
+   ```bash
+   curl -s -D - -o /dev/null "http://localhost:8080/demo/authorize?client_id=my-app&redirect_uri=http://localhost/cb&response_type=code&scope=openid&login_hint=anna@example.com"
+   ```
+   Copy the `code=...` value from the `Location` header.
+2. Exchange the code:
+   ```bash
+   curl -s -X POST http://localhost:8080/demo/token \
+     -d grant_type=authorization_code -d code=<CODE> \
+     -d client_id=my-app -d client_secret=secret \
+     -d redirect_uri=http://localhost/cb
+   ```
+3. Decode the `id_token` payload (e.g. paste it into jwt.io) and confirm `sub` is `anna-uuid` with `email` `anna@example.com`.
+4. Repeat with an unmatched hint (e.g. `login_hint=nobody`) to confirm the fallthrough: default subject, no mapping claims, no error.
+5. To confirm refresh preservation, exchange the `refresh_token` from step 2 (`grant_type=refresh_token`) — the new `id_token` must carry the same mapped claims.
 
 ### Auto-added claims
 

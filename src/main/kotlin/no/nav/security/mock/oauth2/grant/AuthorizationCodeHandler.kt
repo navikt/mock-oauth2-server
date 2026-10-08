@@ -17,6 +17,7 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
+import no.nav.security.mock.oauth2.token.sanitizeAuthorizeParams
 import okhttp3.HttpUrl
 import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
@@ -93,10 +94,26 @@ internal class AuthorizationCodeHandler(
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
-        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
+
+        // Single capture seam: sanitize the authorize-request query once and make it available
+        // for request-mapping matching and `${...}` templates downstream. With interactive login,
+        // the username is merged under the subject key (winning on collision) for subject matching.
+        val captureExtras =
+            sanitizeAuthorizeParams(
+                authenticationRequest
+                    .toHTTPRequest()
+                    .queryParameters
+                    .mapValues { it.value.joinToString(separator = " ") },
+            )
+        val login = takeLoginFromCache(code)
+        val extraMatchParams =
+            login?.let { captureExtras + (RequestMappingTokenCallback.SUBJECT_PARAM to it.username) } ?: captureExtras
+        val loginTokenCallbackOrDefault =
+            login?.let { LoginOAuth2TokenCallback(it, oAuth2TokenCallback, extraMatchParams) }
+                ?: wrapWithCaptureExtras(oAuth2TokenCallback, extraMatchParams)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce)
+        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, extraMatchParams)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -108,25 +125,27 @@ internal class AuthorizationCodeHandler(
         )
     }
 
-    private fun getLoginTokenCallbackOrDefault(
-        code: AuthorizationCode,
+    private fun wrapWithCaptureExtras(
         oAuth2TokenCallback: OAuth2TokenCallback,
+        captureExtras: Map<String, String>,
     ): OAuth2TokenCallback =
-        takeLoginFromCache(code)?.let {
-            LoginOAuth2TokenCallback(it, oAuth2TokenCallback)
-        } ?: oAuth2TokenCallback
+        if (oAuth2TokenCallback is RequestMappingTokenCallback) {
+            oAuth2TokenCallback.withExtraMatchParams(captureExtras)
+        } else {
+            oAuth2TokenCallback
+        }
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
 
     private class LoginOAuth2TokenCallback(
         val login: Login,
         val oAuth2TokenCallback: OAuth2TokenCallback,
+        val extraMatchParams: Map<String, String> = emptyMap(),
     ) : OAuth2TokenCallback {
         private val resolvedDelegate: OAuth2TokenCallback =
             when (oAuth2TokenCallback) {
-                is RequestMappingTokenCallback -> {
-                    oAuth2TokenCallback.withExtraMatchParams(mapOf(RequestMappingTokenCallback.SUBJECT_PARAM to login.username))
-                }
+                // Single wrap with the merged extras (capture params + login username).
+                is RequestMappingTokenCallback -> oAuth2TokenCallback.withExtraMatchParams(extraMatchParams)
 
                 else -> {
                     oAuth2TokenCallback

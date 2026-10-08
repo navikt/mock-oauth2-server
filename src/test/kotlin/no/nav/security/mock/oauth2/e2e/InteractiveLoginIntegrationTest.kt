@@ -152,6 +152,48 @@ class InteractiveLoginIntegrationTest {
         }
     }
 
+    @Test
+    fun `interactive login username is used for subject while login_hint mapping supplies other claims`() {
+        val requestMappingCallback =
+            RequestMappingTokenCallback(
+                issuerId = issuerId,
+                requestMappings =
+                    listOf(
+                        RequestMapping(
+                            requestParam = "login_hint",
+                            match = "anna@example.com",
+                            claims = mapOf("email" to "anna@example.com"),
+                        ),
+                        RequestMapping(
+                            requestParam = "grant_type",
+                            match = "*",
+                            claims = mapOf("email" to "fallback@example.com"),
+                        ),
+                    ),
+            )
+        MockOAuth2Server(
+            OAuth2Config(
+                interactiveLogin = true,
+                tokenCallbacks = setOf(requestMappingCallback),
+            ),
+        ).apply { start() }.let { srv ->
+            try {
+                val code =
+                    loginForCode(
+                        User(username = "typed-user"),
+                        srv,
+                        extraQueryParams = mapOf("login_hint" to "anna@example.com"),
+                    )
+                val response = fetchToken(code, srv)
+                response.idToken.shouldNotBeNull()
+                response.idToken.subject shouldBe "typed-user"
+                response.idToken.claims shouldContainAll mapOf("email" to "anna@example.com")
+            } finally {
+                srv.shutdown()
+            }
+        }
+    }
+
     companion object {
         @JvmStatic
         fun testUsers(): Stream<Arguments> =
@@ -174,8 +216,9 @@ class InteractiveLoginIntegrationTest {
     private fun loginForCode(
         user: User,
         srv: MockOAuth2Server = server,
+        extraQueryParams: Map<String, String> = emptyMap(),
     ): String {
-        val loginUrl = srv.authorizationEndpointUrl(issuerId).authenticationRequest()
+        val loginUrl = srv.authorizationEndpointUrl(issuerId).authenticationRequest(extraQueryParams = extraQueryParams)
         client.get(loginUrl).asClue {
             it.code shouldBe 200
             it.body.string() shouldContain "<html"

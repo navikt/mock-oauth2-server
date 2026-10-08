@@ -25,4 +25,40 @@ class TemplateTest {
             println(it)
         }
     }
+
+    @Test
+    fun `indexed template values resolve comma-separated segments trimmed`() {
+        mapOf(
+            "email" to "\${login_hint[0]}",
+            "id" to "\${login_hint[1]}",
+        ).replaceValues(mapOf("login_hint" to "anna@example.com, X111111111")).asClue {
+            it["email"] shouldBe "anna@example.com"
+            it["id"] shouldBe "X111111111"
+        }
+    }
+
+    @Test
+    fun `out-of-range index leaves placeholder unreplaced`() {
+        mapOf("id" to "\${login_hint[5]}").replaceValues(mapOf("login_hint" to "a,b")).asClue {
+            it["id"] shouldBe "\${login_hint[5]}"
+        }
+    }
+
+    @Test
+    fun `indexed access on value without separator resolves index zero and leaves rest unreplaced`() {
+        mapOf(
+            "first" to "\${login_hint[0]}",
+            "second" to "\${login_hint[1]}",
+        ).replaceValues(mapOf("login_hint" to "single")).asClue {
+            it["first"] shouldBe "single"
+            it["second"] shouldBe "\${login_hint[1]}"
+        }
+    }
+
+    @Test
+    fun `missing key with index leaves placeholder unreplaced`() {
+        mapOf("id" to "\${unknown[0]}").replaceValues(emptyMap()).asClue {
+            it["id"] shouldBe "\${unknown[0]}"
+        }
+    }
 }
