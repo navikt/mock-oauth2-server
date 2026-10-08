@@ -10,11 +10,11 @@ val nimbusSdkVersion = "11.38.2"
 val mockWebServerVersion = "5.5.0"
 val jacksonVersion = "3.2.3"
 val jackson2TestVersion = "2.22.3"
-val nettyVersion = "4.2.17.Final"
+val nettyVersion = "4.2.18.Final"
 val junitJupiterVersion = "6.1.3"
 val freemarkerVersion = "2.3.35"
 val kotestVersion = "6.2.5"
-val bouncyCastleVersion = "1.85"
+val bouncyCastleVersion = "1.86"
 val httpCore5Version = "5.4.4"
 val springBootVersion = "4.1.1"
 val reactorTestVersion = "3.8.7"
@@ -175,7 +175,7 @@ configurations {
     all {
         resolutionStrategy {
             force(
-                "com.fasterxml.woodstox:woodstox-core:7.2.2",
+                "com.fasterxml.woodstox:woodstox-core:7.3.0",
                 // Security (test/build-scope transitive deps flagged by Dependabot).
                 // These are not part of the published artifact (runtimeClasspath uses Jackson 3 only).
                 // Jackson 2 (com.fasterxml.*): test scope is already pinned via the jackson-bom
