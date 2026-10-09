@@ -16,6 +16,7 @@ import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
 import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import com.nimbusds.oauth2.sdk.TokenRequest
 import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.extensions.ACCEPTED_TYPES
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.issuerId
 import okhttp3.HttpUrl
@@ -194,7 +195,7 @@ class OAuth2TokenProvider
         private fun SignedJWT.verify(issuerUrl: HttpUrl): JWTClaimsSet {
             val jwtProcessor =
                 DefaultJWTProcessor<SecurityContext?>().apply {
-                    jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
+                    jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(ACCEPTED_TYPES)
                     jwsKeySelector = JWSVerificationKeySelector(keyProvider.algorithm(), keyProvider)
                     jwtClaimsSetVerifier =
                         object : DefaultJWTClaimsVerifier<SecurityContext?>(

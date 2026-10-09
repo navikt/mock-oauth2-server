@@ -36,6 +36,13 @@ import java.time.Instant
 
 private val log = KotlinLogging.logger { }
 
+val ACCEPTED_TYPES: Set<JOSEObjectType> =
+    setOf(
+        JOSEObjectType.JWT,
+        JOSEObjectType("at+jwt"),
+        JOSEObjectType("application/at+jwt"),
+    )
+
 fun AuthenticationRequest.isPrompt(): Boolean =
     this.prompt?.any {
         it == Prompt.Type.LOGIN || it == Prompt.Type.CONSENT || it == Prompt.Type.SELECT_ACCOUNT
@@ -86,7 +93,7 @@ fun SignedJWT.verifySignatureAndIssuer(
     jwsAlgorithm: JWSAlgorithm = JWSAlgorithm.RS256,
 ): JWTClaimsSet {
     val jwtProcessor: ConfigurableJWTProcessor<SecurityContext?> = DefaultJWTProcessor()
-    jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(JOSEObjectType("JWT"))
+    jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(ACCEPTED_TYPES)
     val keySelector: JWSKeySelector<SecurityContext?> =
         JWSVerificationKeySelector(
             jwsAlgorithm,
