@@ -20,7 +20,7 @@ import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.params.provider.CsvSource
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import tools.jackson.module.kotlin.readValue
 import java.time.Instant
@@ -30,8 +30,16 @@ internal class IntrospectTest {
     private val rs384TokenProvider = OAuth2TokenProvider(keyProvider = KeyProvider(initialKeys = emptyList(), algorithm = JWSAlgorithm.RS384.name))
 
     @ParameterizedTest
-    @ValueSource(strings = ["JWT", "at+jwt", "application/at+jwt"])
-    fun `introspect should return active from bearer token for allowed typ headers`(typeHeader: String) {
+    @CsvSource(
+        "JWT, true",
+        "at+jwt, true",
+        "application/at+jwt, true",
+        "JWT2, false",
+    )
+    fun `introspect should return expected active status for typ header`(
+        typeHeader: String,
+        expectedActive: Boolean,
+    ) {
         val issuerUrl = "http://localhost/default"
         val tokenProvider = OAuth2TokenProvider()
         val token =
@@ -45,7 +53,7 @@ internal class IntrospectTest {
         routes { introspect(tokenProvider) }.invoke(request).asClue {
             it.status shouldBe 200
             val response = it.parse<Map<String, Any>>()
-            response shouldContain ("active" to true)
+            response shouldContain ("active" to expectedActive)
         }
     }
 
