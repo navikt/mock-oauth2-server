@@ -160,6 +160,7 @@ internal class OAuth2TokenProviderRSATest {
     @ParameterizedTest
     @ValueSource(strings = ["JWT", "at+jwt", "application/at+jwt"])
     fun `token with allowed typ headers should validate with verify function`(typeHeader: String) {
+        val issuerUrl = "http://localhost/default".toHttpUrl()
         val token =
             tokenProvider.accessToken(
                 tokenRequest =
@@ -168,13 +169,13 @@ internal class OAuth2TokenProviderRSATest {
                         "grant_type" to "client_credentials",
                         "scope" to "scope1",
                     ),
-                issuerUrl = "http://localhost/default".toHttpUrl(),
+                issuerUrl = issuerUrl,
                 oAuth2TokenCallback = DefaultOAuth2TokenCallback(typeHeader = typeHeader),
             )
 
         token.header.type.type shouldBe typeHeader
 
-        tokenProvider.verify("http://localhost/default".toHttpUrl(), token.serialize()).toJSONObject().asClue {
+        tokenProvider.verify(issuerUrl, token.serialize()).toJSONObject().asClue {
             it shouldBe token.jwtClaimsSet.toJSONObject()
         }
     }
