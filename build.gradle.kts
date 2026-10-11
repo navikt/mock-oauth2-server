@@ -119,6 +119,15 @@ tasks.check {
     dependsOn(minStdlibTest)
 }
 
+configurations
+    .matching { it.name.startsWith("dokka") || it.name == "kotlinBouncyCastleConfiguration" }
+    .configureEach {
+        resolutionStrategy.force(
+            "org.freemarker:freemarker:$freemarkerVersion",
+            "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
+        )
+    }
+
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
@@ -302,6 +311,10 @@ tasks.named("dependencyUpdates", DependencyUpdatesTask::class.java).configure {
 buildscript {
     dependencies {
         configurations.classpath.get().exclude("xerces", "xercesImpl")
+        constraints {
+            classpath("com.fasterxml.jackson.core:jackson-core:2.22.3")
+            classpath("com.fasterxml.jackson.core:jackson-databind:2.22.3")
+        }
     }
 }
 
