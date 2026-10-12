@@ -36,7 +36,7 @@ import java.time.Instant
 
 private val log = KotlinLogging.logger { }
 
-val ACCEPTED_TYPES: Set<JOSEObjectType> =
+internal val ACCEPTED_JWT_TYPES: Set<JOSEObjectType> =
     setOf(
         JOSEObjectType.JWT,
         JOSEObjectType("at+jwt"),
@@ -93,7 +93,7 @@ fun SignedJWT.verifySignatureAndIssuer(
     jwsAlgorithm: JWSAlgorithm = JWSAlgorithm.RS256,
 ): JWTClaimsSet {
     val jwtProcessor: ConfigurableJWTProcessor<SecurityContext?> = DefaultJWTProcessor()
-    jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(ACCEPTED_TYPES)
+    jwtProcessor.jwsTypeVerifier = DefaultJOSEObjectTypeVerifier(ACCEPTED_JWT_TYPES)
     val keySelector: JWSKeySelector<SecurityContext?> =
         JWSVerificationKeySelector(
             jwsAlgorithm,
