@@ -104,7 +104,7 @@ internal class AuthorizationCodeHandler(
         val extraMatchParams =
             login?.let { captureExtras + (RequestMappingTokenCallback.SUBJECT_PARAM to it.username) } ?: captureExtras
         val loginTokenCallbackOrDefault =
-            login?.let { LoginOAuth2TokenCallback(it, oAuth2TokenCallback, extraMatchParams) }
+            login?.let { LoginOAuth2TokenCallback(it, oAuth2TokenCallback, extraMatchParams, authorizeParamValueSeparator) }
                 ?: wrapWithCaptureExtras(oAuth2TokenCallback, extraMatchParams)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
@@ -125,7 +125,9 @@ internal class AuthorizationCodeHandler(
         captureExtras: Map<String, String>,
     ): OAuth2TokenCallback =
         if (oAuth2TokenCallback is RequestMappingTokenCallback) {
-            oAuth2TokenCallback.withExtraMatchParams(captureExtras)
+            oAuth2TokenCallback
+                .withValueSeparator(authorizeParamValueSeparator)
+                .withExtraMatchParams(captureExtras)
         } else {
             oAuth2TokenCallback
         }
@@ -156,12 +158,15 @@ internal class AuthorizationCodeHandler(
         val login: Login,
         val oAuth2TokenCallback: OAuth2TokenCallback,
         val extraMatchParams: Map<String, String> = emptyMap(),
+        val valueSeparator: String = " ",
     ) : OAuth2TokenCallback {
         private val resolvedDelegate: OAuth2TokenCallback =
             when (oAuth2TokenCallback) {
                 // Single wrap with the merged extras (capture params + login username).
                 is RequestMappingTokenCallback -> {
-                    oAuth2TokenCallback.withExtraMatchParams(extraMatchParams)
+                    oAuth2TokenCallback
+                        .withValueSeparator(valueSeparator)
+                        .withExtraMatchParams(extraMatchParams)
                 }
 
                 else -> {

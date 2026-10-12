@@ -77,6 +77,11 @@ data class RequestMappingTokenCallback(
     val issuerId: String,
     val requestMappings: List<RequestMapping>,
     val tokenExpiry: Long = Duration.ofHours(1).toSeconds(),
+    /**
+     * Separator used when `${key[i]}` indexes into a multi-valued template parameter.
+     * Defaults to a single space, matching [no.nav.security.mock.oauth2.OAuth2Config.authorizeParamValueSeparator].
+     */
+    val valueSeparator: String = " ",
 ) : OAuth2TokenCallback {
     companion object {
         const val SUBJECT_PARAM = "subject"
@@ -112,6 +117,13 @@ data class RequestMappingTokenCallback(
      */
     fun withExtraMatchParams(extraMatchParams: Map<String, String>): OAuth2TokenCallback = ExtraMatchParamsWrapper(extraMatchParams)
 
+    /**
+     * Returns a copy of this callback that uses [valueSeparator] for `${key[i]}` indexing.
+     * Intended to be set to [no.nav.security.mock.oauth2.OAuth2Config.authorizeParamValueSeparator]
+     * so that indexing splits on the same separator used to join repeated authorize values.
+     */
+    fun withValueSeparator(valueSeparator: String): RequestMappingTokenCallback = copy(valueSeparator = valueSeparator)
+
     private inner class ExtraMatchParamsWrapper(
         private val extraMatchParams: Map<String, String>,
     ) : OAuth2TokenCallback by this@RequestMappingTokenCallback {
@@ -143,7 +155,7 @@ data class RequestMappingTokenCallback(
                 put("client_id", tokenRequest.clientIdAsString())
             }
         return ResolvedMapping(
-            claims = rawClaims.replaceValues(templateParams),
+            claims = rawClaims.replaceValues(templateParams, valueSeparator),
             typeHeader = matched?.typeHeader ?: JOSEObjectType.JWT.type,
         )
     }
