@@ -28,6 +28,11 @@ data class OAuth2Config
         val loginPagePath: String? = null,
         val staticAssetsPath: String? = null,
         val rotateRefreshToken: Boolean = false,
+        /**
+         * Separator used to join repeated authorize-request params (e.g. `login_hint=a&login_hint=b`)
+         * into a single template value. Defaults to a single space, matching the `acr_values` spec.
+         */
+        val authorizeParamValueSeparator: String = " ",
         @JsonDeserialize(using = OAuth2TokenProviderDeserializer::class)
         val tokenProvider: OAuth2TokenProvider = OAuth2TokenProvider(),
         @JsonDeserialize(contentAs = RequestMappingTokenCallback::class)

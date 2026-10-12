@@ -17,7 +17,6 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
-import no.nav.security.mock.oauth2.token.sanitizeAuthorizeParams
 import okhttp3.HttpUrl
 import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
@@ -32,6 +31,7 @@ private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
+    private val authorizeParamValueSeparator: String = " ",
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
@@ -95,16 +95,11 @@ internal class AuthorizationCodeHandler(
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
 
-        // Single capture seam: sanitize the authorize-request query once and make it available
-        // for request-mapping matching and `${...}` templates downstream. With interactive login,
-        // the username is merged under the subject key (winning on collision) for subject matching.
-        val captureExtras =
-            sanitizeAuthorizeParams(
-                authenticationRequest
-                    .toHTTPRequest()
-                    .queryParameters
-                    .mapValues { it.value.joinToString(separator = " ") },
-            )
+        // Single capture seam: read the allowlisted authorize-request params once and make them
+        // available for request-mapping matching and `${...}` templates downstream. Repeated
+        // values are joined with authorizeParamValueSeparator (space by default). With interactive
+        // login, the username is merged under the subject key (winning on collision) for matching.
+        val captureExtras = captureAuthorizeParams(authenticationRequest.toHTTPRequest().queryParameters)
         val login = takeLoginFromCache(code)
         val extraMatchParams =
             login?.let { captureExtras + (RequestMappingTokenCallback.SUBJECT_PARAM to it.username) } ?: captureExtras
@@ -137,6 +132,20 @@ internal class AuthorizationCodeHandler(
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
 
+    private fun captureAuthorizeParams(queryParams: Map<String, List<String>>): Map<String, String> =
+        buildMap {
+            for (key in ALLOWED_AUTHORIZE_PARAMS) {
+                queryParams[key]
+                    ?.filter { it.isNotBlank() }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { put(key, it.joinToString(authorizeParamValueSeparator)) }
+            }
+        }
+
+    companion object {
+        private val ALLOWED_AUTHORIZE_PARAMS = setOf("login_hint", "acr_values")
+    }
+
     private class LoginOAuth2TokenCallback(
         val login: Login,
         val oAuth2TokenCallback: OAuth2TokenCallback,
@@ -145,7 +154,9 @@ internal class AuthorizationCodeHandler(
         private val resolvedDelegate: OAuth2TokenCallback =
             when (oAuth2TokenCallback) {
                 // Single wrap with the merged extras (capture params + login username).
-                is RequestMappingTokenCallback -> oAuth2TokenCallback.withExtraMatchParams(extraMatchParams)
+                is RequestMappingTokenCallback -> {
+                    oAuth2TokenCallback.withExtraMatchParams(extraMatchParams)
+                }
 
                 else -> {
                     oAuth2TokenCallback

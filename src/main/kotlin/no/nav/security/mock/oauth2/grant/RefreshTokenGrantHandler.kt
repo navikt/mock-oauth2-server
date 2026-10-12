@@ -34,7 +34,9 @@ internal class RefreshTokenGrantHandler(
         log.debug("issuing token for refreshToken=$refreshToken")
         val scope: String? = tokenRequest.scope?.toString()
         val issuerId = issuerUrl.issuerId()
-        val (storedCallback, storedExtras) = refreshTokenManager[refreshToken] ?: Pair(null, emptyMap())
+        val stored = refreshTokenManager[refreshToken]
+        val storedCallback = stored?.callback
+        val storedExtras = stored?.extraMatchParams ?: emptyMap()
         if (storedCallback != null && storedCallback.issuerId() != issuerId) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }

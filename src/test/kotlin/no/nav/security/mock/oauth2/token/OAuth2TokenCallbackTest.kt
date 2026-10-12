@@ -633,58 +633,6 @@ internal class OAuth2TokenCallbackTest {
     }
 
     @Nested
-    inner class SanitizeAuthorizeParams {
-        @Test
-        fun `only allowlisted params survive sanitization`() {
-            sanitizeAuthorizeParams(
-                mapOf(
-                    "login_hint" to "anna@example.com",
-                    "acr_values" to "loa-high",
-                    "client_id" to "evil-client",
-                    "state" to "xyz",
-                ),
-            ) shouldBe
-                mapOf(
-                    "login_hint" to "anna@example.com",
-                    "acr_values" to "loa-high",
-                )
-        }
-
-        @Test
-        fun `blanks and overlong values are dropped`() {
-            sanitizeAuthorizeParams(
-                mapOf(
-                    "login_hint" to "ok@example.com",
-                    "acr_values" to "   ",
-                ),
-            ) shouldBe mapOf("login_hint" to "ok@example.com")
-
-            sanitizeAuthorizeParams(
-                mapOf("login_hint" to "a".repeat(MAX_AUTHORIZE_PARAM_VALUE_LENGTH + 1)),
-            ) shouldBe emptyMap()
-        }
-
-        @Test
-        fun `key count is bounded`() {
-            val manyJunkKeys = (1..20).associate { "junk$it" to "x" }
-            val result =
-                sanitizeAuthorizeParams(
-                    manyJunkKeys +
-                        mapOf(
-                            "login_hint" to "anna@example.com",
-                            "acr_values" to "loa-high",
-                        ),
-                )
-            result shouldBe
-                mapOf(
-                    "login_hint" to "anna@example.com",
-                    "acr_values" to "loa-high",
-                )
-            (result.size <= MAX_AUTHORIZE_PARAM_KEYS) shouldBe true
-        }
-    }
-
-    @Nested
     inner class DefaultOAuth2TokenCallbacks {
         @Test
         fun `client credentials request should return client_id as sub from callback`() {

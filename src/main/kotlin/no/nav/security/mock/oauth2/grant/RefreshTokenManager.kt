@@ -9,8 +9,13 @@ import java.util.concurrent.ConcurrentHashMap
 typealias RefreshToken = String
 typealias Nonce = String
 
+internal data class StoredCallback(
+    val callback: OAuth2TokenCallback,
+    val extraMatchParams: Map<String, String> = emptyMap(),
+)
+
 internal data class RefreshTokenManager(
-    private val cache: MutableMap<RefreshToken, Pair<OAuth2TokenCallback, Map<String, String>>> = ConcurrentHashMap(),
+    private val cache: MutableMap<RefreshToken, StoredCallback> = ConcurrentHashMap(),
 ) {
     operator fun get(refreshToken: RefreshToken) = cache[refreshToken]
 
@@ -24,7 +29,7 @@ internal data class RefreshTokenManager(
         val jti = UUID.randomUUID().toString()
         // added for compatibility with keycloak js client which expects a jwt with nonce
         val refreshToken = nonce?.let { plainJWT(jti, nonce) } ?: jti
-        cache[refreshToken] = Pair(tokenCallback, extraMatchParams)
+        cache[refreshToken] = StoredCallback(tokenCallback, extraMatchParams)
         return refreshToken
     }
 
@@ -33,7 +38,9 @@ internal data class RefreshTokenManager(
         fallbackTokenCallback: OAuth2TokenCallback,
         extraMatchParams: Map<String, String> = emptyMap(),
     ): RefreshToken {
-        val (callback, params) = cache.remove(refreshToken) ?: Pair(fallbackTokenCallback, extraMatchParams)
+        val stored = cache.remove(refreshToken)
+        val callback = stored?.callback ?: fallbackTokenCallback
+        val params = stored?.extraMatchParams ?: extraMatchParams
         return refreshToken(callback, null, params)
     }
 

@@ -27,9 +27,9 @@ internal class RefreshTokenManagerTest {
         val tokenCallback = DefaultOAuth2TokenCallback()
 
         val refreshToken = mgr.refreshToken(tokenCallback, null)
-        mgr[refreshToken] shouldBe Pair(tokenCallback, emptyMap())
+        mgr[refreshToken] shouldBe StoredCallback(tokenCallback)
         val refreshToken2 = mgr.refreshToken(tokenCallback, "nonce123")
-        mgr[refreshToken2] shouldBe Pair(tokenCallback, emptyMap())
+        mgr[refreshToken2] shouldBe StoredCallback(tokenCallback)
     }
 
     @Test
@@ -40,6 +40,6 @@ internal class RefreshTokenManagerTest {
         val refreshToken = mgr.refreshToken(tokenCallback, null, extras)
 
         val rotated = mgr.rotate(refreshToken, DefaultOAuth2TokenCallback())
-        mgr[rotated] shouldBe Pair(tokenCallback, extras)
+        mgr[rotated] shouldBe StoredCallback(tokenCallback, extras)
     }
 }
