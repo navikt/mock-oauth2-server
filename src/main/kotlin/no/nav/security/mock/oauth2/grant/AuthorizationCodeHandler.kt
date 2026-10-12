@@ -138,12 +138,18 @@ internal class AuthorizationCodeHandler(
                 queryParams[key]
                     ?.filter { it.isNotBlank() }
                     ?.takeIf { it.isNotEmpty() }
-                    ?.let { put(key, it.joinToString(authorizeParamValueSeparator)) }
+                    ?.joinToString(authorizeParamValueSeparator)
+                    ?.takeIf { it.length <= MAX_AUTHORIZE_PARAM_VALUE_LENGTH }
+                    ?.let { put(key, it) }
             }
         }
 
     companion object {
         private val ALLOWED_AUTHORIZE_PARAMS = setOf("login_hint", "acr_values")
+
+        // Cap the joined value length so an oversized authorize param cannot bloat
+        // refresh-token state or expand configured claims via templates unboundedly.
+        private const val MAX_AUTHORIZE_PARAM_VALUE_LENGTH = 1024
     }
 
     private class LoginOAuth2TokenCallback(
@@ -181,13 +187,17 @@ internal class AuthorizationCodeHandler(
             resolvedDelegate.addClaims(tokenRequest).toMutableMap().apply {
                 // Claim precedence: mapping/callback claims win over login-page claims.
                 // login.claims can add new claims but cannot overwrite claims already set by the mapping.
+                // "sub" is filtered out: only a mapping-provided subject overrides the login username,
+                // preventing a login-page "sub" from overwriting the subject set by subject().
                 login.claims?.let {
                     try {
                         jsonMapper
                             .readTree(it)
                             .properties()
                             .forEach { field ->
-                                putIfAbsent(field.key, jsonMapper.readValue(field.value.toString()))
+                                if (field.key != "sub") {
+                                    putIfAbsent(field.key, jsonMapper.readValue(field.value.toString()))
+                                }
                             }
                     } catch (exception: JacksonException) {
                         log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
