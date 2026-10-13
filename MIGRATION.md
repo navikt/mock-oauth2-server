@@ -10,7 +10,7 @@ The built-in login, authorization and debugger pages now HTML-escape interpolate
 
 ### `form_post` requires an HTTP(S) callback
 
-With `response_mode=form_post`, `redirect_uri` must be an HTTP or HTTPS URL. Other schemes, such as `javascript:` or custom app schemes, now return `400 invalid_request`. Other response modes are unchanged.
+With `response_mode=form_post`, `redirect_uri` must be an HTTP or HTTPS URL. Other schemes, such as custom app schemes, now return `400 invalid_request`. Other response modes are unchanged.
 
 **Migration:** use an HTTP(S) callback for `form_post`. If your client requires a custom URI scheme, use another response mode that the client supports, such as `query` or `fragment`.
 

@@ -58,7 +58,8 @@ import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
 
-// HTML escaping does not neutralize schemes such as javascript: in the auto-submitted form_post action.
+// HTML escaping does not neutralize the scheme of the auto-submitted form_post action. Nimbus already rejects
+// javascript:, data: and vbscript:, but accepts other schemes, so only HTTP(S) callbacks are allowed.
 // Checked before the login page is shown so interactive and non-interactive requests are rejected alike.
 private fun AuthenticationRequest.requireHttpFormPostCallback() =
     apply {
