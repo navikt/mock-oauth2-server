@@ -9,12 +9,12 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
-import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
+import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
@@ -45,7 +45,7 @@ internal class AuthorizationCodeHandler(
             authenticationRequest.responseType.impliesCodeFlow() -> {
                 if (authenticationRequest.responseMode == ResponseMode.FORM_POST) {
                     val redirectUri = authenticationRequest.redirectionURI
-                    if (redirectUri == null || redirectUri.scheme?.lowercase() !in setOf("http", "https") || redirectUri.host.isNullOrBlank()) {
+                    if (redirectUri == null || redirectUri.scheme?.lowercase() !in setOf("http", "https") || redirectUri.rawAuthority.isNullOrBlank()) {
                         invalidRequest("form_post redirect_uri must be an absolute HTTP(S) URL")
                     }
                 }
