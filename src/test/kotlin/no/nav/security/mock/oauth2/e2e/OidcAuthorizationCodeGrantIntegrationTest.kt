@@ -53,6 +53,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     @ParameterizedTest
     @ValueSource(
         strings = [
+            // Already rejected by Nimbus when parsing the request; kept as a regression guard.
             "javascript:alert(document.domain)",
             "customapp://callback.example/finish",
         ],
@@ -73,7 +74,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 .get(
                     interactiveServer
                         .authorizationEndpointUrl("default")
-                        .authenticationRequest(redirectUri = "javascript:alert(document.domain)", responseMode = "form_post"),
+                        .authenticationRequest(redirectUri = "customapp://callback.example/finish", responseMode = "form_post"),
                 ).use {
                     it.code shouldBe 400
                     it.body.string() shouldContain "invalid_request"
