@@ -43,7 +43,7 @@ class SensitiveLoggingTest {
         messages shouldContain "handle token request"
         messages shouldNotContain "Authorization"
         messages shouldNotContain "X-Api-Key"
-        messages shouldNotContain "******"
+        messages shouldNotContain "header-sentinel"
         messages shouldNotContain "other-header-sentinel"
         messages shouldNotContain "body-sentinel"
         messages shouldNotContain "query-sentinel"
