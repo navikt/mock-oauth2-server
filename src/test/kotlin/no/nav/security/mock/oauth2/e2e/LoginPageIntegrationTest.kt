@@ -31,10 +31,12 @@ class LoginPageIntegrationTest {
 
         try {
             val body =
-                client.get(
-                    server.authorizationEndpointUrl("default")
-                        .authenticationRequest(clientId = "<script>untrusted</script>"),
-                ).use { it.body.string() }
+                client
+                    .get(
+                        server
+                            .authorizationEndpointUrl("default")
+                            .authenticationRequest(clientId = "<script>untrusted</script>"),
+                    ).use { it.body.string() }
 
             body shouldContain "&lt;script&gt;untrusted&lt;/script&gt;"
             body shouldNotContain "<script>untrusted</script>"
