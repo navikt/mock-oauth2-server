@@ -45,10 +45,17 @@ import no.nav.security.mock.oauth2.unsupportedGrantType
 import no.nav.security.mock.oauth2.userinfo.userInfo
 import okhttp3.Headers
 import java.io.File
+import java.io.IOException
 import java.net.URLEncoder
+import java.nio.channels.Channels
 import java.nio.charset.Charset
 import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.SecureDirectoryStream
+import java.nio.file.StandardOpenOption
+import java.nio.file.attribute.BasicFileAttributeView
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -208,12 +215,12 @@ class OAuth2HttpRequestHandler(
                         it.url.pathSegments
                             .drop(1)
                             .joinToString("/")
-                    val normalized = Paths.get(path).normalize().toString()
-                    val file = File(config.staticAssetsPath, normalized).canonicalFile
+                    val names = Paths.get(path).normalize().toList()
+                    val bytes = readStaticAsset(staticAssetsDirectory, names)
 
-                    if (file.toPath().startsWith(staticAssetsDirectory) && file.isFile) {
-                        val contentType = Files.probeContentType(file.toPath()) ?: "application/octet-stream"
-                        OAuth2HttpResponse(status = 200, bytesBody = file.readBytes(), headers = Headers.headersOf("Content-Type", contentType))
+                    if (bytes != null) {
+                        val contentType = Files.probeContentType(names.fold(staticAssetsDirectory, Path::resolve)) ?: "application/octet-stream"
+                        OAuth2HttpResponse(status = 200, bytesBody = bytes, headers = Headers.headersOf("Content-Type", contentType))
                     } else {
                         OAuth2HttpResponse(status = 404, body = "not found")
                     }
@@ -232,4 +239,46 @@ class OAuth2HttpRequestHandler(
             ?: config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId }
             ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
     }
+}
+
+/**
+ * Reads a regular file below [root] without following symbolic links. Where the platform supports
+ * [SecureDirectoryStream] the path is traversed relative to open directory handles, so a component
+ * swapped for a symlink after validation cannot redirect the read outside [root].
+ */
+private fun readStaticAsset(
+    root: Path,
+    names: List<Path>,
+): ByteArray? {
+    if (names.isEmpty() || names.any { it.toString() == ".." }) return null
+    return try {
+        Files.newDirectoryStream(root).use { stream ->
+            if (stream is SecureDirectoryStream<Path>) stream.readNoFollow(names) else readNoFollow(root, names)
+        }
+    } catch (e: IOException) {
+        null
+    }
+}
+
+private fun SecureDirectoryStream<Path>.readNoFollow(names: List<Path>): ByteArray? {
+    val name = names.first()
+    if (names.size > 1) {
+        return newDirectoryStream(name, LinkOption.NOFOLLOW_LINKS).use { it.readNoFollow(names.drop(1)) }
+    }
+    val attributes = getFileAttributeView(name, BasicFileAttributeView::class.java, LinkOption.NOFOLLOW_LINKS).readAttributes()
+    if (!attributes.isRegularFile) return null
+    return newByteChannel(name, setOf(StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)).use { Channels.newInputStream(it).readBytes() }
+}
+
+private fun readNoFollow(
+    root: Path,
+    names: List<Path>,
+): ByteArray? {
+    var file = root
+    for (name in names) {
+        file = file.resolve(name)
+        if (Files.isSymbolicLink(file)) return null
+    }
+    if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) return null
+    return Files.newByteChannel(file, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS).use { Channels.newInputStream(it).readBytes() }
 }
