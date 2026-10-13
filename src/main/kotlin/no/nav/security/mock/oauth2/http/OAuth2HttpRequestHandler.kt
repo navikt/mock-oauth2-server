@@ -80,7 +80,7 @@ class OAuth2HttpRequestHandler(
         )
 
     private val exceptionHandler: ExceptionHandler = { request, error ->
-        log.error("received exception when handling request: ${request.url}.", error)
+        log.error("received exception when handling ${request.method} request: ${error::class.simpleName}")
         val msg = URLEncoder.encode(error.message, Charset.forName("UTF-8"))
         val errorObject: ErrorObject =
             when (error) {
@@ -142,7 +142,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.wellKnown() =
         get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) {
-            log.debug("returning well-known json data for url=${it.url}")
+            log.debug("returning well-known json data")
             json(
                 it.toWellKnown().copy(
                     idTokenSigningAlgValuesSupported = listOf(config.tokenProvider.getAlgorithm().name),
@@ -152,7 +152,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.jwks() =
         get(JWKS) {
-            log.debug("handle jwks request on url=${it.url}")
+            log.debug("handle jwks request")
             val issuerId = it.url.issuerId()
             val jwkSet = config.tokenProvider.publicJwkSet(issuerId)
             json(jwkSet.toJSONObject())
@@ -178,7 +178,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.endSession() =
         any(END_SESSION) {
-            log.debug("handle end session request $it")
+            log.debug("handle end session request")
             it.url.queryParameter("post_logout_redirect_uri")?.let { postLogoutRedirectUri ->
                 it.url.queryParameter("state")?.let { state ->
                     redirect("$postLogoutRedirectUri?state=$state")
@@ -188,7 +188,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.revocation(refreshTokenManager: RefreshTokenManager) =
         post(REVOKE) {
-            log.debug("handle revocation request $it")
+            log.debug("handle revocation request")
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
                 "refresh_token" -> {
@@ -211,7 +211,7 @@ class OAuth2HttpRequestHandler(
                 OAuth2HttpResponse(status = 405, body = "unsupported method")
             }
             post(TOKEN) {
-                log.debug("handle token request $it")
+                log.debug("handle token request")
                 val grantType = it.grantType()
                 val issuerId = it.url.issuerId()
                 // For refresh_token grants the handler resolves the callback itself (stored vs enqueued priority),
