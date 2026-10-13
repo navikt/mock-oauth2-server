@@ -80,7 +80,7 @@ class OAuth2HttpRequestHandler(
         )
 
     private val exceptionHandler: ExceptionHandler = { request, error ->
-        val msg = URLEncoder.encode(error.message, Charset.forName("UTF-8"))
+        val msg = URLEncoder.encode(error.message.orEmpty(), Charset.forName("UTF-8"))
         val errorObject: ErrorObject =
             when (error) {
                 is OAuth2Exception -> error.errorObject

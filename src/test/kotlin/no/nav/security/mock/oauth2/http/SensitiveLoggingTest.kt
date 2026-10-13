@@ -160,6 +160,33 @@ class SensitiveLoggingTest {
         messages shouldNotContain "body-sentinel"
     }
 
+    @Test
+    fun `unexpected errors without a message are logged and return server error`() {
+        val messages =
+            captureLogs {
+                val handler = OAuth2HttpRequestHandler(OAuth2Config())
+                handler.enqueueTokenCallback(
+                    object : OAuth2TokenCallback by DefaultOAuth2TokenCallback() {
+                        override fun subject(tokenRequest: TokenRequest): String = throw IllegalStateException()
+                    },
+                )
+                val response =
+                    handler.authorizationServer.invoke(
+                        OAuth2HttpRequest(
+                            headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                            method = "POST",
+                            originalUrl = "http://localhost/default/token".toHttpUrl(),
+                            body = "grant_type=client_credentials&client_id=client&client_secret=secret",
+                        ),
+                    )
+
+                response.status shouldBe 500
+            }
+
+        messages shouldContain "received exception when handling POST /default/token"
+        messages shouldContain "java.lang.IllegalStateException"
+    }
+
     private fun captureLogs(block: () -> Unit): String {
         val rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
         val originalLevel = rootLogger.level
