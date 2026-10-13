@@ -32,6 +32,8 @@ class SensitiveLoggingTest {
                                     "Bearer header-sentinel",
                                     "X-Api-Key",
                                     "other-header-sentinel",
+                                    "Origin",
+                                    "https://origin-sentinel.example",
                                     "Content-Type",
                                     "application/x-www-form-urlencoded",
                                 ),
@@ -49,6 +51,7 @@ class SensitiveLoggingTest {
         messages shouldNotContain "X-Api-Key"
         messages shouldNotContain "header-sentinel"
         messages shouldNotContain "other-header-sentinel"
+        messages shouldNotContain "origin-sentinel"
         messages shouldNotContain "body-sentinel"
         messages shouldNotContain "query-sentinel"
     }
