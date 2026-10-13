@@ -3,11 +3,15 @@ package no.nav.security.mock.oauth2.http
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.classic.spi.ThrowableProxyUtil
 import ch.qos.logback.core.read.ListAppender
+import com.nimbusds.oauth2.sdk.TokenRequest
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import no.nav.security.mock.oauth2.OAuth2Config
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
+import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
@@ -123,6 +127,36 @@ class SensitiveLoggingTest {
         messages shouldNotContain "unmatched-sentinel"
     }
 
+    @Test
+    fun `unexpected errors are logged with stack trace and path but without query values`() {
+        val messages =
+            captureLogs {
+                val handler = OAuth2HttpRequestHandler(OAuth2Config())
+                handler.enqueueTokenCallback(
+                    object : OAuth2TokenCallback by DefaultOAuth2TokenCallback() {
+                        override fun subject(tokenRequest: TokenRequest): String = throw IllegalStateException("callback-failure")
+                    },
+                )
+                val response =
+                    handler.authorizationServer.invoke(
+                        OAuth2HttpRequest(
+                            headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
+                            method = "POST",
+                            originalUrl = "http://localhost/default/token?trace=query-sentinel".toHttpUrl(),
+                            body = "grant_type=client_credentials&client_id=client&client_secret=body-sentinel",
+                        ),
+                    )
+
+                response.status shouldBe 500
+            }
+
+        messages shouldContain "received exception when handling POST /default/token"
+        messages shouldContain "java.lang.IllegalStateException: callback-failure"
+        messages shouldContain "at no.nav.security.mock.oauth2"
+        messages shouldNotContain "query-sentinel"
+        messages shouldNotContain "body-sentinel"
+    }
+
     private fun captureLogs(block: () -> Unit): String {
         val rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
         val originalLevel = rootLogger.level
@@ -134,7 +168,7 @@ class SensitiveLoggingTest {
             block()
             return appender.list.joinToString("\n") {
                 it.formattedMessage +
-                    (it.throwableProxy?.let { proxy -> ch.qos.logback.classic.spi.ThrowableProxyUtil.asString(proxy) } ?: "")
+                    (it.throwableProxy?.let { proxy -> ThrowableProxyUtil.asString(proxy) } ?: "")
             }
         } finally {
             rootLogger.detachAppender(appender)

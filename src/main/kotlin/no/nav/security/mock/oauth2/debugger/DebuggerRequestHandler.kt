@@ -46,7 +46,7 @@ private fun handle(sessionManager: SessionManager): ExceptionHandler =
             headers = Headers.headersOf("Content-Type", "text/html", "Set-Cookie", sessionManager.session(request).asCookie()),
             body = templateMapper.debuggerErrorHtml(request.url.toDebuggerUrl(), error.stackTraceToString()),
         ).also {
-            log.error("received exception when handling ${request.method} debugger request: ${error::class.simpleName}")
+            log.error("received exception when handling ${request.method} ${request.url.encodedPath}", error)
         }
     }
 

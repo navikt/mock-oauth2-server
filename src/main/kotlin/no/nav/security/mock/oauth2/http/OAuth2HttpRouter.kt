@@ -160,7 +160,7 @@ internal class PathRouter(
         }
 
     private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
-        log.debug("no route matching method=${request.method}")
+        log.debug("no route matching ${request.method} ${request.url.encodedPath}")
         return if (matchPath(request)) {
             methodNotAllowed()
         } else {

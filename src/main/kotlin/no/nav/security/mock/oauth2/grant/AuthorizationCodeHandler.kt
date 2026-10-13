@@ -166,7 +166,7 @@ internal class AuthorizationCodeHandler(
                                 putIfAbsent(field.key, jsonMapper.readValue(field.value.toString()))
                             }
                     } catch (exception: JacksonException) {
-                        log.warn("claims value could not be processed as JSON: ${exception::class.simpleName}")
+                        log.warn("claims value could not be processed as JSON: ${exception.javaClass.name}")
                     }
                 }
             }

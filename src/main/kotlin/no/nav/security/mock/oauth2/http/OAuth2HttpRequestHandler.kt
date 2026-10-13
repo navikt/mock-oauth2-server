@@ -80,7 +80,6 @@ class OAuth2HttpRequestHandler(
         )
 
     private val exceptionHandler: ExceptionHandler = { request, error ->
-        log.error("received exception when handling ${request.method} request: ${error::class.simpleName}")
         val msg = URLEncoder.encode(error.message, Charset.forName("UTF-8"))
         val errorObject: ErrorObject =
             when (error) {
@@ -89,6 +88,11 @@ class OAuth2HttpRequestHandler(
                 is GeneralException -> error.errorObject
                 else -> null
             } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
+        if (errorObject.code == OAuth2Error.SERVER_ERROR_CODE) {
+            log.error("received exception when handling ${request.method} ${request.url.encodedPath}", error)
+        } else {
+            log.debug("rejected ${request.method} ${request.url.encodedPath} with ${errorObject.code}: ${error.javaClass.name}")
+        }
         oauth2Error(errorObject)
             .let { response ->
                 request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
