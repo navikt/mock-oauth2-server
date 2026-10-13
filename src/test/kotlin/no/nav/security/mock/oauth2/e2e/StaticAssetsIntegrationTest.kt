@@ -1,16 +1,23 @@
 package no.nav.security.mock.oauth2.e2e
 
 import io.kotest.assertions.asClue
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
 
 class StaticAssetsIntegrationTest {
     private val client = client()
+
+    @TempDir
+    lateinit var temporaryDirectory: Path
 
     @Test
     fun `request to static asset should return file from static asset directory`() {
@@ -27,6 +34,45 @@ class StaticAssetsIntegrationTest {
         client.get(server.url("/static/test.js")).asClue {
             it.code shouldBe 200
             it.headers["content-type"] shouldBe "text/javascript"
+        }
+    }
+
+    @Test
+    fun `static assets must not include files in sibling directories with the same prefix`() {
+        val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
+        val siblingDir = Files.createDirectory(temporaryDirectory.resolve("static-private"))
+        Files.writeString(siblingDir.resolve("secret.txt"), "outside")
+        val server = MockOAuth2Server(OAuth2Config(staticAssetsPath = staticDir.toString())).apply { start() }
+
+        try {
+            client.get(server.url("/static/..%2Fstatic-private%2Fsecret.txt")).use {
+                it.code shouldBe 404
+            }
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
+    fun `static assets must not follow symlinks outside their directory`() {
+        val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
+        val outside = Files.writeString(temporaryDirectory.resolve("secret.txt"), "outside")
+        Files.createSymbolicLink(staticDir.resolve("link.txt"), outside)
+        val server = MockOAuth2Server(OAuth2Config(staticAssetsPath = staticDir.toString())).apply { start() }
+
+        try {
+            client.get(server.url("/static/link.txt")).use {
+                it.code shouldBe 404
+            }
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
+    fun `blank static assets path is rejected`() {
+        shouldThrow<IllegalArgumentException> {
+            MockOAuth2Server(OAuth2Config(staticAssetsPath = ""))
         }
     }
 }
