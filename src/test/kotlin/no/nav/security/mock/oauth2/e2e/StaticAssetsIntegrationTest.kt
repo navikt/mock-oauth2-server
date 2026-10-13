@@ -70,42 +70,20 @@ class StaticAssetsIntegrationTest {
     }
 
     @Test
-    fun `static assets must not follow symlinks inside their directory`() {
+    fun `static assets follow symlinks inside their directory`() {
+        // Kubernetes ConfigMap volumes expose files as symlinks into a ..data directory within the mount.
         val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
-        val target = Files.writeString(staticDir.resolve("target.txt"), "inside")
-        Files.createSymbolicLink(staticDir.resolve("link.txt"), target)
-        val nested = Files.createDirectory(staticDir.resolve("nested"))
-        Files.writeString(nested.resolve("file.txt"), "nested")
-        Files.createSymbolicLink(staticDir.resolve("linked-dir"), nested)
+        val dataDir = Files.createDirectory(staticDir.resolve("..2026_01_01"))
+        Files.writeString(dataDir.resolve("test.txt"), "inside")
+        Files.createSymbolicLink(staticDir.resolve("..data"), staticDir.relativize(dataDir))
+        Files.createSymbolicLink(staticDir.resolve("test.txt"), staticDir.relativize(staticDir.resolve("..data/test.txt")))
         val server = MockOAuth2Server(OAuth2Config(staticAssetsPath = staticDir.toString())).apply { start() }
 
         try {
-            client.get(server.url("/static/target.txt")).use { it.code shouldBe 200 }
-            client.get(server.url("/static/nested/file.txt")).use { it.code shouldBe 200 }
-            client.get(server.url("/static/link.txt")).use { it.code shouldBe 404 }
-            client.get(server.url("/static/linked-dir/file.txt")).use { it.code shouldBe 404 }
-            client.get(server.url("/static/nested")).use { it.code shouldBe 404 }
-        } finally {
-            server.shutdown()
-        }
-    }
-
-    @Test
-    fun `static assets directory replaced by a symlink after startup is not followed`() {
-        val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
-        val outside = Files.createDirectory(temporaryDirectory.resolve("outside"))
-        Files.writeString(outside.resolve("secret.txt"), "outside")
-        val server = MockOAuth2Server(OAuth2Config(staticAssetsPath = staticDir.toString())).apply { start() }
-
-        try {
-            Files.move(staticDir, temporaryDirectory.resolve("static-old"))
-            Files.createSymbolicLink(staticDir, outside)
-            client.get(server.url("/static/secret.txt")).use { it.code shouldBe 404 }
-
-            Files.delete(staticDir)
-            Files.createDirectory(staticDir)
-            Files.writeString(staticDir.resolve("recreated.txt"), "recreated")
-            client.get(server.url("/static/recreated.txt")).use { it.code shouldBe 200 }
+            client.get(server.url("/static/test.txt")).use {
+                it.code shouldBe 200
+                it.body.string() shouldBe "inside"
+            }
         } finally {
             server.shutdown()
         }

@@ -4,7 +4,7 @@
 
 ### Static assets are confined to `staticAssetsPath`
 
-When `staticAssetsPath` is unset, the `/static/*` route is disabled as before. A configured path must now be non-blank. Only regular files inside the configured directory are served; requests that resolve to a sibling directory with a matching name prefix or pass through a symbolic link (even one pointing inside the directory) now return 404.
+When `staticAssetsPath` is unset, the `/static/*` route is disabled as before. A configured path must now be non-blank. Only regular files inside the configured directory are served; requests that resolve to a sibling directory with a matching name prefix or through a symlink outside the directory now return 404.
 
 **Migration:** if you set `staticAssetsPath` to an empty or whitespace-only string, remove the property to disable static assets or set it to the directory containing the files you want to serve.
 
