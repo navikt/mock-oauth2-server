@@ -54,6 +54,21 @@ class StaticAssetsIntegrationTest {
     }
 
     @Test
+    fun `static assets must not serve directories`() {
+        val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
+        Files.writeString(Files.createDirectory(staticDir.resolve("nested")).resolve("file.txt"), "nested")
+        val server = MockOAuth2Server(OAuth2Config(staticAssetsPath = staticDir.toString())).apply { start() }
+
+        try {
+            client.get(server.url("/static/nested/file.txt")).use { it.code shouldBe 200 }
+            client.get(server.url("/static/nested")).use { it.code shouldBe 404 }
+            client.get(server.url("/static/")).use { it.code shouldBe 404 }
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
     fun `static assets must not follow symlinks outside their directory`() {
         val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
         val outside = Files.writeString(temporaryDirectory.resolve("secret.txt"), "outside")
