@@ -49,8 +49,11 @@ import java.io.IOException
 import java.net.URLEncoder
 import java.nio.channels.Channels
 import java.nio.charset.Charset
+import java.nio.file.AccessDeniedException
+import java.nio.file.DirectoryStream
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.NotDirectoryException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.SecureDirectoryStream
@@ -243,8 +246,9 @@ class OAuth2HttpRequestHandler(
 
 /**
  * Reads a regular file below [root] without following symbolic links. Where the platform supports
- * [SecureDirectoryStream] the path is traversed relative to open directory handles, so a component
- * swapped for a symlink after validation cannot redirect the read outside [root].
+ * [SecureDirectoryStream] the path is traversed relative to open directory handles, starting from
+ * [root]'s parent, so neither [root] nor a component below it can be swapped for a symlink after
+ * validation to redirect the read elsewhere.
  */
 private fun readStaticAsset(
     root: Path,
@@ -252,12 +256,28 @@ private fun readStaticAsset(
 ): ByteArray? {
     if (names.isEmpty() || names.any { it.toString() == ".." }) return null
     return try {
-        Files.newDirectoryStream(root).use { stream ->
+        openStaticAssetRoot(root).use { stream ->
             if (stream is SecureDirectoryStream<Path>) stream.readNoFollow(names) else readNoFollow(root, names)
         }
     } catch (e: IOException) {
         null
     }
+}
+
+private fun openStaticAssetRoot(root: Path): DirectoryStream<Path> {
+    val parent =
+        root.parent?.let {
+            try {
+                Files.newDirectoryStream(it)
+            } catch (e: AccessDeniedException) {
+                null
+            }
+        }
+    parent?.use {
+        if (it is SecureDirectoryStream<Path>) return it.newDirectoryStream(root.fileName, LinkOption.NOFOLLOW_LINKS)
+    }
+    if (Files.isSymbolicLink(root)) throw NotDirectoryException(root.toString())
+    return Files.newDirectoryStream(root)
 }
 
 private fun SecureDirectoryStream<Path>.readNoFollow(names: List<Path>): ByteArray? {

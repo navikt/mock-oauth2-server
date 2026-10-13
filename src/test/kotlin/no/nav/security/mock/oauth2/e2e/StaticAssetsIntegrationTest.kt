@@ -91,6 +91,27 @@ class StaticAssetsIntegrationTest {
     }
 
     @Test
+    fun `static assets directory replaced by a symlink after startup is not followed`() {
+        val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
+        val outside = Files.createDirectory(temporaryDirectory.resolve("outside"))
+        Files.writeString(outside.resolve("secret.txt"), "outside")
+        val server = MockOAuth2Server(OAuth2Config(staticAssetsPath = staticDir.toString())).apply { start() }
+
+        try {
+            Files.move(staticDir, temporaryDirectory.resolve("static-old"))
+            Files.createSymbolicLink(staticDir, outside)
+            client.get(server.url("/static/secret.txt")).use { it.code shouldBe 404 }
+
+            Files.delete(staticDir)
+            Files.createDirectory(staticDir)
+            Files.writeString(staticDir.resolve("recreated.txt"), "recreated")
+            client.get(server.url("/static/recreated.txt")).use { it.code shouldBe 200 }
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
     fun `blank static assets path is rejected`() {
         shouldThrow<IllegalArgumentException> {
             MockOAuth2Server(OAuth2Config(staticAssetsPath = ""))
