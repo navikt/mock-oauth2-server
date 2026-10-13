@@ -70,6 +70,27 @@ class StaticAssetsIntegrationTest {
     }
 
     @Test
+    fun `static assets must not follow symlinks inside their directory`() {
+        val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
+        val target = Files.writeString(staticDir.resolve("target.txt"), "inside")
+        Files.createSymbolicLink(staticDir.resolve("link.txt"), target)
+        val nested = Files.createDirectory(staticDir.resolve("nested"))
+        Files.writeString(nested.resolve("file.txt"), "nested")
+        Files.createSymbolicLink(staticDir.resolve("linked-dir"), nested)
+        val server = MockOAuth2Server(OAuth2Config(staticAssetsPath = staticDir.toString())).apply { start() }
+
+        try {
+            client.get(server.url("/static/target.txt")).use { it.code shouldBe 200 }
+            client.get(server.url("/static/nested/file.txt")).use { it.code shouldBe 200 }
+            client.get(server.url("/static/link.txt")).use { it.code shouldBe 404 }
+            client.get(server.url("/static/linked-dir/file.txt")).use { it.code shouldBe 404 }
+            client.get(server.url("/static/nested")).use { it.code shouldBe 404 }
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
     fun `blank static assets path is rejected`() {
         shouldThrow<IllegalArgumentException> {
             MockOAuth2Server(OAuth2Config(staticAssetsPath = ""))
