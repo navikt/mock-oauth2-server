@@ -132,7 +132,10 @@ class SensitiveLoggingTest {
 
         try {
             block()
-            return appender.list.joinToString("\n") { it.formattedMessage }
+            return appender.list.joinToString("\n") {
+                it.formattedMessage +
+                    (it.throwableProxy?.let { proxy -> ch.qos.logback.classic.spi.ThrowableProxyUtil.asString(proxy) } ?: "")
+            }
         } finally {
             rootLogger.detachAppender(appender)
             rootLogger.level = originalLevel
