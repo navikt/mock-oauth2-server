@@ -250,15 +250,17 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.staticAssets() =
         apply {
             if (config.staticAssetsPath != null) {
+                require(config.staticAssetsPath.isNotBlank()) { "staticAssetsPath must not be blank" }
+                val staticAssetsDirectory = File(config.staticAssetsPath).canonicalFile.toPath()
                 get("/static/*") {
                     val path =
                         it.url.pathSegments
                             .drop(1)
                             .joinToString("/")
                     val normalized = Paths.get(path).normalize().toString()
-                    val file = File(config.staticAssetsPath, normalized)
+                    val file = File(config.staticAssetsPath, normalized).canonicalFile
 
-                    if (file.canonicalPath.startsWith(config.staticAssetsPath) && file.exists()) {
+                    if (file.toPath().startsWith(staticAssetsDirectory) && file.isFile) {
                         val contentType = Files.probeContentType(file.toPath()) ?: "application/octet-stream"
                         OAuth2HttpResponse(status = 200, bytesBody = file.readBytes(), headers = Headers.headersOf("Content-Type", contentType))
                     } else {
