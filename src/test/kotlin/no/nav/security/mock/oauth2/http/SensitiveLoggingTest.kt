@@ -24,9 +24,12 @@ class SensitiveLoggingTest {
                         OAuth2HttpRequest(
                             headers =
                                 Headers.headersOf(
-                                    "Authorization", "Bearer header-sentinel",
-                                    "X-Api-Key", "other-header-sentinel",
-                                    "Content-Type", "application/x-www-form-urlencoded",
+                                    "Authorization",
+                                    "Bearer header-sentinel",
+                                    "X-Api-Key",
+                                    "other-header-sentinel",
+                                    "Content-Type",
+                                    "application/x-www-form-urlencoded",
                                 ),
                             method = "POST",
                             originalUrl = "http://localhost/default/token?trace=query-sentinel".toHttpUrl(),
