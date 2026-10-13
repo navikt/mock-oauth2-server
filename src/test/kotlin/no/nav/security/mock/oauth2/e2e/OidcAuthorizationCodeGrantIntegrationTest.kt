@@ -51,7 +51,16 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["javascript:alert(document.domain)", "customapp://callback.example/finish", "http:///finish"])
+    @ValueSource(
+        strings = [
+            "javascript:alert(document.domain)",
+            "customapp://callback.example/finish",
+            "http:///finish",
+            "http://:8080/finish",
+            "http://user@/finish",
+            "http://user@:8080/finish",
+        ],
+    )
     fun `form post rejects non HTTP redirect URIs`(redirectUri: String) {
         client.get(server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = redirectUri, responseMode = "form_post")).use {
             it.code shouldBe 400
@@ -60,7 +69,14 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["http://callback.example/finish", "https://callback.example/finish", "http://callback_service:8080/finish"])
+    @ValueSource(
+        strings = [
+            "http://callback.example/finish",
+            "https://callback.example/finish",
+            "http://callback_service:8080/finish",
+            "http://user@callback_service/finish",
+        ],
+    )
     fun `form post sends authorization code to HTTP callback`(redirectUri: String) {
         client.get(server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = redirectUri, responseMode = "form_post")).use {
             it.code shouldBe 200
