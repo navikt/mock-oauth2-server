@@ -11,6 +11,7 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
+import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.oauth2.sdk.token.BearerTokenError
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import io.netty.handler.codec.http.HttpHeaderNames
@@ -38,6 +39,7 @@ import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
 import no.nav.security.mock.oauth2.introspect.introspect
+import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.missingParameter
@@ -55,6 +57,15 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
+
+// HTML escaping does not neutralize schemes such as javascript: in the auto-submitted form_post action.
+// Checked before the login page is shown so interactive and non-interactive requests are rejected alike.
+private fun AuthenticationRequest.requireHttpFormPostCallback() =
+    apply {
+        if (responseMode == ResponseMode.FORM_POST && redirectionURI?.scheme?.lowercase() !in setOf("http", "https")) {
+            invalidRequest("form_post redirect_uri must be an HTTP(S) URL")
+        }
+    }
 
 class OAuth2HttpRequestHandler(
     private val config: OAuth2Config,
@@ -162,7 +173,7 @@ class OAuth2HttpRequestHandler(
         apply {
             val authorizationCodeHandler = grantHandlers[AUTHORIZATION_CODE] as AuthorizationCodeHandler
             get(AUTHORIZATION) {
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
+                val authRequest: AuthenticationRequest = it.asAuthenticationRequest().requireHttpFormPostCallback()
                 if (config.interactiveLogin || authRequest.isPrompt()) {
                     html(loginRequestHandler.loginHtml(it))
                 } else {
@@ -170,7 +181,7 @@ class OAuth2HttpRequestHandler(
                 }
             }
             post(AUTHORIZATION) {
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
+                val authRequest: AuthenticationRequest = it.asAuthenticationRequest().requireHttpFormPostCallback()
                 val login: Login = loginRequestHandler.loginSubmit(it)
                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
             }

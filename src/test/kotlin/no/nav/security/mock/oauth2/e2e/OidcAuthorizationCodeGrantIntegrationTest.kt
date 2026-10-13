@@ -59,6 +59,25 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         }
     }
 
+    @Test
+    fun `form post rejects non HTTP redirect URIs before showing the interactive login page`() {
+        val interactiveServer = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
+
+        try {
+            client
+                .get(
+                    interactiveServer
+                        .authorizationEndpointUrl("default")
+                        .authenticationRequest(redirectUri = "javascript:alert(document.domain)", responseMode = "form_post"),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_request"
+                }
+        } finally {
+            interactiveServer.shutdown()
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(
         strings = [

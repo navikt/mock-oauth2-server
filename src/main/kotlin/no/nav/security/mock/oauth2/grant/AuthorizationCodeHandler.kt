@@ -3,7 +3,6 @@ package no.nav.security.mock.oauth2.grant
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.OAuth2Error
-import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
@@ -14,7 +13,6 @@ import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
-import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
@@ -43,12 +41,6 @@ internal class AuthorizationCodeHandler(
     ): AuthenticationSuccessResponse {
         when {
             authenticationRequest.responseType.impliesCodeFlow() -> {
-                if (authenticationRequest.responseMode == ResponseMode.FORM_POST) {
-                    // HTML escaping does not neutralize schemes such as javascript: in the auto-submitted form action.
-                    if (authenticationRequest.redirectionURI?.scheme?.lowercase() !in setOf("http", "https")) {
-                        invalidRequest("form_post redirect_uri must be an HTTP(S) URL")
-                    }
-                }
                 val code = AuthorizationCode()
                 log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
