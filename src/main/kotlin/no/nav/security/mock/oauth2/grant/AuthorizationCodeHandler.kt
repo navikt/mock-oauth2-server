@@ -24,20 +24,10 @@ import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import tools.jackson.module.kotlin.readValue
-import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
 private val log = KotlinLogging.logger {}
-
-// java.net.URI leaves host null for reg-names it rejects, such as callback_service, so fall back to the authority.
-private fun URI.hasHost(): Boolean =
-    !host.isNullOrBlank() ||
-        rawAuthority
-            ?.substringAfterLast('@')
-            ?.substringBeforeLast(':')
-            ?.isNotBlank() == true
-
 private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 
 internal class AuthorizationCodeHandler(
@@ -54,9 +44,9 @@ internal class AuthorizationCodeHandler(
         when {
             authenticationRequest.responseType.impliesCodeFlow() -> {
                 if (authenticationRequest.responseMode == ResponseMode.FORM_POST) {
-                    val redirectUri = authenticationRequest.redirectionURI
-                    if (redirectUri == null || redirectUri.scheme?.lowercase() !in setOf("http", "https") || !redirectUri.hasHost()) {
-                        invalidRequest("form_post redirect_uri must be an absolute HTTP(S) URL")
+                    // HTML escaping does not neutralize schemes such as javascript: in the auto-submitted form action.
+                    if (authenticationRequest.redirectionURI?.scheme?.lowercase() !in setOf("http", "https")) {
+                        invalidRequest("form_post redirect_uri must be an HTTP(S) URL")
                     }
                 }
                 val code = AuthorizationCode()
