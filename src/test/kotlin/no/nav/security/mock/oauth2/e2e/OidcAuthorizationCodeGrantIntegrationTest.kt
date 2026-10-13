@@ -28,6 +28,8 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 class OidcAuthorizationCodeGrantIntegrationTest {
     private val server = MockOAuth2Server().apply { start() }
@@ -46,6 +48,24 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                     it?.queryParameter("state") shouldBe "mystate"
                 }
             }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["javascript:alert(document.domain)", "customapp://callback.example/finish"])
+    fun `form post rejects non HTTP redirect URIs`(redirectUri: String) {
+        client.get(server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = redirectUri, responseMode = "form_post")).use {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_request"
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["http://callback.example/finish", "https://callback.example/finish"])
+    fun `form post sends authorization code to HTTP callback`(redirectUri: String) {
+        client.get(server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = redirectUri, responseMode = "form_post")).use {
+            it.code shouldBe 200
+            it.body.string() shouldContain "action=\"$redirectUri\""
+        }
     }
 
     @Test
