@@ -276,6 +276,16 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
+    fun `authorization code flow should reject token request without client_id when strict binding is enabled`() {
+        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.strictTokenRequest(code, clientId = null).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "client_id"
+        }
+    }
+
+    @Test
     fun `authorization code flow should reject token request with a redirect_uri different from the authorization request`() {
         val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
 
@@ -351,16 +361,18 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     private fun OkHttpClient.strictTokenRequest(
         code: String,
-        clientId: String = "client1",
+        clientId: String? = "client1",
         redirectUri: String? = "http://mycallback",
     ) = tokenRequest(
         strictServer.tokenEndpointUrl("default"),
         mutableMapOf(
-            "client_id" to clientId,
-            "client_secret" to "secret",
             "grant_type" to "authorization_code",
             "code" to code,
         ).apply {
+            if (clientId != null) {
+                put("client_id", clientId)
+                put("client_secret", "secret")
+            }
             if (redirectUri != null) {
                 put("redirect_uri", redirectUri)
             }
