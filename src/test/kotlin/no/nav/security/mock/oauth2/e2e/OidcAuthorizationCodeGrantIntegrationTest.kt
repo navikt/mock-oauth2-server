@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test
 
 class OidcAuthorizationCodeGrantIntegrationTest {
     private val server = MockOAuth2Server().apply { start() }
+    private val strictServer = MockOAuth2Server(OAuth2Config(strictAuthorizationCodeBinding = true)).apply { start() }
     private val client = client()
 
     @Test
@@ -264,20 +265,104 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         }
     }
 
+    @Test
+    fun `authorization code flow should reject token request from a different client than the one the code was issued to`() {
+        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.strictTokenRequest(code, clientId = "client2").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should reject token request with a redirect_uri different from the authorization request`() {
+        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.strictTokenRequest(code, redirectUri = "http://evil").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should reject token request without redirect_uri when authorization request had one`() {
+        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.strictTokenRequest(code, redirectUri = null).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should not accept the same code after a failed client or redirect_uri check`() {
+        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.strictTokenRequest(code, clientId = "client2").code shouldBe 400
+        client.strictTokenRequest(code).code shouldBe 400
+    }
+
+    @Test
+    fun `authorization code flow should accept mismatching client and redirect_uri when strict binding is disabled`() {
+        val code =
+            client
+                .get(server.authorizationEndpointUrl("default").authenticationRequest(clientId = "client1", redirectUri = "http://mycallback"))
+                .headers["location"]
+                ?.toHttpUrl()
+                ?.queryParameter("code")
+                .shouldNotBeNull()
+
+        client.tokenRequest(code).code shouldBe 200
+    }
+
+    private fun issueCode(
+        clientId: String,
+        redirectUri: String,
+    ): String =
+        client
+            .get(strictServer.authorizationEndpointUrl("default").authenticationRequest(clientId = clientId, redirectUri = redirectUri))
+            .headers["location"]
+            ?.toHttpUrl()
+            ?.queryParameter("code")
+            .shouldNotBeNull()
+
     private fun OkHttpClient.tokenRequest(
         code: String,
         pkce: Pkce? = null,
+        clientId: String = "client1",
+        redirectUri: String? = "http://mycallback",
     ) = tokenRequest(
         server.tokenEndpointUrl("default"),
         mutableMapOf(
-            "client_id" to "client1",
+            "client_id" to clientId,
             "client_secret" to "secret",
             "grant_type" to "authorization_code",
-            "redirect_uri" to "http://mycallback",
             "code" to code,
         ).apply {
+            if (redirectUri != null) {
+                put("redirect_uri", redirectUri)
+            }
             if (pkce != null) {
                 put("code_verifier", pkce.verifier.value)
+            }
+        },
+    )
+
+    private fun OkHttpClient.strictTokenRequest(
+        code: String,
+        clientId: String = "client1",
+        redirectUri: String? = "http://mycallback",
+    ) = tokenRequest(
+        strictServer.tokenEndpointUrl("default"),
+        mutableMapOf(
+            "client_id" to clientId,
+            "client_secret" to "secret",
+            "grant_type" to "authorization_code",
+            "code" to code,
+        ).apply {
+            if (redirectUri != null) {
+                put("redirect_uri", redirectUri)
             }
         },
     )

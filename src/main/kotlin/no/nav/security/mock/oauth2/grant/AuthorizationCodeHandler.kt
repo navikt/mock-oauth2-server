@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
+import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
@@ -31,6 +32,7 @@ private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
+    private val strictBinding: Boolean = false,
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
@@ -85,6 +87,9 @@ internal class AuthorizationCodeHandler(
                 )
 
         try {
+            if (strictBinding) {
+                verifyClientAndRedirectUri(authenticationRequest, tokenRequest)
+            }
             authenticationRequest.verifyPkce(tokenRequest)
         } catch (e: OAuth2Exception) {
             codeToLoginCache.remove(code)
@@ -107,6 +112,25 @@ internal class AuthorizationCodeHandler(
             scope = scope,
         )
     }
+
+    private fun verifyClientAndRedirectUri(
+        authenticationRequest: AuthenticationRequest,
+        tokenRequest: TokenRequest,
+    ) {
+        val tokenClientId = tokenRequest.clientAuthentication?.clientID ?: tokenRequest.clientID
+        if (tokenClientId != null && tokenClientId != authenticationRequest.clientID) {
+            invalidGrant("authorization code was issued to a different client")
+        }
+        val originalRedirectUri = authenticationRequest.redirectionURI
+        if (originalRedirectUri != null) {
+            val grant = tokenRequest.authorizationGrant as AuthorizationCodeGrant
+            if (grant.redirectionURI != originalRedirectUri) {
+                invalidGrant("redirect_uri does not match the authorization request")
+            }
+        }
+    }
+
+    private fun invalidGrant(message: String): Nothing = throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(message), message)
 
     private fun getLoginTokenCallbackOrDefault(
         code: AuthorizationCode,
