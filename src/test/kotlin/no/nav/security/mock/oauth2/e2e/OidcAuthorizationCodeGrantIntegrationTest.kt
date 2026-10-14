@@ -128,6 +128,25 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
+    fun `authorization code flow should reject token request when PKCE code_verifier is omitted`() {
+        val pkce = Pkce()
+        val code =
+            client
+                .get(
+                    server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce),
+                ).let { authResponse ->
+                    authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
     fun `authorization code flow should return 400 bad request on token request when invalid PKCE code_verifier is used`() {
         val pkce = Pkce()
         val code =
