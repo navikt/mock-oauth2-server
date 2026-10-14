@@ -307,7 +307,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     fun `authorization code flow should accept mismatching client and redirect_uri when strict binding is disabled`() {
         val code =
             client
-                .get(server.authorizationEndpointUrl("default").authenticationRequest(clientId = "client1", redirectUri = "http://mycallback"))
+                .get(server.authorizationEndpointUrl("default").authenticationRequest(clientId = "otherClient", redirectUri = "http://otherCallback"))
                 .headers["location"]
                 ?.toHttpUrl()
                 ?.queryParameter("code")

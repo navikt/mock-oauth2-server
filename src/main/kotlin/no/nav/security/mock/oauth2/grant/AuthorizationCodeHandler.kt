@@ -118,7 +118,7 @@ internal class AuthorizationCodeHandler(
         tokenRequest: TokenRequest,
     ) {
         val tokenClientId = tokenRequest.clientAuthentication?.clientID ?: tokenRequest.clientID
-        if (tokenClientId != null && tokenClientId != authenticationRequest.clientID) {
+        if (tokenClientId != authenticationRequest.clientID) {
             invalidGrant("authorization code was issued to a different client")
         }
         val originalRedirectUri = authenticationRequest.redirectionURI
