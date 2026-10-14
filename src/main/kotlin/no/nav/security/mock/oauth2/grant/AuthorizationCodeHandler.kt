@@ -124,7 +124,7 @@ internal class AuthorizationCodeHandler(
         val originalRedirectUri = authenticationRequest.redirectionURI
         if (originalRedirectUri != null) {
             val grant = tokenRequest.authorizationGrant as AuthorizationCodeGrant
-            if (grant.redirectionURI != originalRedirectUri) {
+            if (grant.redirectionURI?.toString() != originalRedirectUri.toString()) {
                 invalidGrant("redirect_uri does not match the authorization request")
             }
         }

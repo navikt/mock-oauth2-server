@@ -281,8 +281,25 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
         client.strictTokenRequest(code, clientId = null).asClue {
             it.code shouldBe 400
-            it.body.string() shouldContain "client_id"
+            it.body.string() shouldContain "invalid_request"
         }
+    }
+
+    @Test
+    fun `authorization code flow should reject token request with redirect_uri differing only in case when strict binding is enabled`() {
+        val code = issueCode(clientId = "client1", redirectUri = "http://MyCallback")
+
+        client.strictTokenRequest(code, redirectUri = "http://mycallback").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should return tokens when client_id and redirect_uri match and strict binding is enabled`() {
+        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.strictTokenRequest(code).code shouldBe 200
     }
 
     @Test
