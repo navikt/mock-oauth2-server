@@ -27,6 +27,7 @@ import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -35,6 +36,12 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     private val server = MockOAuth2Server().apply { start() }
     private val strictServer = MockOAuth2Server(OAuth2Config(strictAuthorizationCodeBinding = true)).apply { start() }
     private val client = client()
+
+    @AfterEach
+    fun shutdown() {
+        server.shutdown()
+        strictServer.shutdown()
+    }
 
     @Test
     fun `authentication request should return 302 with redirectUri as location and query params state and code`() {
