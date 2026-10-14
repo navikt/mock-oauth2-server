@@ -1,5 +1,23 @@
-name-template: $NEXT_PATCH_VERSION
-tag-template: $NEXT_PATCH_VERSION
+name-template: $RESOLVED_VERSION
+tag-template: $RESOLVED_VERSION
+version-resolver:
+  major:
+    labels:
+      - 'breaking'
+  minor:
+    labels:
+      - 'feature'
+      - 'enhancement'
+  patch:
+    labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+      - 'security findings'
+      - 'chore'
+      - 'dependencies'
+      - 'bump'
+  default: patch
 change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
 categories:
   - title: '🚀 Features'
