@@ -50,8 +50,13 @@ fun AuthenticationRequest.isPrompt(): Boolean =
 
 fun AuthenticationRequest.verifyPkce(tokenRequest: TokenRequest) {
     val verifier: CodeVerifier? = tokenRequest.grant(AuthorizationCodeGrant::class.java).codeVerifier
+    val challenge = this.codeChallenge
+    if (challenge != null && verifier == null) {
+        val msg = "invalid_pkce: code_verifier is required when code_challenge is present"
+        throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(msg), msg)
+    }
     if (verifier != null) {
-        if (CodeChallenge.compute(this.codeChallengeMethod, verifier) != this.codeChallenge) {
+        if (CodeChallenge.compute(this.codeChallengeMethod, verifier) != challenge) {
             val msg = "invalid_pkce: code_verifier does not compute to code_challenge from request"
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(msg), msg)
         }
