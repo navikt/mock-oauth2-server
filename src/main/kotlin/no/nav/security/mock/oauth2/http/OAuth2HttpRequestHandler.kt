@@ -159,9 +159,9 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.revocation(refreshTokenManager: RefreshTokenManager) =
         post(REVOKE) {
             log.debug("handle revocation request $it")
+            val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
                 "refresh_token" -> {
-                    val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
                     refreshTokenManager.remove(token)
                 }
 
