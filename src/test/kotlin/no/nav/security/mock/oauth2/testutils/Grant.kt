@@ -14,6 +14,7 @@ fun HttpUrl.authenticationRequest(
     state: String = "1234",
     nonce: String = "5678",
     pkce: Pkce? = null,
+    extraQueryParams: Map<String, String> = emptyMap(),
 ): HttpUrl =
     newBuilder()
         .addQueryParameter("client_id", clientId)
@@ -28,6 +29,7 @@ fun HttpUrl.authenticationRequest(
                 addQueryParameter("code_challenge", pkce.challenge.value)
                 addQueryParameter("code_challenge_method", pkce.method.value)
             }
+            extraQueryParams.forEach { (k, v) -> addQueryParameter(k, v) }
         }.build()
 
 data class Pkce(
