@@ -27,13 +27,11 @@ import org.junit.jupiter.api.Test
 
 class OidcAuthorizationCodeGrantIntegrationTest {
     private val server = MockOAuth2Server().apply { start() }
-    private val strictServer = MockOAuth2Server(OAuth2Config(strictAuthorizationCodeBinding = true)).apply { start() }
     private val client = client()
 
     @AfterEach
     fun shutdown() {
         server.shutdown()
-        strictServer.shutdown()
     }
 
     @Test
@@ -276,44 +274,44 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     fun `authorization code flow should reject token request from a different client than the one the code was issued to`() {
         val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
 
-        client.strictTokenRequest(code, clientId = "client2").asClue {
+        client.boundTokenRequest(code, clientId = "client2").asClue {
             it.code shouldBe 400
             it.body.string() shouldContain "invalid_grant"
         }
     }
 
     @Test
-    fun `authorization code flow should reject token request without client_id when strict binding is enabled`() {
+    fun `authorization code flow should reject token request without client_id`() {
         val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
 
-        client.strictTokenRequest(code, clientId = null).asClue {
+        client.boundTokenRequest(code, clientId = null).asClue {
             it.code shouldBe 400
             it.body.string() shouldContain "invalid_request"
         }
     }
 
     @Test
-    fun `authorization code flow should reject token request with redirect_uri differing only in case when strict binding is enabled`() {
+    fun `authorization code flow should reject token request with redirect_uri differing only in case`() {
         val code = issueCode(clientId = "client1", redirectUri = "http://MyCallback")
 
-        client.strictTokenRequest(code, redirectUri = "http://mycallback").asClue {
+        client.boundTokenRequest(code, redirectUri = "http://mycallback").asClue {
             it.code shouldBe 400
             it.body.string() shouldContain "invalid_grant"
         }
     }
 
     @Test
-    fun `authorization code flow should return tokens when client_id and redirect_uri match and strict binding is enabled`() {
+    fun `authorization code flow should return tokens when client_id and redirect_uri match`() {
         val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
 
-        client.strictTokenRequest(code).code shouldBe 200
+        client.boundTokenRequest(code).code shouldBe 200
     }
 
     @Test
     fun `authorization code flow should reject token request with a redirect_uri different from the authorization request`() {
         val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
 
-        client.strictTokenRequest(code, redirectUri = "http://evil").asClue {
+        client.boundTokenRequest(code, redirectUri = "http://evil").asClue {
             it.code shouldBe 400
             it.body.string() shouldContain "invalid_grant"
         }
@@ -323,7 +321,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     fun `authorization code flow should reject token request without redirect_uri when authorization request had one`() {
         val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
 
-        client.strictTokenRequest(code, redirectUri = null).asClue {
+        client.boundTokenRequest(code, redirectUri = null).asClue {
             it.code shouldBe 400
             it.body.string() shouldContain "invalid_grant"
         }
@@ -333,21 +331,8 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     fun `authorization code flow should not accept the same code after a failed client or redirect_uri check`() {
         val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
 
-        client.strictTokenRequest(code, clientId = "client2").code shouldBe 400
-        client.strictTokenRequest(code).code shouldBe 400
-    }
-
-    @Test
-    fun `authorization code flow should accept mismatching client and redirect_uri when strict binding is disabled`() {
-        val code =
-            client
-                .get(server.authorizationEndpointUrl("default").authenticationRequest(clientId = "otherClient", redirectUri = "http://otherCallback"))
-                .headers["location"]
-                ?.toHttpUrl()
-                ?.queryParameter("code")
-                .shouldNotBeNull()
-
-        client.tokenRequest(code).code shouldBe 200
+        client.boundTokenRequest(code, clientId = "client2").code shouldBe 400
+        client.boundTokenRequest(code).code shouldBe 400
     }
 
     private fun issueCode(
@@ -355,7 +340,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         redirectUri: String,
     ): String =
         client
-            .get(strictServer.authorizationEndpointUrl("default").authenticationRequest(clientId = clientId, redirectUri = redirectUri))
+            .get(server.authorizationEndpointUrl("default").authenticationRequest(clientId = clientId, redirectUri = redirectUri))
             .headers["location"]
             ?.toHttpUrl()
             ?.queryParameter("code")
@@ -383,12 +368,12 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         },
     )
 
-    private fun OkHttpClient.strictTokenRequest(
+    private fun OkHttpClient.boundTokenRequest(
         code: String,
         clientId: String? = "client1",
         redirectUri: String? = "http://mycallback",
     ) = tokenRequest(
-        strictServer.tokenEndpointUrl("default"),
+        server.tokenEndpointUrl("default"),
         mutableMapOf(
             "grant_type" to "authorization_code",
             "code" to code,
