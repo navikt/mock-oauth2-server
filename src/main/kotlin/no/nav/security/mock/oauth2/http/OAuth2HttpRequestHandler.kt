@@ -112,7 +112,11 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.wellKnown() =
         get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) {
             log.debug("returning well-known json data for url=${it.url}")
-            json(it.toWellKnown())
+            json(
+                it.toWellKnown().copy(
+                    idTokenSigningAlgValuesSupported = listOf(config.tokenProvider.getAlgorithm().name),
+                ),
+            )
         }
 
     private fun Route.Builder.jwks() =

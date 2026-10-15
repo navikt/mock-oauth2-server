@@ -594,6 +594,8 @@ Additional token provider options:
 }
 ```
 
+`keyProvider.algorithm` sets the algorithm used to sign every token. It also sets the key type published at `/{issuerId}/jwks` and the single value advertised in `id_token_signing_alg_values_supported` in the discovery documents. Supported values are `RS256` (default), `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256` and `ES384`.
+
 ---
 
 ## API Reference
