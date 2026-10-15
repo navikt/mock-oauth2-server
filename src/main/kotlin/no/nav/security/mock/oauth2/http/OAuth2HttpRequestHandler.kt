@@ -11,7 +11,9 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
+import com.nimbusds.oauth2.sdk.token.BearerTokenError
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import io.netty.handler.codec.http.HttpHeaderNames
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -88,8 +90,36 @@ class OAuth2HttpRequestHandler(
                 is GeneralException -> error.errorObject
                 else -> null
             } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
-        oauth2Error(errorObject).let { if (request.url.isTokenEndpointUrl()) it.withNoStore() else it }
+        oauth2Error(errorObject)
+            .let { if (request.url.isTokenEndpointUrl()) it.withNoStore() else it }
+            .let { response ->
+                request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
+            }
     }
+
+    private fun OAuth2HttpRequest.wwwAuthenticate(error: ErrorObject): String? {
+        if (error.httpStatusCode != 401) return null
+        return when (error.code) {
+            BearerTokenError.INVALID_TOKEN.code -> {
+                val description = error.description?.toAuthParamValue()?.takeIf { it.isNotEmpty() }
+                listOfNotNull("error=\"${error.code}\"", description?.let { "error_description=\"$it\"" })
+                    .joinToString(prefix = "Bearer ", separator = ", ")
+            }
+
+            OAuth2Error.INVALID_CLIENT.code -> {
+                headers["Authorization"]
+                    ?.substringBefore(" ")
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { scheme -> "$scheme realm=\"${url.toIssuerUrl()}\"" }
+            }
+
+            else -> {
+                null
+            }
+        }
+    }
+
+    private fun String.toAuthParamValue(): String = filter { it in ' '..'~' && it != '"' && it != '\\' }
 
     val authorizationServer: Route =
         routes {

@@ -126,6 +126,11 @@ fun OAuth2HttpResponse.withNoStore(): OAuth2HttpResponse =
                 .build(),
     )
 
+fun OAuth2HttpResponse.withHeader(
+    name: String,
+    value: String,
+): OAuth2HttpResponse = copy(headers = headers.newBuilder().set(name, value).build())
+
 fun html(content: String): OAuth2HttpResponse =
     OAuth2HttpResponse(
         headers =
