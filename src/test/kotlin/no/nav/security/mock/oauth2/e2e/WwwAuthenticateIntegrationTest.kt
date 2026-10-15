@@ -2,7 +2,6 @@ package no.nav.security.mock.oauth2.e2e
 
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.parse
@@ -15,11 +14,11 @@ class WwwAuthenticateIntegrationTest {
     private val client = client()
 
     @Test
-    fun `userinfo without bearer token should return Bearer challenge`() {
+    fun `userinfo without bearer token should return Bearer challenge without error`() {
         withMockOAuth2Server {
             client.get(userInfoUrl("default")).asClue {
                 it.code shouldBe 401
-                it.header("WWW-Authenticate") shouldBe "Bearer error=\"invalid_token\", error_description=\"missing bearer token\""
+                it.header("WWW-Authenticate") shouldBe "Bearer"
                 it.parse<Map<String, Any>>()["error"] shouldBe "invalid_token"
             }
         }
@@ -34,7 +33,7 @@ class WwwAuthenticateIntegrationTest {
                     headers = Headers.headersOf("Authorization", "Bearer not-a-jwt"),
                 ).asClue {
                     it.code shouldBe 401
-                    it.header("WWW-Authenticate").shouldStartWith("Bearer error=\"invalid_token\", error_description=\"")
+                    it.header("WWW-Authenticate") shouldBe "Bearer error=\"invalid_token\""
                     it.parse<Map<String, Any>>()["error"] shouldBe "invalid_token"
                 }
         }

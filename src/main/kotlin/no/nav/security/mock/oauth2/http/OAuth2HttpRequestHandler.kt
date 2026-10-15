@@ -26,7 +26,6 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.isPrompt
-import no.nav.security.mock.oauth2.extensions.isTokenEndpointUrl
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
@@ -91,7 +90,6 @@ class OAuth2HttpRequestHandler(
                 else -> null
             } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
         oauth2Error(errorObject)
-            .let { if (request.url.isTokenEndpointUrl()) it.withNoStore() else it }
             .let { response ->
                 request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
             }
@@ -101,9 +99,12 @@ class OAuth2HttpRequestHandler(
         if (error.httpStatusCode != 401) return null
         return when (error.code) {
             BearerTokenError.INVALID_TOKEN.code -> {
-                val description = error.description?.toAuthParamValue()?.takeIf { it.isNotEmpty() }
-                listOfNotNull("error=\"${error.code}\"", description?.let { "error_description=\"$it\"" })
-                    .joinToString(prefix = "Bearer ", separator = ", ")
+                // a request without a token gets a challenge without an error code
+                if (headers["Authorization"]?.startsWith("Bearer ", ignoreCase = true) == true) {
+                    "Bearer error=\"${error.code}\""
+                } else {
+                    "Bearer"
+                }
             }
 
             OAuth2Error.INVALID_CLIENT.code -> {
@@ -118,8 +119,6 @@ class OAuth2HttpRequestHandler(
             }
         }
     }
-
-    private fun String.toAuthParamValue(): String = filter { it in ' '..'~' && it != '"' && it != '\\' }
 
     val authorizationServer: Route =
         routes {

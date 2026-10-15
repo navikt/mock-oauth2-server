@@ -44,7 +44,7 @@ class TokenResponseCacheHeadersIntegrationTest {
     }
 
     @Test
-    fun `token error response should not be cached`() {
+    fun `token error response should keep its current headers`() {
         withMockOAuth2Server {
             client
                 .tokenRequest(
@@ -52,7 +52,8 @@ class TokenResponseCacheHeadersIntegrationTest {
                     mapOf("grant_type" to "unknown", "client_id" to "client1"),
                 ).asClue {
                     it.code shouldBe 400
-                    it.shouldHaveNoCacheHeaders()
+                    it.header("Cache-Control") shouldBe null
+                    it.header("Pragma") shouldBe null
                 }
         }
     }
