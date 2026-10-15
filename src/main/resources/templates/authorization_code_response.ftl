@@ -6,7 +6,9 @@
 <body onload="document.callback.submit()">
 <form action="${redirect_uri}" name="callback" autocomplete="off" method="post">
     <input type="hidden" name="code" value="${code}"/>
+    <#if state??>
     <input type="hidden" name="state" value="${state}"/>
+    </#if>
 </form>
 </body>
 </html>

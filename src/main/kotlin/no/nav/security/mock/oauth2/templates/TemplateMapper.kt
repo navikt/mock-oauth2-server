@@ -79,7 +79,7 @@ class TemplateMapper(
     fun authorizationCodeResponseHtml(
         redirectUri: String,
         code: String,
-        state: String,
+        state: String?,
     ): String =
         asString(
             HtmlContent(

@@ -154,7 +154,7 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
                     templateMapper.authorizationCodeResponseHtml(
                         authenticationSuccessResponse.redirectionURI.toString(),
                         authenticationSuccessResponse.authorizationCode.value,
-                        authenticationSuccessResponse.state.value,
+                        authenticationSuccessResponse.state?.value,
                     ),
             )
         }
