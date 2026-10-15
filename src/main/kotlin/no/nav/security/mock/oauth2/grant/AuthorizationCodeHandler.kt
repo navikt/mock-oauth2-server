@@ -35,7 +35,6 @@ private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
-    private val strictBinding: Boolean = false,
     private val enqueuedCallbackSupplier: ((issuerId: String) -> OAuth2TokenCallback?)? = null,
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
@@ -105,9 +104,7 @@ internal class AuthorizationCodeHandler(
         }
 
         try {
-            if (strictBinding) {
-                verifyClientAndRedirectUri(authenticationRequest, tokenRequest)
-            }
+            verifyClientAndRedirectUri(authenticationRequest, tokenRequest)
             authenticationRequest.verifyPkce(tokenRequest)
         } catch (e: OAuth2Exception) {
             codeToLoginCache.remove(code)
