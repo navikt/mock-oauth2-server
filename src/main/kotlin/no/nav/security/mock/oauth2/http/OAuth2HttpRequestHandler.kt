@@ -11,7 +11,9 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
+import com.nimbusds.oauth2.sdk.token.BearerTokenError
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import io.netty.handler.codec.http.HttpHeaderNames
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -88,6 +90,34 @@ class OAuth2HttpRequestHandler(
                 else -> null
             } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
         oauth2Error(errorObject)
+            .let { response ->
+                request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
+            }
+    }
+
+    private fun OAuth2HttpRequest.wwwAuthenticate(error: ErrorObject): String? {
+        if (error.httpStatusCode != 401) return null
+        return when (error.code) {
+            BearerTokenError.INVALID_TOKEN.code -> {
+                // a request without a token gets a challenge without an error code
+                if (headers["Authorization"]?.startsWith("Bearer ", ignoreCase = true) == true) {
+                    "Bearer error=\"${error.code}\""
+                } else {
+                    "Bearer"
+                }
+            }
+
+            OAuth2Error.INVALID_CLIENT.code -> {
+                headers["Authorization"]
+                    ?.substringBefore(" ")
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { scheme -> "$scheme realm=\"${url.toIssuerUrl()}\"" }
+            }
+
+            else -> {
+                null
+            }
+        }
     }
 
     val authorizationServer: Route =
@@ -194,7 +224,7 @@ class OAuth2HttpRequestHandler(
                     }
                 val grantHandler: GrantHandler = grantHandlers[grantType] ?: unsupportedGrantType(grantType)
                 val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
-                json(tokenResponse)
+                json(tokenResponse).withNoStore()
             }
         }
 
