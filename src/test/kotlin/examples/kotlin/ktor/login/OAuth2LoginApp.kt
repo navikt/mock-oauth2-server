@@ -67,6 +67,7 @@ fun Application.module(authConfig: AuthConfig) {
             }
             urlProvider = {
                 url {
+                    parameters.clear()
                     encodedPath = application.href(Login(it.name))
                 }
             }

@@ -34,7 +34,6 @@ data class OAuth2Config
         val tokenCallbacks: Set<OAuth2TokenCallback> = emptySet(),
         @JsonDeserialize(using = OAuth2HttpServerDeserializer::class)
         val httpServer: OAuth2HttpServer = MockWebServerWrapper(),
-        val strictAuthorizationCodeBinding: Boolean = false,
     ) {
         internal class OAuth2TokenProviderDeserializer : ValueDeserializer<OAuth2TokenProvider>() {
             data class ProviderConfig(
