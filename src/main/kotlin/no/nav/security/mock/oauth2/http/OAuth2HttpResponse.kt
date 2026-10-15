@@ -88,6 +88,9 @@ data class WellKnown(
         ),
     @JsonProperty("token_endpoint_auth_methods_supported")
     val tokenEndpointAuthMethodsSupported: List<String> = listOf("client_secret_basic", "client_secret_post", "private_key_jwt"),
+    @JsonProperty("token_endpoint_auth_signing_alg_values_supported")
+    val tokenEndpointAuthSigningAlgValuesSupported: List<String> =
+        listOf("RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512"),
     @JsonProperty("scopes_supported")
     val scopesSupported: List<String> = listOf("openid"),
 )

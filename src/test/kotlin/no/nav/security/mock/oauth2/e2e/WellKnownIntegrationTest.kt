@@ -1,5 +1,15 @@
 package no.nav.security.mock.oauth2.e2e
 
+import com.nimbusds.jose.JOSEObjectType
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.JWSSigner
+import com.nimbusds.jose.crypto.ECDSASigner
+import com.nimbusds.jose.crypto.RSASSASigner
+import com.nimbusds.jose.jwk.Curve
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
+import com.nimbusds.jwt.SignedJWT
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
@@ -55,6 +65,7 @@ class WellKnownIntegrationTest {
                         "grant_types_supported",
                         "token_endpoint_auth_methods_supported",
                         "scopes_supported",
+                        "token_endpoint_auth_signing_alg_values_supported",
                     )
             }
         }
@@ -91,6 +102,33 @@ class WellKnownIntegrationTest {
                 clientCredentialsRequest(authMethod.toString()).asClue {
                     it.code shouldBe 200
                 }
+            }
+        }
+    }
+
+    @Test
+    fun `well-known should advertise the signing algorithms accepted for private_key_jwt client assertions`() {
+        withMockOAuth2Server {
+            val algorithms = metadata()["token_endpoint_auth_signing_alg_values_supported"] as List<*>
+            algorithms shouldContainExactlyInAnyOrder clientAssertionAlgorithms.keys.map { it.name }
+            clientAssertionAlgorithms.forEach { (algorithm, signer) ->
+                val clientAssertion =
+                    SignedJWT(
+                        JWSHeader.Builder(algorithm).type(JOSEObjectType.JWT).build(),
+                        clientAssertion("client1", this.tokenEndpointUrl("default").toString()).jwtClaimsSet,
+                    ).apply { sign(signer) }
+                client
+                    .tokenRequest(
+                        this.tokenEndpointUrl("default"),
+                        mapOf(
+                            "grant_type" to "client_credentials",
+                            "scope" to "scope1",
+                            "client_assertion_type" to ClientAssertionType.JWT_BEARER,
+                            "client_assertion" to clientAssertion.serialize(),
+                        ),
+                    ).use {
+                        "$algorithm: ${it.body.string()}".asClue { _ -> it.code shouldBe 200 }
+                    }
             }
         }
     }
@@ -199,4 +237,15 @@ class WellKnownIntegrationTest {
                 error("no test for client authentication method $authMethod")
             }
         }.also { it.close() }
+
+    private val clientAssertionAlgorithms: Map<JWSAlgorithm, JWSSigner> =
+        RSASSASigner(RSAKeyGenerator(2048).generate()).let { rsaSigner ->
+            listOf(JWSAlgorithm.RS256, JWSAlgorithm.RS384, JWSAlgorithm.RS512, JWSAlgorithm.PS256, JWSAlgorithm.PS384, JWSAlgorithm.PS512)
+                .associateWith { rsaSigner }
+        } +
+            mapOf(
+                JWSAlgorithm.ES256 to ECDSASigner(ECKeyGenerator(Curve.P_256).generate()),
+                JWSAlgorithm.ES384 to ECDSASigner(ECKeyGenerator(Curve.P_384).generate()),
+                JWSAlgorithm.ES512 to ECDSASigner(ECKeyGenerator(Curve.P_521).generate()),
+            )
 }
