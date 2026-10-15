@@ -39,6 +39,7 @@ import no.nav.security.mock.oauth2.introspect.introspect
 import no.nav.security.mock.oauth2.invalidGrant
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
+import no.nav.security.mock.oauth2.missingParameter
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.userinfo.userInfo
@@ -160,7 +161,7 @@ class OAuth2HttpRequestHandler(
             log.debug("handle revocation request $it")
             when (val hint = it.formParameters.get("token_type_hint")) {
                 "refresh_token" -> {
-                    val token = it.formParameters.get("token") as RefreshToken
+                    val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
                     refreshTokenManager.remove(token)
                 }
 

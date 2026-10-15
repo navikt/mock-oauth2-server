@@ -65,6 +65,24 @@ class RevocationIntegrationTest {
         }
     }
 
+    @Test
+    fun `revocation request without token should return invalid_request`() {
+        withMockOAuth2Server {
+            client
+                .post(
+                    this.url("/default/revoke"),
+                    mapOf(
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                        "token_type_hint" to "refresh_token",
+                    ),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_request"
+                }
+        }
+    }
+
     private fun MockOAuth2Server.login(): ParsedTokenResponse {
         // Authenticate using Authorization Code Flow
         // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
