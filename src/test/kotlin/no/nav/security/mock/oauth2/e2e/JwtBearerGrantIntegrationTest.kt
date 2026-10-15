@@ -122,7 +122,7 @@ class JwtBearerGrantIntegrationTest {
     }
 
     @Test
-    fun `token request with JwtBearerGrant without scope in request or assertion should return token without scope`() {
+    fun `token request with JwtBearerGrant without scope in request or assertion should return invalid_scope`() {
         withMockOAuth2Server {
             val initialToken =
                 this.issueToken(
@@ -130,24 +130,19 @@ class JwtBearerGrantIntegrationTest {
                     clientId = "client1",
                     tokenCallback = DefaultOAuth2TokenCallback(issuerId = "idprovider", subject = "mysub"),
                 )
-            val issuerId = "aad"
-            val response: ParsedTokenResponse =
-                client
-                    .tokenRequest(
-                        url = this.tokenEndpointUrl(issuerId),
-                        basicAuth = Pair("client1", "secret"),
-                        parameters =
-                            mapOf(
-                                "grant_type" to GrantType.JWT_BEARER.value,
-                                "assertion" to initialToken.serialize(),
-                            ),
-                    ).toTokenResponse()
-
-            response shouldBeValidFor GrantType.JWT_BEARER
-            response.scope shouldBe null
-            response.accessToken.shouldNotBeNull()
-            response.accessToken should verifyWith(issuerId, this)
-            response.accessToken.subject shouldBe "mysub"
+            client
+                .tokenRequest(
+                    url = this.tokenEndpointUrl("aad"),
+                    basicAuth = Pair("client1", "secret"),
+                    parameters =
+                        mapOf(
+                            "grant_type" to GrantType.JWT_BEARER.value,
+                            "assertion" to initialToken.serialize(),
+                        ),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_scope"
+                }
         }
     }
 }

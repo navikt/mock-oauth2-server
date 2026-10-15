@@ -37,9 +37,12 @@ internal class JwtBearerGrantHandler(
         )
     }
 
-    private fun TokenRequest.responseScope(): String? =
+    private fun TokenRequest.responseScope(): String =
         scope?.toString()
             ?: assertion().getClaim("scope")?.toString()
+            ?: "scope must be specified in request or as a claim in assertion parameter".let {
+                throw OAuth2Exception(OAuth2Error.INVALID_SCOPE.setDescription(it), it)
+            }
 
     private fun TokenRequest.assertion(): JWTClaimsSet =
         (this.authorizationGrant as? JWTBearerGrant)?.jwtAssertion?.jwtClaimsSet
