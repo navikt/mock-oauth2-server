@@ -24,6 +24,7 @@ import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT
 import com.nimbusds.oauth2.sdk.http.HTTPRequest
 import com.nimbusds.oauth2.sdk.id.Issuer
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue
@@ -55,8 +56,14 @@ fun AuthenticationRequest.verifyPkce(tokenRequest: TokenRequest) {
         val msg = "invalid_pkce: code_verifier is required when code_challenge is present"
         throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(msg), msg)
     }
+    if (challenge == null && verifier != null) {
+        val msg = "invalid_pkce: code_verifier is not allowed when authorization request has no code_challenge"
+        throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(msg), msg)
+    }
     if (verifier != null) {
-        if (CodeChallenge.compute(this.codeChallengeMethod, verifier) != challenge) {
+        // RFC 7636 section 4.3: code_challenge_method defaults to plain when omitted
+        val method = this.codeChallengeMethod ?: CodeChallengeMethod.PLAIN
+        if (CodeChallenge.compute(method, verifier) != challenge) {
             val msg = "invalid_pkce: code_verifier does not compute to code_challenge from request"
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(msg), msg)
         }

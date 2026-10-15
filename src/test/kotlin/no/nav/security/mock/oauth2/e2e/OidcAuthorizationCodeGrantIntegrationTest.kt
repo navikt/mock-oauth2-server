@@ -197,6 +197,45 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
+    fun `authorization code flow should default to plain PKCE when code_challenge_method is omitted`() {
+        val verifier = Pkce().verifier
+        val code =
+            client
+                .get(
+                    server
+                        .authorizationEndpointUrl("default")
+                        .authenticationRequest()
+                        .newBuilder()
+                        .addQueryParameter("code_challenge", verifier.value)
+                        .build(),
+                ).let { authResponse ->
+                    authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+                }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code, Pkce(verifier = verifier)).asClue {
+            it.code shouldBe 200
+            it.toTokenResponse().accessToken shouldNotBe null
+        }
+    }
+
+    @Test
+    fun `authorization code flow should reject code_verifier when authorization request had no code_challenge`() {
+        val code =
+            client.get(server.authorizationEndpointUrl("default").authenticationRequest()).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code, Pkce()).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
     fun `form_post authentication response without state should return form without state`() {
         client
             .get(
