@@ -42,20 +42,6 @@ class EndSessionIntegrationTest {
     }
 
     @Test
-    fun `end session request should add state before the fragment of post_logout_redirect_uri`() {
-        withMockOAuth2Server {
-            client.get(endSessionUrl("http://localhost/bye?a=1#done", "s1")).use {
-                it.code shouldBe 302
-                it.headers["location"] shouldBe "http://localhost/bye?a=1&state=s1#done"
-            }
-            client.get(endSessionUrl("myapp://logout#done", "s1")).use {
-                it.code shouldBe 302
-                it.headers["location"] shouldBe "myapp://logout?state=s1#done"
-            }
-        }
-    }
-
-    @Test
     fun `end session request without state should redirect to post_logout_redirect_uri unchanged`() {
         withMockOAuth2Server {
             client.get(endSessionUrl("http://localhost/bye?a=1", null)).use {

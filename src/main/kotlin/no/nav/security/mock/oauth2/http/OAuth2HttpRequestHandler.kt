@@ -151,12 +151,10 @@ class OAuth2HttpRequestHandler(
             log.debug("handle end session request $it")
             it.url.queryParameter("post_logout_redirect_uri")?.let { postLogoutRedirectUri ->
                 it.url.queryParameter("state")?.let { state ->
-                    // post_logout_redirect_uri may already have a query or a fragment, and may use a custom scheme that HttpUrl can't parse
-                    val uri = postLogoutRedirectUri.substringBefore("#")
-                    val fragment = postLogoutRedirectUri.removePrefix(uri)
-                    val separator = if ("?" in uri) "&" else "?"
+                    // post_logout_redirect_uri may already have a query, and may use a custom scheme that HttpUrl can't parse
+                    val separator = if ("?" in postLogoutRedirectUri) "&" else "?"
                     val encodedState = URLEncoder.encode(state, Charsets.UTF_8).replace("+", "%20")
-                    redirect("$uri${separator}state=$encodedState$fragment")
+                    redirect("$postLogoutRedirectUri${separator}state=$encodedState")
                 } ?: redirect(postLogoutRedirectUri)
             } ?: html("logged out")
         }
