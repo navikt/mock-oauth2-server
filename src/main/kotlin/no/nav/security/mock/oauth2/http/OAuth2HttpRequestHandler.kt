@@ -36,12 +36,12 @@ import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
 import no.nav.security.mock.oauth2.introspect.introspect
-import no.nav.security.mock.oauth2.invalidGrant
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.missingParameter
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
+import no.nav.security.mock.oauth2.unsupportedGrantType
 import no.nav.security.mock.oauth2.userinfo.userInfo
 import okhttp3.Headers
 import java.io.File
@@ -192,7 +192,7 @@ class OAuth2HttpRequestHandler(
                     } else {
                         tokenCallbackFromQueueOrDefault(issuerId)
                     }
-                val grantHandler: GrantHandler = grantHandlers[grantType] ?: invalidGrant(grantType)
+                val grantHandler: GrantHandler = grantHandlers[grantType] ?: unsupportedGrantType(grantType)
                 val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
                 json(tokenResponse)
             }
