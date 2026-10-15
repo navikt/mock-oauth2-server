@@ -26,6 +26,11 @@ fun invalidGrant(grantType: GrantType): Nothing =
         throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(it), it)
     }
 
+fun unsupportedGrantType(grantType: GrantType): Nothing =
+    "grant_type $grantType not supported.".let {
+        throw OAuth2Exception(OAuth2Error.UNSUPPORTED_GRANT_TYPE.setDescription(it), it)
+    }
+
 fun invalidRequest(message: String): Nothing =
     message.let {
         throw OAuth2Exception(OAuth2Error.INVALID_REQUEST.setDescription(message), message)

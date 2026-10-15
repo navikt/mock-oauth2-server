@@ -87,6 +87,20 @@ class MockOAuth2ServerIntegrationTest {
     }
 
     @Test
+    fun `token request with unknown grant_type should return unsupported_grant_type`() {
+        withMockOAuth2Server {
+            client
+                .tokenRequest(
+                    this.tokenEndpointUrl("default"),
+                    mapOf("grant_type" to "unknown", "client_id" to "client1"),
+                ).asClue {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "\"unsupported_grant_type\""
+                }
+        }
+    }
+
+    @Test
     fun `wellknown should include https addresses when MockWebServerWrapper is started with https enabled`() {
         val ssl = Ssl()
         val server =

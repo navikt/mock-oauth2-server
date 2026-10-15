@@ -7,6 +7,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
@@ -193,6 +194,27 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             it.code shouldBe 400
             it.body.string() shouldContain "invalid_grant"
         }
+    }
+
+    @Test
+    fun `form_post authentication response without state should return form without state`() {
+        client
+            .get(
+                server
+                    .authorizationEndpointUrl("default")
+                    .newBuilder()
+                    .addQueryParameter("client_id", "client1")
+                    .addQueryParameter("response_type", "code")
+                    .addQueryParameter("redirect_uri", "http://mycallback")
+                    .addQueryParameter("response_mode", "form_post")
+                    .addQueryParameter("scope", "openid")
+                    .build(),
+            ).asClue { response ->
+                response.code shouldBe 200
+                val body = response.body.string()
+                body shouldContain "name=\"code\""
+                body shouldNotContain "name=\"state\""
+            }
     }
 
     @Test
