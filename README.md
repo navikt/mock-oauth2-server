@@ -173,6 +173,8 @@ val token: SignedJWT = server.anyToken(
 
 #### Testing Authorization Code Flow (user login)
 
+The token request must use the same `client_id` and `redirect_uri` as the authorization request, otherwise the code is rejected with `400 invalid_grant`.
+
 Enqueue a callback to control what is returned when your app exchanges the code:
 
 ```kotlin
@@ -578,7 +580,6 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 | `loginPagePath`      | Path to a custom HTML login page. The page must contain a form that posts `username` and optionally `claims`. See `src/test/resources/login.example.html` for an example.                                                                                                         |
 | `staticAssetsPath`   | Path to a directory of static assets served under `/static`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                                                                                                                    |
 | `rotateRefreshToken` | `true` or `false`. When `true`, a new refresh token is issued on each refresh grant, invalidating the previous one.                                                                                                                                                               |
-| `strictAuthorizationCodeBinding` | `true` or `false` (default `false`). When `true`, an authorization code can only be redeemed with the same `client_id` and `redirect_uri` as the authorization request, otherwise `invalid_grant` is returned. |
 | `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper` (required for HTTPS). Can also be a JSON object: `{"type": "NettyWrapper", "ssl": {...}}`.                                                                    |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
 
