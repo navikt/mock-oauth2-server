@@ -34,6 +34,11 @@ data class OAuth2Config
         val tokenCallbacks: Set<OAuth2TokenCallback> = emptySet(),
         @JsonDeserialize(using = OAuth2HttpServerDeserializer::class)
         val httpServer: OAuth2HttpServer = MockWebServerWrapper(),
+        /**
+         * Separator used to join repeated authorize-request params (e.g. `login_hint=a&login_hint=b`)
+         * into a single template value. Defaults to a single space, matching the `acr_values` spec.
+         */
+        val authorizeParamValueSeparator: String = " ",
     ) {
         internal class OAuth2TokenProviderDeserializer : ValueDeserializer<OAuth2TokenProvider>() {
             data class ProviderConfig(

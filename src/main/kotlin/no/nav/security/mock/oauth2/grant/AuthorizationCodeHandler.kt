@@ -31,6 +31,7 @@ private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
+    private val authorizeParamValueSeparator: String = " ",
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
@@ -93,10 +94,21 @@ internal class AuthorizationCodeHandler(
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
-        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
+
+        // Single capture seam: read the allowlisted authorize-request params once and make them
+        // available for request-mapping matching and `${...}` templates downstream. Repeated
+        // values are joined with authorizeParamValueSeparator (space by default). With interactive
+        // login, the username is merged under the subject key (winning on collision) for matching.
+        val captureExtras = captureAuthorizeParams(authenticationRequest.toHTTPRequest().queryParameters)
+        val login = takeLoginFromCache(code)
+        val extraMatchParams =
+            login?.let { captureExtras + (RequestMappingTokenCallback.SUBJECT_PARAM to it.username) } ?: captureExtras
+        val loginTokenCallbackOrDefault =
+            login?.let { LoginOAuth2TokenCallback(it, oAuth2TokenCallback, extraMatchParams) }
+                ?: wrapWithCaptureExtras(oAuth2TokenCallback, extraMatchParams)
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce)
+        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, extraMatchParams)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -108,24 +120,48 @@ internal class AuthorizationCodeHandler(
         )
     }
 
-    private fun getLoginTokenCallbackOrDefault(
-        code: AuthorizationCode,
+    private fun wrapWithCaptureExtras(
         oAuth2TokenCallback: OAuth2TokenCallback,
+        captureExtras: Map<String, String>,
     ): OAuth2TokenCallback =
-        takeLoginFromCache(code)?.let {
-            LoginOAuth2TokenCallback(it, oAuth2TokenCallback)
-        } ?: oAuth2TokenCallback
+        if (oAuth2TokenCallback is RequestMappingTokenCallback) {
+            oAuth2TokenCallback.withExtraMatchParams(captureExtras)
+        } else {
+            oAuth2TokenCallback
+        }
 
     private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
+
+    private fun captureAuthorizeParams(queryParams: Map<String, List<String>>): Map<String, String> =
+        buildMap {
+            for (key in ALLOWED_AUTHORIZE_PARAMS) {
+                queryParams[key]
+                    ?.filter { it.isNotBlank() }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.joinToString(authorizeParamValueSeparator)
+                    ?.takeIf { it.length <= MAX_AUTHORIZE_PARAM_VALUE_LENGTH }
+                    ?.let { put(key, it) }
+            }
+        }
+
+    companion object {
+        private val ALLOWED_AUTHORIZE_PARAMS = setOf("login_hint", "acr_values")
+
+        // Cap the joined value length so an oversized authorize param cannot bloat
+        // refresh-token state or expand configured claims via templates unboundedly.
+        private const val MAX_AUTHORIZE_PARAM_VALUE_LENGTH = 1024
+    }
 
     private class LoginOAuth2TokenCallback(
         val login: Login,
         val oAuth2TokenCallback: OAuth2TokenCallback,
+        val extraMatchParams: Map<String, String> = emptyMap(),
     ) : OAuth2TokenCallback {
         private val resolvedDelegate: OAuth2TokenCallback =
             when (oAuth2TokenCallback) {
+                // Single wrap with the merged extras (capture params + login username).
                 is RequestMappingTokenCallback -> {
-                    oAuth2TokenCallback.withExtraMatchParams(mapOf(RequestMappingTokenCallback.SUBJECT_PARAM to login.username))
+                    oAuth2TokenCallback.withExtraMatchParams(extraMatchParams)
                 }
 
                 else -> {
@@ -151,13 +187,17 @@ internal class AuthorizationCodeHandler(
             resolvedDelegate.addClaims(tokenRequest).toMutableMap().apply {
                 // Claim precedence: mapping/callback claims win over login-page claims.
                 // login.claims can add new claims but cannot overwrite claims already set by the mapping.
+                // "sub" is filtered out: only a mapping-provided subject overrides the login username,
+                // preventing a login-page "sub" from overwriting the subject set by subject().
                 login.claims?.let {
                     try {
                         jsonMapper
                             .readTree(it)
                             .properties()
                             .forEach { field ->
-                                putIfAbsent(field.key, jsonMapper.readValue(field.value.toString()))
+                                if (field.key != "sub") {
+                                    putIfAbsent(field.key, jsonMapper.readValue(field.value.toString()))
+                                }
                             }
                     } catch (exception: JacksonException) {
                         log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
