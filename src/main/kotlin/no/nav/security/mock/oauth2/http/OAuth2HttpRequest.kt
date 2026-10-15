@@ -89,7 +89,7 @@ data class OAuth2HttpRequest(
             .host(host)
             .port(resolvePort(hostHeaderPort))
             .encodedPath(originalUrl.encodedPath)
-            .query(originalUrl.query)
+            .encodedQuery(originalUrl.encodedQuery)
             .build()
     }
 
