@@ -631,7 +631,7 @@ GET /{issuerId}/.well-known/oauth-authorization-server
 
 **Introspect** (`POST /{issuerId}/introspect`) requires an `Authorization` header. Either `Authorization: Bearer <token>` or `Authorization: Basic <credentials>` is accepted. Requests without it will receive `401 invalid_client`.
 
-**Revocation** (`POST /{issuerId}/revoke`) only supports `token_type_hint=refresh_token`. Passing any other value returns `400 unsupported_token_type`.
+**Revocation** (`POST /{issuerId}/revoke`) removes the token if it is a refresh token issued by the server. `token_type_hint` is optional and may be `refresh_token` or `access_token`; access tokens are self-contained JWTs and stay valid until they expire. Any other hint returns `400 unsupported_token_type`. An unknown token returns `200`, as RFC 7009 requires.
 
 ### Server URL methods (Kotlin/Java API)
 
