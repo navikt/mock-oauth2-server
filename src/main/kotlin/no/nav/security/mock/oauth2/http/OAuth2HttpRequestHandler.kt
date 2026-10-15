@@ -167,7 +167,7 @@ class OAuth2HttpRequestHandler(
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
                 // access tokens are self-contained JWTs and cannot be revoked, so look the token up as a refresh token
-                // whatever the hint says (RFC 7009 section 2.1)
+                // whatever the hint says
                 null, "refresh_token", "access_token" -> {
                     refreshTokenManager.remove(token)
                 }
