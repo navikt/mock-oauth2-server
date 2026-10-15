@@ -151,7 +151,6 @@ class OAuth2HttpRequestHandler(
             log.debug("handle end session request $it")
             it.url.queryParameter("post_logout_redirect_uri")?.let { postLogoutRedirectUri ->
                 it.url.queryParameter("state")?.let { state ->
-                    // post_logout_redirect_uri may already have a query, and may use a custom scheme that HttpUrl can't parse
                     val separator = if ("?" in postLogoutRedirectUri) "&" else "?"
                     val encodedState = URLEncoder.encode(state, Charsets.UTF_8).replace("+", "%20")
                     redirect("$postLogoutRedirectUri${separator}state=$encodedState")
@@ -164,8 +163,6 @@ class OAuth2HttpRequestHandler(
             log.debug("handle revocation request $it")
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
-                // access tokens are self-contained JWTs and cannot be revoked, so look the token up as a refresh token
-                // whatever the hint says
                 null, "refresh_token", "access_token" -> {
                     refreshTokenManager.remove(token)
                 }
