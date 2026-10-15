@@ -22,6 +22,8 @@ import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import tools.jackson.module.kotlin.readValue
+import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
@@ -34,6 +36,7 @@ internal class AuthorizationCodeHandler(
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
+    private val codeToAuthTimeCache: MutableMap<AuthorizationCode, Instant> = ConcurrentHashMap()
 
     fun authorizationCodeResponse(
         authenticationRequest: AuthenticationRequest,
@@ -44,6 +47,7 @@ internal class AuthorizationCodeHandler(
                 val code = AuthorizationCode()
                 log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
+                codeToAuthTimeCache[code] = Instant.now()
                 login?.also {
                     log.debug("adding user with username ${it.username} to cache")
                     codeToLoginCache[code] = login
@@ -83,6 +87,7 @@ internal class AuthorizationCodeHandler(
                     OAuth2Error.INVALID_GRANT.setDescription("unknown or already-used authorization code"),
                     "unknown or already-used authorization code",
                 )
+        val authTime = codeToAuthTimeCache.remove(code)?.takeIf { authenticationRequest.maxAge >= 0 }
 
         try {
             authenticationRequest.verifyPkce(tokenRequest)
@@ -94,9 +99,10 @@ internal class AuthorizationCodeHandler(
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
+        val idTokenSubject = loginTokenCallbackOrDefault.subject(tokenRequest) ?: UUID.randomUUID().toString()
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce)
+        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
