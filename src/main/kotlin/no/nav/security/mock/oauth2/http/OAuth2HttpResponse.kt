@@ -116,6 +116,16 @@ fun json(anyObject: Any): OAuth2HttpResponse =
             },
     )
 
+fun OAuth2HttpResponse.withNoStore(): OAuth2HttpResponse =
+    copy(
+        headers =
+            headers
+                .newBuilder()
+                .set(HttpHeaderNames.CACHE_CONTROL.toString(), "no-store")
+                .set(HttpHeaderNames.PRAGMA.toString(), "no-cache")
+                .build(),
+    )
+
 fun html(content: String): OAuth2HttpResponse =
     OAuth2HttpResponse(
         headers =
