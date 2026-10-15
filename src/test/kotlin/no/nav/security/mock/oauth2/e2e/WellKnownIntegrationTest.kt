@@ -1,12 +1,19 @@
 package no.nav.security.mock.oauth2.e2e
 
 import io.kotest.assertions.asClue
+
+import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldStartWith
+import no.nav.security.mock.oauth2.OAuth2Config
+import no.nav.security.mock.oauth2.http.WellKnown
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
+import no.nav.security.mock.oauth2.testutils.parse
+import no.nav.security.mock.oauth2.token.KeyProvider
+import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.Headers
 import org.junit.jupiter.api.Test
@@ -41,6 +48,31 @@ class WellKnownIntegrationTest {
                         "code_challenge_methods_supported",
                     )
             }
+        }
+    }
+
+    @Test
+    fun `well-known should only advertise the default signing algorithm`() {
+        withMockOAuth2Server {
+            client.get(this.wellKnownUrl("default")).parse<WellKnown>().asClue {
+                it.idTokenSigningAlgValuesSupported shouldContainExactly listOf("RS256")
+            }
+        }
+    }
+
+    @Test
+    fun `well-known should advertise the configured signing algorithm used for issued tokens`() {
+        val config =
+            OAuth2Config(
+                tokenProvider = OAuth2TokenProvider(KeyProvider(initialKeys = emptyList(), algorithm = "ES256")),
+            )
+        withMockOAuth2Server(config) {
+            client.get(this.wellKnownUrl("default")).parse<WellKnown>().asClue {
+                it.idTokenSigningAlgValuesSupported shouldContainExactly listOf("ES256")
+            }
+            this
+                .issueToken("default")
+                .header.algorithm.name shouldBe "ES256"
         }
     }
 
