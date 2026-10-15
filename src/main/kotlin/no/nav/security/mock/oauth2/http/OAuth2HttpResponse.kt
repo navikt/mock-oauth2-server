@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.ResponseMode
+import com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
 import io.netty.handler.codec.http.HttpHeaderNames
 import no.nav.security.mock.oauth2.templates.TemplateMapper
@@ -67,7 +68,7 @@ data class WellKnown(
     @JsonProperty("introspection_endpoint")
     val introspectionEndpoint: String,
     @JsonProperty("response_types_supported")
-    val responseTypesSupported: List<String> = listOf("code", "none", "id_token", "token"),
+    val responseTypesSupported: List<String> = listOf("code"),
     @JsonProperty("response_modes_supported")
     val responseModesSupported: List<String> = listOf("query", "fragment", "form_post"),
     @JsonProperty("subject_types_supported")
@@ -177,6 +178,25 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
         else -> {
             OAuth2HttpResponse(
                 headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authenticationSuccessResponse.toURI().toString()),
+                status = 302,
+            )
+        }
+    }
+
+fun authenticationError(authenticationErrorResponse: AuthenticationErrorResponse): OAuth2HttpResponse =
+    when (authenticationErrorResponse.responseMode) {
+        ResponseMode.FORM_POST -> {
+            html(
+                templateMapper.formPostResponseHtml(
+                    authenticationErrorResponse.redirectionURI.toString(),
+                    authenticationErrorResponse.toParameters().mapValues { it.value.first() },
+                ),
+            )
+        }
+
+        else -> {
+            OAuth2HttpResponse(
+                headers = Headers.headersOf(HttpHeaderNames.LOCATION.toString(), authenticationErrorResponse.toURI().toString()),
                 status = 302,
             )
         }
