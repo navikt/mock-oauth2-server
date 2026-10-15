@@ -607,7 +607,10 @@ The first path segment in any URL is the `issuerId`. Both OIDC and OAuth2 AS met
 ```
 GET /{issuerId}/.well-known/openid-configuration
 GET /{issuerId}/.well-known/oauth-authorization-server
+GET /.well-known/oauth-authorization-server/{issuerId}
 ```
+
+The last form is the metadata URL defined by RFC 8414 and returns the same document as the second.
 
 <details>
 <summary>View example response for <code>http://localhost:8080/default/.well-known/openid-configuration</code></summary>

@@ -25,9 +25,11 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
+import no.nav.security.mock.oauth2.extensions.isIssuerPathAfterOAuth2WellKnownUrl
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
+import no.nav.security.mock.oauth2.extensions.withIssuerPathBeforeOAuth2WellKnown
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
 import no.nav.security.mock.oauth2.grant.GrantHandler
@@ -141,14 +143,26 @@ class OAuth2HttpRequestHandler(
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = tokenCallbackQueue.add(oAuth2TokenCallback)
 
     private fun Route.Builder.wellKnown() =
-        get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) {
-            log.debug("returning well-known json data for url=${it.url}")
-            json(
-                it.toWellKnown().copy(
-                    idTokenSigningAlgValuesSupported = listOf(config.tokenProvider.getAlgorithm().name),
-                ),
+        apply {
+            attach(
+                object : Route {
+                    override fun match(request: OAuth2HttpRequest): Boolean = request.method == "GET" && request.url.isIssuerPathAfterOAuth2WellKnownUrl()
+
+                    override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse =
+                        wellKnownResponse(request.copy(originalUrl = request.originalUrl.withIssuerPathBeforeOAuth2WellKnown()))
+                },
             )
+            get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) { wellKnownResponse(it) }
         }
+
+    private fun wellKnownResponse(request: OAuth2HttpRequest): OAuth2HttpResponse {
+        log.debug("returning well-known json data for url=${request.url}")
+        return json(
+            request.toWellKnown().copy(
+                idTokenSigningAlgValuesSupported = listOf(config.tokenProvider.getAlgorithm().name),
+            ),
+        )
+    }
 
     private fun Route.Builder.jwks() =
         get(JWKS) {

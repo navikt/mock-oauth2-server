@@ -46,6 +46,22 @@ object OAuth2Endpoints {
 
 fun HttpUrl.isWellKnownUrl(): Boolean = this.endsWith(OAUTH2_WELL_KNOWN) || this.endsWith(OIDC_WELL_KNOWN)
 
+internal fun HttpUrl.isIssuerPathAfterOAuth2WellKnownUrl(): Boolean =
+    encodedPathSegments.filter { it.isNotEmpty() }.let {
+        it.size > OAUTH2_WELL_KNOWN_SEGMENTS.size && it.take(OAUTH2_WELL_KNOWN_SEGMENTS.size) == OAUTH2_WELL_KNOWN_SEGMENTS
+    }
+
+internal fun HttpUrl.withIssuerPathBeforeOAuth2WellKnown(): HttpUrl =
+    newBuilder()
+        .encodedPath("/")
+        .apply {
+            encodedPathSegments
+                .filter { it.isNotEmpty() }
+                .drop(OAUTH2_WELL_KNOWN_SEGMENTS.size)
+                .forEach { addEncodedPathSegment(it) }
+        }.addPathSegments(OAUTH2_WELL_KNOWN.trimPath())
+        .build()
+
 fun HttpUrl.isAuthorizationEndpointUrl(): Boolean = this.endsWith(AUTHORIZATION)
 
 fun HttpUrl.isTokenEndpointUrl(): Boolean = this.endsWith(TOKEN)
@@ -101,6 +117,8 @@ fun HttpUrl.Builder.removeAllEncodedQueryParams(vararg params: String) = apply {
 fun HttpUrl.endsWith(path: String): Boolean = this.pathSegments.joinToString("/").endsWith(path.trimPath())
 
 private fun String.trimPath() = removePrefix("/").removeSuffix("/")
+
+private val OAUTH2_WELL_KNOWN_SEGMENTS = OAUTH2_WELL_KNOWN.trimPath().split("/")
 
 private fun HttpUrl.issuer(path: String = ""): HttpUrl =
     baseUrl().let {

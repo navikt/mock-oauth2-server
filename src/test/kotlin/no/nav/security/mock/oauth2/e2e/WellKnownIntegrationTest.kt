@@ -1,7 +1,6 @@
 package no.nav.security.mock.oauth2.e2e
 
 import io.kotest.assertions.asClue
-
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
@@ -16,6 +15,7 @@ import no.nav.security.mock.oauth2.token.KeyProvider
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import org.junit.jupiter.api.Test
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import tools.jackson.module.kotlin.readValue
@@ -48,6 +48,25 @@ class WellKnownIntegrationTest {
                         "code_challenge_methods_supported",
                     )
             }
+        }
+    }
+
+    @Test
+    fun `RFC 8414 metadata url should return the same document as the issuer suffix url`() {
+        withMockOAuth2Server {
+            val rfc8414 = metadata(this.url(".well-known/oauth-authorization-server/default"))
+            rfc8414 shouldBe metadata(this.oauth2AuthorizationServerMetadataUrl("default"))
+            rfc8414["issuer"] shouldBe this.issuerUrl("default").toString()
+        }
+    }
+
+    @Test
+    fun `RFC 8414 metadata url should support issuer paths with several segments`() {
+        withMockOAuth2Server {
+            val rfc8414 = metadata(this.url(".well-known/oauth-authorization-server/a/b/c"))
+            rfc8414 shouldBe metadata(this.url("a/b/c/.well-known/oauth-authorization-server"))
+            rfc8414["issuer"] shouldBe this.url("a/b/c").toString()
+            (rfc8414["token_endpoint"] as String) shouldStartWith this.url("a/b/c").toString() + "/"
         }
     }
 
@@ -101,4 +120,10 @@ class WellKnownIntegrationTest {
             }
         }
     }
+
+    private fun metadata(url: HttpUrl): Map<String, Any> =
+        client.get(url).use {
+            it.code shouldBe 200
+            jacksonObjectMapper().readValue<Map<String, Any>>(it.body.string())
+        }
 }
