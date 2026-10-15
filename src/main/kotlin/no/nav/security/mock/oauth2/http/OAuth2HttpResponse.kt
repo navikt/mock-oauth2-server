@@ -76,6 +76,20 @@ data class WellKnown(
     val idTokenSigningAlgValuesSupported: List<String> = (KeyGenerator.ecAlgorithmFamily + KeyGenerator.rsaAlgorithmFamily).map { it.name }.toList(),
     @JsonProperty("code_challenge_methods_supported")
     val codeChallengeMethodsSupported: List<String> = listOf("plain", "S256"),
+    @JsonProperty("grant_types_supported")
+    val grantTypesSupported: List<String> =
+        listOf(
+            "authorization_code",
+            "refresh_token",
+            "client_credentials",
+            "password",
+            "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            "urn:ietf:params:oauth:grant-type:token-exchange",
+        ),
+    @JsonProperty("token_endpoint_auth_methods_supported")
+    val tokenEndpointAuthMethodsSupported: List<String> = listOf("client_secret_basic", "client_secret_post", "private_key_jwt"),
+    @JsonProperty("scopes_supported")
+    val scopesSupported: List<String> = listOf("openid"),
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

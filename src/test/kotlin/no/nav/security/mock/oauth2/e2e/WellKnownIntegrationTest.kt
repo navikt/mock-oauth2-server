@@ -1,17 +1,23 @@
 package no.nav.security.mock.oauth2.e2e
 
 import io.kotest.assertions.asClue
-
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.string.shouldStartWith
+import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.http.WellKnown
+import no.nav.security.mock.oauth2.testutils.ClientAssertionType
 import no.nav.security.mock.oauth2.testutils.client
+import no.nav.security.mock.oauth2.testutils.clientAssertion
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.parse
+import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.token.KeyProvider
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.withMockOAuth2Server
@@ -46,8 +52,53 @@ class WellKnownIntegrationTest {
                         "subject_types_supported",
                         "id_token_signing_alg_values_supported",
                         "code_challenge_methods_supported",
+                        "grant_types_supported",
+                        "token_endpoint_auth_methods_supported",
+                        "scopes_supported",
                     )
             }
+        }
+    }
+
+    @Test
+    fun `well-known should advertise the grant types accepted by the token endpoint`() {
+        withMockOAuth2Server {
+            val grantTypes = metadata()["grant_types_supported"] as List<*>
+            grantTypes shouldContainExactlyInAnyOrder
+                listOf(
+                    "authorization_code",
+                    "refresh_token",
+                    "client_credentials",
+                    "password",
+                    "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                    "urn:ietf:params:oauth:grant-type:token-exchange",
+                )
+            grantTypes.forEach { grantType ->
+                tokenRequestWithGrantType(grantType.toString()).asClue {
+                    it shouldNotContain "unsupported_grant_type"
+                }
+            }
+            tokenRequestWithGrantType("implicit") shouldContain "unsupported_grant_type"
+        }
+    }
+
+    @Test
+    fun `well-known should advertise the client authentication methods accepted by the token endpoint`() {
+        withMockOAuth2Server {
+            val authMethods = metadata()["token_endpoint_auth_methods_supported"] as List<*>
+            authMethods shouldContainExactlyInAnyOrder listOf("client_secret_basic", "client_secret_post", "private_key_jwt")
+            authMethods.forEach { authMethod ->
+                clientCredentialsRequest(authMethod.toString()).asClue {
+                    it.code shouldBe 200
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `well-known should advertise the openid scope`() {
+        withMockOAuth2Server {
+            metadata()["scopes_supported"] as List<*> shouldContain "openid"
         }
     }
 
@@ -101,4 +152,51 @@ class WellKnownIntegrationTest {
             }
         }
     }
+
+    private fun MockOAuth2Server.metadata(): Map<String, Any> =
+        client.get(this.wellKnownUrl("default")).use {
+            it.code shouldBe 200
+            jacksonObjectMapper().readValue<Map<String, Any>>(it.body.string())
+        }
+
+    private fun MockOAuth2Server.tokenRequestWithGrantType(grantType: String): String =
+        client
+            .tokenRequest(
+                this.tokenEndpointUrl("default"),
+                mapOf("grant_type" to grantType, "client_id" to "client1", "client_secret" to "secret"),
+            ).use { it.body.string() }
+
+    private fun MockOAuth2Server.clientCredentialsRequest(authMethod: String) =
+        when (authMethod) {
+            "client_secret_basic" -> {
+                client.tokenRequest(
+                    this.tokenEndpointUrl("default"),
+                    basicAuth = Pair("client1", "secret"),
+                    parameters = mapOf("grant_type" to "client_credentials", "scope" to "scope1"),
+                )
+            }
+
+            "client_secret_post" -> {
+                client.tokenRequest(
+                    this.tokenEndpointUrl("default"),
+                    mapOf("grant_type" to "client_credentials", "scope" to "scope1", "client_id" to "client1", "client_secret" to "secret"),
+                )
+            }
+
+            "private_key_jwt" -> {
+                client.tokenRequest(
+                    this.tokenEndpointUrl("default"),
+                    mapOf(
+                        "grant_type" to "client_credentials",
+                        "scope" to "scope1",
+                        "client_assertion_type" to ClientAssertionType.JWT_BEARER,
+                        "client_assertion" to clientAssertion("client1", this.tokenEndpointUrl("default").toString()).serialize(),
+                    ),
+                )
+            }
+
+            else -> {
+                error("no test for client authentication method $authMethod")
+            }
+        }.also { it.close() }
 }
