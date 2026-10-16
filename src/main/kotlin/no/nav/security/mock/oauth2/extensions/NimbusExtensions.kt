@@ -100,9 +100,10 @@ fun TokenRequest.clientIdAsString(): String =
 
 fun SignedJWT.expiresIn(): Int = Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
 
-// JWT times have whole seconds, so drop the fraction of now to get the full lifetime
-internal fun SignedJWT.expiresIn(now: Instant): Int =
-    Duration.between(now.truncatedTo(ChronoUnit.SECONDS), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
+internal fun SignedJWT.expiresIn(now: Instant): Int {
+    val nowInJwtPrecision = now.truncatedTo(ChronoUnit.SECONDS)
+    return Duration.between(nowInJwtPrecision, this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
+}
 
 fun SignedJWT.verifySignatureAndIssuer(
     issuer: Issuer,
