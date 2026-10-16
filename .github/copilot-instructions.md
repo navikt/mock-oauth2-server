@@ -2,7 +2,7 @@
 
 mock-oauth2-server is a Kotlin library that projects use in their tests. It is also shipped as a standalone server and a Docker image. It must behave like a real OAuth2/OIDC provider. Most fixes in this repo's history are places where it did not.
 
-`./gradlew build` runs `formatKotlin`, `lintKotlin`, the tests and `minStdlibTest`.
+`./gradlew build` runs `lintKotlin`, the tests and `minStdlibTest`. Lint fails on unformatted code; `./gradlew formatKotlin` fixes it.
 
 ## How it works
 
@@ -12,7 +12,7 @@ mock-oauth2-server is a Kotlin library that projects use in their tests. It is a
 
 ## Code review
 
-Look for these first. The build formats the code, so skip formatting and import order.
+Look for these first. `lintKotlin` checks formatting and import order in CI, so skip them.
 
 1. **Client mistakes return 500.** Bad or unexpected input must return an OAuth2 error with status 400 or 401 (#1068, #1071, #1072).
 2. **Not spec-compliant.** Check these against the RFC or OIDC section the PR names, and ask for the section if the PR names none (#975, #1007, #1079, #1083, #1086, #1090):
