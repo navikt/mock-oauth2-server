@@ -11,6 +11,7 @@ import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
+import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.issuerIdForEndpoint
 import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
@@ -95,8 +96,7 @@ internal class AuthorizationCodeHandler(
                 )
         val authTime = codeToAuthTimeCache.remove(code)?.takeIf { authenticationRequest.maxAge >= 0 }
 
-        val issuerId = request.url.issuerIdForEndpoint(TOKEN)
-        if (codeToIssuerIdCache.remove(code) != issuerId) {
+        if (codeToIssuerIdCache.remove(code) != request.url.issuerIdForEndpoint(TOKEN)) {
             codeToLoginCache.remove(code)
             throw OAuth2Exception(
                 OAuth2Error.INVALID_GRANT.setDescription("authorization code was issued by a different issuer"),
@@ -113,7 +113,7 @@ internal class AuthorizationCodeHandler(
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
-        val tokenCallback = enqueuedCallbackSupplier?.invoke(issuerId) ?: oAuth2TokenCallback
+        val tokenCallback = enqueuedCallbackSupplier?.invoke(issuerUrl.issuerId()) ?: oAuth2TokenCallback
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, tokenCallback)
         val idTokenSubject = loginTokenCallbackOrDefault.subject(tokenRequest) ?: UUID.randomUUID().toString()
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)

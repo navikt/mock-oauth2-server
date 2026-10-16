@@ -409,6 +409,37 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         }
     }
 
+    @Test
+    fun `refresh token from the root issuer should be accepted at the root token endpoint`() {
+        server.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = ""))
+        val code =
+            client.get(server.authorizationEndpointUrl("").authenticationRequest()).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+
+        val refreshToken =
+            client
+                .tokenRequest(code, issuerId = "")
+                .toTokenResponse()
+                .refreshToken
+                .shouldNotBeNull()
+
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl(""),
+                mapOf(
+                    "grant_type" to "refresh_token",
+                    "refresh_token" to refreshToken,
+                    "client_id" to "client1",
+                    "client_secret" to "secret",
+                ),
+            ).asClue {
+                it.code shouldBe 200
+            }
+    }
+
     private fun OkHttpClient.tokenRequest(
         code: String,
         pkce: Pkce? = null,
