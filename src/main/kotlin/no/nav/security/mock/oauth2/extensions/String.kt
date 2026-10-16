@@ -8,7 +8,7 @@ internal fun String.keyValuesToMap(listDelimiter: String): Map<String, String> =
         .split(listDelimiter)
         .filter { it.contains("=") }
         .associate {
-            val (key, value) = it.split("=")
+            val (key, value) = it.split("=", limit = 2)
             key.urlDecode().trim() to value.urlDecode().trim()
         }
 
