@@ -29,7 +29,7 @@ Look for these first. `lintKotlin` checks formatting and import order in CI, so 
    - Refresh tokens are rejected at an issuer other than the one that issued them.
    - Shared state must be thread safe (#934, #936).
 4. **Wrong clock.** Token times must come from the token provider's `systemTime`/`timeProvider`, not `Instant.now()` (#1090).
-5. **Silent breaking change.** A changed public API, behavior or default, or a change to the published dependencies, needs a `MIGRATION.md` entry. Examples: #936, #998, #1011. It also needs the `breaking` label, which sets the major version (#1070).
+5. **Silent breaking change.** A changed public API, a change to documented behavior or a default, or a change to the published dependencies, needs a `MIGRATION.md` entry. Examples: #936, #998, #1011. It also needs the `breaking` label, which sets the major version (#1070). A fix that rejects usage outside the README contract, such as a request that mixes issuers, is not breaking. It needs a "Behavior change" line in the PR description instead.
 6. **Unsafe input handling.**
    - The server must not send its own requests to URLs that the client supplied (#1000). Redirects that the protocol defines, such as `redirect_uri` and `post_logout_redirect_uri`, are expected.
    - Keep the 1 MiB request body limit in `NettyWrapper` (#1001).
