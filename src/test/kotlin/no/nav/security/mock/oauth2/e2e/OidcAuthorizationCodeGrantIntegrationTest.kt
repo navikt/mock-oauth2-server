@@ -374,6 +374,41 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             .getStringClaim("source") shouldBe "enqueued"
     }
 
+    @Test
+    fun `rejected authorization codes should keep the order of the enqueued token callbacks`() {
+        val codes =
+            List(2) {
+                client.get(server.authorizationEndpointUrl("issuer1").authenticationRequest()).let { authResponse ->
+                    authResponse.headers["location"]
+                        ?.toHttpUrl()
+                        ?.queryParameter("code")
+                        .shouldNotBeNull()
+                }
+            }
+
+        server.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = "issuer2", claims = mapOf("source" to "first")))
+        server.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = "issuer2", claims = mapOf("source" to "second")))
+
+        codes.forEach { code ->
+            client.tokenRequest(code, issuerId = "issuer2").asClue {
+                it.code shouldBe 400
+            }
+        }
+
+        listOf("first", "second").forEach { expectedSource ->
+            client
+                .tokenRequest(
+                    server.tokenEndpointUrl("issuer2"),
+                    "client1" to "secret",
+                    mapOf("grant_type" to "client_credentials", "scope" to "scope1"),
+                ).toTokenResponse()
+                .accessToken
+                .shouldNotBeNull()
+                .jwtClaimsSet
+                .getStringClaim("source") shouldBe expectedSource
+        }
+    }
+
     private fun OkHttpClient.tokenRequest(
         code: String,
         pkce: Pkce? = null,

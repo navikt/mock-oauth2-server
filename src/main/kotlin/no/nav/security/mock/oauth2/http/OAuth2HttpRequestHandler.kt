@@ -52,31 +52,29 @@ import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.concurrent.BlockingDeque
-import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
+
+private val grantsThatTakeEnqueuedCallbackAfterValidation = setOf(AUTHORIZATION_CODE, REFRESH_TOKEN)
 
 class OAuth2HttpRequestHandler(
     private val config: OAuth2Config,
 ) {
     private val loginRequestHandler = LoginRequestHandler(templateMapper, config)
     private val debuggerRequestHandler = DebuggerRequestHandler(config.httpServer)
-    private val tokenCallbackQueue: BlockingDeque<OAuth2TokenCallback> = LinkedBlockingDeque()
+    private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
     private val refreshTokenManager = RefreshTokenManager()
 
     private val grantHandlers: Map<GrantType, GrantHandler> =
         mapOf(
-            AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider, refreshTokenManager),
+            AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider, refreshTokenManager, ::pollTokenCallback),
             CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(config.tokenProvider),
             JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
             TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),
             REFRESH_TOKEN to
-                RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager, config.rotateRefreshToken) { issuerId ->
-                    synchronized(tokenCallbackQueue) {
-                        if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
-                    }
-                },
+                RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager, config.rotateRefreshToken, ::pollTokenCallback),
             PASSWORD to PasswordGrantHandler(config.tokenProvider),
         )
 
@@ -230,24 +228,13 @@ class OAuth2HttpRequestHandler(
                 val grantType = it.grantType()
                 val issuerId = it.url.issuerId()
                 val grantHandler: GrantHandler = grantHandlers[grantType] ?: unsupportedGrantType(grantType)
-                // For refresh_token grants the handler resolves the callback itself (stored vs enqueued priority),
-                // so the tokenCallback passed here is unused. For all other grants consume from queue or fall back to config default.
-                val queued: OAuth2TokenCallback? = if (grantType == REFRESH_TOKEN) null else pollTokenCallback(issuerId)
                 val tokenCallback: OAuth2TokenCallback =
-                    if (grantType == REFRESH_TOKEN) {
-                        DefaultOAuth2TokenCallback(issuerId = issuerId)
+                    if (grantType in grantsThatTakeEnqueuedCallbackAfterValidation) {
+                        configuredTokenCallbackOrDefault(issuerId)
                     } else {
-                        queued
-                            ?: config.tokenCallbacks.firstOrNull { callback -> callback.issuerId() == issuerId }
-                            ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
+                        pollTokenCallback(issuerId) ?: configuredTokenCallbackOrDefault(issuerId)
                     }
-                val tokenResponse =
-                    try {
-                        grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
-                    } catch (e: Exception) {
-                        queued?.let { putBackTokenCallback(it) }
-                        throw e
-                    }
+                val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
                 json(tokenResponse).withNoStore()
             }
         }
@@ -280,8 +267,7 @@ class OAuth2HttpRequestHandler(
             if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
         }
 
-    private fun putBackTokenCallback(tokenCallback: OAuth2TokenCallback) =
-        synchronized(tokenCallbackQueue) {
-            tokenCallbackQueue.offerFirst(tokenCallback)
-        }
+    private fun configuredTokenCallbackOrDefault(issuerId: String): OAuth2TokenCallback =
+        config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId }
+            ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
 }
