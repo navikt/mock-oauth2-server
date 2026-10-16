@@ -134,7 +134,7 @@ dependencies {
     implementation("tools.jackson.core:jackson-databind:$jacksonVersion")
     implementation("tools.jackson.module:jackson-module-kotlin:$jacksonVersion")
     add(standaloneRuntime.name, "ch.qos.logback:logback-classic:$logbackVersion")
-    testRuntimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
+    testImplementation("ch.qos.logback:logback-classic:$logbackVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-codec-http:$nettyVersion")

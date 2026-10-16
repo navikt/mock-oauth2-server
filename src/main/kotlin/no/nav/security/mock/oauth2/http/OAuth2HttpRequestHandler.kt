@@ -80,8 +80,7 @@ class OAuth2HttpRequestHandler(
         )
 
     private val exceptionHandler: ExceptionHandler = { request, error ->
-        log.error("received exception when handling request: ${request.url}.", error)
-        val msg = URLEncoder.encode(error.message, Charset.forName("UTF-8"))
+        val msg = URLEncoder.encode(error.message.orEmpty(), Charset.forName("UTF-8"))
         val errorObject: ErrorObject =
             when (error) {
                 is OAuth2Exception -> error.errorObject
@@ -89,11 +88,24 @@ class OAuth2HttpRequestHandler(
                 is GeneralException -> error.errorObject
                 else -> null
             } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
+        if (errorObject.code == OAuth2Error.SERVER_ERROR_CODE) {
+            log.error("received exception when handling ${request.method} ${request.url}", error)
+        } else {
+            val details =
+                error.message
+                    ?.takeIf { it.isNotBlank() && it != errorObject.description }
+                    ?.let { " ($it)" }
+                    .orEmpty()
+            val message = "${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}$details".escapeLineBreaks()
+            if (log.isDebugEnabled) log.info(message, error) else log.info(message)
+        }
         oauth2Error(errorObject)
             .let { response ->
                 request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
             }
     }
+
+    private fun String.escapeLineBreaks(): String = replace("\r", "\\r").replace("\n", "\\n")
 
     private fun OAuth2HttpRequest.wwwAuthenticate(error: ErrorObject): String? {
         if (error.httpStatusCode != 401) return null
