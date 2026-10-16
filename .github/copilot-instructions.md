@@ -23,7 +23,7 @@ Look for these first. kotlinter covers formatting and import order, so skip them
 3. **State leaks across issuers.** Codes, refresh tokens and enqueued callbacks belong to one issuer. Codes are single-use. Shared state must be thread safe (#934, #936).
 4. **Wrong clock.** Token times must come from the token provider's `systemTime`/`timeProvider`, not `Instant.now()` (#1090).
 5. **Silent breaking change.** A changed public API, behavior or default, or a change to the published dependencies, needs a `MIGRATION.md` entry and the `breaking` label (#936, #998, #1011).
-6. **Unsafe input handling.** The server must not call or redirect to URLs that the client supplied (#1000). It must not read request bodies without a size limit (#1001).
+6. **Unsafe input handling.** The server must not send its own requests to URLs that the client supplied (#1000). Redirects that the protocol defines, such as `redirect_uri` and `post_logout_redirect_uri`, are expected. It must not read request bodies without a size limit (#1001).
 
 ## Writing a comment
 
