@@ -104,6 +104,24 @@ class StaticAssetsIntegrationTest {
     }
 
     @Test
+    fun `static assets use the requested file name for the content type of a symlink`() {
+        val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
+        Files.writeString(staticDir.resolve("stored.txt"), "body { color: red; }")
+        Files.createSymbolicLink(staticDir.resolve("style.css"), staticDir.relativize(staticDir.resolve("stored.txt")))
+        val server = MockOAuth2Server(OAuth2Config(staticAssetsPath = staticDir.toString())).apply { start() }
+
+        try {
+            client.get(server.url("/static/style.css")).use {
+                it.code shouldBe 200
+                it.header("Content-Type") shouldBe "text/css"
+                it.body.string() shouldBe "body { color: red; }"
+            }
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
     fun `blank static assets path is rejected`() {
         shouldThrow<IllegalArgumentException> {
             MockOAuth2Server(OAuth2Config(staticAssetsPath = ""))

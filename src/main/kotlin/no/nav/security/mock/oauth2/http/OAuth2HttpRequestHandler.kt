@@ -209,10 +209,11 @@ class OAuth2HttpRequestHandler(
                             .drop(1)
                             .joinToString("/")
                     val normalized = Paths.get(path).normalize().toString()
-                    val file = File(config.staticAssetsPath, normalized).canonicalFile
+                    val requestedFile = File(config.staticAssetsPath, normalized)
+                    val file = requestedFile.canonicalFile
 
                     if (file.toPath().startsWith(staticAssetsDirectory) && file.isFile) {
-                        val contentType = Files.probeContentType(file.toPath()) ?: "application/octet-stream"
+                        val contentType = Files.probeContentType(requestedFile.toPath()) ?: "application/octet-stream"
                         OAuth2HttpResponse(status = 200, bytesBody = file.readBytes(), headers = Headers.headersOf("Content-Type", contentType))
                     } else {
                         OAuth2HttpResponse(status = 404, body = "not found")
