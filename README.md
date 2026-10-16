@@ -629,6 +629,8 @@ GET /{issuerId}/.well-known/oauth-authorization-server
 
 ### Endpoint notes
 
+**Authorize** (`GET /{issuerId}/authorize`) only supports `response_type=code`. Errors are sent to `redirect_uri` with `error` and `state`, using the requested `response_mode`. When `client_id` or `redirect_uri` is missing, a JSON `400` is returned instead.
+
 **Introspect** (`POST /{issuerId}/introspect`) requires an `Authorization` header. Either `Authorization: Bearer <token>` or `Authorization: Basic <credentials>` is accepted. Requests without it will receive `401 invalid_client`.
 
 **Revocation** (`POST /{issuerId}/revoke`) only supports `token_type_hint=refresh_token`. Passing any other value returns `400 unsupported_token_type`.

@@ -60,10 +60,9 @@ internal class AuthorizationCodeHandler(
             }
 
             else -> {
-                throw OAuth2Exception(
-                    OAuth2Error.INVALID_GRANT,
-                    "hybrid og implicit flow not supported (yet).",
-                )
+                "only response_type=code is supported".let {
+                    throw OAuth2Exception(OAuth2Error.UNSUPPORTED_RESPONSE_TYPE.setDescription(it), it)
+                }
             }
         }
     }

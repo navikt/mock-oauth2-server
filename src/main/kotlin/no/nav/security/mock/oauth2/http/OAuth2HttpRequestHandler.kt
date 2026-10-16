@@ -11,7 +11,9 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
+import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.oauth2.sdk.token.BearerTokenError
+import com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import io.netty.handler.codec.http.HttpHeaderNames
 import mu.KotlinLogging
@@ -25,6 +27,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
+import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
@@ -89,10 +92,37 @@ class OAuth2HttpRequestHandler(
                 is GeneralException -> error.errorObject
                 else -> null
             } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
-        oauth2Error(errorObject)
-            .let { response ->
-                request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
-            }
+        request.authorizationErrorResponse(error, errorObject)
+            ?: oauth2Error(errorObject)
+                .let { response ->
+                    request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
+                }
+    }
+
+    private val authorizationErrorCodes =
+        setOf(
+            OAuth2Error.INVALID_REQUEST,
+            OAuth2Error.UNAUTHORIZED_CLIENT,
+            OAuth2Error.ACCESS_DENIED,
+            OAuth2Error.UNSUPPORTED_RESPONSE_TYPE,
+            OAuth2Error.INVALID_SCOPE,
+            OAuth2Error.SERVER_ERROR,
+            OAuth2Error.TEMPORARILY_UNAVAILABLE,
+        ).map { it.code }
+
+    private fun OAuth2HttpRequest.authorizationErrorResponse(
+        error: Throwable,
+        errorObject: ErrorObject,
+    ): OAuth2HttpResponse? {
+        if (!url.isAuthorizationEndpointUrl() || errorObject.code !in authorizationErrorCodes) return null
+        val parseException = error as? ParseException
+        val authRequest = runCatching { asAuthenticationRequest() }.getOrNull()
+        (authRequest?.clientID ?: parseException?.clientID) ?: return null
+        val redirectUri = authRequest?.redirectionURI ?: parseException?.redirectionURI ?: return null
+        val responseMode = authRequest?.impliedResponseMode() ?: parseException?.responseMode ?: ResponseMode.QUERY
+        if (responseMode == ResponseMode.FORM_POST && redirectUri.scheme?.lowercase() !in setOf("http", "https")) return null
+        val state = authRequest?.state ?: parseException?.state
+        return authenticationError(AuthenticationErrorResponse(redirectUri, errorObject, state, responseMode))
     }
 
     private fun OAuth2HttpRequest.wwwAuthenticate(error: ErrorObject): String? {
