@@ -107,6 +107,18 @@ class RevocationIntegrationTest {
     }
 
     @Test
+    fun `revocation request with a line break in token_type_hint should return unsupported_token_type`() {
+        withMockOAuth2Server {
+            revoke("some-token", tokenTypeHint = "bad\nsecond-line").use {
+                it.code shouldBe 400
+                val body = it.body.string()
+                body shouldContain "unsupported_token_type"
+                body shouldContain "unsupported token type: badsecond-line"
+            }
+        }
+    }
+
+    @Test
     fun `revocation request without token should return invalid_request`() {
         withMockOAuth2Server {
             client

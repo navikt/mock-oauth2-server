@@ -169,7 +169,7 @@ class OAuth2HttpRequestHandler(
 
                 else -> {
                     throw OAuth2Exception(
-                        ErrorObject("unsupported_token_type", "unsupported token type: $hint", 400),
+                        ErrorObject("unsupported_token_type", ErrorObject.removeIllegalChars("unsupported token type: $hint"), 400),
                         "unsupported token type: $hint",
                     )
                 }
