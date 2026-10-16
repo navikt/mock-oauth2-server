@@ -191,9 +191,6 @@ fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
                 "application/json;charset=UTF-8",
             ),
         status = responseCode,
-        body =
-            prettyWriter
-                .writeValueAsString(error.toJSONObject())
-                .lowercase(),
+        body = prettyWriter.writeValueAsString(error.toJSONObject()),
     )
 }
