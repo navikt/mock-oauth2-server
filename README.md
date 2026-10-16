@@ -19,22 +19,19 @@
 - [Quick Start](#quick-start)
 - [What it does](#what-it-does)
 - [Supported Flows](#supported-flows)
-- [Usage](#usage)
-  - [In JVM Tests](#in-jvm-tests)
-  - [Standalone / Docker](#standalone--docker)
+- [Using it in JVM tests](#using-it-in-jvm-tests)
+  - [Issuing tokens directly](#issuing-tokens-directly)
+  - [Testing Authorization Code Flow](#testing-authorization-code-flow-user-login)
+  - [Spring Boot](#spring-boot)
+- [Running it with Docker](#running-it-with-docker)
+  - [Standalone](#standalone)
   - [Docker Compose](#docker-compose)
-  - [Token Customization via JSON_CONFIG](#token-customization-via-json_config)
-  - [Auto-added claims](#auto-added-claims)
-  - [aud claim resolution](#aud-claim-resolution)
-  - [HTTPS](#https)
-  - [CORS](#cors)
-  - [Debugger](#debugger)
+- [Customizing tokens](#customizing-tokens)
+- [More features](#more-features): HTTPS, CORS, Debugger
 - [Configuration Reference](#configuration-reference)
 - [API Reference](#api-reference)
-- [Migration guide](#migration-guide)
-- [Contributing](#contributing)
-- [Contact](#contact)
-- [License](#license)
+- [Troubleshooting](#troubleshooting)
+- [Contact](#contact) · [Contributing](#contributing) · [License](#license) · [Migration guide](#migration-guide)
 
 ---
 
@@ -80,9 +77,19 @@ request.addHeader("Authorization", "Bearer ${token.serialize()}")
 server.shutdown()
 ```
 
+In Java:
+
+```java
+MockOAuth2Server server = new MockOAuth2Server();
+server.start();
+SignedJWT token = server.issueToken("default", "user123", "my-api");
+String wellKnownUrl = server.wellKnownUrl("default").toString();
+server.shutdown();
+```
+
 Or run it as a Docker container:
 
-```
+```shell
 docker run -p 8080:8080 ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
 ```
 
@@ -104,35 +111,25 @@ It supports multi-issuer setups, all major OAuth2 grant types, token customizati
 
 ## Supported Flows
 
-- OpenID Connect Authorization Code Flow
+- OpenID Connect Authorization Code Flow, with PKCE (`plain` and `S256`)
 - OAuth2 Client Credentials Grant
 - OAuth2 JWT Bearer Grant (On-Behalf-Of flow)
 - OAuth2 Token Exchange Grant
 - OAuth2 Refresh Token Grant
 - OAuth2 Resource Owner Password Credentials Grant
-  - usage should be avoided if possible as this grant is considered insecure and [removed in its entirety](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-13#section-3.4) from OAuth 2.1
+  - avoid it if you can: [RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700#section-2.4) says it "MUST NOT be used", and OAuth 2.1 removes it
+
+Only `response_type=code` is supported. The implicit and hybrid flows are not.
 
 Issued JWT tokens are verifiable through standard mechanisms via OpenID Connect Discovery and OAuth2 Authorization Server Metadata endpoints. Multi-issuer setups are supported with no configuration — the first path segment in any request URL determines the issuer.
 
 ---
 
-## Usage
+## Using it in JVM tests
 
-### In JVM Tests
+### Starting and stopping the server
 
-#### Minimal setup
-
-```kotlin
-val server = MockOAuth2Server()
-server.start()
-
-val wellKnownUrl = server.wellKnownUrl("default").toString()
-// configure your app to use wellKnownUrl, run your test, then:
-
-server.shutdown()
-```
-
-Use `withMockOAuth2Server` to avoid manual start/shutdown:
+Use `withMockOAuth2Server` to start and stop the server around a block:
 
 ```kotlin
 withMockOAuth2Server {
@@ -141,7 +138,7 @@ withMockOAuth2Server {
 }
 ```
 
-#### Issuing tokens directly
+### Issuing tokens directly
 
 The simplest way to issue a token:
 
@@ -171,7 +168,7 @@ val token: SignedJWT = server.anyToken(
 )
 ```
 
-#### Testing Authorization Code Flow (user login)
+### Testing Authorization Code Flow (user login)
 
 Enqueue a callback to control what is returned when your app exchanges the code:
 
@@ -203,7 +200,31 @@ fun loginWithIdTokenForAcrClaimEqualsLevel4() {
 }
 ```
 
-#### Verifying requests made to the server
+### Spring Boot
+
+Start the server before the application context and point Spring Security at the issuer:
+
+```java
+@SpringBootTest
+class MyApiTest {
+    static MockOAuth2Server server = new MockOAuth2Server();
+
+    @BeforeAll
+    static void start() { server.start(); }
+
+    @AfterAll
+    static void stop() { server.shutdown(); }
+
+    @DynamicPropertySource
+    static void oauth2(DynamicPropertyRegistry registry) {
+        registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> server.issuerUrl("default").toString());
+    }
+}
+```
+
+Then send `server.issueToken("default", "user123", "my-api").serialize()` as the bearer token. See the [Spring Boot examples](src/test/java/examples/java/springboot/) for login and resource server setups.
+
+### Verifying requests made to the server
 
 > [!NOTE]
 > `takeRequest()` is only available when using `MockWebServerWrapper` (the default). It throws `UnsupportedOperationException` with `NettyWrapper`.
@@ -213,7 +234,7 @@ val request = server.takeRequest()
 assertThat(request.path).contains("/default/token")
 ```
 
-#### Controlling token time
+### Controlling token time
 
 ```kotlin
 val server = MockOAuth2Server(
@@ -225,29 +246,31 @@ val token = server.issueToken(issuerId = "issuer1")
 // token has iat=2020-01-21T00:00:00Z
 ```
 
-#### Multi-issuer setup
+### Multi-issuer setup
 
 The first path segment in any request URL is the `issuerId`. No configuration needed:
 
-```
+```text
 http://localhost:8080/issuer-a/.well-known/openid-configuration  → issuerId = issuer-a
 http://localhost:8080/issuer-b/.well-known/openid-configuration  → issuerId = issuer-b
 ```
 
 Each issuer has its own discovery document, token endpoint, and JWKS.
 
-#### More examples
+### More examples
 
 - [Kotlin with the ktor framework](src/test/kotlin/examples/kotlin/ktor)
 - [Java with Spring Boot and Spring Security](src/test/java/examples/java/springboot/)
 
-### Standalone / Docker
+## Running it with Docker
+
+### Standalone
 
 The standalone server defaults to port `8080`.
 
 **Run with Docker:**
 
-```
+```shell
 docker run -p 8080:8080 ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
 ```
 
@@ -255,13 +278,13 @@ Images are also tagged by major and minor version, so you can pin to a release s
 
 | Tag | Resolves to |
 |-----|-------------|
-| `ghcr.io/navikt/mock-oauth2-server:3.1.4` | exact version |
-| `ghcr.io/navikt/mock-oauth2-server:3.1` | latest 3.1.x |
-| `ghcr.io/navikt/mock-oauth2-server:3` | latest 3.x.x |
+| `ghcr.io/navikt/mock-oauth2-server:6.1.0` | exact version |
+| `ghcr.io/navikt/mock-oauth2-server:6.1` | latest 6.1.x |
+| `ghcr.io/navikt/mock-oauth2-server:6` | latest 6.x.x |
 
 **Build locally:**
 
-```
+```shell
 ./gradlew -Djib.from.platforms=linux/amd64 jibDockerBuild
 docker run -p 8080:8080 $IMAGE_NAME
 ```
@@ -319,7 +342,9 @@ services:
 > [!NOTE]
 > Each service must use a different host port. Mapping two services to the same host port causes a `port is already allocated` error.
 
-### Token Customization via JSON_CONFIG
+## Customizing tokens
+
+### Request mappings via JSON_CONFIG
 
 When running standalone or in Docker you can configure token callbacks via the `JSON_CONFIG` environment variable (or `JSON_CONFIG_PATH` pointing to a file). When neither is set the server looks for `config.json` in the current working directory.
 
@@ -466,6 +491,8 @@ When using `DefaultOAuth2TokenCallback` the `aud` claim is resolved in the follo
 3. The non-OIDC scopes from the request (e.g. for Client Credentials with scopes)
 4. Falls back to `"default"` if none of the above are present
 
+## More features
+
 ### HTTPS
 
 #### In unit tests
@@ -535,14 +562,14 @@ The server automatically adds CORS headers to every response when an `Origin` he
 
 For regular requests:
 
-```
+```text
 Access-Control-Allow-Origin: <origin>
 Access-Control-Allow-Credentials: true
 ```
 
 For `OPTIONS` preflight requests:
 
-```
+```text
 Access-Control-Allow-Headers: <requested-headers>
 Access-Control-Allow-Methods: POST, GET, OPTIONS
 ```
@@ -604,7 +631,7 @@ Additional token provider options:
 
 The first path segment in any URL is the `issuerId`. Both OIDC and OAuth2 AS metadata endpoints are served:
 
-```
+```text
 GET /{issuerId}/.well-known/openid-configuration
 GET /{issuerId}/.well-known/oauth-authorization-server
 ```
@@ -653,6 +680,16 @@ server.baseUrl()                                       // server root URL
 
 ---
 
+## Troubleshooting
+
+**Your app rejects the token because of the issuer.** The `iss` claim is built from the host used to call the server. Your app and whoever fetches the token must use the same host, see [Docker Compose](#docker-compose).
+
+**The authorize endpoint shows a login page.** The standalone server and Docker image enable `interactiveLogin` by default. Set `JSON_CONFIG={"interactiveLogin": false}` to get a redirect with a code directly.
+
+**The code exchange returns `invalid_grant`.** Authorization codes can only be used once, so a retried or repeated token request fails.
+
+---
+
 ## Contact
 
 This project is maintained by [@navikt](https://github.com/navikt).
@@ -660,8 +697,6 @@ This project is maintained by [@navikt](https://github.com/navikt).
 To raise an issue or question, open an issue in this repository.
 
 For internal NAV contact, use the Slack channel `#nais`.
-
-See the [release notes](https://github.com/navikt/mock-oauth2-server/releases) for the full version history.
 
 ---
 
