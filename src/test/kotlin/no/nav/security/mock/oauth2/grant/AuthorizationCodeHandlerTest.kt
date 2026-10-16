@@ -7,6 +7,7 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
@@ -38,7 +39,7 @@ internal class AuthorizationCodeHandlerTest {
                     redirectUri = "http://redirect",
                 ),
         ) {
-            handler.authorizationCodeResponse(AuthenticationRequest.parse(this.toUri())).asClue {
+            handler.authorizationCodeResponse("default", AuthenticationRequest.parse(this.toUri())).asClue {
                 it.impliedResponseType().impliesCodeFlow() shouldBe true
                 it.impliedResponseMode() shouldBe ResponseMode.QUERY
                 it.state.toString() shouldBe "mystate"
@@ -114,6 +115,7 @@ internal class AuthorizationCodeHandlerTest {
 
     private fun AuthorizationCodeHandler.retrieveAuthorizationCode(login: Login): String =
         authorizationCodeResponse(
+            issuerId = "http://myissuer".toHttpUrl().issuerId(),
             authenticationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
             login = login,
         ).authorizationCode.value

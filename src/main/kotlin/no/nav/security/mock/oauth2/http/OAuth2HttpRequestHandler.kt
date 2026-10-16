@@ -178,13 +178,13 @@ class OAuth2HttpRequestHandler(
                 if (config.interactiveLogin || authRequest.isPrompt()) {
                     html(loginRequestHandler.loginHtml(it))
                 } else {
-                    authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
+                    authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it.url.issuerId(), authRequest))
                 }
             }
             post(AUTHORIZATION) {
                 val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
                 val login: Login = loginRequestHandler.loginSubmit(it)
-                authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
+                authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it.url.issuerId(), authRequest, login))
             }
         }
 

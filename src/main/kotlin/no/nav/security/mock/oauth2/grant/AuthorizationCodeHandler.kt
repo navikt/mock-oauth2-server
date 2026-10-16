@@ -10,6 +10,7 @@ import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
+import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
@@ -37,8 +38,10 @@ internal class AuthorizationCodeHandler(
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
     private val codeToAuthTimeCache: MutableMap<AuthorizationCode, Instant> = ConcurrentHashMap()
+    private val codeToIssuerIdCache: MutableMap<AuthorizationCode, String> = ConcurrentHashMap()
 
     fun authorizationCodeResponse(
+        issuerId: String,
         authenticationRequest: AuthenticationRequest,
         login: Login? = null,
     ): AuthenticationSuccessResponse {
@@ -48,6 +51,7 @@ internal class AuthorizationCodeHandler(
                 log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
                 codeToAuthTimeCache[code] = tokenProvider.systemTime ?: Instant.now()
+                codeToIssuerIdCache[code] = issuerId
                 login?.also {
                     log.debug("adding user with username ${it.username} to cache")
                     codeToLoginCache[code] = login
@@ -88,6 +92,14 @@ internal class AuthorizationCodeHandler(
                     "unknown or already-used authorization code",
                 )
         val authTime = codeToAuthTimeCache.remove(code)?.takeIf { authenticationRequest.maxAge >= 0 }
+
+        if (codeToIssuerIdCache.remove(code) != issuerUrl.issuerId()) {
+            codeToLoginCache.remove(code)
+            throw OAuth2Exception(
+                OAuth2Error.INVALID_GRANT.setDescription("authorization code was issued by a different issuer"),
+                "authorization code issuer mismatch",
+            )
+        }
 
         try {
             authenticationRequest.verifyPkce(tokenRequest)
