@@ -80,6 +80,17 @@ class WellKnownIntegrationTest {
     }
 
     @Test
+    fun `suffix metadata urls with an issuer path starting with the RFC 8414 prefix should keep their issuer`() {
+        withMockOAuth2Server {
+            listOf(".well-known/oauth-authorization-server", ".well-known/openid-configuration").forEach { suffix ->
+                metadata(this.url(".well-known/oauth-authorization-server/default/$suffix")).asClue {
+                    it["issuer"] shouldBe this.url(".well-known/oauth-authorization-server/default").toString()
+                }
+            }
+        }
+    }
+
+    @Test
     fun `well-known should only advertise the default signing algorithm`() {
         withMockOAuth2Server {
             client.get(this.wellKnownUrl("default")).parse<WellKnown>().asClue {

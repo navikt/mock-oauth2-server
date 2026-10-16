@@ -144,6 +144,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.wellKnown() =
         apply {
+            get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) { wellKnownResponse(it) }
             attach(
                 object : Route {
                     override fun match(request: OAuth2HttpRequest): Boolean = request.method == "GET" && request.url.isIssuerPathAfterOAuth2WellKnownUrl()
@@ -152,7 +153,6 @@ class OAuth2HttpRequestHandler(
                         wellKnownResponse(request.copy(originalUrl = request.originalUrl.withIssuerPathBeforeOAuth2WellKnown()))
                 },
             )
-            get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) { wellKnownResponse(it) }
         }
 
     private fun wellKnownResponse(request: OAuth2HttpRequest): OAuth2HttpResponse {
