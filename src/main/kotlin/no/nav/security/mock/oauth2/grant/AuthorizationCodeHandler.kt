@@ -47,7 +47,7 @@ internal class AuthorizationCodeHandler(
                 val code = AuthorizationCode()
                 log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
-                codeToAuthTimeCache[code] = Instant.now()
+                codeToAuthTimeCache[code] = tokenProvider.systemTime ?: Instant.now()
                 login?.also {
                     log.debug("adding user with username ${it.username} to cache")
                     codeToLoginCache[code] = login
