@@ -27,6 +27,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
+import no.nav.security.mock.oauth2.extensions.issuerIdForEndpoint
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
@@ -178,13 +179,13 @@ class OAuth2HttpRequestHandler(
                 if (config.interactiveLogin || authRequest.isPrompt()) {
                     html(loginRequestHandler.loginHtml(it))
                 } else {
-                    authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it.url.issuerId(), authRequest))
+                    authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it.url.issuerIdForEndpoint(AUTHORIZATION), authRequest))
                 }
             }
             post(AUTHORIZATION) {
                 val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
                 val login: Login = loginRequestHandler.loginSubmit(it)
-                authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it.url.issuerId(), authRequest, login))
+                authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it.url.issuerIdForEndpoint(AUTHORIZATION), authRequest, login))
             }
         }
 
@@ -244,8 +245,9 @@ class OAuth2HttpRequestHandler(
                     try {
                         grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
                     } catch (e: Exception) {
-                        // a rejected request must not use up the enqueued callback
-                        queued?.let { callback -> tokenCallbackQueue.offerFirst(callback) }
+                        // a rejected request must not use up the enqueued callback. Restore it under the same lock
+                        // the pollers hold between peek() and poll(), or another issuer could take it in between.
+                        queued?.let { callback -> synchronized(tokenCallbackQueue) { tokenCallbackQueue.offerFirst(callback) } }
                         throw e
                     }
                 json(tokenResponse).withNoStore()

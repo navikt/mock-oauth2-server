@@ -18,21 +18,20 @@ internal class HttpUrlExtensionsTest {
     }
 
     @Test
-    fun `endpoint urls give the same issuer id as their issuer url`() {
-        listOf("http://localhost", "http://localhost/path1", "http://localhost/path1/path2").forEach { baseUrl ->
-            val issuerId = baseUrl.toHttpUrl().issuerId()
-            val issuerUrl = baseUrl.toHttpUrl()
-            listOf(
-                issuerUrl.toTokenEndpointUrl(),
-                issuerUrl.toAuthorizationEndpointUrl(),
-                issuerUrl.toWellKnownUrl(),
-                issuerUrl.toJwksUrl(),
-                issuerUrl.toDebuggerCallbackUrl(),
-            ).forEach { endpointUrl ->
-                endpointUrl.issuerId() shouldBe issuerId
-                endpointUrl.toIssuerUrl() shouldBe issuerUrl
-            }
-        }
+    fun `issuerIdForEndpoint should strip only the endpoint that was called`() {
+        "http://localhost/token".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.TOKEN) shouldBe ""
+        "http://localhost/authorize".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.AUTHORIZATION) shouldBe ""
+        "http://localhost/issuer1/token".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.TOKEN) shouldBe "issuer1"
+        "http://localhost/path1/path2/authorize".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.AUTHORIZATION) shouldBe "path1/path2"
+        // an issuer named after an endpoint
+        "http://localhost/token/token".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.TOKEN) shouldBe "token"
+        "http://localhost/token/authorize".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.AUTHORIZATION) shouldBe "token"
+    }
+
+    @Test
+    fun `endpoint urls for an issuer named after an endpoint`() {
+        `verify oauth2 endpoint urls`("http://localhost/token")
+        `verify oauth2 endpoint urls`("http://localhost/authorize")
     }
 
     private fun `verify oauth2 endpoint urls`(baseUrl: String) {

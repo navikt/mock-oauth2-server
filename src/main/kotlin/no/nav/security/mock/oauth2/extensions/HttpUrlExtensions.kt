@@ -89,15 +89,25 @@ fun HttpUrl.toDebuggerCallbackUrl(): HttpUrl = issuer(DEBUGGER_CALLBACK)
 fun HttpUrl.issuerId(): String {
     val path = this.pathSegments.joinToString("/").trimPath()
     OAuth2Endpoints.all.forEach {
-        // the root issuer has no path in front of the endpoint
-        if (path == it.trimPath()) {
-            return ""
-        }
         if (path.endsWith(it)) {
             return path.substringBefore(it)
         }
     }
     return path
+}
+
+/**
+ * The issuer id of a request to a known endpoint. Unlike [issuerId], this can tell the root issuer's
+ * endpoint (`/token`) apart from the base url of an issuer named after an endpoint (`/token`).
+ */
+internal fun HttpUrl.issuerIdForEndpoint(endpoint: String): String {
+    val path = this.pathSegments.joinToString("/").trimPath()
+    val suffix = endpoint.trimPath()
+    return when {
+        path == suffix -> ""
+        path.endsWith("/$suffix") -> path.removeSuffix("/$suffix")
+        else -> issuerId()
+    }
 }
 
 fun HttpUrl.Builder.removeAllEncodedQueryParams(vararg params: String) = apply { params.forEach { removeAllEncodedQueryParameters(it) } }

@@ -8,9 +8,10 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
-import no.nav.security.mock.oauth2.extensions.issuerId
+import no.nav.security.mock.oauth2.extensions.issuerIdForEndpoint
 import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
@@ -93,7 +94,7 @@ internal class AuthorizationCodeHandler(
                 )
         val authTime = codeToAuthTimeCache.remove(code)?.takeIf { authenticationRequest.maxAge >= 0 }
 
-        if (codeToIssuerIdCache.remove(code) != issuerUrl.issuerId()) {
+        if (codeToIssuerIdCache.remove(code) != request.url.issuerIdForEndpoint(TOKEN)) {
             codeToLoginCache.remove(code)
             throw OAuth2Exception(
                 OAuth2Error.INVALID_GRANT.setDescription("authorization code was issued by a different issuer"),

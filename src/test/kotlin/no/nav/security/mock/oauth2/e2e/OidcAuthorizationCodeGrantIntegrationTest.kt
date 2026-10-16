@@ -314,6 +314,39 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
+    fun `authorization code flow should work at an issuer named token`() {
+        server.authorizationEndpointUrl("token").encodedPath shouldBe "/token/authorize"
+        server.tokenEndpointUrl("token").encodedPath shouldBe "/token/token"
+
+        val code =
+            client.get(server.authorizationEndpointUrl("token").authenticationRequest()).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code, issuerId = "token").asClue {
+            it.code shouldBe 200
+            it.toTokenResponse().accessToken shouldNotBe null
+        }
+    }
+
+    @Test
+    fun `authorization code from the root issuer should be rejected at an issuer named token`() {
+        val code =
+            client.get(server.authorizationEndpointUrl("").authenticationRequest()).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code, issuerId = "token").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
     fun `rejected authorization code should not consume the enqueued token callback`() {
         val code =
             client.get(server.authorizationEndpointUrl("issuer1").authenticationRequest()).let { authResponse ->
