@@ -11,6 +11,7 @@ import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
+import java.time.Instant
 
 internal class JwtBearerGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
@@ -32,7 +33,7 @@ internal class JwtBearerGrantHandler(
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
-            expiresIn = accessToken.expiresIn(),
+            expiresIn = accessToken.expiresIn(tokenProvider.systemTime ?: Instant.now()),
             scope = tokenRequest.responseScope(),
         )
     }

@@ -107,7 +107,7 @@ fun TokenRequest.clientIdAsString(): String =
     this.clientAuthentication?.clientID?.value ?: this.clientID?.value
         ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
 
-fun SignedJWT.expiresIn(): Int = Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
+fun SignedJWT.expiresIn(now: Instant = Instant.now()): Int = Duration.between(now, this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
 
 fun SignedJWT.verifySignatureAndIssuer(
     issuer: Issuer,
