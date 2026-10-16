@@ -172,7 +172,7 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
                         authenticationSuccessResponse.authorizationCode.value,
                         authenticationSuccessResponse.state?.value,
                     ),
-            )
+            ).withNoStore()
         }
 
         else -> {
@@ -191,7 +191,7 @@ fun authenticationError(authenticationErrorResponse: AuthenticationErrorResponse
                     authenticationErrorResponse.redirectionURI.toString(),
                     authenticationErrorResponse.toParameters().mapValues { it.value.first() },
                 ),
-            )
+            ).withNoStore()
         }
 
         else -> {
