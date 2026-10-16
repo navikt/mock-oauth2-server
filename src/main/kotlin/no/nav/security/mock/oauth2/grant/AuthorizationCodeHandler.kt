@@ -113,7 +113,7 @@ internal class AuthorizationCodeHandler(
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
-        val tokenCallback = enqueuedCallbackSupplier?.invoke(issuerUrl.issuerId()) ?: oAuth2TokenCallback
+        val tokenCallback = enqueuedCallbackSupplier?.invoke(request.url.issuerId()) ?: oAuth2TokenCallback
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, tokenCallback)
         val idTokenSubject = loginTokenCallbackOrDefault.subject(tokenRequest) ?: UUID.randomUUID().toString()
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)

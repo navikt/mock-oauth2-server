@@ -21,6 +21,7 @@ import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
@@ -439,6 +440,47 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                 it.code shouldBe 200
             }
     }
+
+    @Test
+    fun `authorization code flow at a nested issuer ending in an endpoint name should use its own enqueued callback`() {
+        server.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = "team", claims = mapOf("source" to "team")))
+        server.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = "team/jwks", claims = mapOf("source" to "team/jwks")))
+
+        client
+            .tokenRequest(
+                server.url("/team/jwks/token"),
+                mapOf(
+                    "client_id" to "client1",
+                    "client_secret" to "secret",
+                    "grant_type" to "authorization_code",
+                    "redirect_uri" to "http://mycallback",
+                    "code" to authorizationCodeFrom(server.url("/team/jwks/authorize")),
+                ),
+            ).toTokenResponse()
+            .accessToken
+            .shouldNotBeNull()
+            .jwtClaimsSet
+            .getStringClaim("source") shouldBe null
+
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl("team"),
+                "client1" to "secret",
+                mapOf("grant_type" to "client_credentials", "scope" to "scope1"),
+            ).toTokenResponse()
+            .accessToken
+            .shouldNotBeNull()
+            .jwtClaimsSet
+            .getStringClaim("source") shouldBe "team"
+    }
+
+    private fun authorizationCodeFrom(authorizationEndpointUrl: HttpUrl): String =
+        client
+            .get(authorizationEndpointUrl.authenticationRequest(redirectUri = "http://mycallback"))
+            .headers["location"]
+            ?.toHttpUrl()
+            ?.queryParameter("code")
+            .shouldNotBeNull()
 
     private fun OkHttpClient.tokenRequest(
         code: String,
