@@ -8,7 +8,7 @@ Run `./gradlew build` to build. That also runs kotlinter and `minStdlibTest`.
 
 - Every path starts with an issuer id, for example `/{issuerId}/token`. The issuer URL is built from the request's Host header.
 - Routes live in `OAuth2HttpRequestHandler`. Its exception handler maps `OAuth2Exception` and Nimbus `ParseException`/`GeneralException` to OAuth2 errors. Any other exception becomes `server_error` (500).
-- Claims come from `OAuth2TokenCallback`. The order is: enqueued callbacks (one-shot, per issuer), then `tokenCallbacks` from config, then `DefaultOAuth2TokenCallback`.
+- Claims come from `OAuth2TokenCallback`. The order is: enqueued callbacks (one-shot, per issuer), then `tokenCallbacks` from config, then `DefaultOAuth2TokenCallback`. The `refresh_token` grant is different: it uses an enqueued callback, then the callback stored with the refresh token, so refreshed tokens keep their claims. An unknown refresh token returns `invalid_grant`.
 
 ## Code review
 
