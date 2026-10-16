@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.spi.ThrowableProxyUtil
 import ch.qos.logback.core.read.ListAppender
+import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -12,7 +13,9 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import no.nav.security.mock.oauth2.OAuth2Config
+import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import okhttp3.Headers
@@ -35,6 +38,34 @@ class RequestLoggingTest {
             "POST http://localhost/default/token?trace=1 failed with unsupported_grant_type: grant_type unknown not supported."
         errorEvents.single().throwableProxy.shouldBeNull()
         events.filter { it.level == Level.ERROR }.shouldBeEmpty()
+    }
+
+    @Test
+    fun `client error logs stay on one line when the exception message contains line breaks`() {
+        val events =
+            captureLogs {
+                val handler = OAuth2HttpRequestHandler(OAuth2Config())
+                handler.enqueueTokenCallback(
+                    failingCallback(OAuth2Exception(OAuth2Error.INVALID_REQUEST, "first line\r\nsecond line")),
+                )
+                tokenRequest(handler, "grant_type=client_credentials&client_id=client1&client_secret=secret").status shouldBe 400
+            }
+
+        val message = events.single { it.formattedMessage.contains("failed with") }.formattedMessage
+        message shouldNotContain "\n"
+        message shouldNotContain "\r"
+        message shouldBe "POST http://localhost/default/token?trace=1 failed with invalid_request: Invalid request (first line\\r\\nsecond line)"
+    }
+
+    @Test
+    fun `client error logs include the exception message when it differs from the description`() {
+        val events =
+            captureLogs {
+                tokenRequest(OAuth2HttpRequestHandler(OAuth2Config()), "grant_type=urn:ietf:params:oauth:grant-type:token-exchange").status shouldBe 400
+            }
+
+        events.single { it.formattedMessage.contains("failed with") }.formattedMessage shouldBe
+            "POST http://localhost/default/token?trace=1 failed with invalid_request: Invalid request (request must contain some form of ClientAuthentication.)"
     }
 
     @Test

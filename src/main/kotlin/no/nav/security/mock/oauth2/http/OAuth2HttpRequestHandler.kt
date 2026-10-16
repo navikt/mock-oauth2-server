@@ -91,13 +91,20 @@ class OAuth2HttpRequestHandler(
         if (errorObject.code == OAuth2Error.SERVER_ERROR_CODE) {
             log.error("received exception when handling ${request.method} ${request.url}", error)
         } else {
-            log.info("${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}")
+            val details =
+                error.message
+                    ?.takeIf { it.isNotBlank() && it != errorObject.description }
+                    ?.let { " ($it)" }
+                    .orEmpty()
+            log.info("${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}$details".escapeLineBreaks())
         }
         oauth2Error(errorObject)
             .let { response ->
                 request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
             }
     }
+
+    private fun String.escapeLineBreaks(): String = replace("\r", "\\r").replace("\n", "\\n")
 
     private fun OAuth2HttpRequest.wwwAuthenticate(error: ErrorObject): String? {
         if (error.httpStatusCode != 401) return null
