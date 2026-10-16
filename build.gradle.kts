@@ -319,10 +319,6 @@ buildscript {
 }
 
 tasks {
-    withType<org.jmailen.gradle.kotlinter.tasks.LintTask> {
-        dependsOn("formatKotlin")
-    }
-
     withType<Test> {
         jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
         useJUnitPlatform()
