@@ -30,7 +30,7 @@ internal class RefreshTokenGrantHandler(
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         var refreshToken = tokenRequest.refreshTokenGrant().refreshToken.value
-        log.debug("issuing token for refresh token")
+        log.debug("issuing token for refreshToken=$refreshToken")
         val scope: String? = tokenRequest.scope?.toString()
         val issuerId = issuerUrl.issuerId()
         val storedState = refreshTokenManager.state(refreshToken)

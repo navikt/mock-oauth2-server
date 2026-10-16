@@ -45,11 +45,11 @@ internal class AuthorizationCodeHandler(
         when {
             authenticationRequest.responseType.impliesCodeFlow() -> {
                 val code = AuthorizationCode()
-                log.debug("issuing authorization code")
+                log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
                 codeToAuthTimeCache[code] = tokenProvider.systemTime ?: Instant.now()
                 login?.also {
-                    log.debug("adding user to authorization code cache")
+                    log.debug("adding user with username ${it.username} to cache")
                     codeToLoginCache[code] = login
                 }
                 return AuthenticationSuccessResponse(
@@ -79,7 +79,7 @@ internal class AuthorizationCodeHandler(
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val code = tokenRequest.authorizationCode()
-        log.debug("issuing token for authorization code")
+        log.debug("issuing token for code=$code")
 
         val authenticationRequest =
             codeToAuthRequestCache.remove(code)
@@ -166,7 +166,7 @@ internal class AuthorizationCodeHandler(
                                 putIfAbsent(field.key, jsonMapper.readValue(field.value.toString()))
                             }
                     } catch (exception: JacksonException) {
-                        log.warn("claims value could not be processed as JSON: ${exception.javaClass.name}")
+                        log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
                     }
                 }
             }

@@ -89,9 +89,9 @@ class OAuth2HttpRequestHandler(
                 else -> null
             } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
         if (errorObject.code == OAuth2Error.SERVER_ERROR_CODE) {
-            log.error("received exception when handling ${request.method} ${request.url.encodedPath}", error)
+            log.error("received exception when handling ${request.method} ${request.url}", error)
         } else {
-            log.debug("rejected ${request.method} ${request.url.encodedPath} with ${errorObject.code}: ${error.javaClass.name}")
+            log.info("${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}")
         }
         oauth2Error(errorObject)
             .let { response ->
@@ -146,7 +146,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.wellKnown() =
         get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) {
-            log.debug("returning well-known json data")
+            log.debug("returning well-known json data for url=${it.url}")
             json(
                 it.toWellKnown().copy(
                     idTokenSigningAlgValuesSupported = listOf(config.tokenProvider.getAlgorithm().name),
@@ -156,7 +156,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.jwks() =
         get(JWKS) {
-            log.debug("handle jwks request")
+            log.debug("handle jwks request on url=${it.url}")
             val issuerId = it.url.issuerId()
             val jwkSet = config.tokenProvider.publicJwkSet(issuerId)
             json(jwkSet.toJSONObject())
@@ -182,7 +182,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.endSession() =
         any(END_SESSION) {
-            log.debug("handle end session request")
+            log.debug("handle end session request $it")
             it.url.queryParameter("post_logout_redirect_uri")?.let { postLogoutRedirectUri ->
                 it.url.queryParameter("state")?.let { state ->
                     redirect("$postLogoutRedirectUri?state=$state")
@@ -192,7 +192,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.revocation(refreshTokenManager: RefreshTokenManager) =
         post(REVOKE) {
-            log.debug("handle revocation request")
+            log.debug("handle revocation request $it")
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
                 "refresh_token" -> {
@@ -215,7 +215,7 @@ class OAuth2HttpRequestHandler(
                 OAuth2HttpResponse(status = 405, body = "unsupported method")
             }
             post(TOKEN) {
-                log.debug("handle token request")
+                log.debug("handle token request $it")
                 val grantType = it.grantType()
                 val issuerId = it.url.issuerId()
                 // For refresh_token grants the handler resolves the callback itself (stored vs enqueued priority),

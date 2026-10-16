@@ -21,7 +21,7 @@ class CorsInterceptor(
         response: OAuth2HttpResponse,
     ): OAuth2HttpResponse {
         val origin = request.headers[ORIGIN]
-        log.debug("intercept response if request origin header is set: ${origin != null}")
+        log.debug("intercept response if request origin header is set: $origin")
         return if (origin != null) {
             val headers = response.headers.newBuilder()
             if (request.method == "OPTIONS") {

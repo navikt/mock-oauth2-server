@@ -46,7 +46,7 @@ private fun handle(sessionManager: SessionManager): ExceptionHandler =
             headers = Headers.headersOf("Content-Type", "text/html", "Set-Cookie", sessionManager.session(request).asCookie()),
             body = templateMapper.debuggerErrorHtml(request.url.toDebuggerUrl(), error.stackTraceToString()),
         ).also {
-            log.error("received exception when handling ${request.method} ${request.url.encodedPath}", error)
+            log.error("received exception when handling url=${request.url}", error)
         }
     }
 
@@ -84,7 +84,7 @@ private fun Route.Builder.debuggerForm(sessionManager: SessionManager) =
                     .addQueryParameter("redirect_uri", callbackUrl)
                     .build()
 
-            log.debug("redirecting debugger request and setting received params in encrypted cookie")
+            log.debug("attempting to redirect to $httpUrl, setting received params in encrypted cookie")
             val session = sessionManager.session(it)
             session.putAll(it.formParameters.map + ("redirect_uri" to callbackUrl))
             redirect(httpUrl.toString(), Headers.headersOf("Set-Cookie", session.asCookie()))
