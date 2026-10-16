@@ -96,7 +96,8 @@ class OAuth2HttpRequestHandler(
                     ?.takeIf { it.isNotBlank() && it != errorObject.description }
                     ?.let { " ($it)" }
                     .orEmpty()
-            log.info("${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}$details".escapeLineBreaks())
+            val message = "${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}$details".escapeLineBreaks()
+            if (log.isDebugEnabled) log.info(message, error) else log.info(message)
         }
         oauth2Error(errorObject)
             .let { response ->

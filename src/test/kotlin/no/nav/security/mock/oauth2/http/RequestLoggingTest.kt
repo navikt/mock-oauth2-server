@@ -27,7 +27,7 @@ class RequestLoggingTest {
     @Test
     fun `client errors are logged at info with the request url and error description but without a stack trace`() {
         val events =
-            captureLogs {
+            captureLogs(Level.INFO) {
                 tokenRequest(OAuth2HttpRequestHandler(OAuth2Config()), "grant_type=unknown&client_id=client1").status shouldBe 400
             }
 
@@ -38,6 +38,19 @@ class RequestLoggingTest {
             "POST http://localhost/default/token?trace=1 failed with unsupported_grant_type: grant_type unknown not supported."
         errorEvents.single().throwableProxy.shouldBeNull()
         events.filter { it.level == Level.ERROR }.shouldBeEmpty()
+    }
+
+    @Test
+    fun `client errors include the stack trace when debug logging is enabled`() {
+        val events =
+            captureLogs(Level.DEBUG) {
+                tokenRequest(OAuth2HttpRequestHandler(OAuth2Config()), "grant_type=unknown&client_id=client1").status shouldBe 400
+            }
+
+        val errorEvents = events.filter { it.formattedMessage.contains("failed with") }
+        errorEvents shouldHaveSize 1
+        errorEvents.single().level shouldBe Level.INFO
+        ThrowableProxyUtil.asString(errorEvents.single().throwableProxy.shouldNotBeNull()) shouldContain "at no.nav.security.mock.oauth2"
     }
 
     @Test
@@ -130,12 +143,15 @@ class RequestLoggingTest {
             override fun subject(tokenRequest: TokenRequest): String = throw exception
         }
 
-    private fun captureLogs(block: () -> Unit): List<ILoggingEvent> {
+    private fun captureLogs(
+        level: Level = Level.DEBUG,
+        block: () -> Unit,
+    ): List<ILoggingEvent> {
         val rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
         val originalLevel = rootLogger.level
         val appender = ListAppender<ILoggingEvent>().apply { start() }
         rootLogger.addAppender(appender)
-        rootLogger.level = Level.DEBUG
+        rootLogger.level = level
 
         try {
             block()
