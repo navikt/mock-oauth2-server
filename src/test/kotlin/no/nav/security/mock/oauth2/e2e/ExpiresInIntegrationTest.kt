@@ -40,6 +40,23 @@ class ExpiresInIntegrationTest {
     }
 
     @Test
+    fun `expires_in should be the full lifetime when the clock has sub-second precision`() {
+        val untruncated = Instant.parse("2020-01-21T00:00:00.123456789Z")
+        withMockOAuth2Server(OAuth2Config(tokenProvider = OAuth2TokenProvider(systemTime = untruncated))) {
+            client
+                .tokenRequest(
+                    tokenEndpointUrl("default"),
+                    "client1" to "secret",
+                    mapOf("grant_type" to GrantType.CLIENT_CREDENTIALS.value, "scope" to "scope1"),
+                ).toTokenResponse()
+                .asClue {
+                    it.status shouldBe 200
+                    it.expiresIn shouldBe 3600
+                }
+        }
+    }
+
+    @Test
     fun `expires_in should use the token provider clock for authorization_code`() {
         withMockOAuth2Server(config) {
             val code = client.get(authorizationEndpointUrl("default").authenticationRequest()).authorizationCode.shouldNotBeNull()

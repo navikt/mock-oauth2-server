@@ -35,6 +35,7 @@ import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.invalidRequest
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 private val log = KotlinLogging.logger { }
 
@@ -107,7 +108,11 @@ fun TokenRequest.clientIdAsString(): String =
     this.clientAuthentication?.clientID?.value ?: this.clientID?.value
         ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
 
-fun SignedJWT.expiresIn(now: Instant = Instant.now()): Int = Duration.between(now, this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
+fun SignedJWT.expiresIn(): Int = Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
+
+// JWT times have whole seconds, so drop the fraction of now to get the full lifetime
+internal fun SignedJWT.expiresIn(now: Instant): Int =
+    Duration.between(now.truncatedTo(ChronoUnit.SECONDS), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
 
 fun SignedJWT.verifySignatureAndIssuer(
     issuer: Issuer,
