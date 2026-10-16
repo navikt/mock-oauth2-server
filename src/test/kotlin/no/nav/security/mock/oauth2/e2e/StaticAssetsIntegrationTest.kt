@@ -86,7 +86,6 @@ class StaticAssetsIntegrationTest {
 
     @Test
     fun `static assets follow symlinks inside their directory`() {
-        // Kubernetes ConfigMap volumes expose files as symlinks into a ..data directory within the mount.
         val staticDir = Files.createDirectory(temporaryDirectory.resolve("static"))
         val dataDir = Files.createDirectory(staticDir.resolve("..2026_01_01"))
         Files.writeString(dataDir.resolve("test.txt"), "inside")
