@@ -1,7 +1,6 @@
 package no.nav.security.mock.oauth2.e2e
 
 import io.kotest.assertions.asClue
-
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
