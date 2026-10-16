@@ -10,6 +10,7 @@ import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
+import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
@@ -33,6 +34,7 @@ private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
+    private val enqueuedCallbackSupplier: ((issuerId: String) -> OAuth2TokenCallback?)? = null,
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
@@ -98,7 +100,8 @@ internal class AuthorizationCodeHandler(
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
-        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
+        val tokenCallback = enqueuedCallbackSupplier?.invoke(request.url.issuerId()) ?: oAuth2TokenCallback
+        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, tokenCallback)
         val idTokenSubject = loginTokenCallbackOrDefault.subject(tokenRequest) ?: UUID.randomUUID().toString()
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
