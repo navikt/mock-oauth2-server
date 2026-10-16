@@ -113,7 +113,7 @@ class CorsHeadersIntegrationTest {
                             "client_id" to "id",
                             "client_secret" to "secret",
                             "token" to "some-token",
-                            "token_type_hint" to "access_token",
+                            "token_type_hint" to "unsupported_hint",
                         ),
                     ),
                 ).execute()

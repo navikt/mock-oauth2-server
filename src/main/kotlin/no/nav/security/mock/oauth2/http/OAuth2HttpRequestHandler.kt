@@ -205,13 +205,13 @@ class OAuth2HttpRequestHandler(
             log.debug("handle revocation request $it")
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
-                "refresh_token" -> {
+                null, "refresh_token", "access_token" -> {
                     refreshTokenManager.remove(token)
                 }
 
                 else -> {
                     throw OAuth2Exception(
-                        ErrorObject("unsupported_token_type", "unsupported token type: $hint", 400),
+                        ErrorObject("unsupported_token_type", ErrorObject.removeIllegalChars("unsupported token type: $hint"), 400),
                         "unsupported token type: $hint",
                     )
                 }
