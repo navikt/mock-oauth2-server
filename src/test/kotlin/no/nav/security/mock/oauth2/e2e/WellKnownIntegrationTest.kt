@@ -16,6 +16,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.Headers
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import tools.jackson.module.kotlin.readValue
@@ -86,6 +87,19 @@ class WellKnownIntegrationTest {
                 metadata(this.url(".well-known/oauth-authorization-server/default/$suffix")).asClue {
                     it["issuer"] shouldBe this.url(".well-known/oauth-authorization-server/default").toString()
                 }
+            }
+        }
+    }
+
+    @Test
+    fun `endpoints of an issuer path starting with the RFC 8414 prefix should keep working`() {
+        withMockOAuth2Server {
+            val metadata = metadata(this.url(".well-known/oauth-authorization-server/default/.well-known/oauth-authorization-server"))
+            val jwksUri = (metadata["jwks_uri"] as String).toHttpUrl()
+            jwksUri shouldBe this.url(".well-known/oauth-authorization-server/default/jwks")
+            client.get(jwksUri).use {
+                it.code shouldBe 200
+                jacksonObjectMapper().readValue<Map<String, Any>>(it.body.string()).keys shouldContainExactly setOf("keys")
             }
         }
     }

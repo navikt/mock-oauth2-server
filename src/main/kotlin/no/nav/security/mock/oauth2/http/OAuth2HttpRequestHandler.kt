@@ -138,22 +138,22 @@ class OAuth2HttpRequestHandler(
             staticAssets()
             get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
             attach(debuggerRequestHandler)
+            issuerPathAfterWellKnown()
         }
 
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = tokenCallbackQueue.add(oAuth2TokenCallback)
 
-    private fun Route.Builder.wellKnown() =
-        apply {
-            get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) { wellKnownResponse(it) }
-            attach(
-                object : Route {
-                    override fun match(request: OAuth2HttpRequest): Boolean = request.method == "GET" && request.url.isIssuerPathAfterOAuth2WellKnownUrl()
+    private fun Route.Builder.wellKnown() = get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) { wellKnownResponse(it) }
 
-                    override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse =
-                        wellKnownResponse(request.copy(originalUrl = request.originalUrl.withIssuerPathBeforeOAuth2WellKnown()))
-                },
-            )
-        }
+    private fun Route.Builder.issuerPathAfterWellKnown() =
+        attach(
+            object : Route {
+                override fun match(request: OAuth2HttpRequest): Boolean = request.method == "GET" && request.url.isIssuerPathAfterOAuth2WellKnownUrl()
+
+                override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse =
+                    wellKnownResponse(request.copy(originalUrl = request.originalUrl.withIssuerPathBeforeOAuth2WellKnown()))
+            },
+        )
 
     private fun wellKnownResponse(request: OAuth2HttpRequest): OAuth2HttpResponse {
         log.debug("returning well-known json data for url=${request.url}")
