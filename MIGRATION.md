@@ -1,5 +1,27 @@
 # Migration guide
 
+## Migrating to 7.0.0
+
+### Authorization codes are bound to the issuer that issued them
+
+An authorization code issued by one issuer could be exchanged at the token endpoint of another issuer, which then returned tokens for the second issuer. Refresh tokens have been bound to their issuer since 4.0.0; authorization codes now are too.
+
+**New behavior (7.0.0):** exchanging a code at a different issuer than the one whose `/authorize` endpoint issued it returns `400 invalid_grant` with the description `authorization code was issued by a different issuer`. The code is used up by that request, so it can't be exchanged at the right issuer afterwards either.
+
+**Affected pattern:** tests that call the authorization endpoint of one issuer, for example `default`, and send the code to the token endpoint of another.
+
+**Migration:** use the same issuer id for both steps, and request a new code after an `invalid_grant`:
+
+```kotlin
+// Before: the code came from "default" but was redeemed at "idprovider"
+client.get(server.authorizationEndpointUrl("default").authenticationRequest())
+client.tokenRequest(server.tokenEndpointUrl("idprovider"), ...)
+
+// After: authorize and redeem at the same issuer
+client.get(server.authorizationEndpointUrl("idprovider").authenticationRequest())
+client.tokenRequest(server.tokenEndpointUrl("idprovider"), ...)
+```
+
 ## Migrating to 6.0.0
 
 ### `logback-classic` and `kotlinx-serialization-json` are no longer bundled
