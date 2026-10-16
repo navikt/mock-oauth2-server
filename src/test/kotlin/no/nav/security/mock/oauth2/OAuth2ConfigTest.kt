@@ -30,6 +30,7 @@ import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.Date
 
 internal class OAuth2ConfigTest {
@@ -136,13 +137,15 @@ internal class OAuth2ConfigTest {
     private fun beAroundNow(skew: Duration = Duration.ofSeconds(2)) =
         object : Matcher<Date> {
             override fun test(value: Date): MatcherResult {
-                val now = Instant.now()
+                // X.509 notBefore has second precision; truncate now to match so the
+                // comparison is not thrown off by sub-second clock differences.
+                val now = Instant.now().truncatedTo(ChronoUnit.SECONDS)
                 val withSkew = value.toInstant().plus(skew)
                 return MatcherResult(
-                    withSkew.isAfter(now),
-                    { "Date $withSkew should be after $now" },
+                    !withSkew.isBefore(now),
+                    { "Date $withSkew should be at or after $now" },
                     {
-                        "Date $withSkew should not be after $now"
+                        "Date $withSkew should not be at or after $now"
                     },
                 )
             }
