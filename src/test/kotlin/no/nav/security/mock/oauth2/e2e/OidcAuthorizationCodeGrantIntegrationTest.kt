@@ -44,6 +44,19 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
+    fun `authentication request should return state with reserved characters unchanged`() {
+        client
+            .get(
+                server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = "http://mycallback", state = "a&b=c"),
+            ).asClue { response ->
+                response.code shouldBe 302
+                val location = checkNotNull(response.headers["location"]).toHttpUrl()
+                location.queryParameter("state") shouldBe "a&b=c"
+                location.queryParameterNames shouldContainExactly setOf("code", "state")
+            }
+    }
+
+    @Test
     fun `complete authorization code flow should return tokens according to spec`() {
         val code =
             client.get(server.authorizationEndpointUrl("default").authenticationRequest()).let { authResponse ->
