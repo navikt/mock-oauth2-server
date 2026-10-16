@@ -1,3 +1,4 @@
+<#ftl output_format="HTML">
 <html>
 <head>
     <meta charset="UTF-8">

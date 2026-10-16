@@ -62,6 +62,18 @@ class AuthorizationErrorResponseIntegrationTest {
     }
 
     @Test
+    fun `authorize error with response_mode form_post should escape HTML in state`() {
+        withMockOAuth2Server {
+            client.get(authorizeUrl("response_type" to "token", "response_mode" to "form_post", "state" to "\"><script>alert(1)</script>")).use {
+                it.code shouldBe 200
+                val body = it.body.string()
+                body shouldNotContain "<script>"
+                body shouldContain "name=\"state\" value=\"&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;\""
+            }
+        }
+    }
+
+    @Test
     fun `authorize error without redirect_uri should return a JSON error`() {
         withMockOAuth2Server {
             client.get(authorizeUrl("response_type" to null, "redirect_uri" to null)).use {
