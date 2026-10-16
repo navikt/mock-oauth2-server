@@ -278,7 +278,7 @@ Images are also tagged by major and minor version, so you can pin to a release s
 
 | Tag | Resolves to |
 |-----|-------------|
-| `ghcr.io/navikt/mock-oauth2-server:6.1.0` | exact version |
+| `ghcr.io/navikt/mock-oauth2-server:6.1.1` | exact version |
 | `ghcr.io/navikt/mock-oauth2-server:6.1` | latest 6.1.x |
 | `ghcr.io/navikt/mock-oauth2-server:6` | latest 6.x.x |
 

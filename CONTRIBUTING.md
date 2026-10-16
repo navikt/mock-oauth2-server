@@ -71,12 +71,6 @@ Find the latest version at https://gradle.org/releases/ then run:
 ./gradlew wrapper --gradle-version $gradleVersion
 ```
 
-Also update the version in `build.gradle.kts`:
-
-```
-gradleVersion = "$gradleVersion"
-```
-
 ## Pull Request Review
 
 If you have a branch on your fork that is ready to be merged, please create a new pull request. The maintainers will review to make sure the above guidelines have been followed and if the changes are helpful to all library users, they will be merged.
@@ -87,6 +81,9 @@ The release process has been automated in GitHub Actions. Every merge into maste
 [draft release notes](https://github.com/navikt/mock-oauth2-server/releases) of the next version. Once the next
 version is ready to be released, simply publish the release with the version name as the title and tag and this
 will trigger the publishing process.
+
+The draft picks the next version from the labels on the merged pull requests: `breaking` gives a major version,
+`feature` or `enhancement` a minor version, and anything else a patch version. Label your pull request accordingly.
 
 This project uses [semantic versioning](https://semver.org/) and does NOT prefix tags or release titles with `v` i.e. use `1.2.3` instead of `v1.2.3`.
 
