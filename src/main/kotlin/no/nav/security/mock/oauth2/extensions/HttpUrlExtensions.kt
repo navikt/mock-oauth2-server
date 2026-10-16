@@ -89,6 +89,10 @@ fun HttpUrl.toDebuggerCallbackUrl(): HttpUrl = issuer(DEBUGGER_CALLBACK)
 fun HttpUrl.issuerId(): String {
     val path = this.pathSegments.joinToString("/").trimPath()
     OAuth2Endpoints.all.forEach {
+        // the root issuer has no path in front of the endpoint
+        if (path == it.trimPath()) {
+            return ""
+        }
         if (path.endsWith(it)) {
             return path.substringBefore(it)
         }

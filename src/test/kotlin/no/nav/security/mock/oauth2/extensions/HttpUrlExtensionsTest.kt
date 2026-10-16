@@ -17,6 +17,24 @@ internal class HttpUrlExtensionsTest {
         `verify oauth2 endpoint urls`("http://localhost/path1/path2")
     }
 
+    @Test
+    fun `endpoint urls give the same issuer id as their issuer url`() {
+        listOf("http://localhost", "http://localhost/path1", "http://localhost/path1/path2").forEach { baseUrl ->
+            val issuerId = baseUrl.toHttpUrl().issuerId()
+            val issuerUrl = baseUrl.toHttpUrl()
+            listOf(
+                issuerUrl.toTokenEndpointUrl(),
+                issuerUrl.toAuthorizationEndpointUrl(),
+                issuerUrl.toWellKnownUrl(),
+                issuerUrl.toJwksUrl(),
+                issuerUrl.toDebuggerCallbackUrl(),
+            ).forEach { endpointUrl ->
+                endpointUrl.issuerId() shouldBe issuerId
+                endpointUrl.toIssuerUrl() shouldBe issuerUrl
+            }
+        }
+    }
+
     private fun `verify oauth2 endpoint urls`(baseUrl: String) {
         val httpUrl = baseUrl.toHttpUrl()
         httpUrl.toIssuerUrl() shouldBe baseUrl.toHttpUrl()

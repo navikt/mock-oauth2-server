@@ -20,6 +20,7 @@ import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
@@ -295,6 +296,49 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             it.code shouldBe 400
             it.body.string() shouldContain "invalid_grant"
         }
+    }
+
+    @Test
+    fun `authorization code flow should work at the root issuer`() {
+        val code =
+            client.get(server.authorizationEndpointUrl("").authenticationRequest()).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code, issuerId = "").asClue {
+            it.code shouldBe 200
+            it.toTokenResponse().accessToken shouldNotBe null
+        }
+    }
+
+    @Test
+    fun `rejected authorization code should not consume the enqueued token callback`() {
+        val code =
+            client.get(server.authorizationEndpointUrl("issuer1").authenticationRequest()).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+
+        server.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = "issuer2", claims = mapOf("source" to "enqueued")))
+
+        client.tokenRequest(code, issuerId = "issuer2").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl("issuer2"),
+                "client1" to "secret",
+                mapOf("grant_type" to "client_credentials", "scope" to "scope1"),
+            ).toTokenResponse()
+            .accessToken
+            .shouldNotBeNull()
+            .jwtClaimsSet
+            .getStringClaim("source") shouldBe "enqueued"
     }
 
     private fun OkHttpClient.tokenRequest(
