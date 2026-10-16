@@ -47,20 +47,14 @@ object OAuth2Endpoints {
 fun HttpUrl.isWellKnownUrl(): Boolean = this.endsWith(OAUTH2_WELL_KNOWN) || this.endsWith(OIDC_WELL_KNOWN)
 
 internal fun HttpUrl.isIssuerPathAfterOAuth2WellKnownUrl(): Boolean =
-    encodedPathSegments.filter { it.isNotEmpty() }.let {
-        it.size > OAUTH2_WELL_KNOWN_SEGMENTS.size && it.take(OAUTH2_WELL_KNOWN_SEGMENTS.size) == OAUTH2_WELL_KNOWN_SEGMENTS
-    }
+    encodedPathSegments.take(OAUTH2_WELL_KNOWN_SEGMENTS.size) == OAUTH2_WELL_KNOWN_SEGMENTS && encodedIssuerPathAfterOAuth2WellKnown().isNotEmpty()
 
 internal fun HttpUrl.withIssuerPathBeforeOAuth2WellKnown(): HttpUrl =
     newBuilder()
-        .encodedPath("/")
-        .apply {
-            encodedPathSegments
-                .filter { it.isNotEmpty() }
-                .drop(OAUTH2_WELL_KNOWN_SEGMENTS.size)
-                .forEach { addEncodedPathSegment(it) }
-        }.addPathSegments(OAUTH2_WELL_KNOWN.trimPath())
+        .encodedPath("/${encodedIssuerPathAfterOAuth2WellKnown()}$OAUTH2_WELL_KNOWN")
         .build()
+
+private fun HttpUrl.encodedIssuerPathAfterOAuth2WellKnown(): String = encodedPathSegments.drop(OAUTH2_WELL_KNOWN_SEGMENTS.size).joinToString("/")
 
 fun HttpUrl.isAuthorizationEndpointUrl(): Boolean = this.endsWith(AUTHORIZATION)
 

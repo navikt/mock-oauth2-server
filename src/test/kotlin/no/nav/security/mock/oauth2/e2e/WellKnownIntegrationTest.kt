@@ -71,6 +71,15 @@ class WellKnownIntegrationTest {
     }
 
     @Test
+    fun `RFC 8414 metadata url should keep empty segments in the issuer path`() {
+        withMockOAuth2Server {
+            val rfc8414 = metadata(this.url(".well-known/oauth-authorization-server/a//b"))
+            rfc8414 shouldBe metadata(this.url("a//b/.well-known/oauth-authorization-server"))
+            rfc8414["issuer"] shouldBe this.url("a//b").toString()
+        }
+    }
+
+    @Test
     fun `well-known should only advertise the default signing algorithm`() {
         withMockOAuth2Server {
             client.get(this.wellKnownUrl("default")).parse<WellKnown>().asClue {
