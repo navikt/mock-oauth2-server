@@ -23,7 +23,10 @@ internal class HttpUrlExtensionsTest {
         "http://localhost/authorize".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.AUTHORIZATION) shouldBe ""
         "http://localhost/issuer1/token".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.TOKEN) shouldBe "issuer1"
         "http://localhost/path1/path2/authorize".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.AUTHORIZATION) shouldBe "path1/path2"
-        // an issuer named after an endpoint
+    }
+
+    @Test
+    fun `issuerIdForEndpoint should keep an issuer named after an endpoint`() {
         "http://localhost/token/token".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.TOKEN) shouldBe "token"
         "http://localhost/token/authorize".toHttpUrl().issuerIdForEndpoint(OAuth2Endpoints.AUTHORIZATION) shouldBe "token"
     }

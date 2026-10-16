@@ -245,9 +245,7 @@ class OAuth2HttpRequestHandler(
                     try {
                         grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
                     } catch (e: Exception) {
-                        // a rejected request must not use up the enqueued callback. Restore it under the same lock
-                        // the pollers hold between peek() and poll(), or another issuer could take it in between.
-                        queued?.let { callback -> synchronized(tokenCallbackQueue) { tokenCallbackQueue.offerFirst(callback) } }
+                        queued?.let { putBackTokenCallback(it) }
                         throw e
                     }
                 json(tokenResponse).withNoStore()
@@ -280,5 +278,10 @@ class OAuth2HttpRequestHandler(
     private fun pollTokenCallback(issuerId: String): OAuth2TokenCallback? =
         synchronized(tokenCallbackQueue) {
             if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
+        }
+
+    private fun putBackTokenCallback(tokenCallback: OAuth2TokenCallback) =
+        synchronized(tokenCallbackQueue) {
+            tokenCallbackQueue.offerFirst(tokenCallback)
         }
 }

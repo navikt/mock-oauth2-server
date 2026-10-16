@@ -96,10 +96,6 @@ fun HttpUrl.issuerId(): String {
     return path
 }
 
-/**
- * The issuer id of a request to a known endpoint. Unlike [issuerId], this can tell the root issuer's
- * endpoint (`/token`) apart from the base url of an issuer named after an endpoint (`/token`).
- */
 internal fun HttpUrl.issuerIdForEndpoint(endpoint: String): String {
     val path = this.pathSegments.joinToString("/").trimPath()
     val suffix = endpoint.trimPath()
