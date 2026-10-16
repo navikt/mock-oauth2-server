@@ -48,7 +48,6 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     @ParameterizedTest
     @ValueSource(
         strings = [
-            // Already rejected by Nimbus when parsing the request; kept as a regression guard.
             "javascript:alert(document.domain)",
             "customapp://callback.example/finish",
         ],
