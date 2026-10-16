@@ -180,7 +180,7 @@ class RefreshTokenGrantIntegrationTest {
         val authorizationCode =
             client
                 .post(
-                    this.authorizationEndpointUrl("default").authenticationRequest(),
+                    this.authorizationEndpointUrl(issuerId).authenticationRequest(),
                     mapOf("username" to initialSubject),
                 ).let { authResponse ->
                     authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")

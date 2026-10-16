@@ -38,7 +38,7 @@ internal class AuthorizationCodeHandlerTest {
                     redirectUri = "http://redirect",
                 ),
         ) {
-            handler.authorizationCodeResponse(AuthenticationRequest.parse(this.toUri())).asClue {
+            handler.authorizationCodeResponse("default", AuthenticationRequest.parse(this.toUri())).asClue {
                 it.impliedResponseType().impliesCodeFlow() shouldBe true
                 it.impliedResponseMode() shouldBe ResponseMode.QUERY
                 it.state.toString() shouldBe "mystate"
@@ -114,6 +114,7 @@ internal class AuthorizationCodeHandlerTest {
 
     private fun AuthorizationCodeHandler.retrieveAuthorizationCode(login: Login): String =
         authorizationCodeResponse(
+            issuerId = "default",
             authenticationRequest = "http://authorizationendpoint".toHttpUrl().authenticationRequest().asNimbusAuthRequest(),
             login = login,
         ).authorizationCode.value
@@ -127,7 +128,7 @@ internal class AuthorizationCodeHandlerTest {
         OAuth2HttpRequest(
             headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),
             method = "POST",
-            originalUrl = "http://localhost/token".toHttpUrl(),
+            originalUrl = "http://localhost/default/token".toHttpUrl(),
             body =
                 "grant_type=authorization_code&" +
                     "client_id=client1&" +
