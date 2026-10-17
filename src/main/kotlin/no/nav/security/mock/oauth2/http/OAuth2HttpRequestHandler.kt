@@ -27,6 +27,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
+import no.nav.security.mock.oauth2.extensions.requireSupportedCodeChallengeMethod
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
@@ -175,6 +176,7 @@ class OAuth2HttpRequestHandler(
             val authorizationCodeHandler = grantHandlers[AUTHORIZATION_CODE] as AuthorizationCodeHandler
             get(AUTHORIZATION) {
                 val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
+                authRequest.requireSupportedCodeChallengeMethod()
                 if (config.interactiveLogin || authRequest.isPrompt()) {
                     html(loginRequestHandler.loginHtml(it))
                 } else {
@@ -183,6 +185,7 @@ class OAuth2HttpRequestHandler(
             }
             post(AUTHORIZATION) {
                 val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
+                authRequest.requireSupportedCodeChallengeMethod()
                 val login: Login = loginRequestHandler.loginSubmit(it)
                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
             }

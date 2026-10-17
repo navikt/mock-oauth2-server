@@ -16,6 +16,7 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.AuthorizationGrant
+import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
@@ -48,6 +49,15 @@ fun AuthenticationRequest.isPrompt(): Boolean =
     this.prompt?.any {
         it == Prompt.Type.LOGIN || it == Prompt.Type.CONSENT || it == Prompt.Type.SELECT_ACCOUNT
     } ?: false
+
+private val SUPPORTED_CODE_CHALLENGE_METHODS: Set<CodeChallengeMethod> = setOf(CodeChallengeMethod.PLAIN, CodeChallengeMethod.S256)
+
+internal fun AuthenticationRequest.requireSupportedCodeChallengeMethod() {
+    val method = this.codeChallengeMethod ?: return
+    if (method !in SUPPORTED_CODE_CHALLENGE_METHODS) {
+        invalidRequest(ErrorObject.removeIllegalChars("unsupported code_challenge_method: ${method.value}"))
+    }
+}
 
 fun AuthenticationRequest.verifyPkce(tokenRequest: TokenRequest) {
     val verifier: CodeVerifier? = tokenRequest.grant(AuthorizationCodeGrant::class.java).codeVerifier
