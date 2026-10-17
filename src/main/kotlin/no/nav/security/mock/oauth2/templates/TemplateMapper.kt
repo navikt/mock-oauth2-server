@@ -1,6 +1,7 @@
 package no.nav.security.mock.oauth2.templates
 
 import freemarker.cache.ClassTemplateLoader
+import freemarker.core.HTMLOutputFormat
 import freemarker.template.Configuration
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
@@ -104,6 +105,7 @@ class TemplateMapper(
                 Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS)
                     .apply {
                         templateLoader = ClassTemplateLoader(this::class.java.classLoader, "templates")
+                        outputFormat = HTMLOutputFormat.INSTANCE
                     }.apply(configure)
             return TemplateMapper(config)
         }
