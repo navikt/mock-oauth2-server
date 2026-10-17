@@ -86,6 +86,26 @@ internal class OAuth2HttpRouterTest {
     }
 
     @Test
+    fun `405 response for a path of a nested router should get the interceptors of that router`() {
+        val nestedRoutes =
+            routes {
+                interceptors(ResponseInterceptor { _, response -> response.withHeader("fromInterceptor", "nested") })
+                post("/foo") { ok("foo") }
+            }
+        val finalRoutes =
+            routes {
+                attach(nestedRoutes)
+                put("/foo") { ok("put foo") }
+            }
+
+        finalRoutes.invoke(get("/foo")).asClue {
+            it.status shouldBe 405
+            it.headers["Allow"] shouldBe "POST, PUT"
+            it.headers["fromInterceptor"] shouldBe "nested"
+        }
+    }
+
+    @Test
     fun `HEAD request to a GET route should return the GET status and headers without a body`() {
         val routes =
             routes {

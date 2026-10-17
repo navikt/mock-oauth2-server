@@ -147,7 +147,7 @@ class OAuth2HttpRequestHandler(
             preflight()
             staticAssets()
             get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
-            attach(debuggerRequestHandler)
+            attach(debuggerRequestHandler.route)
         }
 
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = tokenCallbackQueue.add(oAuth2TokenCallback)
