@@ -15,6 +15,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.USER_INFO
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -29,6 +30,28 @@ internal class OAuth2HttpRequestHandlerTest {
     ) {
         authServer.invoke(request).asClue {
             it.status shouldBe expectedResponse.status
+        }
+    }
+
+    @Test
+    fun `GET to the token endpoint should return 405 with the supported methods in the Allow header`() {
+        authServer.invoke(OAuth2HttpRequest(Headers.headersOf(), "GET", "http://localhost/issuer1$TOKEN".toHttpUrl())).asClue {
+            it.status shouldBe 405
+            it.headers["Allow"] shouldBe "OPTIONS, POST"
+        }
+    }
+
+    @Test
+    fun `HEAD to the discovery endpoint should return the GET headers without a body`() {
+        val url = "http://localhost/issuer1$OIDC_WELL_KNOWN".toHttpUrl()
+        val getResponse = authServer.invoke(OAuth2HttpRequest(Headers.headersOf(), "GET", url))
+        val getContentLength = checkNotNull(getResponse.body).toByteArray().size
+
+        authServer.invoke(OAuth2HttpRequest(Headers.headersOf(), "HEAD", url)).asClue {
+            it.status shouldBe 200
+            it.headers["Content-Type"] shouldBe getResponse.headers["Content-Type"]
+            it.headers["Content-Length"] shouldBe getContentLength.toString()
+            it.body shouldBe null
         }
     }
 

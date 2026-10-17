@@ -221,9 +221,6 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.token() =
         apply {
-            get(TOKEN) {
-                OAuth2HttpResponse(status = 405, body = "unsupported method")
-            }
             post(TOKEN) {
                 log.debug("handle token request $it")
                 val grantType = it.grantType()
