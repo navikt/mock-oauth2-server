@@ -21,6 +21,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 class UserInfoIntegrationTest {
     private val client = client()
@@ -45,6 +47,38 @@ class UserInfoIntegrationTest {
                             "iss" to token.claims["iss"],
                             "extra" to token.claims["extra"],
                         )
+                }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["Bearer", "bearer", "BEARER"])
+    fun `userinfo should accept the bearer scheme in any case`(scheme: String) {
+        withMockOAuth2Server {
+            val issuerId = "default"
+            val token = this.issueToken(issuerId = issuerId, subject = "foo")
+            client
+                .get(
+                    url = this.userInfoUrl(issuerId),
+                    headers = Headers.headersOf("Authorization", "$scheme ${token.serialize()}"),
+                ).asClue {
+                    it.code shouldBe 200
+                    it.parse<Map<String, Any>>()["sub"] shouldBe "foo"
+                }
+        }
+    }
+
+    @Test
+    fun `userinfo should return 401 when the Authorization header uses another scheme`() {
+        withMockOAuth2Server {
+            val issuerId = "default"
+            val token = this.issueToken(issuerId = issuerId, subject = "foo")
+            client
+                .get(
+                    url = this.userInfoUrl(issuerId),
+                    headers = Headers.headersOf("Authorization", "Basic ${token.serialize()}"),
+                ).asClue {
+                    it.code shouldBe 401
                 }
         }
     }

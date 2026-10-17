@@ -12,6 +12,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.INTROSPECT
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.Route
+import no.nav.security.mock.oauth2.http.authorizationCredentials
 import no.nav.security.mock.oauth2.http.json
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
@@ -59,18 +60,7 @@ private fun OAuth2HttpRequest.verifyToken(tokenProvider: OAuth2TokenProvider): J
     }
 }
 
-private fun Headers.authenticated(): Boolean =
-    this["Authorization"]?.let { authHeader ->
-        authHeader.auth("Bearer ")?.isNotEmpty()
-            ?: authHeader.auth("Basic ")?.isNotEmpty()
-            ?: false
-    } ?: false
-
-private fun String.auth(method: String): String? =
-    this
-        .split(method)
-        .takeIf { it.size == 2 }
-        ?.last()
+private fun Headers.authenticated(): Boolean = authorizationCredentials("Bearer") != null || authorizationCredentials("Basic") != null
 
 private fun Date?.epochSeconds(): Long? = this?.let(DateUtils::toSecondsSinceEpoch)
 
