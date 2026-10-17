@@ -174,11 +174,12 @@ internal class PathRouter(
 
     private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
         log.debug("no route matching url=${request.url} with method=${request.method}")
-        return if (matchPath(request)) {
-            methodNotAllowed(allowedMethods(request))
-        } else {
-            notFound("no routes found")
+        if (!matchPath(request)) {
+            return notFound("no routes found")
         }
+        val allowedMethods = allowedMethods(request)
+        val nestedRouterForPath = routes.firstOrNull { it is PathRouter && it.matchPath(request) }
+        return nestedRouterForPath?.invoke(request)?.withAllowHeader(allowedMethods) ?: methodNotAllowed(allowedMethods)
     }
 
     private fun Route.matchPath(request: OAuth2HttpRequest): Boolean = (this as? PathRoute)?.matchPath(request) ?: false

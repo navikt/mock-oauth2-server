@@ -160,8 +160,10 @@ fun notFound(body: String? = null): OAuth2HttpResponse = OAuth2HttpResponse(stat
 
 fun methodNotAllowed(): OAuth2HttpResponse = OAuth2HttpResponse(status = 405, body = "method not allowed")
 
-internal fun methodNotAllowed(allowedMethods: Set<String>): OAuth2HttpResponse =
-    methodNotAllowed().withHeader(HttpHeaderNames.ALLOW.toString(), allowedMethods.withHeadForGet().sorted().joinToString(", "))
+internal fun methodNotAllowed(allowedMethods: Set<String>): OAuth2HttpResponse = methodNotAllowed().withAllowHeader(allowedMethods)
+
+internal fun OAuth2HttpResponse.withAllowHeader(allowedMethods: Set<String>): OAuth2HttpResponse =
+    withHeader(HttpHeaderNames.ALLOW.toString(), allowedMethods.withHeadForGet().sorted().joinToString(", "))
 
 private fun Set<String>.withHeadForGet(): Set<String> = if ("GET" in this) this + "HEAD" else this
 

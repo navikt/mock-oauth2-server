@@ -42,6 +42,14 @@ internal class OAuth2HttpRequestHandlerTest {
     }
 
     @Test
+    fun `DELETE to the debugger should return 405 with the debugger methods in the Allow header`() {
+        authServer.invoke(OAuth2HttpRequest(Headers.headersOf(), "DELETE", "http://localhost/issuer1$DEBUGGER".toHttpUrl())).asClue {
+            it.status shouldBe 405
+            it.headers["Allow"] shouldBe "GET, HEAD, OPTIONS, POST"
+        }
+    }
+
+    @Test
     fun `HEAD to the discovery endpoint should return the GET headers without a body`() {
         val url = "http://localhost/issuer1$OIDC_WELL_KNOWN".toHttpUrl()
         val getResponse = authServer.invoke(OAuth2HttpRequest(Headers.headersOf(), "GET", url))
