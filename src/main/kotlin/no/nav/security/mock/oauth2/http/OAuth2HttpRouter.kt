@@ -227,17 +227,21 @@ private fun routeFromPathAndMethod(
     requestHandler: RequestHandler,
 ): Route =
     object : PathRoute {
-        override fun matchPath(request: OAuth2HttpRequest): Boolean =
+        private val matchesEveryPath = path.isEmpty()
+
+        override fun matchPath(request: OAuth2HttpRequest): Boolean = !matchesEveryPath && matchesRequestPath(request)
+
+        override fun match(request: OAuth2HttpRequest): Boolean = matchesRequestPath(request) && matchMethod(request)
+
+        override fun allowedMethods(request: OAuth2HttpRequest): Set<String> = if (matchesRequestPath(request)) setOfNotNull(method) else emptySet()
+
+        private fun matchesRequestPath(request: OAuth2HttpRequest): Boolean =
             if (path.contains("*")) {
                 val regex = path.replace("*", ".*").toRegex()
                 "/${request.url.pathSegments.joinToString("/")}".matches(regex)
             } else {
                 request.url.endsWith(path)
             }
-
-        override fun allowedMethods(request: OAuth2HttpRequest): Set<String> = if (matchPath(request)) setOfNotNull(method) else emptySet()
-
-        override fun match(request: OAuth2HttpRequest): Boolean = matchPath(request) && matchMethod(request)
 
         override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse = requestHandler.invoke(request)
 
