@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
+import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
@@ -90,6 +91,7 @@ internal class AuthorizationCodeHandler(
         val authTime = codeToAuthTimeCache.remove(code)?.takeIf { authenticationRequest.maxAge >= 0 }
 
         try {
+            verifyClientAndRedirectUri(authenticationRequest, tokenRequest)
             authenticationRequest.verifyPkce(tokenRequest)
         } catch (e: OAuth2Exception) {
             codeToLoginCache.remove(code)
@@ -113,6 +115,25 @@ internal class AuthorizationCodeHandler(
             scope = scope,
         )
     }
+
+    private fun verifyClientAndRedirectUri(
+        authenticationRequest: AuthenticationRequest,
+        tokenRequest: TokenRequest,
+    ) {
+        val tokenClientId = tokenRequest.clientAuthentication?.clientID ?: tokenRequest.clientID
+        if (tokenClientId != authenticationRequest.clientID) {
+            invalidGrant("authorization code was issued to a different client")
+        }
+        val originalRedirectUri = authenticationRequest.redirectionURI
+        if (originalRedirectUri != null) {
+            val grant = tokenRequest.authorizationGrant as AuthorizationCodeGrant
+            if (grant.redirectionURI?.toString() != originalRedirectUri.toString()) {
+                invalidGrant("redirect_uri does not match the authorization request")
+            }
+        }
+    }
+
+    private fun invalidGrant(message: String): Nothing = throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(message), message)
 
     private fun getLoginTokenCallbackOrDefault(
         code: AuthorizationCode,

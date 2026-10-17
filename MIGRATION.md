@@ -1,5 +1,28 @@
 # Migration guide
 
+## Migrating to 7.0.0
+
+### Authorization codes are bound to the client and `redirect_uri`
+
+Previously, an authorization code could be redeemed with any `client_id` and any `redirect_uri`.
+
+**New behavior (7.0.0):** the token request must use the same `client_id` as the authorization request. If the authorization request included a `redirect_uri`, the token request must include the exact same value. Otherwise the server returns `400 invalid_grant`, and the code cannot be used again.
+
+**Affected pattern:** tests that authorize with one `client_id` or `redirect_uri` and redeem the code with another, for example a hardcoded `client_id` in the token request that differs from the one in the authorize URL. A client that builds `redirect_uri` from the current request URL can also be affected, because at the callback that URL still carries `code` and `state`.
+
+**Migration:** use the same `client_id` and `redirect_uri` in both requests:
+
+```kotlin
+// authorization request
+server.authorizationEndpointUrl("default").newBuilder()
+    .addQueryParameter("client_id", "client1")
+    .addQueryParameter("redirect_uri", "http://localhost:8080/callback")
+    // ...
+
+// token request
+"grant_type=authorization_code&code=$code&client_id=client1&client_secret=secret&redirect_uri=http://localhost:8080/callback"
+```
+
 ## Migrating to 6.0.0
 
 ### `logback-classic` and `kotlinx-serialization-json` are no longer bundled
