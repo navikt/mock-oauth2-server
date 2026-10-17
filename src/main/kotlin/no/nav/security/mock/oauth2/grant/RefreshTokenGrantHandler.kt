@@ -14,6 +14,7 @@ import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
+import java.time.Instant
 
 private val log = KotlinLogging.logger {}
 
@@ -54,7 +55,7 @@ internal class RefreshTokenGrantHandler(
             idToken = idToken.serialize(),
             accessToken = accessToken.serialize(),
             refreshToken = refreshToken,
-            expiresIn = idToken.expiresIn(),
+            expiresIn = idToken.expiresIn(tokenProvider.systemTime ?: Instant.now()),
             scope = scope,
         )
     }
