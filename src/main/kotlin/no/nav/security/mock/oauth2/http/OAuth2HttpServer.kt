@@ -128,6 +128,7 @@ class MockWebServerWrapper
                         when {
                             this.body != null -> it.setBody(this.body)
                             this.bytesBody != null -> it.setBody(Buffer().write(this.bytesBody))
+                            this.headers[HttpHeaderNames.CONTENT_LENGTH.toString()] != null -> it
                             else -> it.setBody("")
                         }
                     }
