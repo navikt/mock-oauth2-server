@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.e2e
 
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -20,6 +21,7 @@ import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
@@ -234,6 +236,48 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
+    fun `authorization code flow should return tokens when code_challenge_method is plain`() {
+        val pkce = Pkce(method = CodeChallengeMethod.PLAIN)
+        val code =
+            client.get(server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce)).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code, pkce).asClue {
+            it.code shouldBe 200
+            it.toTokenResponse().accessToken shouldNotBe null
+        }
+    }
+
+    @Test
+    fun `authentication request should return invalid_request when code_challenge_method is not supported`() {
+        client.get(server.authorizationEndpointUrl("default").withUnsupportedCodeChallengeMethod()).asClue {
+            it.code shouldBe 400
+            it.headers["location"] shouldBe null
+            it.body.string() shouldContain "invalid_request"
+        }
+    }
+
+    @Test
+    fun `authentication request with interactivelogin enabled should return invalid_request when code_challenge_method is not supported`() {
+        val server = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
+        val authorizationUrl = server.authorizationEndpointUrl("default").withUnsupportedCodeChallengeMethod()
+
+        client.get(authorizationUrl).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_request"
+        }
+        client.post(authorizationUrl, mapOf("username" to "foo")).asClue {
+            it.code shouldBe 400
+            it.headers["location"] shouldBe null
+            it.body.string() shouldContain "invalid_request"
+        }
+        server.shutdown()
+    }
+
+    @Test
     fun `authorization code flow should reject code_verifier when authorization request had no code_challenge`() {
         val code =
             client.get(server.authorizationEndpointUrl("default").authenticationRequest()).let { authResponse ->
@@ -294,4 +338,11 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             }
         },
     )
+
+    private fun HttpUrl.withUnsupportedCodeChallengeMethod(): HttpUrl =
+        authenticationRequest()
+            .newBuilder()
+            .addQueryParameter("code_challenge", Pkce().challenge.value)
+            .addQueryParameter("code_challenge_method", "S512")
+            .build()
 }
