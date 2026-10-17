@@ -80,6 +80,9 @@ internal class OAuth2HttpRequestHandlerTest {
                     expectedResponse = OAuth2HttpResponse(status = 302),
                 ),
                 request(path = "/favicon.ico", method = "GET", expectedResponse = OAuth2HttpResponse(status = 200)),
+                request(path = "/issuer1/unknown", method = "GET", expectedResponse = OAuth2HttpResponse(status = 404)),
+                request(path = "/issuer1/unknown", method = "OPTIONS", expectedResponse = OAuth2HttpResponse(status = 204)),
+                request(path = "/issuer1$TOKEN", method = "GET", expectedResponse = OAuth2HttpResponse(status = 405)),
             )
 
         private fun request(
