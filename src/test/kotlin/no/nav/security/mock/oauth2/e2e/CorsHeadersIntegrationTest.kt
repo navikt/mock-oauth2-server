@@ -102,6 +102,22 @@ class CorsHeadersIntegrationTest {
     }
 
     @Test
+    fun `method not allowed response should allow origin and list the supported methods`() {
+        withMockOAuth2Server {
+            client
+                .get(
+                    this.tokenEndpointUrl("default"),
+                    Headers.headersOf("origin", origin),
+                ).asClue {
+                    it.code shouldBe 405
+                    it.headers["Allow"] shouldBe "OPTIONS, POST"
+                    it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
+                    it.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
+                }
+        }
+    }
+
+    @Test
     fun `revoke error response should allow origin`() {
         withMockOAuth2Server {
             client

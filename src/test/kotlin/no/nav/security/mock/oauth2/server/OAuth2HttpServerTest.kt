@@ -29,6 +29,10 @@ internal class OAuth2HttpServerTest {
     val requestHandler: RequestHandler = {
         log.debug("received request on url=${it.url}")
         when {
+            it.method == "HEAD" -> {
+                OAuth2HttpResponse(headers = Headers.headersOf("Content-Length", "9"), status = 200)
+            }
+
             it.headers.contains("header1" to "headervalue1") -> {
                 ok("headermatch")
             }
@@ -155,6 +159,19 @@ internal class OAuth2HttpServerTest {
                 this.code shouldBe 302
                 this.headers["Location"] shouldBe "http://someredirect"
             }
+            client
+                .newCall(
+                    Request
+                        .Builder()
+                        .url(this.url("/1/2"))
+                        .head()
+                        .build(),
+                ).execute()
+                .use {
+                    it.code shouldBe 200
+                    it.headers["Content-Length"] shouldBe "9"
+                }
+            client.get(this.url("/1/2")).body.string() shouldBe "pathmatch"
         }
 
     private fun ok(body: String) =

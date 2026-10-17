@@ -62,6 +62,80 @@ internal class OAuth2HttpRouterTest {
     }
 
     @Test
+    fun `405 response should list the methods supported by the path in an Allow header`() {
+        val firstRoutes =
+            routes {
+                get("/first") { ok("firstget") }
+                post("/first") { ok("firstpost") }
+                get("/second") { ok("second") }
+            }
+        val finalRoutes =
+            routes {
+                attach(firstRoutes)
+                put("/first") { ok("firstput") }
+            }
+
+        finalRoutes.invoke(request("http://localhost/first", "DELETE")).asClue {
+            it.status shouldBe 405
+            it.headers["Allow"] shouldBe "GET, HEAD, POST, PUT"
+        }
+        finalRoutes.invoke(post("/second")).asClue {
+            it.status shouldBe 405
+            it.headers["Allow"] shouldBe "GET, HEAD"
+        }
+    }
+
+    @Test
+    fun `405 response for a path of a nested router should get the interceptors of that router`() {
+        val nestedRoutes =
+            routes {
+                interceptors(ResponseInterceptor { _, response -> response.withHeader("fromInterceptor", "nested") })
+                post("/foo") { ok("foo") }
+            }
+        val finalRoutes =
+            routes {
+                attach(nestedRoutes)
+                put("/foo") { ok("put foo") }
+            }
+
+        finalRoutes.invoke(get("/foo")).asClue {
+            it.status shouldBe 405
+            it.headers["Allow"] shouldBe "POST, PUT"
+            it.headers["fromInterceptor"] shouldBe "nested"
+        }
+    }
+
+    @Test
+    fun `HEAD request to a GET route should return the GET status and headers without a body`() {
+        val routes =
+            routes {
+                get("/foo") { ok("foo body") }
+            }
+
+        routes.invoke(head("/foo")).asClue {
+            it.status shouldBe 200
+            it.headers["Content-Type"] shouldBe "text/plain"
+            it.headers["Content-Length"] shouldBe "8"
+            it.body shouldBe null
+            it.bytesBody shouldBe null
+        }
+    }
+
+    @Test
+    fun `HEAD request to a path without a GET route should return 405 without a body`() {
+        val routes =
+            routes {
+                post("/foo") { ok("foo") }
+            }
+
+        routes.invoke(head("/foo")).asClue {
+            it.status shouldBe 405
+            it.headers["Allow"] shouldBe "POST"
+            it.body shouldBe null
+        }
+    }
+
+    @Test
     fun `request and response interceptors should be applied on every route`() {
         val routes =
             routes {
@@ -183,6 +257,8 @@ internal class OAuth2HttpRouterTest {
     }
 
     private fun get(path: String) = request("http://localhost$path", "GET")
+
+    private fun head(path: String) = request("http://localhost$path", "HEAD")
 
     private fun post(
         path: String,

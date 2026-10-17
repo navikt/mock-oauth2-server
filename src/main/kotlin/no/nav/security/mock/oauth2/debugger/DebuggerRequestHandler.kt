@@ -31,7 +31,7 @@ private val client: OkHttpClient = OkHttpClient().newBuilder().build()
 class DebuggerRequestHandler(
     httpServer: OAuth2HttpServer,
     sessionManager: SessionManager = SessionManager(),
-    route: Route =
+    internal val route: Route =
         routes {
             exceptionHandler(handle(sessionManager))
             debuggerForm(sessionManager)

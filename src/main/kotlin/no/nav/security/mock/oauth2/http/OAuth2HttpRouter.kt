@@ -112,6 +112,8 @@ internal typealias ExceptionHandler = (OAuth2HttpRequest, Throwable) -> OAuth2Ht
 
 internal interface PathRoute : Route {
     fun matchPath(request: OAuth2HttpRequest): Boolean
+
+    fun allowedMethods(request: OAuth2HttpRequest): Set<String>
 }
 
 internal class PathRouter(
@@ -121,9 +123,20 @@ internal class PathRouter(
 ) : PathRoute {
     override fun matchPath(request: OAuth2HttpRequest): Boolean = routes.any { it.matchPath(request) }
 
+    override fun allowedMethods(request: OAuth2HttpRequest): Set<String> = routes.flatMap { it.allowedMethods(request) }.toSet()
+
     override fun match(request: OAuth2HttpRequest): Boolean = routes.firstOrNull { it.match(request) } != null
 
     override fun invoke(request: OAuth2HttpRequest): OAuth2HttpResponse =
+        if (request.method == "HEAD") {
+            route(request.asGetUnlessHeadIsRouted()).withoutBody()
+        } else {
+            route(request)
+        }
+
+    private fun OAuth2HttpRequest.asGetUnlessHeadIsRouted(): OAuth2HttpRequest = if (match(this)) this else copy(method = "GET")
+
+    private fun route(request: OAuth2HttpRequest): OAuth2HttpResponse =
         runCatching {
             val handlerResponse = routes.findHandler(request).invokeWith(request, interceptors)
             applyResponseInterceptors(request, handlerResponse)
@@ -161,14 +174,17 @@ internal class PathRouter(
 
     private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
         log.debug("no route matching url=${request.url} with method=${request.method}")
-        return if (matchPath(request)) {
-            methodNotAllowed()
-        } else {
-            notFound("no routes found")
+        if (!matchPath(request)) {
+            return notFound("no routes found")
         }
+        val allowedMethods = allowedMethods(request)
+        val nestedRouterForPath = routes.firstOrNull { it is PathRouter && it.matchPath(request) }
+        return nestedRouterForPath?.invoke(request)?.withAllowHeader(allowedMethods) ?: methodNotAllowed(allowedMethods)
     }
 
     private fun Route.matchPath(request: OAuth2HttpRequest): Boolean = (this as? PathRoute)?.matchPath(request) ?: false
+
+    private fun Route.allowedMethods(request: OAuth2HttpRequest): Set<String> = (this as? PathRoute)?.allowedMethods(request).orEmpty()
 }
 
 fun routes(vararg route: Route): Route =
@@ -218,6 +234,8 @@ private fun routeFromPathAndMethod(
             } else {
                 request.url.endsWith(path)
             }
+
+        override fun allowedMethods(request: OAuth2HttpRequest): Set<String> = if (matchPath(request)) setOfNotNull(method) else emptySet()
 
         override fun match(request: OAuth2HttpRequest): Boolean = matchPath(request) && matchMethod(request)
 
