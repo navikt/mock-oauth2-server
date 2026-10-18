@@ -136,6 +136,22 @@ internal class OAuth2HttpRouterTest {
     }
 
     @Test
+    fun `OPTIONS route for every path should not turn unknown paths into 405`() {
+        val routes =
+            routes {
+                options { OAuth2HttpResponse(status = 204) }
+                get("/foo") { ok("foo") }
+            }
+
+        routes.invoke(get("/notfound")).status shouldBe 404
+        routes.invoke(options("/notfound")).status shouldBe 204
+        routes.invoke(post("/foo")).asClue {
+            it.status shouldBe 405
+            it.headers["Allow"] shouldBe "GET, HEAD, OPTIONS"
+        }
+    }
+
+    @Test
     fun `request and response interceptors should be applied on every route`() {
         val routes =
             routes {
