@@ -8,6 +8,7 @@ import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.USER_INFO
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
+import no.nav.security.mock.oauth2.http.RequestHandler
 import no.nav.security.mock.oauth2.http.Route
 import no.nav.security.mock.oauth2.http.json
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
@@ -15,12 +16,15 @@ import okhttp3.Headers
 
 private val log = KotlinLogging.logger { }
 
-internal fun Route.Builder.userInfo(tokenProvider: OAuth2TokenProvider) =
-    get(USER_INFO) {
+internal fun Route.Builder.userInfo(tokenProvider: OAuth2TokenProvider): Route.Builder {
+    val userInfoResponse: RequestHandler = {
         log.debug("received request to userinfo endpoint, returning claims from token")
         val claims = it.verifyBearerToken(tokenProvider)
         json(claims.toJSONObject())
     }
+    return get(USER_INFO, requestHandler = userInfoResponse)
+        .post(USER_INFO, userInfoResponse)
+}
 
 private fun OAuth2HttpRequest.verifyBearerToken(tokenProvider: OAuth2TokenProvider): JWTClaimsSet =
     try {
