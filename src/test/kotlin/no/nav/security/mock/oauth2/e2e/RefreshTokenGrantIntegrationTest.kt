@@ -147,6 +147,50 @@ class RefreshTokenGrantIntegrationTest {
     }
 
     @Test
+    fun `token request with bogus refresh_token and enqueued tokencallback should return 400 invalid_grant and keep the callback`() {
+        withMockOAuth2Server {
+            val expectedSubject = "expectedSub"
+            val issuerId = "idprovider"
+            val refreshToken = checkNotNull(this.runAuthCodeFlow(issuerId, "anysubject").refreshToken)
+            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = expectedSubject))
+
+            client.refreshTokenRequest(this, issuerId, "bogus-random-uuid").use {
+                it.code shouldBe 400
+                it.body.string() shouldContain "invalid_grant"
+            }
+
+            client.refreshTokenRequest(this, issuerId, refreshToken).toTokenResponse().asClue {
+                it shouldBeValidFor GrantType.REFRESH_TOKEN
+                it.idToken!!.subject shouldBe expectedSubject
+            }
+        }
+    }
+
+    @Test
+    fun `token request with revoked refresh_token and enqueued tokencallback should return 400 invalid_grant`() {
+        withMockOAuth2Server {
+            val issuerId = "idprovider"
+            val refreshToken = checkNotNull(this.runAuthCodeFlow(issuerId, "anysubject").refreshToken)
+            client
+                .tokenRequest(
+                    this.revocationEndpointUrl(issuerId),
+                    mapOf(
+                        "token" to refreshToken,
+                        "token_type_hint" to "refresh_token",
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                ).use { it.code shouldBe 200 }
+            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = "expectedSub"))
+
+            client.refreshTokenRequest(this, issuerId, refreshToken).use {
+                it.code shouldBe 400
+                it.body.string() shouldContain "invalid_grant"
+            }
+        }
+    }
+
+    @Test
     fun `refresh_token issued by one issuer should not be accepted by a different issuer`() {
         withMockOAuth2Server {
             val issuerA = "issuer-a"
@@ -170,6 +214,20 @@ class RefreshTokenGrantIntegrationTest {
                 }
         }
     }
+
+    private fun OkHttpClient.refreshTokenRequest(
+        server: MockOAuth2Server,
+        issuerId: String,
+        refreshToken: String,
+    ) = tokenRequest(
+        server.tokenEndpointUrl(issuerId),
+        mapOf(
+            "grant_type" to GrantType.REFRESH_TOKEN.value,
+            "refresh_token" to refreshToken,
+            "client_id" to "id",
+            "client_secret" to "secret",
+        ),
+    )
 
     private fun MockOAuth2Server.runAuthCodeFlow(
         issuerId: String,
