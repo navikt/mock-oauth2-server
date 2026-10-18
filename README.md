@@ -506,7 +506,7 @@ val server = MockOAuth2Server(
 )
 ```
 
-Your app must trust the certificate, see [Trusting the certificate in your app](#trusting-the-certificate-in-your-app).
+Your app must trust the certificate, see [Make your app trust the server's certificate](#make-your-app-trust-the-servers-certificate).
 
 Bring your own keystore:
 
@@ -524,9 +524,9 @@ val server = MockOAuth2Server(
 )
 ```
 
-#### Trusting the certificate in your app
+#### Make your app trust the server's certificate
 
-If your app doesn't trust the server's certificate, fetching the JWKS fails with `PKIX path building failed`.
+The server uses a self-signed certificate, so the HTTP client in the app you are testing rejects it until you add it to that client's truststore. Until then, fetching the JWKS fails with `PKIX path building failed`.
 
 **With your own keystore (works for Spring MVC, Spring WebFlux and other JVM clients):** create a truststore that holds the server's certificate, and set it when the test JVM starts. `keytool -list -keystore localhost.p12 -storepass ''` shows the alias of the key entry, which is `1` in this repository's `localhost.p12`.
 
@@ -724,7 +724,7 @@ server.baseUrl()                                       // server root URL
 
 **The code exchange returns `invalid_grant`.** Authorization codes can only be used once, so a retried or repeated token request fails.
 
-**Fetching the JWKS over HTTPS fails with `PKIX path building failed`.** Your app doesn't trust the server's certificate, see [Trusting the certificate in your app](#trusting-the-certificate-in-your-app).
+**Fetching the JWKS over HTTPS fails with `PKIX path building failed`.** Your app doesn't trust the server's certificate, see [Make your app trust the server's certificate](#make-your-app-trust-the-servers-certificate).
 
 ---
 
