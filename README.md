@@ -506,8 +506,7 @@ val server = MockOAuth2Server(
 )
 ```
 
-> [!TIP]
-> Add `ssl.sslKeystore.keyStore` to your client's truststore to trust the generated certificate.
+Your app must trust the certificate, see [Make your app trust the server's certificate](#make-your-app-trust-the-servers-certificate).
 
 Bring your own keystore:
 
@@ -524,6 +523,43 @@ val server = MockOAuth2Server(
     OAuth2Config(httpServer = MockWebServerWrapper(ssl))
 )
 ```
+
+#### Make your app trust the server's certificate
+
+The server uses a self-signed certificate, so the HTTP client in the app you are testing rejects it until you add it to that client's truststore. Until then, fetching the JWKS fails with `PKIX path building failed`.
+
+**With your own keystore (works for Spring MVC, Spring WebFlux and other JVM clients):** create a truststore that holds the server's certificate, and set it when the test JVM starts. `keytool -list -keystore localhost.p12 -storepass ''` shows the alias of the key entry, which is `1` in this repository's `localhost.p12`.
+
+```bash
+keytool -exportcert -rfc -keystore localhost.p12 -storetype PKCS12 -storepass '' -alias 1 -file localhost.crt
+keytool -importcert -noprompt -alias mock-oauth2-server -file localhost.crt -keystore truststore.p12 -storetype PKCS12 -storepass changeit
+```
+
+```kotlin
+// build.gradle.kts
+tasks.test {
+    systemProperty("javax.net.ssl.trustStore", file("src/test/resources/truststore.p12").absolutePath)
+    systemProperty("javax.net.ssl.trustStorePassword", "changeit")
+}
+```
+
+For an app running in Docker, set `JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStore=/truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit`.
+
+- Use the truststore, not the keystore: with an empty password the JVM finds no trusted certificate in `localhost.p12` and fails with `the trustAnchors parameter must be non-empty`.
+- Set the properties when the JVM starts. Setting them later with `System.setProperty` has no effect once the JVM or Reactor Netty has created its default SSL context.
+- This replaces the JVM's default truststore, so other HTTPS calls in the tests no longer trust public certificate authorities.
+
+**With a generated keystore (`Ssl()`) in Spring MVC:** there is no file, so trust the certificate in code before your app fetches the JWKS. Spring MVC (`RestTemplate`) uses `HttpsURLConnection`:
+
+```kotlin
+val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+trustManagerFactory.init(ssl.sslKeystore.keyStore)
+val sslContext = SSLContext.getInstance("TLS")
+sslContext.init(null, trustManagerFactory.trustManagers, null)
+HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.socketFactory)
+```
+
+`SSLContext.setDefault(sslContext)` on its own is not enough. Spring WebFlux ignores both, so use your own keystore and the truststore above.
 
 #### In Docker / standalone via JSON_CONFIG
 
@@ -605,7 +641,7 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 | `loginPagePath`      | Path to a custom HTML login page. The page must contain a form that posts `username` and optionally `claims`. See `src/test/resources/login.example.html` for an example.                                                                                                         |
 | `staticAssetsPath`   | Path to a directory of static assets served under `/static`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                                                                                                                    |
 | `rotateRefreshToken` | `true` or `false`. When `true`, a new refresh token is issued on each refresh grant, invalidating the previous one.                                                                                                                                                               |
-| `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper` (required for HTTPS). Can also be a JSON object: `{"type": "NettyWrapper", "ssl": {...}}`.                                                                    |
+| `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper`. Can also be a JSON object with HTTPS enabled, for either type: `{"type": "NettyWrapper", "ssl": {...}}`.                                                       |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
 
 Additional token provider options:
@@ -687,6 +723,8 @@ server.baseUrl()                                       // server root URL
 **The authorize endpoint shows a login page.** The standalone server and Docker image enable `interactiveLogin` by default. Set `JSON_CONFIG={"interactiveLogin": false}` to get a redirect with a code directly.
 
 **The code exchange returns `invalid_grant`.** Authorization codes can only be used once, so a retried or repeated token request fails.
+
+**Fetching the JWKS over HTTPS fails with `PKIX path building failed`.** Your app doesn't trust the server's certificate, see [Make your app trust the server's certificate](#make-your-app-trust-the-servers-certificate).
 
 ---
 
