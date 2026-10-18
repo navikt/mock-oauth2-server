@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.PlainJWT
+import com.nimbusds.oauth2.sdk.Scope
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import java.time.Instant
 import java.util.UUID
@@ -14,6 +15,7 @@ internal data class RefreshTokenState(
     val tokenCallback: OAuth2TokenCallback,
     val idTokenSubject: String? = null,
     val authTime: Instant? = null,
+    val grantedScope: Scope? = null,
 )
 
 internal data class RefreshTokenManager(
@@ -30,7 +32,8 @@ internal data class RefreshTokenManager(
         nonce: Nonce? = null,
         idTokenSubject: String? = null,
         authTime: Instant? = null,
-    ): RefreshToken = refreshToken(RefreshTokenState(tokenCallback, idTokenSubject, authTime), nonce)
+        grantedScope: Scope? = null,
+    ): RefreshToken = refreshToken(RefreshTokenState(tokenCallback, idTokenSubject, authTime, grantedScope), nonce)
 
     fun rotate(
         refreshToken: RefreshToken,
