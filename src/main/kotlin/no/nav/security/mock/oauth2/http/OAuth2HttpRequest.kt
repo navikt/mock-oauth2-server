@@ -170,3 +170,8 @@ internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? 
 }
 
 private fun Int.asHostHeaderPort(): Int = if (this in 1..65535) this else -1
+
+internal fun Headers.authorizationCredentials(scheme: String): String? {
+    val (headerScheme, credentials) = this["Authorization"]?.trim()?.split(" ", limit = 2)?.takeIf { it.size == 2 } ?: return null
+    return credentials.trim().takeIf { headerScheme.equals(scheme, ignoreCase = true) && it.isNotEmpty() }
+}
