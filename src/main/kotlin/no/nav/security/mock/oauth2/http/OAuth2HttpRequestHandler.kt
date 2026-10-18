@@ -147,7 +147,7 @@ class OAuth2HttpRequestHandler(
             preflight()
             staticAssets()
             get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
-            attach(debuggerRequestHandler)
+            attach(debuggerRequestHandler.route)
         }
 
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = tokenCallbackQueue.add(oAuth2TokenCallback)
@@ -221,9 +221,6 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.token() =
         apply {
-            get(TOKEN) {
-                OAuth2HttpResponse(status = 405, body = "unsupported method")
-            }
             post(TOKEN) {
                 log.debug("handle token request $it")
                 val grantType = it.grantType()
