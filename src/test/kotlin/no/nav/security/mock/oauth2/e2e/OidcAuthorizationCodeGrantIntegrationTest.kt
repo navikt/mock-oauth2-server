@@ -18,9 +18,11 @@ import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
+import no.nav.security.mock.oauth2.testutils.queryParameters
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.testutils.withoutQuery
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -43,6 +45,32 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                     it?.queryParameter("state") shouldBe "mystate"
                 }
             }
+    }
+
+    @Test
+    fun `authentication request sent as POST with form parameters should return 302 with code and state`() {
+        val authorizationUrl =
+            server.authorizationEndpointUrl("default").authenticationRequest(
+                clientId = "client1",
+                redirectUri = "http://mycallback",
+                scope = listOf("openid", "profile"),
+                state = "mystate",
+            )
+
+        val code =
+            client.post(authorizationUrl.withoutQuery(), authorizationUrl.queryParameters()).let { response ->
+                response.code shouldBe 302
+                val location = checkNotNull(response.headers["location"]).toHttpUrl()
+                location.toString() shouldStartWith "http://mycallback"
+                location.queryParameter("state") shouldBe "mystate"
+                location.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+        client.tokenRequest(code).asClue {
+            it.code shouldBe 200
+            it.toTokenResponse().idToken?.audience shouldContainExactly listOf("client1")
+        }
     }
 
     @Test

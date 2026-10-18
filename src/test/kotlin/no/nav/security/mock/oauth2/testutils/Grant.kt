@@ -30,6 +30,10 @@ fun HttpUrl.authenticationRequest(
             }
         }.build()
 
+fun HttpUrl.withoutQuery(): HttpUrl = newBuilder().query(null).build()
+
+fun HttpUrl.queryParameters(): Map<String, String> = queryParameterNames.associateWith { checkNotNull(queryParameter(it)) }
+
 data class Pkce(
     val verifier: CodeVerifier = CodeVerifier(),
     val method: CodeChallengeMethod = CodeChallengeMethod.S256,

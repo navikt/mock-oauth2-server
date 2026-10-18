@@ -156,6 +156,8 @@ fun redirect(
         status = 302,
     )
 
+internal fun seeOther(location: String): OAuth2HttpResponse = redirect(location).copy(status = 303)
+
 fun notFound(body: String? = null): OAuth2HttpResponse = OAuth2HttpResponse(status = 404, body = body)
 
 fun methodNotAllowed(): OAuth2HttpResponse = OAuth2HttpResponse(status = 405, body = "method not allowed")

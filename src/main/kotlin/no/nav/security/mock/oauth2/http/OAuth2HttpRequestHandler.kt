@@ -174,7 +174,7 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.authorization() =
         apply {
             val authorizationCodeHandler = grantHandlers[AUTHORIZATION_CODE] as AuthorizationCodeHandler
-            get(AUTHORIZATION) {
+            val authorize: RequestHandler = {
                 val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
                 authRequest.requireSupportedCodeChallengeMethod()
                 if (config.interactiveLogin || authRequest.isPrompt()) {
@@ -183,13 +183,25 @@ class OAuth2HttpRequestHandler(
                     authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest))
                 }
             }
+            get(AUTHORIZATION, requestHandler = authorize)
             post(AUTHORIZATION) {
+                if (it.url.querySize == 0) {
+                    val authorizationRequest = it.withFormParametersAsQuery()
+                    return@post if (config.interactiveLogin || authorizationRequest.asAuthenticationRequest().isPrompt()) {
+                        seeOther(authorizationRequest.url.toString())
+                    } else {
+                        authorize(authorizationRequest)
+                    }
+                }
                 val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
                 authRequest.requireSupportedCodeChallengeMethod()
                 val login: Login = loginRequestHandler.loginSubmit(it)
                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
             }
         }
+
+    private fun OAuth2HttpRequest.withFormParametersAsQuery(): OAuth2HttpRequest =
+        copy(method = "GET", originalUrl = originalUrl.newBuilder().encodedQuery(body).build(), body = null)
 
     private fun Route.Builder.endSession() =
         any(END_SESSION) {
