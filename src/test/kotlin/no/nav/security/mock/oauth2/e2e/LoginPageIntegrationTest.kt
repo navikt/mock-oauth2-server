@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
+import no.nav.security.mock.oauth2.testutils.Pkce
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
@@ -48,6 +49,28 @@ class LoginPageIntegrationTest {
             val location = checkNotNull(response.headers["location"]).toHttpUrl()
             location.queryParameter("state") shouldBe "mystate"
             location.queryParameter("code") shouldNotBe null
+        }
+        server.shutdown()
+    }
+
+    @Test
+    fun `invalid authorization sent as POST with form parameters and interactive login should return invalid_request without redirecting`() {
+        val server = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
+        val authorizationUrl = server.authorizationEndpointUrl("default")
+        val unsupportedPkce =
+            authorizationUrl
+                .authenticationRequest()
+                .newBuilder()
+                .addQueryParameter("code_challenge", Pkce().challenge.value)
+                .addQueryParameter("code_challenge_method", "S512")
+                .build()
+
+        listOf(emptyMap(), mapOf("response_type" to "code"), unsupportedPkce.queryParameters()).forEach { form ->
+            client.post(authorizationUrl, form).asClue { response ->
+                response.code shouldBe 400
+                response.headers["location"] shouldBe null
+                response.body.string() shouldContain "invalid_request"
+            }
         }
         server.shutdown()
     }

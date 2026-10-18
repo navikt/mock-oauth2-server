@@ -185,9 +185,11 @@ class OAuth2HttpRequestHandler(
             }
             get(AUTHORIZATION, requestHandler = authorize)
             post(AUTHORIZATION) {
-                if (it.url.querySize == 0) {
+                if (it.url.queryParameter("client_id") == null) {
                     val authorizationRequest = it.withFormParametersAsQuery()
-                    return@post if (config.interactiveLogin || authorizationRequest.asAuthenticationRequest().isPrompt()) {
+                    val authRequest: AuthenticationRequest = authorizationRequest.asAuthenticationRequest()
+                    authRequest.requireSupportedCodeChallengeMethod()
+                    return@post if (config.interactiveLogin || authRequest.isPrompt()) {
                         seeOther(authorizationRequest.url.toString())
                     } else {
                         authorize(authorizationRequest)
@@ -200,8 +202,10 @@ class OAuth2HttpRequestHandler(
             }
         }
 
-    private fun OAuth2HttpRequest.withFormParametersAsQuery(): OAuth2HttpRequest =
-        copy(method = "GET", originalUrl = originalUrl.newBuilder().encodedQuery(body).build(), body = null)
+    private fun OAuth2HttpRequest.withFormParametersAsQuery(): OAuth2HttpRequest {
+        val query = listOfNotNull(originalUrl.encodedQuery, body).filter { it.isNotEmpty() }.joinToString("&")
+        return copy(method = "GET", originalUrl = originalUrl.newBuilder().encodedQuery(query.ifEmpty { null }).build(), body = null)
+    }
 
     private fun Route.Builder.endSession() =
         any(END_SESSION) {

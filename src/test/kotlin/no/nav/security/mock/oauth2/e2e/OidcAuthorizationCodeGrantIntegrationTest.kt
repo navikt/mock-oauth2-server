@@ -74,6 +74,41 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
+    fun `authentication request sent as POST with form parameters to an endpoint url with a query should return 302 with code`() {
+        val authorizationUrl = server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = "http://mycallback", state = "mystate")
+        val endpointWithQuery =
+            authorizationUrl
+                .withoutQuery()
+                .newBuilder()
+                .addQueryParameter("tenant", "foo")
+                .build()
+
+        client.post(endpointWithQuery, authorizationUrl.queryParameters()).asClue { response ->
+            response.code shouldBe 302
+            val location = checkNotNull(response.headers["location"]).toHttpUrl()
+            location.queryParameter("state") shouldBe "mystate"
+            location.queryParameter("code") shouldNotBe null
+        }
+    }
+
+    @Test
+    fun `authentication request sent as POST with prompt=login should return invalid_request before redirecting when code_challenge_method is not supported`() {
+        val authorizationUrl =
+            server
+                .authorizationEndpointUrl("default")
+                .withUnsupportedCodeChallengeMethod()
+                .newBuilder()
+                .addQueryParameter("prompt", "login")
+                .build()
+
+        client.post(authorizationUrl.withoutQuery(), authorizationUrl.queryParameters()).asClue {
+            it.code shouldBe 400
+            it.headers["location"] shouldBe null
+            it.body.string() shouldContain "invalid_request"
+        }
+    }
+
+    @Test
     fun `authentication request should return state with reserved characters unchanged`() {
         client
             .get(
