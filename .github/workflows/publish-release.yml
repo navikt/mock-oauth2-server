@@ -9,6 +9,7 @@ jobs:
     permissions:
       packages: write
       contents: read
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout latest code
@@ -25,6 +26,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to Google Artifact Registry
+        id: gar-login
+        uses: nais/login@40b72a35a18ddf2ad74b632461139ab838cc2a2f # ratchet:nais/login@v0
+        with:
+          team: plattformsikkerhet
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # ratchet:docker/setup-buildx-action@v4.4.1
       - name: Publish artifact and images
@@ -33,6 +39,7 @@ jobs:
         # Fail fast if empty to avoid publishing with an empty Gradle version.
         env:
           NEW_VERSION: ${{ github.event.release.tag_name }}
+          GAR_IMAGE_NAME: ${{ steps.gar-login.outputs.registry }}/${{ github.event.repository.name }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
@@ -55,5 +62,6 @@ jobs:
           MAJOR=$(echo "${NEW_VERSION}" | cut -d "." -f1)
           MINOR=$(echo "${NEW_VERSION}" | cut -d "." -f1-2)
           docker buildx imagetools create -t "${IMAGE_NAME}:${MAJOR}" -t "${IMAGE_NAME}:${MINOR}" "${IMAGE}"
+          docker buildx imagetools create -t "${GAR_IMAGE_NAME}:${NEW_VERSION}" -t "${GAR_IMAGE_NAME}:${MAJOR}" -t "${GAR_IMAGE_NAME}:${MINOR}" "${IMAGE}"
 
           ./gradlew -Pversion="${NEW_VERSION}" publishAllPublicationsToGithubPackagesRepository publishAndReleaseToMavenCentral --no-configuration-cache
