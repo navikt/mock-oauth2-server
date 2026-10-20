@@ -1,19 +1,5 @@
 # Migration guide
 
-## Migrating to 7.0.0
-
-### Built-in HTML pages escape interpolated values
-
-The built-in login, authorization and debugger pages now HTML-escape interpolated values. Clients that inspect the raw HTML will see entities instead of special characters. Custom login pages supplied through `loginPagePath` do not use these templates and are unchanged.
-
-**Migration:** if you inspect the raw HTML, account for HTML entities instead of relying on unescaped markup. No change is needed for custom login pages.
-
-### `form_post` requires an HTTP(S) callback
-
-With `response_mode=form_post`, `redirect_uri` must be an HTTP or HTTPS URL. Other schemes, such as custom app schemes, now return `400 invalid_request`. Other response modes are unchanged.
-
-**Migration:** use an HTTP(S) callback for `form_post`. If your client requires a custom URI scheme, use another response mode that the client supports, such as `query` or `fragment`.
-
 ## Migrating to 6.0.0
 
 ### `logback-classic` and `kotlinx-serialization-json` are no longer bundled
