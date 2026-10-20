@@ -19,6 +19,7 @@ import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
+import no.nav.security.mock.oauth2.testutils.parse
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
@@ -340,7 +341,10 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     fun `unknown authorization code should not use up the enqueued token callback`() {
         server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "enqueued")))
 
-        client.tokenRequest("bogus-code-that-was-never-issued").code shouldBe 400
+        client.tokenRequest("bogus-code-that-was-never-issued").asClue {
+            it.code shouldBe 400
+            it.parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+        }
 
         clientCredentialsToken().source() shouldBe "enqueued"
     }
@@ -350,7 +354,10 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         val code = authorizationCode(pkce = Pkce())
         server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "enqueued")))
 
-        client.tokenRequest(code, Pkce()).code shouldBe 400
+        client.tokenRequest(code, Pkce()).asClue {
+            it.code shouldBe 400
+            it.parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+        }
 
         clientCredentialsToken().source() shouldBe "enqueued"
     }
@@ -360,7 +367,12 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "first")))
         server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "second")))
 
-        repeat(2) { client.tokenRequest("bogus-code-that-was-never-issued").code shouldBe 400 }
+        repeat(2) {
+            client.tokenRequest("bogus-code-that-was-never-issued").asClue {
+                it.code shouldBe 400
+                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+            }
+        }
 
         clientCredentialsToken().source() shouldBe "first"
         clientCredentialsToken().source() shouldBe "second"
