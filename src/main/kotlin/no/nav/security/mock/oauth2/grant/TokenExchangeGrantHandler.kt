@@ -10,7 +10,6 @@ import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
-import java.time.Instant
 
 internal class TokenExchangeGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
@@ -33,7 +32,7 @@ internal class TokenExchangeGrantHandler(
             tokenType = "Bearer",
             issuedTokenType = "urn:ietf:params:oauth:token-type:access_token",
             accessToken = accessToken.serialize(),
-            expiresIn = accessToken.expiresIn(tokenProvider.systemTime ?: Instant.now()),
+            expiresIn = accessToken.expiresIn(tokenProvider.now()),
         )
     }
 }

@@ -10,7 +10,6 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
 import okhttp3.HttpUrl
-import java.time.Instant
 
 internal class PasswordGrantHandler(
     private val tokenProvider: OAuth2TokenProvider,
@@ -34,7 +33,7 @@ internal class PasswordGrantHandler(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
             idToken = idToken.serialize(),
-            expiresIn = accessToken.expiresIn(tokenProvider.systemTime ?: Instant.now()),
+            expiresIn = accessToken.expiresIn(tokenProvider.now()),
             scope = scope,
         )
     }

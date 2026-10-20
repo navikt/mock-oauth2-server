@@ -112,7 +112,7 @@ internal class AuthorizationCodeHandler(
             idToken = idToken.serialize(),
             accessToken = accessToken.serialize(),
             refreshToken = refreshToken,
-            expiresIn = idToken.expiresIn(tokenProvider.systemTime ?: Instant.now()),
+            expiresIn = accessToken.expiresIn(tokenProvider.now()),
             scope = scope,
         )
     }

@@ -36,6 +36,8 @@ class OAuth2TokenProvider
         val systemTime
             get() = timeProvider()
 
+        internal fun now(): Instant = systemTime.orNow()
+
         @JvmOverloads
         constructor(
             keyProvider: KeyProvider = KeyProvider(),
