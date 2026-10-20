@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.e2e
 
+import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldContainExactly
@@ -17,10 +18,12 @@ import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
+import no.nav.security.mock.oauth2.testutils.parse
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -320,6 +323,80 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             it.body.string() shouldContain "invalid_grant"
         }
     }
+
+    @Test
+    fun `authorization code flow should use the enqueued token callback`() {
+        val code = authorizationCode()
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "enqueued")))
+
+        client
+            .tokenRequest(code)
+            .toTokenResponse()
+            .accessToken
+            .shouldNotBeNull()
+            .source() shouldBe "enqueued"
+    }
+
+    @Test
+    fun `unknown authorization code should not use up the enqueued token callback`() {
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "enqueued")))
+
+        client.tokenRequest("bogus-code-that-was-never-issued").asClue {
+            it.code shouldBe 400
+            it.parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+        }
+
+        clientCredentialsToken().source() shouldBe "enqueued"
+    }
+
+    @Test
+    fun `failed PKCE verification should not use up the enqueued token callback`() {
+        val code = authorizationCode(pkce = Pkce())
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "enqueued")))
+
+        client.tokenRequest(code, Pkce()).asClue {
+            it.code shouldBe 400
+            it.parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+        }
+
+        clientCredentialsToken().source() shouldBe "enqueued"
+    }
+
+    @Test
+    fun `rejected authorization codes should keep the order of the enqueued token callbacks`() {
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "first")))
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "second")))
+
+        repeat(2) {
+            client.tokenRequest("bogus-code-that-was-never-issued").asClue {
+                it.code shouldBe 400
+                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+            }
+        }
+
+        clientCredentialsToken().source() shouldBe "first"
+        clientCredentialsToken().source() shouldBe "second"
+    }
+
+    private fun authorizationCode(pkce: Pkce? = null): String =
+        client
+            .get(server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = "http://mycallback", pkce = pkce))
+            .headers["location"]
+            ?.toHttpUrl()
+            ?.queryParameter("code")
+            .shouldNotBeNull()
+
+    private fun clientCredentialsToken(): SignedJWT =
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl("default"),
+                "client1" to "secret",
+                mapOf("grant_type" to "client_credentials", "scope" to "scope1"),
+            ).toTokenResponse()
+            .accessToken
+            .shouldNotBeNull()
+
+    private fun SignedJWT.source(): String? = jwtClaimsSet.getStringClaim("source")
 
     private fun OkHttpClient.tokenRequest(
         code: String,
