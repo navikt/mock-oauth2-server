@@ -1,9 +1,14 @@
 package no.nav.security.mock.oauth2.e2e
 
 import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
+import com.nimbusds.oauth2.sdk.OAuth2Error
+import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.extensions.requirePrivateKeyJwt
 import no.nav.security.mock.oauth2.testutils.ClientAssertionType
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
 import no.nav.security.mock.oauth2.testutils.SubjectTokenType
@@ -273,5 +278,26 @@ class TokenExchangeGrantIntegrationTest {
                 this["error_description"] shouldBe "invalid client_assertion: expiry must be less than 120 seconds"
             }
         }
+    }
+
+    @Test
+    fun `client assertion lifetime is compared without Int saturation`() {
+        val audience = "https://issuer.example"
+        val assertion =
+            clientAssertion(
+                clientId = "client1",
+                audience = audience,
+                lifetime = 100L * 365 * 24 * 60 * 60,
+            )
+        val authentication = PrivateKeyJWT(assertion)
+
+        val error =
+            shouldThrow<OAuth2Exception> {
+                authentication.requirePrivateKeyJwt(
+                    requiredAudience = audience,
+                    maxLifetimeSeconds = 80L * 365 * 24 * 60 * 60,
+                )
+            }
+        error.errorObject?.code shouldBe OAuth2Error.INVALID_REQUEST.code
     }
 }
