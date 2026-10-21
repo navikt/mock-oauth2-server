@@ -162,7 +162,7 @@ fun ClientAuthentication.requirePrivateKeyJwt(
         ?.let {
             val acceptedAudiences = setOf(requiredAudience, additionalAcceptedAudience).filterNotNull().toSet()
             when {
-                it.clientAssertion.expiresIn() > maxLifetimeSeconds -> {
+                Duration.between(Instant.now(), it.clientAssertion.jwtClaimsSet.expirationTime.toInstant()).seconds > maxLifetimeSeconds -> {
                     invalidRequest("invalid client_assertion: expiry must be less than $maxLifetimeSeconds seconds")
                 }
 

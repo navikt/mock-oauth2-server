@@ -11,6 +11,7 @@ import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.claims
 import no.nav.security.mock.oauth2.testutils.clientAssertion
 import no.nav.security.mock.oauth2.testutils.issueSubjectToken
+import no.nav.security.mock.oauth2.testutils.parse
 import no.nav.security.mock.oauth2.testutils.shouldBeValidFor
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
@@ -239,6 +240,38 @@ class TokenExchangeGrantIntegrationTest {
                         ),
                 )
             response.code shouldBe 400
+        }
+    }
+
+    @Test
+    fun `token request with client_assertion expiring in 100 years should fail with invalid_request`() {
+        withMockOAuth2Server {
+            val issuerId = "tokenx"
+            val response =
+                client.tokenRequest(
+                    url = tokenEndpointUrl(issuerId),
+                    parameters =
+                        mapOf(
+                            "grant_type" to TOKEN_EXCHANGE.value,
+                            "client_assertion_type" to ClientAssertionType.JWT_BEARER,
+                            "client_assertion" to
+                                clientAssertion(
+                                    clientId = "tokenExchangeClient",
+                                    audience = issuerUrl(issuerId).toString(),
+                                    lifetime = 100L * 365 * 24 * 60 * 60,
+                                ).serialize(),
+                            "subject_token_type" to SubjectTokenType.TOKEN_TYPE_JWT,
+                            "subject_token" to issueSubjectToken(subject = "some-subject").serialize(),
+                            "audience" to "targetAudience",
+                        ),
+                )
+
+            response.code shouldBe 400
+            response.header("Content-Type") shouldBe "application/json;charset=UTF-8"
+            response.parse<Map<String, String>>().apply {
+                this["error"] shouldBe "invalid_request"
+                this["error_description"] shouldBe "invalid client_assertion: expiry must be less than 120 seconds"
+            }
         }
     }
 }
