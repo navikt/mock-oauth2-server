@@ -3,6 +3,7 @@ package no.nav.security.mock.oauth2.e2e
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
@@ -22,6 +23,26 @@ class LoginPageIntegrationTest {
 
         body shouldNotBe null
         body shouldContain "<h2 class=\"title\">Mock OAuth2 Server Sign-in</h2>"
+    }
+
+    @Test
+    fun `built-in login page escapes authorization query parameters`() {
+        val server = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
+
+        try {
+            val body =
+                client
+                    .get(
+                        server
+                            .authorizationEndpointUrl("default")
+                            .authenticationRequest(clientId = "<script>untrusted</script>"),
+                    ).use { it.body.string() }
+
+            body shouldContain "&lt;script&gt;untrusted&lt;/script&gt;"
+            body shouldNotContain "<script>untrusted</script>"
+        } finally {
+            server.shutdown()
+        }
     }
 
     @Test
