@@ -108,12 +108,16 @@ fun TokenRequest.clientIdAsString(): String =
     this.clientAuthentication?.clientID?.value ?: this.clientID?.value
         ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
 
-fun SignedJWT.expiresIn(): Int = Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
+fun SignedJWT.expiresIn(): Int = secondsUntilExpiry(Instant.now())
 
-internal fun SignedJWT.expiresIn(now: Instant): Int {
-    val nowInJwtPrecision = now.truncatedTo(ChronoUnit.SECONDS)
-    return Duration.between(nowInJwtPrecision, this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
-}
+internal fun SignedJWT.expiresIn(now: Instant): Int = secondsUntilExpiry(now.truncatedTo(ChronoUnit.SECONDS))
+
+private fun SignedJWT.secondsUntilExpiry(now: Instant): Int =
+    Duration
+        .between(now, this.jwtClaimsSet.expirationTime.toInstant())
+        .seconds
+        .coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong())
+        .toInt()
 
 fun SignedJWT.verifySignatureAndIssuer(
     issuer: Issuer,
@@ -162,7 +166,7 @@ fun ClientAuthentication.requirePrivateKeyJwt(
         ?.let {
             val acceptedAudiences = setOf(requiredAudience, additionalAcceptedAudience).filterNotNull().toSet()
             when {
-                Duration.between(Instant.now(), it.clientAssertion.jwtClaimsSet.expirationTime.toInstant()).seconds > maxLifetimeSeconds -> {
+                it.clientAssertion.expiresIn() > maxLifetimeSeconds -> {
                     invalidRequest("invalid client_assertion: expiry must be less than $maxLifetimeSeconds seconds")
                 }
 
