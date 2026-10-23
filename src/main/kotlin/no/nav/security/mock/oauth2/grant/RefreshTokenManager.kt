@@ -2,7 +2,9 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.PlainJWT
+import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.Scope
+import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import java.time.Instant
 import java.util.UUID
@@ -35,11 +37,10 @@ internal data class RefreshTokenManager(
         grantedScope: Scope? = null,
     ): RefreshToken = refreshToken(RefreshTokenState(tokenCallback, idTokenSubject, authTime, grantedScope), nonce)
 
-    fun rotate(
-        refreshToken: RefreshToken,
-        fallbackTokenCallback: OAuth2TokenCallback,
-    ): RefreshToken {
-        val state = cache.remove(refreshToken) ?: RefreshTokenState(fallbackTokenCallback)
+    fun rotate(refreshToken: RefreshToken): RefreshToken {
+        val state =
+            cache.remove(refreshToken)
+                ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was already used"), "refresh_token was already used")
         return refreshToken(state, null)
     }
 
