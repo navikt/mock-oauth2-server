@@ -32,7 +32,7 @@ internal class TokenExchangeGrantHandler(
             tokenType = "Bearer",
             issuedTokenType = "urn:ietf:params:oauth:token-type:access_token",
             accessToken = accessToken.serialize(),
-            expiresIn = accessToken.expiresIn(),
+            expiresIn = accessToken.expiresIn(tokenProvider.now()),
         )
     }
 }

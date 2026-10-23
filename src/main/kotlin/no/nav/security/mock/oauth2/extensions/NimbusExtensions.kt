@@ -35,6 +35,7 @@ import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.invalidRequest
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 private val log = KotlinLogging.logger { }
 
@@ -107,7 +108,13 @@ fun TokenRequest.clientIdAsString(): String =
     this.clientAuthentication?.clientID?.value ?: this.clientID?.value
         ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
 
-fun SignedJWT.expiresIn(): Int = Duration.between(Instant.now(), this.jwtClaimsSet.expirationTime.toInstant()).seconds.toInt()
+fun SignedJWT.expiresIn(): Int = expiresInInt(Instant.now())
+
+internal fun SignedJWT.expiresIn(now: Instant): Int = expiresInInt(now.truncatedTo(ChronoUnit.SECONDS))
+
+private fun SignedJWT.expiresInInt(now: Instant): Int = secondsUntilExpiry(now).coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
+
+private fun SignedJWT.secondsUntilExpiry(now: Instant): Long = Duration.between(now, this.jwtClaimsSet.expirationTime.toInstant()).seconds
 
 fun SignedJWT.verifySignatureAndIssuer(
     issuer: Issuer,
@@ -156,7 +163,7 @@ fun ClientAuthentication.requirePrivateKeyJwt(
         ?.let {
             val acceptedAudiences = setOf(requiredAudience, additionalAcceptedAudience).filterNotNull().toSet()
             when {
-                it.clientAssertion.expiresIn() > maxLifetimeSeconds -> {
+                it.clientAssertion.secondsUntilExpiry(Instant.now()) > maxLifetimeSeconds -> {
                     invalidRequest("invalid client_assertion: expiry must be less than $maxLifetimeSeconds seconds")
                 }
 

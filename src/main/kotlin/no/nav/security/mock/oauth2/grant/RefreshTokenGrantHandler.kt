@@ -34,21 +34,19 @@ internal class RefreshTokenGrantHandler(
         var refreshToken = tokenRequest.refreshTokenGrant().refreshToken.value
         log.debug("issuing token for refreshToken=$refreshToken")
         val issuerId = issuerUrl.issuerId()
-        val storedState = refreshTokenManager.state(refreshToken)
-        val storedCallback = storedState?.tokenCallback
-        if (storedCallback != null && storedCallback.issuerId() != issuerId) {
+        val storedState =
+            refreshTokenManager.state(refreshToken)
+                ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
+        val storedCallback = storedState.tokenCallback
+        if (storedCallback.issuerId() != issuerId) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }
-        val scope: String? = tokenRequest.scope.withinGrantedScope(storedState?.grantedScope)?.toString()
-        val enqueuedCallback = enqueuedCallbackSupplier?.invoke(issuerId)
-        val resolvedCallback =
-            enqueuedCallback
-                ?: storedCallback
-                ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
+        val scope: String? = tokenRequest.scope.withinGrantedScope(storedState.grantedScope)?.toString()
+        val resolvedCallback = enqueuedCallbackSupplier?.invoke(issuerId) ?: storedCallback
         if (rotateRefreshToken) {
-            refreshToken = refreshTokenManager.rotate(refreshToken, resolvedCallback)
+            refreshToken = refreshTokenManager.rotate(refreshToken)
         }
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, null, storedState?.idTokenSubject, storedState?.authTime)
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, null, storedState.idTokenSubject, storedState.authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback)
 
         return OAuth2TokenResponse(
@@ -56,7 +54,7 @@ internal class RefreshTokenGrantHandler(
             idToken = idToken.serialize(),
             accessToken = accessToken.serialize(),
             refreshToken = refreshToken,
-            expiresIn = idToken.expiresIn(),
+            expiresIn = accessToken.expiresIn(tokenProvider.now()),
             scope = scope,
         )
     }

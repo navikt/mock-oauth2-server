@@ -11,6 +11,7 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
+import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.oauth2.sdk.token.BearerTokenError
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import io.netty.handler.codec.http.HttpHeaderNames
@@ -39,6 +40,7 @@ import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
 import no.nav.security.mock.oauth2.introspect.introspect
+import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.missingParameter
@@ -58,6 +60,13 @@ import java.util.concurrent.LinkedBlockingQueue
 private val log = KotlinLogging.logger {}
 
 private val grantsThatTakeEnqueuedCallbackAfterValidation = setOf(AUTHORIZATION_CODE, REFRESH_TOKEN)
+
+private fun AuthenticationRequest.requireHttpFormPostCallback() =
+    apply {
+        if (responseMode == ResponseMode.FORM_POST && redirectionURI?.scheme?.lowercase() !in setOf("http", "https")) {
+            invalidRequest("form_post redirect_uri must be an HTTP(S) URL")
+        }
+    }
 
 class OAuth2HttpRequestHandler(
     private val config: OAuth2Config,
@@ -173,7 +182,7 @@ class OAuth2HttpRequestHandler(
         apply {
             val authorizationCodeHandler = grantHandlers[AUTHORIZATION_CODE] as AuthorizationCodeHandler
             get(AUTHORIZATION) {
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
+                val authRequest: AuthenticationRequest = it.asAuthenticationRequest().requireHttpFormPostCallback()
                 authRequest.requireSupportedCodeChallengeMethod()
                 if (config.interactiveLogin || authRequest.isPrompt()) {
                     html(loginRequestHandler.loginHtml(it))
@@ -182,7 +191,7 @@ class OAuth2HttpRequestHandler(
                 }
             }
             post(AUTHORIZATION) {
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
+                val authRequest: AuthenticationRequest = it.asAuthenticationRequest().requireHttpFormPostCallback()
                 authRequest.requireSupportedCodeChallengeMethod()
                 val login: Login = loginRequestHandler.loginSubmit(it)
                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
@@ -241,16 +250,19 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.staticAssets() =
         apply {
             if (config.staticAssetsPath != null) {
+                require(config.staticAssetsPath.isNotBlank()) { "staticAssetsPath must not be blank" }
+                val staticAssetsDirectory = File(config.staticAssetsPath).canonicalFile.toPath()
                 get("/static/*") {
                     val path =
                         it.url.pathSegments
                             .drop(1)
                             .joinToString("/")
                     val normalized = Paths.get(path).normalize().toString()
-                    val file = File(config.staticAssetsPath, normalized)
+                    val requestedFile = File(config.staticAssetsPath, normalized)
+                    val file = requestedFile.canonicalFile
 
-                    if (file.canonicalPath.startsWith(config.staticAssetsPath) && file.exists()) {
-                        val contentType = Files.probeContentType(file.toPath()) ?: "application/octet-stream"
+                    if (file.toPath().startsWith(staticAssetsDirectory) && file.isFile) {
+                        val contentType = Files.probeContentType(requestedFile.toPath()) ?: "application/octet-stream"
                         OAuth2HttpResponse(status = 200, bytesBody = file.readBytes(), headers = Headers.headersOf("Content-Type", contentType))
                     } else {
                         OAuth2HttpResponse(status = 404, body = "not found")
