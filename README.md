@@ -170,6 +170,8 @@ val token: SignedJWT = server.anyToken(
 
 ### Testing Authorization Code Flow (user login)
 
+The token request must use the same `client_id` and `redirect_uri` as the authorization request, otherwise the code is rejected with `400 invalid_grant`.
+
 Enqueue a callback to control what is returned when your app exchanges the code:
 
 ```kotlin

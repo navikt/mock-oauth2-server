@@ -122,7 +122,7 @@ internal class AuthorizationCodeHandlerTest {
 
     private fun tokenRequest(
         code: String,
-        redirectUri: String = "http://redirect",
+        redirectUri: String = "http://mycallback",
     ): OAuth2HttpRequest =
         OAuth2HttpRequest(
             headers = Headers.headersOf("Content-Type", "application/x-www-form-urlencoded"),

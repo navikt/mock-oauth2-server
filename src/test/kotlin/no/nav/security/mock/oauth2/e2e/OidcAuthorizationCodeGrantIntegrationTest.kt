@@ -27,6 +27,7 @@ import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -34,6 +35,11 @@ import org.junit.jupiter.params.provider.ValueSource
 class OidcAuthorizationCodeGrantIntegrationTest {
     private val server = MockOAuth2Server().apply { start() }
     private val client = client()
+
+    @AfterEach
+    fun shutdown() {
+        server.shutdown()
+    }
 
     @Test
     fun `authentication request should return 302 with redirectUri as location and query params state and code`() {
@@ -375,6 +381,71 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
+    fun `authorization code flow should reject token request from a different client than the one the code was issued to`() {
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.boundTokenRequest(code, clientId = "client2").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should reject token request without client_id`() {
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.boundTokenRequest(code, clientId = null).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_request"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should reject token request with redirect_uri differing only in case`() {
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://MyCallback")
+
+        client.boundTokenRequest(code, redirectUri = "http://mycallback").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should return tokens when client_id and redirect_uri match`() {
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.boundTokenRequest(code).code shouldBe 200
+    }
+
+    @Test
+    fun `authorization code flow should reject token request with a redirect_uri different from the authorization request`() {
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.boundTokenRequest(code, redirectUri = "http://evil").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should reject token request without redirect_uri when authorization request had one`() {
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.boundTokenRequest(code, redirectUri = null).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
+    @Test
+    fun `authorization code flow should not accept the same code after a failed client or redirect_uri check`() {
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
+
+        client.boundTokenRequest(code, clientId = "client2").code shouldBe 400
+        client.boundTokenRequest(code).code shouldBe 400
+    }
+
+    @Test
     fun `authorization code flow should use the enqueued token callback`() {
         val code = authorizationCode()
         server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "enqueued")))
@@ -428,9 +499,13 @@ class OidcAuthorizationCodeGrantIntegrationTest {
         clientCredentialsToken().source() shouldBe "second"
     }
 
-    private fun authorizationCode(pkce: Pkce? = null): String =
+    private fun authorizationCode(
+        clientId: String = "client1",
+        redirectUri: String = "http://mycallback",
+        pkce: Pkce? = null,
+    ): String =
         client
-            .get(server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = "http://mycallback", pkce = pkce))
+            .get(server.authorizationEndpointUrl("default").authenticationRequest(clientId = clientId, redirectUri = redirectUri, pkce = pkce))
             .headers["location"]
             ?.toHttpUrl()
             ?.queryParameter("code")
@@ -451,17 +526,41 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     private fun OkHttpClient.tokenRequest(
         code: String,
         pkce: Pkce? = null,
+        clientId: String = "client1",
+        redirectUri: String? = "http://mycallback",
     ) = tokenRequest(
         server.tokenEndpointUrl("default"),
         mutableMapOf(
-            "client_id" to "client1",
+            "client_id" to clientId,
             "client_secret" to "secret",
             "grant_type" to "authorization_code",
-            "redirect_uri" to "http://mycallback",
             "code" to code,
         ).apply {
+            if (redirectUri != null) {
+                put("redirect_uri", redirectUri)
+            }
             if (pkce != null) {
                 put("code_verifier", pkce.verifier.value)
+            }
+        },
+    )
+
+    private fun OkHttpClient.boundTokenRequest(
+        code: String,
+        clientId: String? = "client1",
+        redirectUri: String? = "http://mycallback",
+    ) = tokenRequest(
+        server.tokenEndpointUrl("default"),
+        mutableMapOf(
+            "grant_type" to "authorization_code",
+            "code" to code,
+        ).apply {
+            if (clientId != null) {
+                put("client_id", clientId)
+                put("client_secret", "secret")
+            }
+            if (redirectUri != null) {
+                put("redirect_uri", redirectUri)
             }
         },
     )
