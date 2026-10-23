@@ -116,6 +116,21 @@ fun json(anyObject: Any): OAuth2HttpResponse =
             },
     )
 
+fun OAuth2HttpResponse.withNoStore(): OAuth2HttpResponse =
+    copy(
+        headers =
+            headers
+                .newBuilder()
+                .set(HttpHeaderNames.CACHE_CONTROL.toString(), "no-store")
+                .set(HttpHeaderNames.PRAGMA.toString(), "no-cache")
+                .build(),
+    )
+
+fun OAuth2HttpResponse.withHeader(
+    name: String,
+    value: String,
+): OAuth2HttpResponse = copy(headers = headers.newBuilder().set(name, value).build())
+
 fun html(content: String): OAuth2HttpResponse =
     OAuth2HttpResponse(
         headers =
@@ -144,6 +159,18 @@ fun redirect(
 fun notFound(body: String? = null): OAuth2HttpResponse = OAuth2HttpResponse(status = 404, body = body)
 
 fun methodNotAllowed(): OAuth2HttpResponse = OAuth2HttpResponse(status = 405, body = "method not allowed")
+
+internal fun methodNotAllowed(allowedMethods: Set<String>): OAuth2HttpResponse = methodNotAllowed().withAllowHeader(allowedMethods)
+
+internal fun OAuth2HttpResponse.withAllowHeader(allowedMethods: Set<String>): OAuth2HttpResponse =
+    withHeader(HttpHeaderNames.ALLOW.toString(), allowedMethods.withHeadForGet().sorted().joinToString(", "))
+
+private fun Set<String>.withHeadForGet(): Set<String> = if ("GET" in this) this + "HEAD" else this
+
+internal fun OAuth2HttpResponse.withoutBody(): OAuth2HttpResponse {
+    val contentLength = body?.toByteArray()?.size ?: bytesBody?.size ?: return this
+    return copy(body = null, bytesBody = null).withHeader(HttpHeaderNames.CONTENT_LENGTH.toString(), contentLength.toString())
+}
 
 fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessResponse): OAuth2HttpResponse =
     when (authenticationSuccessResponse.responseMode) {
@@ -176,9 +203,6 @@ fun oauth2Error(error: ErrorObject): OAuth2HttpResponse {
                 "application/json;charset=UTF-8",
             ),
         status = responseCode,
-        body =
-            prettyWriter
-                .writeValueAsString(error.toJSONObject())
-                .lowercase(),
+        body = prettyWriter.writeValueAsString(error.toJSONObject()),
     )
 }

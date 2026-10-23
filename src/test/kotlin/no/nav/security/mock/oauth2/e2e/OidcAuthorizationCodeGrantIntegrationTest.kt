@@ -1,5 +1,7 @@
 package no.nav.security.mock.oauth2.e2e
 
+import com.nimbusds.jwt.SignedJWT
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -16,14 +18,19 @@ import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
+import no.nav.security.mock.oauth2.testutils.parse
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 class OidcAuthorizationCodeGrantIntegrationTest {
     private val server = MockOAuth2Server().apply { start() }
@@ -46,6 +53,67 @@ class OidcAuthorizationCodeGrantIntegrationTest {
                     it?.queryParameterNames shouldContainExactly setOf("code", "state")
                     it?.queryParameter("state") shouldBe "mystate"
                 }
+            }
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "javascript:alert(document.domain)",
+            "customapp://callback.example/finish",
+        ],
+    )
+    fun `form post rejects non HTTP redirect URIs`(redirectUri: String) {
+        client.get(server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = redirectUri, responseMode = "form_post")).use {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_request"
+        }
+    }
+
+    @Test
+    fun `form post rejects non HTTP redirect URIs before showing the interactive login page`() {
+        val interactiveServer = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
+
+        try {
+            client
+                .get(
+                    interactiveServer
+                        .authorizationEndpointUrl("default")
+                        .authenticationRequest(redirectUri = "customapp://callback.example/finish", responseMode = "form_post"),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_request"
+                }
+        } finally {
+            interactiveServer.shutdown()
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            "http://callback.example/finish",
+            "https://callback.example/finish",
+            "http://callback_service:8080/finish",
+        ],
+    )
+    fun `form post sends authorization code to HTTP callback`(redirectUri: String) {
+        client.get(server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = redirectUri, responseMode = "form_post")).use {
+            it.code shouldBe 200
+            it.body.string() shouldContain "action=\"$redirectUri\""
+        }
+    }
+
+    @Test
+    fun `authentication request should return state with reserved characters unchanged`() {
+        client
+            .get(
+                server.authorizationEndpointUrl("default").authenticationRequest(redirectUri = "http://mycallback", state = "a&b=c"),
+            ).asClue { response ->
+                response.code shouldBe 302
+                val location = checkNotNull(response.headers["location"]).toHttpUrl()
+                location.queryParameter("state") shouldBe "a&b=c"
+                location.queryParameterNames shouldContainExactly setOf("code", "state")
             }
     }
 
@@ -227,6 +295,48 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
+    fun `authorization code flow should return tokens when code_challenge_method is plain`() {
+        val pkce = Pkce(method = CodeChallengeMethod.PLAIN)
+        val code =
+            client.get(server.authorizationEndpointUrl("default").authenticationRequest(pkce = pkce)).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code, pkce).asClue {
+            it.code shouldBe 200
+            it.toTokenResponse().accessToken shouldNotBe null
+        }
+    }
+
+    @Test
+    fun `authentication request should return invalid_request when code_challenge_method is not supported`() {
+        client.get(server.authorizationEndpointUrl("default").withUnsupportedCodeChallengeMethod()).asClue {
+            it.code shouldBe 400
+            it.headers["location"] shouldBe null
+            it.body.string() shouldContain "invalid_request"
+        }
+    }
+
+    @Test
+    fun `authentication request with interactivelogin enabled should return invalid_request when code_challenge_method is not supported`() {
+        val server = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
+        val authorizationUrl = server.authorizationEndpointUrl("default").withUnsupportedCodeChallengeMethod()
+
+        client.get(authorizationUrl).asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_request"
+        }
+        client.post(authorizationUrl, mapOf("username" to "foo")).asClue {
+            it.code shouldBe 400
+            it.headers["location"] shouldBe null
+            it.body.string() shouldContain "invalid_request"
+        }
+        server.shutdown()
+    }
+
+    @Test
     fun `authorization code flow should reject code_verifier when authorization request had no code_challenge`() {
         val code =
             client.get(server.authorizationEndpointUrl("default").authenticationRequest()).let { authResponse ->
@@ -272,7 +382,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     @Test
     fun `authorization code flow should reject token request from a different client than the one the code was issued to`() {
-        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
 
         client.boundTokenRequest(code, clientId = "client2").asClue {
             it.code shouldBe 400
@@ -282,7 +392,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     @Test
     fun `authorization code flow should reject token request without client_id`() {
-        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
 
         client.boundTokenRequest(code, clientId = null).asClue {
             it.code shouldBe 400
@@ -292,7 +402,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     @Test
     fun `authorization code flow should reject token request with redirect_uri differing only in case`() {
-        val code = issueCode(clientId = "client1", redirectUri = "http://MyCallback")
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://MyCallback")
 
         client.boundTokenRequest(code, redirectUri = "http://mycallback").asClue {
             it.code shouldBe 400
@@ -302,14 +412,14 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     @Test
     fun `authorization code flow should return tokens when client_id and redirect_uri match`() {
-        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
 
         client.boundTokenRequest(code).code shouldBe 200
     }
 
     @Test
     fun `authorization code flow should reject token request with a redirect_uri different from the authorization request`() {
-        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
 
         client.boundTokenRequest(code, redirectUri = "http://evil").asClue {
             it.code shouldBe 400
@@ -319,7 +429,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     @Test
     fun `authorization code flow should reject token request without redirect_uri when authorization request had one`() {
-        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
 
         client.boundTokenRequest(code, redirectUri = null).asClue {
             it.code shouldBe 400
@@ -329,22 +439,89 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     @Test
     fun `authorization code flow should not accept the same code after a failed client or redirect_uri check`() {
-        val code = issueCode(clientId = "client1", redirectUri = "http://mycallback")
+        val code = authorizationCode(clientId = "client1", redirectUri = "http://mycallback")
 
         client.boundTokenRequest(code, clientId = "client2").code shouldBe 400
         client.boundTokenRequest(code).code shouldBe 400
     }
 
-    private fun issueCode(
-        clientId: String,
-        redirectUri: String,
+    @Test
+    fun `authorization code flow should use the enqueued token callback`() {
+        val code = authorizationCode()
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "enqueued")))
+
+        client
+            .tokenRequest(code)
+            .toTokenResponse()
+            .accessToken
+            .shouldNotBeNull()
+            .source() shouldBe "enqueued"
+    }
+
+    @Test
+    fun `unknown authorization code should not use up the enqueued token callback`() {
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "enqueued")))
+
+        client.tokenRequest("bogus-code-that-was-never-issued").asClue {
+            it.code shouldBe 400
+            it.parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+        }
+
+        clientCredentialsToken().source() shouldBe "enqueued"
+    }
+
+    @Test
+    fun `failed PKCE verification should not use up the enqueued token callback`() {
+        val code = authorizationCode(pkce = Pkce())
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "enqueued")))
+
+        client.tokenRequest(code, Pkce()).asClue {
+            it.code shouldBe 400
+            it.parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+        }
+
+        clientCredentialsToken().source() shouldBe "enqueued"
+    }
+
+    @Test
+    fun `rejected authorization codes should keep the order of the enqueued token callbacks`() {
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "first")))
+        server.enqueueCallback(DefaultOAuth2TokenCallback(claims = mapOf("source" to "second")))
+
+        repeat(2) {
+            client.tokenRequest("bogus-code-that-was-never-issued").asClue {
+                it.code shouldBe 400
+                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+            }
+        }
+
+        clientCredentialsToken().source() shouldBe "first"
+        clientCredentialsToken().source() shouldBe "second"
+    }
+
+    private fun authorizationCode(
+        clientId: String = "client1",
+        redirectUri: String = "http://mycallback",
+        pkce: Pkce? = null,
     ): String =
         client
-            .get(server.authorizationEndpointUrl("default").authenticationRequest(clientId = clientId, redirectUri = redirectUri))
+            .get(server.authorizationEndpointUrl("default").authenticationRequest(clientId = clientId, redirectUri = redirectUri, pkce = pkce))
             .headers["location"]
             ?.toHttpUrl()
             ?.queryParameter("code")
             .shouldNotBeNull()
+
+    private fun clientCredentialsToken(): SignedJWT =
+        client
+            .tokenRequest(
+                server.tokenEndpointUrl("default"),
+                "client1" to "secret",
+                mapOf("grant_type" to "client_credentials", "scope" to "scope1"),
+            ).toTokenResponse()
+            .accessToken
+            .shouldNotBeNull()
+
+    private fun SignedJWT.source(): String? = jwtClaimsSet.getStringClaim("source")
 
     private fun OkHttpClient.tokenRequest(
         code: String,
@@ -387,4 +564,11 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             }
         },
     )
+
+    private fun HttpUrl.withUnsupportedCodeChallengeMethod(): HttpUrl =
+        authenticationRequest()
+            .newBuilder()
+            .addQueryParameter("code_challenge", Pkce().challenge.value)
+            .addQueryParameter("code_challenge_method", "S512")
+            .build()
 }

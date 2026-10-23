@@ -120,4 +120,29 @@ class JwtBearerGrantIntegrationTest {
             response.accessToken.claims["claim2"] shouldBe "value2"
         }
     }
+
+    @Test
+    fun `token request with JwtBearerGrant without scope in request or assertion should return invalid_scope`() {
+        withMockOAuth2Server {
+            val initialToken =
+                this.issueToken(
+                    issuerId = "idprovider",
+                    clientId = "client1",
+                    tokenCallback = DefaultOAuth2TokenCallback(issuerId = "idprovider", subject = "mysub"),
+                )
+            client
+                .tokenRequest(
+                    url = this.tokenEndpointUrl("aad"),
+                    basicAuth = Pair("client1", "secret"),
+                    parameters =
+                        mapOf(
+                            "grant_type" to GrantType.JWT_BEARER.value,
+                            "assertion" to initialToken.serialize(),
+                        ),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_scope"
+                }
+        }
+    }
 }

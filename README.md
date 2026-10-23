@@ -19,22 +19,19 @@
 - [Quick Start](#quick-start)
 - [What it does](#what-it-does)
 - [Supported Flows](#supported-flows)
-- [Usage](#usage)
-  - [In JVM Tests](#in-jvm-tests)
-  - [Standalone / Docker](#standalone--docker)
+- [Using it in JVM tests](#using-it-in-jvm-tests)
+  - [Issuing tokens directly](#issuing-tokens-directly)
+  - [Testing Authorization Code Flow](#testing-authorization-code-flow-user-login)
+  - [Spring Boot](#spring-boot)
+- [Running it with Docker](#running-it-with-docker)
+  - [Standalone](#standalone)
   - [Docker Compose](#docker-compose)
-  - [Token Customization via JSON_CONFIG](#token-customization-via-json_config)
-  - [Auto-added claims](#auto-added-claims)
-  - [aud claim resolution](#aud-claim-resolution)
-  - [HTTPS](#https)
-  - [CORS](#cors)
-  - [Debugger](#debugger)
+- [Customizing tokens](#customizing-tokens)
+- [More features](#more-features): HTTPS, CORS, Debugger
 - [Configuration Reference](#configuration-reference)
 - [API Reference](#api-reference)
-- [Migration guide](#migration-guide)
-- [Contributing](#contributing)
-- [Contact](#contact)
-- [License](#license)
+- [Troubleshooting](#troubleshooting)
+- [Contact](#contact) · [Contributing](#contributing) · [License](#license) · [Migration guide](#migration-guide)
 
 ---
 
@@ -80,9 +77,19 @@ request.addHeader("Authorization", "Bearer ${token.serialize()}")
 server.shutdown()
 ```
 
+In Java:
+
+```java
+MockOAuth2Server server = new MockOAuth2Server();
+server.start();
+SignedJWT token = server.issueToken("default", "user123", "my-api");
+String wellKnownUrl = server.wellKnownUrl("default").toString();
+server.shutdown();
+```
+
 Or run it as a Docker container:
 
-```
+```shell
 docker run -p 8080:8080 ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
 ```
 
@@ -104,35 +111,25 @@ It supports multi-issuer setups, all major OAuth2 grant types, token customizati
 
 ## Supported Flows
 
-- OpenID Connect Authorization Code Flow
+- OpenID Connect Authorization Code Flow, with PKCE (`plain` and `S256`)
 - OAuth2 Client Credentials Grant
 - OAuth2 JWT Bearer Grant (On-Behalf-Of flow)
 - OAuth2 Token Exchange Grant
 - OAuth2 Refresh Token Grant
 - OAuth2 Resource Owner Password Credentials Grant
-  - usage should be avoided if possible as this grant is considered insecure and [removed in its entirety](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics-13#section-3.4) from OAuth 2.1
+  - avoid it if you can: [RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700#section-2.4) says it "MUST NOT be used", and OAuth 2.1 removes it
+
+Only `response_type=code` is supported. The implicit and hybrid flows are not.
 
 Issued JWT tokens are verifiable through standard mechanisms via OpenID Connect Discovery and OAuth2 Authorization Server Metadata endpoints. Multi-issuer setups are supported with no configuration — the first path segment in any request URL determines the issuer.
 
 ---
 
-## Usage
+## Using it in JVM tests
 
-### In JVM Tests
+### Starting and stopping the server
 
-#### Minimal setup
-
-```kotlin
-val server = MockOAuth2Server()
-server.start()
-
-val wellKnownUrl = server.wellKnownUrl("default").toString()
-// configure your app to use wellKnownUrl, run your test, then:
-
-server.shutdown()
-```
-
-Use `withMockOAuth2Server` to avoid manual start/shutdown:
+Use `withMockOAuth2Server` to start and stop the server around a block:
 
 ```kotlin
 withMockOAuth2Server {
@@ -141,7 +138,7 @@ withMockOAuth2Server {
 }
 ```
 
-#### Issuing tokens directly
+### Issuing tokens directly
 
 The simplest way to issue a token:
 
@@ -171,7 +168,7 @@ val token: SignedJWT = server.anyToken(
 )
 ```
 
-#### Testing Authorization Code Flow (user login)
+### Testing Authorization Code Flow (user login)
 
 The token request must use the same `client_id` and `redirect_uri` as the authorization request, otherwise the code is rejected with `400 invalid_grant`.
 
@@ -205,7 +202,31 @@ fun loginWithIdTokenForAcrClaimEqualsLevel4() {
 }
 ```
 
-#### Verifying requests made to the server
+### Spring Boot
+
+Start the server before the application context and point Spring Security at the issuer:
+
+```java
+@SpringBootTest
+class MyApiTest {
+    static MockOAuth2Server server = new MockOAuth2Server();
+
+    @BeforeAll
+    static void start() { server.start(); }
+
+    @AfterAll
+    static void stop() { server.shutdown(); }
+
+    @DynamicPropertySource
+    static void oauth2(DynamicPropertyRegistry registry) {
+        registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> server.issuerUrl("default").toString());
+    }
+}
+```
+
+Then send `server.issueToken("default", "user123", "my-api").serialize()` as the bearer token. See the [Spring Boot examples](src/test/java/examples/java/springboot/) for login and resource server setups.
+
+### Verifying requests made to the server
 
 > [!NOTE]
 > `takeRequest()` is only available when using `MockWebServerWrapper` (the default). It throws `UnsupportedOperationException` with `NettyWrapper`.
@@ -215,7 +236,7 @@ val request = server.takeRequest()
 assertThat(request.path).contains("/default/token")
 ```
 
-#### Controlling token time
+### Controlling token time
 
 ```kotlin
 val server = MockOAuth2Server(
@@ -227,29 +248,31 @@ val token = server.issueToken(issuerId = "issuer1")
 // token has iat=2020-01-21T00:00:00Z
 ```
 
-#### Multi-issuer setup
+### Multi-issuer setup
 
 The first path segment in any request URL is the `issuerId`. No configuration needed:
 
-```
+```text
 http://localhost:8080/issuer-a/.well-known/openid-configuration  → issuerId = issuer-a
 http://localhost:8080/issuer-b/.well-known/openid-configuration  → issuerId = issuer-b
 ```
 
 Each issuer has its own discovery document, token endpoint, and JWKS.
 
-#### More examples
+### More examples
 
 - [Kotlin with the ktor framework](src/test/kotlin/examples/kotlin/ktor)
 - [Java with Spring Boot and Spring Security](src/test/java/examples/java/springboot/)
 
-### Standalone / Docker
+## Running it with Docker
+
+### Standalone
 
 The standalone server defaults to port `8080`.
 
 **Run with Docker:**
 
-```
+```shell
 docker run -p 8080:8080 ghcr.io/navikt/mock-oauth2-server:$MOCK_OAUTH2_SERVER_VERSION
 ```
 
@@ -257,13 +280,13 @@ Images are also tagged by major and minor version, so you can pin to a release s
 
 | Tag | Resolves to |
 |-----|-------------|
-| `ghcr.io/navikt/mock-oauth2-server:3.1.4` | exact version |
-| `ghcr.io/navikt/mock-oauth2-server:3.1` | latest 3.1.x |
-| `ghcr.io/navikt/mock-oauth2-server:3` | latest 3.x.x |
+| `ghcr.io/navikt/mock-oauth2-server:6.1.1` | exact version |
+| `ghcr.io/navikt/mock-oauth2-server:6.1` | latest 6.1.x |
+| `ghcr.io/navikt/mock-oauth2-server:6` | latest 6.x.x |
 
 **Build locally:**
 
-```
+```shell
 ./gradlew -Djib.from.platforms=linux/amd64 jibDockerBuild
 docker run -p 8080:8080 $IMAGE_NAME
 ```
@@ -321,7 +344,9 @@ services:
 > [!NOTE]
 > Each service must use a different host port. Mapping two services to the same host port causes a `port is already allocated` error.
 
-### Token Customization via JSON_CONFIG
+## Customizing tokens
+
+### Request mappings via JSON_CONFIG
 
 When running standalone or in Docker you can configure token callbacks via the `JSON_CONFIG` environment variable (or `JSON_CONFIG_PATH` pointing to a file). When neither is set the server looks for `config.json` in the current working directory.
 
@@ -468,6 +493,8 @@ When using `DefaultOAuth2TokenCallback` the `aud` claim is resolved in the follo
 3. The non-OIDC scopes from the request (e.g. for Client Credentials with scopes)
 4. Falls back to `"default"` if none of the above are present
 
+## More features
+
 ### HTTPS
 
 #### In unit tests
@@ -481,8 +508,7 @@ val server = MockOAuth2Server(
 )
 ```
 
-> [!TIP]
-> Add `ssl.sslKeystore.keyStore` to your client's truststore to trust the generated certificate.
+Your app must trust the certificate, see [Make your app trust the server's certificate](#make-your-app-trust-the-servers-certificate).
 
 Bring your own keystore:
 
@@ -499,6 +525,43 @@ val server = MockOAuth2Server(
     OAuth2Config(httpServer = MockWebServerWrapper(ssl))
 )
 ```
+
+#### Make your app trust the server's certificate
+
+The server uses a self-signed certificate, so the HTTP client in the app you are testing rejects it until you add it to that client's truststore. Until then, fetching the JWKS fails with `PKIX path building failed`.
+
+**With your own keystore (works for Spring MVC, Spring WebFlux and other JVM clients):** create a truststore that holds the server's certificate, and set it when the test JVM starts. `keytool -list -keystore localhost.p12 -storepass ''` shows the alias of the key entry, which is `1` in this repository's `localhost.p12`.
+
+```bash
+keytool -exportcert -rfc -keystore localhost.p12 -storetype PKCS12 -storepass '' -alias 1 -file localhost.crt
+keytool -importcert -noprompt -alias mock-oauth2-server -file localhost.crt -keystore truststore.p12 -storetype PKCS12 -storepass changeit
+```
+
+```kotlin
+// build.gradle.kts
+tasks.test {
+    systemProperty("javax.net.ssl.trustStore", file("src/test/resources/truststore.p12").absolutePath)
+    systemProperty("javax.net.ssl.trustStorePassword", "changeit")
+}
+```
+
+For an app running in Docker, set `JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStore=/truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit`.
+
+- Use the truststore, not the keystore: with an empty password the JVM finds no trusted certificate in `localhost.p12` and fails with `the trustAnchors parameter must be non-empty`.
+- Set the properties when the JVM starts. Setting them later with `System.setProperty` has no effect once the JVM or Reactor Netty has created its default SSL context.
+- This replaces the JVM's default truststore, so other HTTPS calls in the tests no longer trust public certificate authorities.
+
+**With a generated keystore (`Ssl()`) in Spring MVC:** there is no file, so trust the certificate in code before your app fetches the JWKS. Spring MVC (`RestTemplate`) uses `HttpsURLConnection`:
+
+```kotlin
+val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+trustManagerFactory.init(ssl.sslKeystore.keyStore)
+val sslContext = SSLContext.getInstance("TLS")
+sslContext.init(null, trustManagerFactory.trustManagers, null)
+HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.socketFactory)
+```
+
+`SSLContext.setDefault(sslContext)` on its own is not enough. Spring WebFlux ignores both, so use your own keystore and the truststore above.
 
 #### In Docker / standalone via JSON_CONFIG
 
@@ -537,14 +600,14 @@ The server automatically adds CORS headers to every response when an `Origin` he
 
 For regular requests:
 
-```
+```text
 Access-Control-Allow-Origin: <origin>
 Access-Control-Allow-Credentials: true
 ```
 
 For `OPTIONS` preflight requests:
 
-```
+```text
 Access-Control-Allow-Headers: <requested-headers>
 Access-Control-Allow-Methods: POST, GET, OPTIONS
 ```
@@ -578,10 +641,12 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 |----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `interactiveLogin`   | `true` or `false`. Enables a login screen on the `/authorize` endpoint. Defaults to `true` in standalone mode, `false` in library mode.                                                                                                                                           |
 | `loginPagePath`      | Path to a custom HTML login page. The page must contain a form that posts `username` and optionally `claims`. See `src/test/resources/login.example.html` for an example.                                                                                                         |
-| `staticAssetsPath`   | Path to a directory of static assets served under `/static`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                                                                                                                    |
+| `staticAssetsPath`   | Optional path to a directory of static assets served under `/static`. Omit to disable `/static/*`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                                                                                 |
 | `rotateRefreshToken` | `true` or `false`. When `true`, a new refresh token is issued on each refresh grant, invalidating the previous one.                                                                                                                                                               |
-| `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper` (required for HTTPS). Can also be a JSON object: `{"type": "NettyWrapper", "ssl": {...}}`.                                                                    |
+| `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper`. Can also be a JSON object with HTTPS enabled, for either type: `{"type": "NettyWrapper", "ssl": {...}}`.                                                       |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
+
+`staticAssetsPath` must not be blank. Only regular files within the configured directory are served; symlinks pointing outside it are not followed.
 
 Additional token provider options:
 
@@ -606,7 +671,7 @@ Additional token provider options:
 
 The first path segment in any URL is the `issuerId`. Both OIDC and OAuth2 AS metadata endpoints are served:
 
-```
+```text
 GET /{issuerId}/.well-known/openid-configuration
 GET /{issuerId}/.well-known/oauth-authorization-server
 ```
@@ -633,7 +698,7 @@ GET /{issuerId}/.well-known/oauth-authorization-server
 
 **Introspect** (`POST /{issuerId}/introspect`) requires an `Authorization` header. Either `Authorization: Bearer <token>` or `Authorization: Basic <credentials>` is accepted. Requests without it will receive `401 invalid_client`.
 
-**Revocation** (`POST /{issuerId}/revoke`) only supports `token_type_hint=refresh_token`. Passing any other value returns `400 unsupported_token_type`.
+**Revocation** (`POST /{issuerId}/revoke`) removes the token if it is a refresh token issued by the server. `token_type_hint` is optional and may be `refresh_token` or `access_token`; access tokens are self-contained JWTs and stay valid until they expire. Any other hint returns `400 unsupported_token_type`. An unknown token returns `200`, as RFC 7009 requires.
 
 ### Server URL methods (Kotlin/Java API)
 
@@ -655,6 +720,18 @@ server.baseUrl()                                       // server root URL
 
 ---
 
+## Troubleshooting
+
+**Your app rejects the token because of the issuer.** The `iss` claim is built from the host used to call the server. Your app and whoever fetches the token must use the same host, see [Docker Compose](#docker-compose).
+
+**The authorize endpoint shows a login page.** The standalone server and Docker image enable `interactiveLogin` by default. Set `JSON_CONFIG={"interactiveLogin": false}` to get a redirect with a code directly.
+
+**The code exchange returns `invalid_grant`.** Authorization codes can only be used once, so a retried or repeated token request fails.
+
+**Fetching the JWKS over HTTPS fails with `PKIX path building failed`.** Your app doesn't trust the server's certificate, see [Make your app trust the server's certificate](#make-your-app-trust-the-servers-certificate).
+
+---
+
 ## Contact
 
 This project is maintained by [@navikt](https://github.com/navikt).
@@ -662,8 +739,6 @@ This project is maintained by [@navikt](https://github.com/navikt).
 To raise an issue or question, open an issue in this repository.
 
 For internal NAV contact, use the Slack channel `#nais`.
-
-See the [release notes](https://github.com/navikt/mock-oauth2-server/releases) for the full version history.
 
 ---
 

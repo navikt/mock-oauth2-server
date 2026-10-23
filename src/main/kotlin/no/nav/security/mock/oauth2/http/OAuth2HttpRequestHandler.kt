@@ -11,7 +11,10 @@ import com.nimbusds.oauth2.sdk.GrantType.REFRESH_TOKEN
 import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
+import com.nimbusds.oauth2.sdk.ResponseMode
+import com.nimbusds.oauth2.sdk.token.BearerTokenError
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import io.netty.handler.codec.http.HttpHeaderNames
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -25,6 +28,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
+import no.nav.security.mock.oauth2.extensions.requireSupportedCodeChallengeMethod
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
@@ -36,6 +40,7 @@ import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
 import no.nav.security.mock.oauth2.introspect.introspect
+import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.missingParameter
@@ -54,6 +59,15 @@ import java.util.concurrent.LinkedBlockingQueue
 
 private val log = KotlinLogging.logger {}
 
+private val grantsThatTakeEnqueuedCallbackAfterValidation = setOf(AUTHORIZATION_CODE, REFRESH_TOKEN)
+
+private fun AuthenticationRequest.requireHttpFormPostCallback() =
+    apply {
+        if (responseMode == ResponseMode.FORM_POST && redirectionURI?.scheme?.lowercase() !in setOf("http", "https")) {
+            invalidRequest("form_post redirect_uri must be an HTTP(S) URL")
+        }
+    }
+
 class OAuth2HttpRequestHandler(
     private val config: OAuth2Config,
 ) {
@@ -64,22 +78,17 @@ class OAuth2HttpRequestHandler(
 
     private val grantHandlers: Map<GrantType, GrantHandler> =
         mapOf(
-            AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider, refreshTokenManager),
+            AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider, refreshTokenManager, ::pollTokenCallback),
             CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(config.tokenProvider),
             JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
             TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),
             REFRESH_TOKEN to
-                RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager, config.rotateRefreshToken) { issuerId ->
-                    synchronized(tokenCallbackQueue) {
-                        if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
-                    }
-                },
+                RefreshTokenGrantHandler(config.tokenProvider, refreshTokenManager, config.rotateRefreshToken, ::pollTokenCallback),
             PASSWORD to PasswordGrantHandler(config.tokenProvider),
         )
 
     private val exceptionHandler: ExceptionHandler = { request, error ->
-        log.error("received exception when handling request: ${request.url}.", error)
-        val msg = URLEncoder.encode(error.message, Charset.forName("UTF-8"))
+        val msg = URLEncoder.encode(error.message.orEmpty(), Charset.forName("UTF-8"))
         val errorObject: ErrorObject =
             when (error) {
                 is OAuth2Exception -> error.errorObject
@@ -87,7 +96,48 @@ class OAuth2HttpRequestHandler(
                 is GeneralException -> error.errorObject
                 else -> null
             } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
+        if (errorObject.code == OAuth2Error.SERVER_ERROR_CODE) {
+            log.error("received exception when handling ${request.method} ${request.url}", error)
+        } else {
+            val details =
+                error.message
+                    ?.takeIf { it.isNotBlank() && it != errorObject.description }
+                    ?.let { " ($it)" }
+                    .orEmpty()
+            val message = "${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}$details".escapeLineBreaks()
+            if (log.isDebugEnabled) log.info(message, error) else log.info(message)
+        }
         oauth2Error(errorObject)
+            .let { response ->
+                request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
+            }
+    }
+
+    private fun String.escapeLineBreaks(): String = replace("\r", "\\r").replace("\n", "\\n")
+
+    private fun OAuth2HttpRequest.wwwAuthenticate(error: ErrorObject): String? {
+        if (error.httpStatusCode != 401) return null
+        return when (error.code) {
+            BearerTokenError.INVALID_TOKEN.code -> {
+                // a request without a token gets a challenge without an error code
+                if (headers["Authorization"]?.startsWith("Bearer ", ignoreCase = true) == true) {
+                    "Bearer error=\"${error.code}\""
+                } else {
+                    "Bearer"
+                }
+            }
+
+            OAuth2Error.INVALID_CLIENT.code -> {
+                headers["Authorization"]
+                    ?.substringBefore(" ")
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { scheme -> "$scheme realm=\"${url.toIssuerUrl()}\"" }
+            }
+
+            else -> {
+                null
+            }
+        }
     }
 
     val authorizationServer: Route =
@@ -105,7 +155,7 @@ class OAuth2HttpRequestHandler(
             preflight()
             staticAssets()
             get("/favicon.ico") { OAuth2HttpResponse(status = 200) }
-            attach(debuggerRequestHandler)
+            attach(debuggerRequestHandler.route)
         }
 
     fun enqueueTokenCallback(oAuth2TokenCallback: OAuth2TokenCallback) = tokenCallbackQueue.add(oAuth2TokenCallback)
@@ -132,7 +182,8 @@ class OAuth2HttpRequestHandler(
         apply {
             val authorizationCodeHandler = grantHandlers[AUTHORIZATION_CODE] as AuthorizationCodeHandler
             get(AUTHORIZATION) {
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
+                val authRequest: AuthenticationRequest = it.asAuthenticationRequest().requireHttpFormPostCallback()
+                authRequest.requireSupportedCodeChallengeMethod()
                 if (config.interactiveLogin || authRequest.isPrompt()) {
                     html(loginRequestHandler.loginHtml(it))
                 } else {
@@ -140,7 +191,8 @@ class OAuth2HttpRequestHandler(
                 }
             }
             post(AUTHORIZATION) {
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest()
+                val authRequest: AuthenticationRequest = it.asAuthenticationRequest().requireHttpFormPostCallback()
+                authRequest.requireSupportedCodeChallengeMethod()
                 val login: Login = loginRequestHandler.loginSubmit(it)
                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(authRequest, login))
             }
@@ -151,7 +203,9 @@ class OAuth2HttpRequestHandler(
             log.debug("handle end session request $it")
             it.url.queryParameter("post_logout_redirect_uri")?.let { postLogoutRedirectUri ->
                 it.url.queryParameter("state")?.let { state ->
-                    redirect("$postLogoutRedirectUri?state=$state")
+                    val separator = if ("?" in postLogoutRedirectUri) "&" else "?"
+                    val encodedState = URLEncoder.encode(state, Charsets.UTF_8).replace("+", "%20")
+                    redirect("$postLogoutRedirectUri${separator}state=$encodedState")
                 } ?: redirect(postLogoutRedirectUri)
             } ?: html("logged out")
         }
@@ -161,13 +215,13 @@ class OAuth2HttpRequestHandler(
             log.debug("handle revocation request $it")
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
-                "refresh_token" -> {
+                null, "refresh_token", "access_token" -> {
                     refreshTokenManager.remove(token)
                 }
 
                 else -> {
                     throw OAuth2Exception(
-                        ErrorObject("unsupported_token_type", "unsupported token type: $hint", 400),
+                        ErrorObject("unsupported_token_type", ErrorObject.removeIllegalChars("unsupported token type: $hint"), 400),
                         "unsupported token type: $hint",
                     )
                 }
@@ -177,40 +231,38 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.token() =
         apply {
-            get(TOKEN) {
-                OAuth2HttpResponse(status = 405, body = "unsupported method")
-            }
             post(TOKEN) {
                 log.debug("handle token request $it")
                 val grantType = it.grantType()
                 val issuerId = it.url.issuerId()
-                // For refresh_token grants the handler resolves the callback itself (stored vs enqueued priority),
-                // so the tokenCallback passed here is unused. For all other grants consume from queue or fall back to config default.
                 val tokenCallback: OAuth2TokenCallback =
-                    if (grantType == REFRESH_TOKEN) {
-                        DefaultOAuth2TokenCallback(issuerId = issuerId)
+                    if (grantType in grantsThatTakeEnqueuedCallbackAfterValidation) {
+                        configuredTokenCallbackOrDefault(issuerId)
                     } else {
-                        tokenCallbackFromQueueOrDefault(issuerId)
+                        pollTokenCallback(issuerId) ?: configuredTokenCallbackOrDefault(issuerId)
                     }
                 val grantHandler: GrantHandler = grantHandlers[grantType] ?: unsupportedGrantType(grantType)
                 val tokenResponse = grantHandler.tokenResponse(it, it.url.toIssuerUrl(), tokenCallback)
-                json(tokenResponse)
+                json(tokenResponse).withNoStore()
             }
         }
 
     private fun Route.Builder.staticAssets() =
         apply {
             if (config.staticAssetsPath != null) {
+                require(config.staticAssetsPath.isNotBlank()) { "staticAssetsPath must not be blank" }
+                val staticAssetsDirectory = File(config.staticAssetsPath).canonicalFile.toPath()
                 get("/static/*") {
                     val path =
                         it.url.pathSegments
                             .drop(1)
                             .joinToString("/")
                     val normalized = Paths.get(path).normalize().toString()
-                    val file = File(config.staticAssetsPath, normalized)
+                    val requestedFile = File(config.staticAssetsPath, normalized)
+                    val file = requestedFile.canonicalFile
 
-                    if (file.canonicalPath.startsWith(config.staticAssetsPath) && file.exists()) {
-                        val contentType = Files.probeContentType(file.toPath()) ?: "application/octet-stream"
+                    if (file.toPath().startsWith(staticAssetsDirectory) && file.isFile) {
+                        val contentType = Files.probeContentType(requestedFile.toPath()) ?: "application/octet-stream"
                         OAuth2HttpResponse(status = 200, bytesBody = file.readBytes(), headers = Headers.headersOf("Content-Type", contentType))
                     } else {
                         OAuth2HttpResponse(status = 404, body = "not found")
@@ -221,13 +273,12 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.preflight() = options { OAuth2HttpResponse(status = 204) }
 
-    private fun tokenCallbackFromQueueOrDefault(issuerId: String): OAuth2TokenCallback {
-        val queued =
-            synchronized(tokenCallbackQueue) {
-                if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
-            }
-        return queued
-            ?: config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId }
+    private fun pollTokenCallback(issuerId: String): OAuth2TokenCallback? =
+        synchronized(tokenCallbackQueue) {
+            if (tokenCallbackQueue.peek()?.issuerId() == issuerId) tokenCallbackQueue.poll() else null
+        }
+
+    private fun configuredTokenCallbackOrDefault(issuerId: String): OAuth2TokenCallback =
+        config.tokenCallbacks.firstOrNull { it.issuerId() == issuerId }
             ?: DefaultOAuth2TokenCallback(issuerId = issuerId)
-    }
 }

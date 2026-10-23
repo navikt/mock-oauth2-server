@@ -240,6 +240,46 @@ internal class IntrospectTest {
         }
     }
 
+    @ParameterizedTest
+    @CsvSource(
+        "Basic dXNlcjpwYXNzd29yZA==",
+        "basic dXNlcjpwYXNzd29yZA==",
+        "BASIC dXNlcjpwYXNzd29yZA==",
+        "Bearer some-token",
+        "bearer some-token",
+        "BEARER some-token",
+    )
+    fun `introspect should accept the authorization scheme in any case`(auth: String) {
+        val issuerUrl = "http://localhost/default"
+        val tokenProvider = OAuth2TokenProvider()
+        val token = tokenProvider.jwt(mapOf("iss" to issuerUrl, "sub" to "foo"))
+
+        routes { introspect(tokenProvider) }.invoke(request("$issuerUrl$INTROSPECT", token.serialize(), auth)).asClue {
+            it.status shouldBe 200
+            it.parse<Map<String, Any>>() shouldContain ("active" to true)
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        "Basic",
+        "Bearer",
+        "Digest dXNlcjpwYXNzd29yZA==",
+        "Basicuser=password",
+    )
+    fun `introspect should return 401 when the Authorization header has no supported credentials`(auth: String) {
+        val url = "http://localhost/default$INTROSPECT"
+
+        shouldThrow<OAuth2Exception> {
+            routes {
+                introspect(OAuth2TokenProvider())
+            }.invoke(request(url, "invalid", auth))
+        }.asClue {
+            it.errorObject?.code shouldBe "invalid_client"
+            it.errorObject?.httpStatusCode shouldBe 401
+        }
+    }
+
     @Test
     fun `introspect should return 401 when no Authorization header is provided`() {
         val url = "http://localhost/default$INTROSPECT"

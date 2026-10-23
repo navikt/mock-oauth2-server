@@ -36,6 +36,8 @@ class OAuth2TokenProvider
         val systemTime
             get() = timeProvider()
 
+        internal fun now(): Instant = systemTime.orNow()
+
         @JvmOverloads
         constructor(
             keyProvider: KeyProvider = KeyProvider(),
@@ -52,12 +54,21 @@ class OAuth2TokenProvider
             issuerUrl: HttpUrl,
             oAuth2TokenCallback: OAuth2TokenCallback,
             nonce: String? = null,
+        ) = idToken(tokenRequest, issuerUrl, oAuth2TokenCallback, nonce, null, null)
+
+        internal fun idToken(
+            tokenRequest: TokenRequest,
+            issuerUrl: HttpUrl,
+            oAuth2TokenCallback: OAuth2TokenCallback,
+            nonce: String?,
+            fallbackSubject: String?,
+            authTime: Instant?,
         ) = defaultClaims(
             issuerUrl,
-            oAuth2TokenCallback.subject(tokenRequest),
+            oAuth2TokenCallback.subject(tokenRequest) ?: fallbackSubject ?: UUID.randomUUID().toString(),
             listOf(tokenRequest.clientIdAsString()),
             nonce,
-            oAuth2TokenCallback.addClaims(tokenRequest),
+            authTime?.let { mapOf("auth_time" to it.epochSecond) }.orEmpty() + oAuth2TokenCallback.addClaims(tokenRequest),
             oAuth2TokenCallback.tokenExpiry(),
         ).sign(issuerUrl.issuerId(), oAuth2TokenCallback.typeHeader(tokenRequest))
 

@@ -13,7 +13,6 @@ import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.options
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.tokenRequest
-import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.Headers
 import okhttp3.Request
@@ -79,17 +78,12 @@ class CorsHeadersIntegrationTest {
     @Test
     fun `token response should allow all origins`() {
         withMockOAuth2Server {
-            val expectedSubject = "expectedSub"
-            val issuerId = "idprovider"
-            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = expectedSubject))
-
             val response =
                 client.tokenRequest(
-                    this.tokenEndpointUrl(issuerId),
+                    this.tokenEndpointUrl("idprovider"),
                     Headers.headersOf("origin", origin),
                     mapOf(
-                        "grant_type" to GrantType.REFRESH_TOKEN.value,
-                        "refresh_token" to "canbewhatever",
+                        "grant_type" to GrantType.CLIENT_CREDENTIALS.value,
                         "client_id" to "id",
                         "client_secret" to "secret",
                     ),
@@ -98,6 +92,22 @@ class CorsHeadersIntegrationTest {
             response.code shouldBe 200
             response.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
             response.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
+        }
+    }
+
+    @Test
+    fun `method not allowed response should allow origin and list the supported methods`() {
+        withMockOAuth2Server {
+            client
+                .get(
+                    this.tokenEndpointUrl("default"),
+                    Headers.headersOf("origin", origin),
+                ).asClue {
+                    it.code shouldBe 405
+                    it.headers["Allow"] shouldBe "OPTIONS, POST"
+                    it.headers[ACCESS_CONTROL_ALLOW_ORIGIN] shouldBe origin
+                    it.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] shouldBe "true"
+                }
         }
     }
 
@@ -113,7 +123,7 @@ class CorsHeadersIntegrationTest {
                             "client_id" to "id",
                             "client_secret" to "secret",
                             "token" to "some-token",
-                            "token_type_hint" to "access_token",
+                            "token_type_hint" to "unsupported_hint",
                         ),
                     ),
                 ).execute()

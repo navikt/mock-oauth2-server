@@ -1,0 +1,1 @@
+rootProject.name = "mock-oauth2-server"

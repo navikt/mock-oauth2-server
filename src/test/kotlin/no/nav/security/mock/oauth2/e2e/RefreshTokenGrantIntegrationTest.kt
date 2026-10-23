@@ -24,6 +24,8 @@ import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 class RefreshTokenGrantIntegrationTest {
     private val client: OkHttpClient = client()
@@ -147,6 +149,50 @@ class RefreshTokenGrantIntegrationTest {
     }
 
     @Test
+    fun `token request with bogus refresh_token and enqueued tokencallback should return 400 invalid_grant and keep the callback`() {
+        withMockOAuth2Server {
+            val expectedSubject = "expectedSub"
+            val issuerId = "idprovider"
+            val refreshToken = checkNotNull(this.runAuthCodeFlow(issuerId, "anysubject").refreshToken)
+            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = expectedSubject))
+
+            client.refreshTokenRequest(this, issuerId, "bogus-random-uuid").use {
+                it.code shouldBe 400
+                it.body.string() shouldContain "invalid_grant"
+            }
+
+            client.refreshTokenRequest(this, issuerId, refreshToken).toTokenResponse().asClue {
+                it shouldBeValidFor GrantType.REFRESH_TOKEN
+                it.idToken!!.subject shouldBe expectedSubject
+            }
+        }
+    }
+
+    @Test
+    fun `token request with revoked refresh_token and enqueued tokencallback should return 400 invalid_grant`() {
+        withMockOAuth2Server {
+            val issuerId = "idprovider"
+            val refreshToken = checkNotNull(this.runAuthCodeFlow(issuerId, "anysubject").refreshToken)
+            client
+                .tokenRequest(
+                    this.revocationEndpointUrl(issuerId),
+                    mapOf(
+                        "token" to refreshToken,
+                        "token_type_hint" to "refresh_token",
+                        "client_id" to "id",
+                        "client_secret" to "secret",
+                    ),
+                ).use { it.code shouldBe 200 }
+            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = "expectedSub"))
+
+            client.refreshTokenRequest(this, issuerId, refreshToken).use {
+                it.code shouldBe 400
+                it.body.string() shouldContain "invalid_grant"
+            }
+        }
+    }
+
+    @Test
     fun `refresh_token issued by one issuer should not be accepted by a different issuer`() {
         withMockOAuth2Server {
             val issuerA = "issuer-a"
@@ -169,6 +215,81 @@ class RefreshTokenGrantIntegrationTest {
                     it.body.string() shouldContain "invalid_grant"
                 }
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `refresh_token grant should reject scope that was not granted`(rotateRefreshToken: Boolean) {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = rotateRefreshToken)) {
+            val refreshToken = this.authCodeFlowRefreshToken("idprovider", scope = listOf("openid", "profile"))
+
+            client.refreshWithScope(this, "idprovider", refreshToken, "openid profile admin").use {
+                it.code shouldBe 400
+                it.body.string() shouldContain "invalid_scope"
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `refresh_token grant should accept the granted scope or a subset, and use the granted scope when scope is omitted`(rotateRefreshToken: Boolean) {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = rotateRefreshToken)) {
+            var refreshToken = this.authCodeFlowRefreshToken("idprovider", scope = listOf("openid", "profile"))
+
+            listOf("openid profile" to "openid profile", "openid" to "openid", null to "openid profile").forEach { (requested, expected) ->
+                val response = client.refreshWithScope(this, "idprovider", refreshToken, requested).toTokenResponse()
+                response.scope shouldBe expected
+                refreshToken = checkNotNull(response.refreshToken)
+            }
+        }
+    }
+
+    private fun OkHttpClient.refreshTokenRequest(
+        server: MockOAuth2Server,
+        issuerId: String,
+        refreshToken: String,
+    ) = refreshWithScope(server, issuerId, refreshToken, scope = null)
+
+    private fun OkHttpClient.refreshWithScope(
+        server: MockOAuth2Server,
+        issuerId: String,
+        refreshToken: String,
+        scope: String?,
+    ) = tokenRequest(
+        server.tokenEndpointUrl(issuerId),
+        listOfNotNull(
+            "grant_type" to GrantType.REFRESH_TOKEN.value,
+            "refresh_token" to refreshToken,
+            "client_id" to "id",
+            "client_secret" to "secret",
+            scope?.let { "scope" to it },
+        ).toMap(),
+    )
+
+    private fun MockOAuth2Server.authCodeFlowRefreshToken(
+        issuerId: String,
+        scope: List<String>,
+    ): String {
+        val code =
+            client
+                .post(
+                    this.authorizationEndpointUrl(issuerId).authenticationRequest(clientId = "id", redirectUri = "http://something", scope = scope),
+                    mapOf("username" to "foo"),
+                ).let { it.headers["location"]?.toHttpUrl()?.queryParameter("code") }
+                .shouldNotBeNull()
+        return client
+            .tokenRequest(
+                this.tokenEndpointUrl(issuerId),
+                mapOf(
+                    "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                    "code" to code,
+                    "client_id" to "id",
+                    "client_secret" to "secret",
+                    "redirect_uri" to "http://something",
+                ),
+            ).toTokenResponse()
+            .refreshToken
+            .shouldNotBeNull()
     }
 
     private fun MockOAuth2Server.runAuthCodeFlow(

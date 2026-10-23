@@ -7,6 +7,14 @@ import org.junit.jupiter.api.Test
 
 internal class OAuth2HttpRequestTest {
     @Test
+    fun `url should keep encoded characters in query parameter values`() {
+        val url = "http://localhost:8080/mypath?state=a%26b%3Dc%2Bd&other=1".get().url
+        url.queryParameter("state") shouldBe "a&b=c+d"
+        url.queryParameter("other") shouldBe "1"
+        url.queryParameterNames shouldBe setOf("state", "other")
+    }
+
+    @Test
     fun `proxy aware urls all usecases`() {
         // no hostheader
         "http://localhost:8080/mypath?query=1".get().url shouldBe "http://localhost:8080/mypath?query=1".toHttpUrl()

@@ -8,7 +8,6 @@ import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
-import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.HttpUrl
@@ -33,7 +32,7 @@ internal class JwtBearerGrantHandler(
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             accessToken = accessToken.serialize(),
-            expiresIn = accessToken.expiresIn(),
+            expiresIn = accessToken.expiresIn(tokenProvider.now()),
             scope = tokenRequest.responseScope(),
         )
     }
@@ -41,7 +40,9 @@ internal class JwtBearerGrantHandler(
     private fun TokenRequest.responseScope(): String =
         scope?.toString()
             ?: assertion().getClaim("scope")?.toString()
-            ?: invalidRequest("scope must be specified in request or as a claim in assertion parameter")
+            ?: "scope must be specified in request or as a claim in assertion parameter".let {
+                throw OAuth2Exception(OAuth2Error.INVALID_SCOPE.setDescription(it), it)
+            }
 
     private fun TokenRequest.assertion(): JWTClaimsSet =
         (this.authorizationGrant as? JWTBearerGrant)?.jwtAssertion?.jwtClaimsSet

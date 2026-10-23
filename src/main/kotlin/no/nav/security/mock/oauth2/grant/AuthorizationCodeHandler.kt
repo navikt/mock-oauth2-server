@@ -11,6 +11,7 @@ import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
+import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
@@ -23,6 +24,8 @@ import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import tools.jackson.module.kotlin.readValue
+import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
@@ -32,9 +35,11 @@ private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
+    private val enqueuedCallbackSupplier: ((issuerId: String) -> OAuth2TokenCallback?)? = null,
 ) : GrantHandler {
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
+    private val codeToAuthTimeCache: MutableMap<AuthorizationCode, Instant> = ConcurrentHashMap()
 
     fun authorizationCodeResponse(
         authenticationRequest: AuthenticationRequest,
@@ -45,6 +50,7 @@ internal class AuthorizationCodeHandler(
                 val code = AuthorizationCode()
                 log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
+                codeToAuthTimeCache[code] = tokenProvider.systemTime ?: Instant.now()
                 login?.also {
                     log.debug("adding user with username ${it.username} to cache")
                     codeToLoginCache[code] = login
@@ -84,6 +90,7 @@ internal class AuthorizationCodeHandler(
                     OAuth2Error.INVALID_GRANT.setDescription("unknown or already-used authorization code"),
                     "unknown or already-used authorization code",
                 )
+        val authTime = codeToAuthTimeCache.remove(code)?.takeIf { authenticationRequest.maxAge >= 0 }
 
         try {
             verifyClientAndRedirectUri(authenticationRequest, tokenRequest)
@@ -95,17 +102,20 @@ internal class AuthorizationCodeHandler(
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
-        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, oAuth2TokenCallback)
-        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
+        val tokenCallback = enqueuedCallbackSupplier?.invoke(request.url.issuerId()) ?: oAuth2TokenCallback
+        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, tokenCallback)
+        val idTokenSubject = loginTokenCallbackOrDefault.subject(tokenRequest) ?: UUID.randomUUID().toString()
+        val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
-        val refreshToken: RefreshToken = refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce)
+        val refreshToken: RefreshToken =
+            refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime, authenticationRequest.scope)
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
             idToken = idToken.serialize(),
             accessToken = accessToken.serialize(),
             refreshToken = refreshToken,
-            expiresIn = idToken.expiresIn(),
+            expiresIn = accessToken.expiresIn(tokenProvider.now()),
             scope = scope,
         )
     }

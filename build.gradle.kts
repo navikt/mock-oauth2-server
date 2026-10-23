@@ -13,7 +13,7 @@ val jackson2TestVersion = "2.22.3"
 val nettyVersion = "4.2.19.Final"
 val junitJupiterVersion = "6.1.3"
 val freemarkerVersion = "2.3.35"
-val kotestVersion = "6.2.5"
+val kotestVersion = "6.2.6"
 val bouncyCastleVersion = "1.86"
 val httpCore5Version = "5.4.4"
 val springBootVersion = "4.1.1"
@@ -26,7 +26,7 @@ plugins {
     application
     alias(libs.plugins.kotlin.jvm) // refers to plugin declared in gradle/libs.versions.toml
     id("se.patrikerdes.use-latest-versions") version "0.2.19"
-    id("io.github.ben-manes.versions") version "0.64.0"
+    id("io.github.ben-manes.versions") version "0.66.0"
     id("org.jmailen.kotlinter") version "5.7.0"
     id("com.google.cloud.tools.jib") version "3.5.4"
     id("com.vanniktech.maven.publish") version "0.37.0"
@@ -134,7 +134,7 @@ dependencies {
     implementation("tools.jackson.core:jackson-databind:$jacksonVersion")
     implementation("tools.jackson.module:jackson-module-kotlin:$jacksonVersion")
     add(standaloneRuntime.name, "ch.qos.logback:logback-classic:$logbackVersion")
-    testRuntimeOnly("ch.qos.logback:logback-classic:$logbackVersion")
+    testImplementation("ch.qos.logback:logback-classic:$logbackVersion")
     api("com.squareup.okhttp3:mockwebserver:$mockWebServerVersion")
     api("com.nimbusds:oauth2-oidc-sdk:$nimbusSdkVersion")
     implementation("io.netty:netty-codec-http:$nettyVersion")
@@ -319,10 +319,6 @@ buildscript {
 }
 
 tasks {
-    withType<org.jmailen.gradle.kotlinter.tasks.LintTask> {
-        dependsOn("formatKotlin")
-    }
-
     withType<Test> {
         jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
         useJUnitPlatform()
