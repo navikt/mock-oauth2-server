@@ -42,10 +42,10 @@ internal class RefreshTokenGrantHandler(
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }
         val scope: String? = tokenRequest.scope.withinGrantedScope(storedState.grantedScope)?.toString()
-        val resolvedCallback = enqueuedCallbackSupplier?.invoke(issuerId) ?: storedCallback
         if (rotateRefreshToken) {
             refreshToken = refreshTokenManager.rotate(refreshToken)
         }
+        val resolvedCallback = enqueuedCallbackSupplier?.invoke(issuerId) ?: storedCallback
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, null, storedState.idTokenSubject, storedState.authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback)
 
