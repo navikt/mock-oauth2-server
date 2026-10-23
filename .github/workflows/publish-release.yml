@@ -9,6 +9,7 @@ jobs:
     permissions:
       packages: write
       contents: read
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout latest code
@@ -57,3 +58,19 @@ jobs:
           docker buildx imagetools create -t "${IMAGE_NAME}:${MAJOR}" -t "${IMAGE_NAME}:${MINOR}" "${IMAGE}"
 
           ./gradlew -Pversion="${NEW_VERSION}" publishAllPublicationsToGithubPackagesRepository publishAndReleaseToMavenCentral --no-configuration-cache
+      - name: Login to Google Artifact Registry
+        id: gar-login
+        continue-on-error: true
+        uses: nais/login@40b72a35a18ddf2ad74b632461139ab838cc2a2f # ratchet:nais/login@v0
+        with:
+          team: mock-oauth2-server
+      - name: Copy images to Google Artifact Registry
+        if: steps.gar-login.outcome == 'success'
+        continue-on-error: true
+        env:
+          NEW_VERSION: ${{ github.event.release.tag_name }}
+          GAR_IMAGE_NAME: ${{ steps.gar-login.outputs.registry }}/${{ github.event.repository.name }}
+        run: |
+          MAJOR=$(echo "${NEW_VERSION}" | cut -d "." -f1)
+          MINOR=$(echo "${NEW_VERSION}" | cut -d "." -f1-2)
+          docker buildx imagetools create -t "${GAR_IMAGE_NAME}:${NEW_VERSION}" -t "${GAR_IMAGE_NAME}:${MAJOR}" -t "${GAR_IMAGE_NAME}:${MINOR}" "${IMAGE_NAME}:${NEW_VERSION}"
