@@ -24,9 +24,9 @@ Look for these first. `lintKotlin` checks formatting and import order in CI, so 
      - CORS headers on error responses too
    - claims
    - discovery
-3. **Refresh token and callback state.**
+3. **Code, refresh token and callback state.**
    - Authorization codes are single-use.
-   - Refresh tokens are rejected at an issuer other than the one that issued them.
+   - Authorization codes and refresh tokens are rejected at an issuer other than the one that issued them (#1098, #936).
    - Shared state must be thread safe (#934, #936).
 4. **Wrong clock.** Token times must come from the token provider's `systemTime`/`timeProvider`, not `Instant.now()` (#1090).
 5. **Silent breaking change.** A changed public API, a change to documented behavior or a default, or a change to the published dependencies, needs a `MIGRATION.md` entry. Examples: #936, #998, #1011. It also needs the `breaking` label, which sets the major version (#1070). A fix that rejects usage outside the README contract, such as a request that mixes issuers, is not breaking. It needs a "Behavior change" line in the PR description instead.
