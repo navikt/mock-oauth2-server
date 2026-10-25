@@ -246,7 +246,9 @@ class StaticAssetsIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["classpath:", "classpath:/", "classpath: "])
+    @ValueSource(
+        strings = ["classpath:", "classpath:/", "classpath: ", "classpath:.", "classpath:./", "classpath:static/..", "classpath:..", "classpath:../static"],
+    )
     fun `classpath static assets path without a directory is rejected`(path: String) {
         shouldThrow<IllegalArgumentException> {
             MockOAuth2Server(OAuth2Config(staticAssetsPath = path))

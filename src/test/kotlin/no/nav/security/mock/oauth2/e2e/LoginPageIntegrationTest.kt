@@ -111,6 +111,8 @@ class LoginPageIntegrationTest {
             "classpath:does-not-exists.html",
             "classpath:static",
             "classpath:",
+            "classpath:..",
+            "classpath:../resources/test/login.example.html",
         ],
     )
     fun `authorization with interactive login and login page path set to invalid path should return 404`(path: String) {

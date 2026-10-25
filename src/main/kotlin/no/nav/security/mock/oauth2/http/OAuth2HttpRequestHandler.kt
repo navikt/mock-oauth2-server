@@ -249,7 +249,7 @@ class OAuth2HttpRequestHandler(
         apply {
             if (config.staticAssetsPath != null) {
                 val staticAssets = ResourceLocation.of(config.staticAssetsPath)
-                require(!staticAssets.isEmpty) { "staticAssetsPath must not be blank or the classpath root" }
+                require(staticAssets.isUsable) { "staticAssetsPath must not be blank, the classpath root or outside the classpath" }
                 get("/static/*") {
                     val path =
                         it.url.pathSegments
