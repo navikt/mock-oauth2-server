@@ -64,33 +64,39 @@ private class ClasspathLocation(
 
     override val isEmpty: Boolean = path.isBlank()
 
-    override fun readText(): String? = findRegularFileUrl(path)?.readText()
+    override fun readText(): String? = readRegularFile(path)?.decodeToString()
 
     override fun readAsset(relativePath: String): StaticAsset? {
         if (!relativePath.isRelativeAssetPath()) return null
-        return findRegularFileUrl("$path/$relativePath")?.let { StaticAsset(it.readBytes(), contentTypeOf(Paths.get(relativePath))) }
+        return readRegularFile("$path/$relativePath")?.let { StaticAsset(it, contentTypeOf(Paths.get(relativePath))) }
     }
 
-    private fun findRegularFileUrl(resourcePath: String): URL? =
-        classLoader
-            .getResource(resourcePath)
-            ?.takeIf { it.isRegularFile() && it.isReachedWithoutSymlinks(resourcePath) }
-
-    private fun URL.isRegularFile(): Boolean =
-        when (val connection = openConnection()) {
-            is JarURLConnection -> connection.jarEntry?.isDirectory == false
-            else -> protocol == "file" && File(toURI()).isFile
-        }.also { isRegularFile ->
-            if (!isRegularFile && protocol !in setOf("file", "jar")) {
-                log.debug { "classpath resource $this is not served, only file and jar resources are supported" }
+    private fun readRegularFile(resourcePath: String): ByteArray? {
+        val url = classLoader.getResource(resourcePath) ?: return null
+        return when (val connection = url.openConnection()) {
+            is JarURLConnection -> connection.readUncachedEntry()
+            else -> url.takeIf { it.protocol == "file" && it.isReachedWithoutSymlinks(resourcePath) && File(it.toURI()).isFile }?.readBytes()
+        }.also { bytes ->
+            if (bytes == null && url.protocol !in setOf("file", "jar")) {
+                log.debug { "classpath resource $url is not served, only file and jar resources are supported" }
             }
         }
+    }
+
+    private fun JarURLConnection.readUncachedEntry(): ByteArray? {
+        useCaches = false
+        return if (jarEntry?.isDirectory == false) {
+            inputStream.use { it.readBytes() }
+        } else {
+            jarFile.close()
+            null
+        }
+    }
 
     private fun URL.isReachedWithoutSymlinks(resourcePath: String): Boolean =
-        protocol != "file" ||
-            generateSequence(File(toURI()).toPath()) { it.parent }
-                .take(Paths.get(resourcePath).nameCount)
-                .none { Files.isSymbolicLink(it) }
+        generateSequence(File(toURI()).toPath()) { it.parent }
+            .take(Paths.get(resourcePath).nameCount)
+            .none { Files.isSymbolicLink(it) }
 }
 
 private fun String.isRelativeAssetPath(): Boolean = Paths.get(this).let { isNotBlank() && !it.isAbsolute && !it.startsWith("..") }
