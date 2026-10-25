@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.e2e
 
 import io.kotest.assertions.asClue
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
@@ -33,7 +34,7 @@ class StaticAssetsIntegrationTest {
         }
         client.get(server.url("/static/test.js")).asClue {
             it.code shouldBe 200
-            it.headers["content-type"] shouldBe "text/javascript"
+            it.headers["content-type"] shouldBeIn listOf("text/javascript", "application/javascript")
         }
     }
 

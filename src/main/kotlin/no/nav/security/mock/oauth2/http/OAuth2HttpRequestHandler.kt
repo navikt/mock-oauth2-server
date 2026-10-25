@@ -50,9 +50,11 @@ import no.nav.security.mock.oauth2.unsupportedGrantType
 import no.nav.security.mock.oauth2.userinfo.userInfo
 import okhttp3.Headers
 import java.io.File
+import java.io.IOException
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
@@ -60,6 +62,13 @@ import java.util.concurrent.LinkedBlockingQueue
 private val log = KotlinLogging.logger {}
 
 private val grantsThatTakeEnqueuedCallbackAfterValidation = setOf(AUTHORIZATION_CODE, REFRESH_TOKEN)
+
+private fun Path.realPathOrNull(): Path? =
+    try {
+        toRealPath()
+    } catch (e: IOException) {
+        null
+    }
 
 private fun AuthenticationRequest.requireHttpFormPostCallback() =
     apply {
@@ -251,7 +260,6 @@ class OAuth2HttpRequestHandler(
         apply {
             if (config.staticAssetsPath != null) {
                 require(config.staticAssetsPath.isNotBlank()) { "staticAssetsPath must not be blank" }
-                val staticAssetsDirectory = File(config.staticAssetsPath).canonicalFile.toPath()
                 get("/static/*") {
                     val path =
                         it.url.pathSegments
@@ -259,11 +267,12 @@ class OAuth2HttpRequestHandler(
                             .joinToString("/")
                     val normalized = Paths.get(path).normalize().toString()
                     val requestedFile = File(config.staticAssetsPath, normalized)
-                    val file = requestedFile.canonicalFile
+                    val staticAssetsDirectory = Paths.get(config.staticAssetsPath).realPathOrNull()
+                    val file = requestedFile.toPath().realPathOrNull()
 
-                    if (file.toPath().startsWith(staticAssetsDirectory) && file.isFile) {
+                    if (staticAssetsDirectory != null && file != null && file.startsWith(staticAssetsDirectory) && Files.isRegularFile(file)) {
                         val contentType = Files.probeContentType(requestedFile.toPath()) ?: "application/octet-stream"
-                        OAuth2HttpResponse(status = 200, bytesBody = file.readBytes(), headers = Headers.headersOf("Content-Type", contentType))
+                        OAuth2HttpResponse(status = 200, bytesBody = Files.readAllBytes(file), headers = Headers.headersOf("Content-Type", contentType))
                     } else {
                         OAuth2HttpResponse(status = 404, body = "not found")
                     }
