@@ -19,7 +19,7 @@ internal class StaticAsset(
 )
 
 internal sealed interface ResourceLocation {
-    val isEmpty: Boolean
+    val isUsable: Boolean
 
     fun readText(): String?
 
@@ -28,7 +28,12 @@ internal sealed interface ResourceLocation {
     companion object {
         fun of(location: String): ResourceLocation =
             if (location.startsWith(CLASSPATH_PREFIX)) {
-                ClasspathLocation(location.removePrefix(CLASSPATH_PREFIX).trim('/'))
+                ClasspathLocation(
+                    Paths
+                        .get(location.removePrefix(CLASSPATH_PREFIX).trim('/'))
+                        .normalize()
+                        .joinToString("/"),
+                )
             } else {
                 FileLocation(location)
             }
@@ -38,7 +43,7 @@ internal sealed interface ResourceLocation {
 private class FileLocation(
     private val path: String,
 ) : ResourceLocation {
-    override val isEmpty: Boolean = path.isBlank()
+    override val isUsable: Boolean = path.isNotBlank()
 
     override fun readText(): String? =
         try {
@@ -62,9 +67,9 @@ private class ClasspathLocation(
 ) : ResourceLocation {
     private val classLoader: ClassLoader = Thread.currentThread().contextClassLoader ?: ClassLoader.getSystemClassLoader()
 
-    override val isEmpty: Boolean = path.isBlank()
+    override val isUsable: Boolean = path.isNotBlank() && !Paths.get(path).startsWith("..")
 
-    override fun readText(): String? = readRegularFile(path)?.decodeToString()
+    override fun readText(): String? = if (isUsable) readRegularFile(path)?.decodeToString() else null
 
     override fun readAsset(relativePath: String): StaticAsset? {
         if (!relativePath.isRelativeAssetPath()) return null
