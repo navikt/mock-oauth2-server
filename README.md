@@ -644,7 +644,7 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 | `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper`. Can also be a JSON object with HTTPS enabled, for either type: `{"type": "NettyWrapper", "ssl": {...}}`.                                                       |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
 
-`staticAssetsPath` must not be blank or the classpath root. Only regular files within the configured directory are served; symlinks pointing outside it are not followed. With `classpath:`, symlinks are not followed at all.
+`staticAssetsPath` must not be blank, the classpath root or outside the classpath. Only regular files within the configured directory are served; symlinks pointing outside it are not followed. With `classpath:`, symlinks are not followed at all.
 
 To load the login page and assets from the classpath, for example from `src/test/resources` in your project or from a jar. Resources are looked up with the context class loader of the thread that creates the server:
 
