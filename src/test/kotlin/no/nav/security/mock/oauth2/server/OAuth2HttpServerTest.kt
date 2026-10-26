@@ -20,6 +20,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.net.InetAddress
 
 private val log = KotlinLogging.logger { }
 
@@ -63,6 +64,17 @@ internal class OAuth2HttpServerTest {
     fun `Netty server should start and serve requests`() {
         NettyWrapper().start(requestHandler).shouldServeRequests().stop()
         NettyWrapper().start(port = 0, requestHandler).shouldServeRequests().stop()
+    }
+
+    @Test
+    fun `Netty server url should use the host name it was started with`() {
+        val loopbackWithCustomHostName = InetAddress.getByAddress("custom-host", byteArrayOf(127, 0, 0, 1))
+        val server = NettyWrapper().start(loopbackWithCustomHostName, 0, requestHandler)
+        try {
+            server.url("/").host shouldBe "custom-host"
+        } finally {
+            server.stop()
+        }
     }
 
     @Test
