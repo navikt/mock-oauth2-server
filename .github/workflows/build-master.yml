@@ -28,6 +28,22 @@ jobs:
           dependency-graph-continue-on-failure: true
       - name: Build with Gradle
         run: ./gradlew build
+  test-windows:
+    permissions:
+      contents: read
+    runs-on: windows-latest
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7.0.1
+      - name: Set up JDK 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # ratchet:actions/setup-java@v6.1.0
+        with:
+          java-version: 21
+          distribution: 'temurin'
+          cache: 'gradle'
+      - name: Build with Gradle
+        shell: bash
+        run: ./gradlew build
   release-notes:
     permissions:
       contents: write # for release-drafter/release-drafter to create a github release
