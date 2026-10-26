@@ -3,6 +3,7 @@ package no.nav.security.mock.oauth2.http
 import mu.KotlinLogging
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 import java.net.JarURLConnection
 import java.net.URL
 import java.nio.file.Files
@@ -54,12 +55,20 @@ private class FileLocation(
 
     override fun readAsset(relativePath: String): StaticAsset? {
         if (!relativePath.isRelativeAssetPath()) return null
-        val directory = File(path).canonicalFile.toPath()
-        val requestedFile = File(path, relativePath)
-        return requestedFile.canonicalFile
-            .takeIf { it.toPath().startsWith(directory) && it.isFile }
-            ?.let { StaticAsset(it.readBytes(), contentTypeOf(requestedFile.toPath())) }
+        val directory = Paths.get(path).realPathOrNull() ?: return null
+        val requestedFile = File(path, relativePath).toPath()
+        return requestedFile
+            .realPathOrNull()
+            ?.takeIf { it.startsWith(directory) && Files.isRegularFile(it) }
+            ?.let { StaticAsset(Files.readAllBytes(it), contentTypeOf(requestedFile)) }
     }
+
+    private fun Path.realPathOrNull(): Path? =
+        try {
+            toRealPath()
+        } catch (e: IOException) {
+            null
+        }
 }
 
 private class ClasspathLocation(
