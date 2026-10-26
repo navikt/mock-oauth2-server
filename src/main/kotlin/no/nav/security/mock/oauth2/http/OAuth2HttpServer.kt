@@ -144,6 +144,7 @@ class NettyWrapper
         private val workerGroup = MultiThreadIoEventLoopGroup(NioIoHandler.newFactory())
         private var closeFuture: ChannelFuture? = null
         private lateinit var address: InetSocketAddress
+        private lateinit var hostName: String
         private var port by Delegates.notNull<Int>()
 
         override fun start(
@@ -174,6 +175,7 @@ class NettyWrapper
 
                 val channel = bootstrap.bind(inetAddress, port).sync().channel()
                 this.address = channel.localAddress() as InetSocketAddress
+                this.hostName = inetAddress.hostName
                 this.port = port
                 this.closeFuture = channel.closeFuture()
                 log.debug("started server on address=${this.address} and port=$port")
@@ -198,7 +200,7 @@ class NettyWrapper
             return HttpUrl
                 .Builder()
                 .scheme(scheme)
-                .host(address.address.hostName)
+                .host(hostName)
                 .port(port())
                 .build()
                 .resolve(path)!!
