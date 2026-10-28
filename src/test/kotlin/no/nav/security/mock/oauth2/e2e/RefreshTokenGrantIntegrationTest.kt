@@ -273,7 +273,7 @@ class RefreshTokenGrantIntegrationTest {
         val code =
             client
                 .post(
-                    this.authorizationEndpointUrl(issuerId).authenticationRequest(redirectUri = "http://something", scope = scope),
+                    this.authorizationEndpointUrl(issuerId).authenticationRequest(clientId = "id", redirectUri = "http://something", scope = scope),
                     mapOf("username" to "foo"),
                 ).let { it.headers["location"]?.toHttpUrl()?.queryParameter("code") }
                 .shouldNotBeNull()
@@ -301,7 +301,7 @@ class RefreshTokenGrantIntegrationTest {
         val authorizationCode =
             client
                 .post(
-                    this.authorizationEndpointUrl("default").authenticationRequest(),
+                    this.authorizationEndpointUrl("default").authenticationRequest(clientId = "id", redirectUri = "http://something"),
                     mapOf("username" to initialSubject),
                 ).let { authResponse ->
                     authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")

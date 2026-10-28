@@ -71,7 +71,7 @@ class ExpiresInIntegrationTest {
                         "code" to code,
                         "client_id" to "client1",
                         "client_secret" to "secret",
-                        "redirect_uri" to "http://defaultRedirectUri",
+                        "redirect_uri" to "http://mycallback",
                     ),
                 ).toTokenResponse()
                 .asClue {
@@ -94,7 +94,7 @@ class ExpiresInIntegrationTest {
                             "code" to code,
                             "client_id" to "client1",
                             "client_secret" to "secret",
-                            "redirect_uri" to "http://defaultRedirectUri",
+                            "redirect_uri" to "http://mycallback",
                         ),
                     ).toTokenResponse()
                     .refreshToken
