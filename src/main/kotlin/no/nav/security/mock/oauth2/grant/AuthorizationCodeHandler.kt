@@ -39,8 +39,10 @@ internal class AuthorizationCodeHandler(
     private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
     private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
     private val codeToAuthTimeCache: MutableMap<AuthorizationCode, Instant> = ConcurrentHashMap()
+    private val codeToIssuerIdCache: MutableMap<AuthorizationCode, String> = ConcurrentHashMap()
 
     fun authorizationCodeResponse(
+        issuerId: String,
         authenticationRequest: AuthenticationRequest,
         login: Login? = null,
     ): AuthenticationSuccessResponse {
@@ -50,6 +52,7 @@ internal class AuthorizationCodeHandler(
                 log.debug("issuing authorization code $code")
                 codeToAuthRequestCache[code] = authenticationRequest
                 codeToAuthTimeCache[code] = tokenProvider.systemTime ?: Instant.now()
+                codeToIssuerIdCache[code] = issuerId
                 login?.also {
                     log.debug("adding user with username ${it.username} to cache")
                     codeToLoginCache[code] = login
@@ -91,6 +94,15 @@ internal class AuthorizationCodeHandler(
                 )
         val authTime = codeToAuthTimeCache.remove(code)?.takeIf { authenticationRequest.maxAge >= 0 }
 
+        val issuerId = request.url.issuerId()
+        if (codeToIssuerIdCache.remove(code) != issuerId) {
+            codeToLoginCache.remove(code)
+            throw OAuth2Exception(
+                OAuth2Error.INVALID_GRANT.setDescription("authorization code was issued by a different issuer"),
+                "authorization code issuer mismatch",
+            )
+        }
+
         try {
             authenticationRequest.verifyPkce(tokenRequest)
         } catch (e: OAuth2Exception) {
@@ -100,7 +112,7 @@ internal class AuthorizationCodeHandler(
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
-        val tokenCallback = enqueuedCallbackSupplier?.invoke(request.url.issuerId()) ?: oAuth2TokenCallback
+        val tokenCallback = enqueuedCallbackSupplier?.invoke(issuerId) ?: oAuth2TokenCallback
         val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, tokenCallback)
         val idTokenSubject = loginTokenCallbackOrDefault.subject(tokenRequest) ?: UUID.randomUUID().toString()
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)

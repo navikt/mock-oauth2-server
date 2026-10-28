@@ -448,11 +448,32 @@ class OidcAuthorizationCodeGrantIntegrationTest {
 
     private fun SignedJWT.source(): String? = jwtClaimsSet.getStringClaim("source")
 
+    @Test
+    fun `authorization code flow should reject a code redeemed at a different issuer`() {
+        val code =
+            client.get(server.authorizationEndpointUrl("issuer1").authenticationRequest()).let { authResponse ->
+                authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
+            }
+
+        code.shouldNotBeNull()
+
+        client.tokenRequest(code, issuerId = "issuer2").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+
+        client.tokenRequest(code, issuerId = "issuer1").asClue {
+            it.code shouldBe 400
+            it.body.string() shouldContain "invalid_grant"
+        }
+    }
+
     private fun OkHttpClient.tokenRequest(
         code: String,
         pkce: Pkce? = null,
+        issuerId: String = "default",
     ) = tokenRequest(
-        server.tokenEndpointUrl("default"),
+        server.tokenEndpointUrl(issuerId),
         mutableMapOf(
             "client_id" to "client1",
             "client_secret" to "secret",
