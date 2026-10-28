@@ -93,6 +93,20 @@ class TemplateMapper(
             ),
         )
 
+    fun formPostResponseHtml(
+        redirectUri: String,
+        params: Map<String, String>,
+    ): String =
+        asString(
+            HtmlContent(
+                "form_post_response.ftl",
+                mapOf(
+                    "redirect_uri" to redirectUri,
+                    "params" to params,
+                ),
+            ),
+        )
+
     private fun asString(htmlContent: HtmlContent): String =
         StringWriter()
             .apply {

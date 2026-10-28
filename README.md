@@ -694,6 +694,8 @@ GET /{issuerId}/.well-known/oauth-authorization-server
 
 ### Endpoint notes
 
+**Authorize** (`GET /{issuerId}/authorize`) only supports `response_type=code`. Errors are sent to `redirect_uri` with `error` and `state`, using the requested `response_mode`. When `client_id` or `redirect_uri` is missing, a JSON `400` is returned instead.
+
 **Introspect** (`POST /{issuerId}/introspect`) requires an `Authorization` header. Either `Authorization: Bearer <token>` or `Authorization: Basic <credentials>` is accepted. Requests without it will receive `401 invalid_client`.
 
 **Token** (`POST /{issuerId}/token`) does not validate the incoming token in the JWT Bearer Grant (`assertion`) or the Token Exchange Grant (`subject_token`). The signature, `exp` and `aud` are not checked, so a token from any issuer, or an expired one, is accepted. Its claims are copied to the new token, which gets a new `iss`, `aud`, `exp`, `iat`, `nbf` and `jti`. RFC 7523 section 3 and RFC 8693 section 2.1 require this validation from a real authorization server. The mock skips it so that tests can exchange tokens from other issuers. Validate these tokens in your own application, not by relying on the mock to reject them.
