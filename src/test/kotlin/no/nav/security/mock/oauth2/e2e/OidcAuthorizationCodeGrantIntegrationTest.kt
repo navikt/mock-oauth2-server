@@ -27,6 +27,7 @@ import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -305,27 +306,22 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     }
 
     @Test
-    fun `authentication request should return invalid_request when code_challenge_method is not supported`() {
+    fun `authentication request should redirect invalid_request to the client when code_challenge_method is not supported`() {
         client.get(server.authorizationEndpointUrl("default").withUnsupportedCodeChallengeMethod()).asClue {
-            it.code shouldBe 400
-            it.headers["location"] shouldBe null
-            it.body.string() shouldContain "invalid_request"
+            it.shouldRedirectInvalidRequest()
         }
     }
 
     @Test
-    fun `authentication request with interactivelogin enabled should return invalid_request when code_challenge_method is not supported`() {
+    fun `authentication request with interactivelogin enabled should redirect invalid_request to the client when code_challenge_method is not supported`() {
         val server = MockOAuth2Server(OAuth2Config(interactiveLogin = true)).apply { start() }
         val authorizationUrl = server.authorizationEndpointUrl("default").withUnsupportedCodeChallengeMethod()
 
         client.get(authorizationUrl).asClue {
-            it.code shouldBe 400
-            it.body.string() shouldContain "invalid_request"
+            it.shouldRedirectInvalidRequest()
         }
         client.post(authorizationUrl, mapOf("username" to "foo")).asClue {
-            it.code shouldBe 400
-            it.headers["location"] shouldBe null
-            it.body.string() shouldContain "invalid_request"
+            it.shouldRedirectInvalidRequest()
         }
         server.shutdown()
     }
@@ -493,4 +489,13 @@ class OidcAuthorizationCodeGrantIntegrationTest {
             .addQueryParameter("code_challenge", Pkce().challenge.value)
             .addQueryParameter("code_challenge_method", "S512")
             .build()
+
+    private fun Response.shouldRedirectInvalidRequest() {
+        code shouldBe 302
+        val location = checkNotNull(headers["location"]).toHttpUrl()
+        location.host shouldBe "defaultredirecturi"
+        location.queryParameter("error") shouldBe "invalid_request"
+        location.queryParameter("state") shouldBe "1234"
+        location.queryParameter("code") shouldBe null
+    }
 }

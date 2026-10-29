@@ -19,6 +19,7 @@ import com.nimbusds.oauth2.sdk.AuthorizationGrant
 import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.OAuth2Error
+import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT
@@ -57,6 +58,15 @@ internal fun AuthenticationRequest.requireSupportedCodeChallengeMethod() {
     val method = this.codeChallengeMethod ?: return
     if (method !in SUPPORTED_CODE_CHALLENGE_METHODS) {
         invalidRequest(ErrorObject.removeIllegalChars("unsupported code_challenge_method: ${method.value}"))
+    }
+}
+
+internal val SUPPORTED_RESPONSE_MODES: Set<ResponseMode> = setOf(ResponseMode.QUERY, ResponseMode.FRAGMENT, ResponseMode.FORM_POST)
+
+internal fun AuthenticationRequest.requireSupportedResponseMode() {
+    val mode = this.responseMode ?: return
+    if (mode !in SUPPORTED_RESPONSE_MODES) {
+        invalidRequest(ErrorObject.removeIllegalChars("unsupported response_mode: ${mode.value}"))
     }
 }
 
