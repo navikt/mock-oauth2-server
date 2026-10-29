@@ -104,6 +104,28 @@ class AuthorizationErrorResponseIntegrationTest {
         }
     }
 
+    @Test
+    fun `authorize request with unsupported response_mode should return a JSON error`() {
+        withMockOAuth2Server {
+            client.get(authorizeUrl("response_mode" to "bogus")).use {
+                it.code shouldBe 400
+                it.headers["location"] shouldBe null
+                it.body.string() shouldContain "unsupported response_mode: bogus"
+            }
+        }
+    }
+
+    @Test
+    fun `authorize error with unsupported response_mode should return a JSON error`() {
+        withMockOAuth2Server {
+            client.get(authorizeUrl("response_mode" to "bogus", "code_challenge" to "abc", "code_challenge_method" to "S512")).use {
+                it.code shouldBe 400
+                it.headers["location"] shouldBe null
+                it.body.string() shouldContain "invalid_request"
+            }
+        }
+    }
+
     private fun MockOAuth2Server.authorizeUrl(vararg overrides: Pair<String, String?>): HttpUrl {
         val params =
             linkedMapOf<String, String?>(
