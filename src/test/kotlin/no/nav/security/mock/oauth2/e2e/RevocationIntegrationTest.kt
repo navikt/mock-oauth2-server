@@ -153,6 +153,53 @@ class RevocationIntegrationTest {
         }
     }
 
+    @Test
+    fun `revocation request without client authentication should return 401 invalid_client and keep the token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            client
+                .post(
+                    this.revocationEndpointUrl("default"),
+                    mapOf("token" to refreshToken),
+                ).use {
+                    it.code shouldBe 401
+                    it.body.string() shouldContain "invalid_client"
+                }
+            refresh(refreshToken).accessToken?.subject shouldBe initialSubject
+        }
+    }
+
+    @Test
+    fun `revocation request with client_secret_basic should remove refresh token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            client
+                .tokenRequest(
+                    this.revocationEndpointUrl("default"),
+                    "id" to "secret",
+                    mapOf("token" to refreshToken),
+                ).use {
+                    it.code shouldBe 200
+                }
+            refreshShouldFail(refreshToken)
+        }
+    }
+
+    @Test
+    fun `revocation request from a public client with only client_id should remove refresh token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            client
+                .post(
+                    this.revocationEndpointUrl("default"),
+                    mapOf("client_id" to "id", "token" to refreshToken),
+                ).use {
+                    it.code shouldBe 200
+                }
+            refreshShouldFail(refreshToken)
+        }
+    }
+
     private fun MockOAuth2Server.revoke(
         token: String,
         tokenTypeHint: String?,
