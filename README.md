@@ -696,6 +696,8 @@ GET /{issuerId}/.well-known/oauth-authorization-server
 
 **Introspect** (`POST /{issuerId}/introspect`) requires an `Authorization` header. Either `Authorization: Bearer <token>` or `Authorization: Basic <credentials>` is accepted. Requests without it will receive `401 invalid_client`.
 
+**Token** (`POST /{issuerId}/token`) does not validate the incoming token in the JWT Bearer Grant (`assertion`) or the Token Exchange Grant (`subject_token`). The signature, `exp` and `aud` are not checked, so a token from any issuer, or an expired one, is accepted. Its claims are copied to the new token, which gets a new `iss`, `aud`, `exp`, `iat`, `nbf` and `jti`. RFC 7523 section 3 and RFC 8693 section 2.1 require this validation from a real authorization server. The mock skips it so that tests can exchange tokens from other issuers. Validate these tokens in your own application, not by relying on the mock to reject them.
+
 **Revocation** (`POST /{issuerId}/revoke`) removes the token if it is a refresh token issued by the server. `token_type_hint` is optional and may be `refresh_token` or `access_token`; access tokens are self-contained JWTs and stay valid until they expire. Any other hint returns `400 unsupported_token_type`. An unknown token returns `200`, as RFC 7009 requires.
 
 ### Server URL methods (Kotlin/Java API)
