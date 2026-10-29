@@ -8,6 +8,8 @@ Previously, every error from the authorize endpoint returned a JSON `400` from t
 
 **New behavior (7.0.0):** when the request has a `client_id` and a `redirect_uri`, errors such as `invalid_request` and `unsupported_response_type` are sent to `redirect_uri` with `error`, `error_description` and `state`, using the requested `response_mode`: a `302` redirect for `query` and `fragment`, or an auto-submitted form for `form_post`. Without `client_id` or `redirect_uri`, the JSON `400` is unchanged.
 
+Other response modes, such as the JWT-secured `query.jwt`, `fragment.jwt`, `form_post.jwt` and `jwt`, were never supported or listed in `response_modes_supported`. They now return a JSON `400 invalid_request` instead of a plain redirect.
+
 **Affected pattern:** tests that call the authorize endpoint with an invalid request and expect a JSON `400`.
 
 **Migration:** assert on the `error` parameter of the redirect (or the posted form) instead of the JSON body:

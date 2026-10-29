@@ -694,7 +694,7 @@ GET /{issuerId}/.well-known/oauth-authorization-server
 
 ### Endpoint notes
 
-**Authorize** (`GET /{issuerId}/authorize`) only supports `response_type=code`. Errors are sent to `redirect_uri` with `error` and `state`, using the requested `response_mode`. When `client_id` or `redirect_uri` is missing, a JSON `400` is returned instead.
+**Authorize** (`GET /{issuerId}/authorize`) only supports `response_type=code`. Errors are sent to `redirect_uri` with `error` and `state`, using the requested `response_mode`. When `client_id` or `redirect_uri` is missing, a JSON `400` is returned instead. Only the `query`, `fragment` and `form_post` response modes are supported; any other `response_mode` returns a JSON `400 invalid_request`.
 
 **Introspect** (`POST /{issuerId}/introspect`) requires an `Authorization` header. Either `Authorization: Bearer <token>` or `Authorization: Basic <credentials>` is accepted. Requests without it will receive `401 invalid_client`.
 
