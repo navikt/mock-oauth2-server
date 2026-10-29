@@ -12,6 +12,7 @@ import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.oauth2.sdk.ResponseMode
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.token.BearerTokenError
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import io.netty.handler.codec.http.HttpHeaderNames
@@ -222,6 +223,7 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.revocation(refreshTokenManager: RefreshTokenManager) =
         post(REVOKE) {
             log.debug("handle revocation request $it")
+            it.requireClientIdentified()
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
                 null, "refresh_token", "access_token" -> {
@@ -237,6 +239,15 @@ class OAuth2HttpRequestHandler(
             }
             OAuth2HttpResponse(status = 200)
         }
+
+    private fun OAuth2HttpRequest.requireClientIdentified() {
+        val hasClientAuthentication = ClientAuthentication.parse(asNimbusHTTPRequest()) != null
+        val hasPublicClientId = !formParameters.get("client_id").isNullOrBlank()
+        if (!hasClientAuthentication && !hasPublicClientId) {
+            val msg = "client authentication or client_id is required"
+            throw OAuth2Exception(OAuth2Error.INVALID_CLIENT.setDescription(msg), msg)
+        }
+    }
 
     private fun Route.Builder.token() =
         apply {
