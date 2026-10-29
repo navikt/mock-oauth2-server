@@ -1,5 +1,21 @@
 # Migration guide
 
+## Migrating to 7.0.0
+
+### The revocation endpoint requires client authentication
+
+Previously, `POST /{issuerId}/revoke` revoked a token without any client authentication.
+
+**New behavior (7.0.0):** a revocation request needs client authentication (for example `client_secret_basic`, `client_secret_post` or `private_key_jwt`) or, for public clients, a `client_id` parameter. Without either, the endpoint returns `401 invalid_client` and the token is not revoked.
+
+**Affected pattern:** tests that revoke a token with only the `token` parameter.
+
+**Migration:** send the client credentials with the revocation request, as you do on the token endpoint:
+
+```kotlin
+client.post(server.revocationEndpointUrl("default"), mapOf("client_id" to "id", "token" to refreshToken))
+```
+
 ## Migrating to 6.0.0
 
 ### `logback-classic` and `kotlinx-serialization-json` are no longer bundled
