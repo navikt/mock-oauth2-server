@@ -13,6 +13,7 @@ import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
 import no.nav.security.mock.oauth2.testutils.audience
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.client
+import no.nav.security.mock.oauth2.testutils.parse
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.shouldBeValidFor
 import no.nav.security.mock.oauth2.testutils.subject
@@ -23,6 +24,7 @@ import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -242,6 +244,132 @@ class RefreshTokenGrantIntegrationTest {
                 refreshToken = checkNotNull(response.refreshToken)
             }
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `refresh_token issued to one client should not be accepted from a different client`(rotateRefreshToken: Boolean) {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = rotateRefreshToken)) {
+            val refreshToken = checkNotNull(this.runAuthCodeFlow("idprovider", "subject").refreshToken)
+
+            client.refreshWithClientParameters(this, "idprovider", refreshToken, mapOf("client_id" to "other-client")).use {
+                it.shouldBeInvalidGrant()
+            }
+            client.refreshWithBasicAuth(this, "idprovider", refreshToken, "other-client" to "secret").use {
+                it.shouldBeInvalidGrant()
+            }
+            client.refreshTokenRequest(this, "idprovider", refreshToken).use {
+                it.code shouldBe 200
+            }
+        }
+    }
+
+    @Test
+    fun `refresh_token issued to a public client should not be accepted from a different public client`() {
+        withMockOAuth2Server {
+            val refreshToken = this.publicClientRefreshToken("idprovider", "public-client")
+
+            client.refreshWithClientParameters(this, "idprovider", refreshToken, mapOf("client_id" to "other-public-client")).use {
+                it.shouldBeInvalidGrant()
+            }
+            client.refreshWithClientParameters(this, "idprovider", refreshToken, mapOf("client_id" to "public-client")).use {
+                it.code shouldBe 200
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `refresh without client identification should preserve the refresh token and queued callback`(rotateRefreshToken: Boolean) {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = rotateRefreshToken)) {
+            val issuerId = "idprovider"
+            val refreshToken = checkNotNull(this.runAuthCodeFlow(issuerId, "subject").refreshToken)
+            val expectedSubject = "queued-subject"
+            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = expectedSubject))
+
+            client.refreshWithClientParameters(this, issuerId, refreshToken, emptyMap()).use {
+                it.code shouldBe 401
+                it.header("Content-Type") shouldContain "application/json"
+                it.header("WWW-Authenticate") shouldBe null
+                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_client"
+            }
+
+            client.refreshTokenRequest(this, issuerId, refreshToken).use { response ->
+                response.code shouldBe 200
+                response.toTokenResponse().asClue {
+                    it shouldBeValidFor GrantType.REFRESH_TOKEN
+                    it.idToken.shouldNotBeNull().subject shouldBe expectedSubject
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `rotated refresh_token should stay bound to the client it was issued to`() {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = true)) {
+            val refreshToken = checkNotNull(this.runAuthCodeFlow("idprovider", "subject").refreshToken)
+            val rotatedRefreshToken = checkNotNull(client.refreshTokenRequest(this, "idprovider", refreshToken).toTokenResponse().refreshToken)
+
+            client.refreshWithClientParameters(this, "idprovider", rotatedRefreshToken, mapOf("client_id" to "other-client")).use {
+                it.shouldBeInvalidGrant()
+            }
+            client.refreshTokenRequest(this, "idprovider", rotatedRefreshToken).use {
+                it.code shouldBe 200
+            }
+        }
+    }
+
+    private fun Response.shouldBeInvalidGrant() {
+        code shouldBe 400
+        header("Content-Type") shouldContain "application/json"
+        header("WWW-Authenticate") shouldBe null
+        parse<Map<String, Any>>()["error"] shouldBe "invalid_grant"
+    }
+
+    private fun OkHttpClient.refreshWithClientParameters(
+        server: MockOAuth2Server,
+        issuerId: String,
+        refreshToken: String,
+        clientParameters: Map<String, String>,
+    ) = tokenRequest(
+        server.tokenEndpointUrl(issuerId),
+        mapOf("grant_type" to GrantType.REFRESH_TOKEN.value, "refresh_token" to refreshToken) + clientParameters,
+    )
+
+    private fun OkHttpClient.refreshWithBasicAuth(
+        server: MockOAuth2Server,
+        issuerId: String,
+        refreshToken: String,
+        clientCredentials: Pair<String, String>,
+    ) = tokenRequest(
+        server.tokenEndpointUrl(issuerId),
+        clientCredentials,
+        mapOf("grant_type" to GrantType.REFRESH_TOKEN.value, "refresh_token" to refreshToken),
+    )
+
+    private fun MockOAuth2Server.publicClientRefreshToken(
+        issuerId: String,
+        clientId: String,
+    ): String {
+        val code =
+            client
+                .post(
+                    this.authorizationEndpointUrl(issuerId).authenticationRequest(clientId = clientId, redirectUri = "http://something"),
+                    mapOf("username" to "foo"),
+                ).let { it.headers["location"]?.toHttpUrl()?.queryParameter("code") }
+                .shouldNotBeNull()
+        return client
+            .tokenRequest(
+                this.tokenEndpointUrl(issuerId),
+                mapOf(
+                    "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                    "code" to code,
+                    "client_id" to clientId,
+                    "redirect_uri" to "http://something",
+                ),
+            ).toTokenResponse()
+            .refreshToken
+            .shouldNotBeNull()
     }
 
     private fun OkHttpClient.refreshTokenRequest(

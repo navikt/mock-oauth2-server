@@ -9,6 +9,7 @@ import com.nimbusds.oauth2.sdk.Scope
 import com.nimbusds.oauth2.sdk.TokenRequest
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
@@ -40,6 +41,10 @@ internal class RefreshTokenGrantHandler(
         val storedCallback = storedState.tokenCallback
         if (storedCallback.issuerId() != issuerId) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
+        }
+        val requestingClientId = tokenRequest.clientIdAsString()
+        if (storedState.clientId != null && storedState.clientId != requestingClientId) {
+            throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued to a different client"), "refresh_token client mismatch")
         }
         val scope: String? = tokenRequest.scope.withinGrantedScope(storedState.grantedScope)?.toString()
         if (rotateRefreshToken) {

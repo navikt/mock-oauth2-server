@@ -11,6 +11,7 @@ import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.issuerId
+import no.nav.security.mock.oauth2.extensions.requestingClientId
 import no.nav.security.mock.oauth2.extensions.verifyPkce
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
@@ -118,7 +119,14 @@ internal class AuthorizationCodeHandler(
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val refreshToken: RefreshToken =
-            refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime, authenticationRequest.scope)
+            refreshTokenManager.refreshToken(
+                loginTokenCallbackOrDefault,
+                nonce,
+                idTokenSubject,
+                authTime,
+                authenticationRequest.scope,
+                tokenRequest.requestingClientId(),
+            )
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
