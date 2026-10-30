@@ -278,6 +278,29 @@ class RefreshTokenGrantIntegrationTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `refresh without client identification should preserve the refresh token and queued callback`(rotateRefreshToken: Boolean) {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = rotateRefreshToken)) {
+            val issuerId = "idprovider"
+            val refreshToken = checkNotNull(this.runAuthCodeFlow(issuerId, "subject").refreshToken)
+            val expectedSubject = "queued-subject"
+            this.enqueueCallback(DefaultOAuth2TokenCallback(issuerId = issuerId, subject = expectedSubject))
+
+            client.refreshWithClientParameters(this, issuerId, refreshToken, emptyMap()).use {
+                it.code shouldBe 401
+                it.header("Content-Type") shouldContain "application/json"
+                it.header("WWW-Authenticate") shouldBe null
+                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_client"
+            }
+
+            client.refreshTokenRequest(this, issuerId, refreshToken).toTokenResponse().asClue {
+                it shouldBeValidFor GrantType.REFRESH_TOKEN
+                it.idToken!!.subject shouldBe expectedSubject
+            }
+        }
+    }
+
     @Test
     fun `rotated refresh_token should stay bound to the client it was issued to`() {
         withMockOAuth2Server(OAuth2Config(rotateRefreshToken = true)) {
