@@ -18,6 +18,7 @@ internal data class RefreshTokenState(
     val idTokenSubject: String? = null,
     val authTime: Instant? = null,
     val grantedScope: Scope? = null,
+    val clientId: String? = null,
 )
 
 internal data class RefreshTokenManager(
@@ -35,7 +36,8 @@ internal data class RefreshTokenManager(
         idTokenSubject: String? = null,
         authTime: Instant? = null,
         grantedScope: Scope? = null,
-    ): RefreshToken = refreshToken(RefreshTokenState(tokenCallback, idTokenSubject, authTime, grantedScope), nonce)
+        clientId: String? = null,
+    ): RefreshToken = refreshToken(RefreshTokenState(tokenCallback, idTokenSubject, authTime, grantedScope, clientId), nonce)
 
     fun rotate(refreshToken: RefreshToken): RefreshToken {
         val state =
