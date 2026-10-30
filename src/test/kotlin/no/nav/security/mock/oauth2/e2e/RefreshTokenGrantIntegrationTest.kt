@@ -294,9 +294,12 @@ class RefreshTokenGrantIntegrationTest {
                 it.parse<Map<String, Any>>()["error"] shouldBe "invalid_client"
             }
 
-            client.refreshTokenRequest(this, issuerId, refreshToken).toTokenResponse().asClue {
-                it shouldBeValidFor GrantType.REFRESH_TOKEN
-                it.idToken!!.subject shouldBe expectedSubject
+            client.refreshTokenRequest(this, issuerId, refreshToken).use { response ->
+                response.code shouldBe 200
+                response.toTokenResponse().asClue {
+                    it shouldBeValidFor GrantType.REFRESH_TOKEN
+                    it.idToken.shouldNotBeNull().subject shouldBe expectedSubject
+                }
             }
         }
     }
