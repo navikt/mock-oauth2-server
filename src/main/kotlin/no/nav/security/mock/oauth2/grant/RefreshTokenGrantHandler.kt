@@ -11,7 +11,7 @@ import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.issuerId
-import no.nav.security.mock.oauth2.extensions.requestingClientId
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
@@ -42,8 +42,8 @@ internal class RefreshTokenGrantHandler(
         if (storedCallback.issuerId() != issuerId) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
         }
-        val requestingClientId = tokenRequest.requestingClientId()
-        if (storedState.clientId != null && requestingClientId != null && storedState.clientId != requestingClientId) {
+        val requestingClientId = tokenRequest.clientIdAsString()
+        if (storedState.clientId != null && storedState.clientId != requestingClientId) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued to a different client"), "refresh_token client mismatch")
         }
         val scope: String? = tokenRequest.scope.withinGrantedScope(storedState.grantedScope)?.toString()
