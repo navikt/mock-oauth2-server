@@ -8,7 +8,7 @@ applyTo: "src/**/*.kt"
 
 - Fail through the helpers in `OAuth2Exception.kt` with Nimbus `OAuth2Error` codes. `!!`, `require`, `error()` or `.first()` on request data become a 500.
 - Build issuer URLs with `toIssuerUrl()`/`issuerId()` on the request URL. Never hard-code the host.
-- Get the client id with `TokenRequest.clientIdAsString()`. It covers both the form and HTTP Basic auth (#935).
+- Get the client id with `TokenRequest.clientIdAsString()`. It covers both the form and HTTP Basic auth (#935). Use `TokenRequest.requestingClientId()` when a request without a client id is valid; it returns `null` instead of failing with `invalid_client`.
 - Register new endpoints in `authorizationServer` so the exception handler and CORS apply to them.
 - Use Jackson 3 (`tools.jackson.*`). `com.fasterxml.jackson.annotation` is fine.
 - Consumers extend `KeyProvider`, `DefaultOAuth2TokenCallback` and `MockOAuth2Server`, and implement `OAuth2TokenCallback`. Changing their public or open members is a breaking change.
