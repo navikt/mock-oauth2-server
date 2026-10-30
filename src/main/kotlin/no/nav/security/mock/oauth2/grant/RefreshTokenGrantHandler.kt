@@ -9,9 +9,9 @@ import com.nimbusds.oauth2.sdk.Scope
 import com.nimbusds.oauth2.sdk.TokenRequest
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.issuerId
-import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
