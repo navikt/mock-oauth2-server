@@ -638,13 +638,25 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 | Property             | Description                                                                                                                                                                                                                                                                       |
 |----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `interactiveLogin`   | `true` or `false`. Enables a login screen on the `/authorize` endpoint. Defaults to `true` in standalone mode, `false` in library mode.                                                                                                                                           |
-| `loginPagePath`      | Path to a custom HTML login page. The page must contain a form that posts `username` and optionally `claims`. See `src/test/resources/login.example.html` for an example.                                                                                                         |
-| `staticAssetsPath`   | Optional path to a directory of static assets served under `/static`. Omit to disable `/static/*`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                                                                                 |
+| `loginPagePath`      | Path to a custom HTML login page, or a classpath resource prefixed with `classpath:`. The page must contain a form that posts `username` and optionally `claims`. See `src/test/resources/login.example.html` for an example.                                                     |
+| `staticAssetsPath`   | Optional path to a directory of static assets served under `/static`, or a classpath directory prefixed with `classpath:`. Omit to disable `/static/*`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                          |
 | `rotateRefreshToken` | `true` or `false`. When `true`, a new refresh token is issued on each refresh grant, invalidating the previous one.                                                                                                                                                               |
 | `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper`. Can also be a JSON object with HTTPS enabled, for either type: `{"type": "NettyWrapper", "ssl": {...}}`.                                                       |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
 
-`staticAssetsPath` must not be blank. Only regular files within the configured directory are served; symlinks pointing outside it are not followed.
+`staticAssetsPath` must not be blank, the classpath root or outside the classpath. Only regular files within the configured directory are served; symlinks pointing outside it are not followed. With `classpath:`, symlinks are not followed at all.
+
+To load the login page and assets from the classpath, for example from `src/test/resources` in your project or from a jar. Resources are looked up with the context class loader of the thread that creates the server:
+
+```kotlin
+MockOAuth2Server(
+    OAuth2Config(
+        interactiveLogin = true,
+        loginPagePath = "classpath:login.html",
+        staticAssetsPath = "classpath:static",
+    ),
+)
+```
 
 Additional token provider options:
 
