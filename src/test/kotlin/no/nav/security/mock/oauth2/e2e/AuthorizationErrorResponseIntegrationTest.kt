@@ -8,10 +8,14 @@ import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
+import no.nav.security.mock.oauth2.testutils.parse
+import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 class AuthorizationErrorResponseIntegrationTest {
     private val client = client()
@@ -91,6 +95,36 @@ class AuthorizationErrorResponseIntegrationTest {
                 it.headers["location"] shouldBe null
                 it.body.string() shouldContain "invalid_request"
             }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["query", "fragment", "form_post"])
+    fun `authorize parse error with a relative redirect_uri should return a JSON error`(responseMode: String) {
+        withMockOAuth2Server {
+            client
+                .get(authorizeUrl("response_type" to null, "redirect_uri" to "foo", "response_mode" to responseMode))
+                .use {
+                    it.code shouldBe 400
+                    it.header("Location") shouldBe null
+                    it.header("Content-Type") shouldContain "application/json"
+                    it.parse<Map<String, Any>>()["error"] shouldBe "invalid_request"
+                }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["query", "fragment", "form_post"])
+    fun `authorize login error with a relative redirect_uri should return a JSON error`(responseMode: String) {
+        withMockOAuth2Server {
+            client
+                .post(authorizeUrl("redirect_uri" to "foo", "response_mode" to responseMode), emptyMap())
+                .use {
+                    it.code shouldBe 400
+                    it.header("Location") shouldBe null
+                    it.header("Content-Type") shouldContain "application/json"
+                    it.parse<Map<String, Any>>()["error"] shouldBe "invalid_request"
+                }
         }
     }
 

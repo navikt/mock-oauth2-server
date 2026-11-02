@@ -147,6 +147,7 @@ class OAuth2HttpRequestHandler(
         val authRequest = runCatching { asAuthenticationRequest() }.getOrNull()
         (authRequest?.clientID ?: parseException?.clientID) ?: return null
         val redirectUri = authRequest?.redirectionURI ?: parseException?.redirectionURI ?: return null
+        if (!redirectUri.isAbsolute) return null
         val responseMode = authRequest?.impliedResponseMode() ?: parseException?.responseMode ?: ResponseMode.QUERY
         if (responseMode !in SUPPORTED_RESPONSE_MODES) return null
         if (responseMode == ResponseMode.FORM_POST && redirectUri.scheme?.lowercase() !in setOf("http", "https")) return null
