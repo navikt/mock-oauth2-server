@@ -4,6 +4,7 @@ import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.http.WellKnown
 import no.nav.security.mock.oauth2.testutils.client
@@ -17,11 +18,14 @@ class AuthorizeResponseTypeIntegrationTest {
     private val client = client()
 
     @Test
-    fun `authorize request with hybrid response_type should return unsupported_response_type`() {
+    fun `authorize request with hybrid response_type should redirect unsupported_response_type to the client`() {
         withMockOAuth2Server {
             client.get(authorizeUrl("response_type" to "code id_token")).use {
-                it.code shouldBe 400
-                it.body.string() shouldContain "unsupported_response_type"
+                it.code shouldBe 302
+                val location = checkNotNull(it.header("Location"))
+                location shouldStartWith "http://mycallback"
+                location shouldContain "error=unsupported_response_type"
+                location shouldContain "state=s1"
             }
         }
     }
