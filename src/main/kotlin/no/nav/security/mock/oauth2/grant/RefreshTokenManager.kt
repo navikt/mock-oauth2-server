@@ -22,13 +22,20 @@ internal data class RefreshTokenState(
 )
 
 internal data class RefreshTokenManager(
-    private val cache: MutableMap<RefreshToken, RefreshTokenState> = ConcurrentHashMap(),
+    private val cache: ConcurrentHashMap<RefreshToken, RefreshTokenState> = ConcurrentHashMap(),
 ) {
     operator fun get(refreshToken: RefreshToken) = cache[refreshToken]?.tokenCallback
 
     fun state(refreshToken: RefreshToken) = cache[refreshToken]
 
-    fun remove(refreshToken: RefreshToken) = cache.remove(refreshToken)
+    fun revoke(
+        refreshToken: RefreshToken,
+        clientId: String,
+    ) {
+        cache.computeIfPresent(refreshToken) { _, state ->
+            state.takeUnless { it.clientId == clientId }
+        }
+    }
 
     fun rotate(refreshToken: RefreshToken): RefreshToken {
         val state =

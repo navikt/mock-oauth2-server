@@ -30,6 +30,20 @@ Previously, `POST /{issuerId}/revoke` revoked a token without any client authent
 client.post(server.revocationEndpointUrl("default"), mapOf("client_id" to "id", "token" to refreshToken))
 ```
 
+### Only the owning client can revoke a refresh token
+
+Previously, any client could revoke another client's refresh token.
+
+**New behavior (7.0.0):** a revocation request removes a refresh token only when it comes from the client the token was issued to. Client authentication takes precedence over a conflicting `client_id` parameter. A request from another client returns `200` with an empty body without revoking the token, the same as for an unknown token. Rotated tokens keep their owner.
+
+**Affected pattern:** tests that revoke a refresh token with a different client than the one that obtained it.
+
+**Migration:** revoke with the same client that obtained the refresh token:
+
+```kotlin
+client.post(server.revocationEndpointUrl("default"), mapOf("client_id" to "id", "token" to refreshToken))
+```
+
 ## Migrating to 6.0.0
 
 ### `logback-classic` and `kotlinx-serialization-json` are no longer bundled

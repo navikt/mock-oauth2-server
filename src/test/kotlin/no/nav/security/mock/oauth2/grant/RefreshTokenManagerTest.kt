@@ -22,6 +22,28 @@ internal class RefreshTokenManagerTest {
     }
 
     @Test
+    fun `only the owning client can revoke a refresh token`() {
+        val mgr = RefreshTokenManager()
+        val token = mgr.refreshToken(state(clientId = "owner"))
+        val state = mgr.state(token)
+
+        mgr.revoke(token, "other")
+        mgr.state(token) shouldBe state
+
+        mgr.revoke(token, "owner")
+        mgr.state(token) shouldBe null
+    }
+
+    @Test
+    fun `revoking an unknown refresh token should do nothing`() {
+        val mgr = RefreshTokenManager()
+
+        mgr.revoke("unknown", "client")
+
+        mgr.state("unknown") shouldBe null
+    }
+
+    @Test
     fun `refresh token should be a jwt with nonce included if nonce is not null (for keycloak compatibility)`() {
         val mgr = RefreshTokenManager()
 
