@@ -67,7 +67,7 @@ data class WellKnown(
     @JsonProperty("introspection_endpoint")
     val introspectionEndpoint: String,
     @JsonProperty("response_types_supported")
-    val responseTypesSupported: List<String> = listOf("code", "none", "id_token", "token"),
+    val responseTypesSupported: List<String> = listOf("code"),
     @JsonProperty("response_modes_supported")
     val responseModesSupported: List<String> = listOf("query", "fragment", "form_post"),
     @JsonProperty("subject_types_supported")
@@ -183,7 +183,7 @@ fun authenticationSuccess(authenticationSuccessResponse: AuthenticationSuccessRe
                         authenticationSuccessResponse.authorizationCode.value,
                         authenticationSuccessResponse.state?.value,
                     ),
-            )
+            ).withNoStore()
         }
 
         else -> {
