@@ -314,6 +314,8 @@ buildscript {
         constraints {
             classpath("com.fasterxml.jackson.core:jackson-core:2.22.3")
             classpath("com.fasterxml.jackson.core:jackson-databind:2.22.3")
+            classpath("com.google.guava:guava:33.7.2-jre")
+            classpath("org.apache.commons:commons-lang3:3.21.0")
         }
     }
 }
