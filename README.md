@@ -658,6 +658,8 @@ MockOAuth2Server(
 )
 ```
 
+In Docker, mount the files and use a file path, for example `-v ./login:/login` with `"loginPagePath": "/login/login.html"`. The image's classpath is fixed, so `classpath:` only finds resources that are already in the image.
+
 Additional token provider options:
 
 ```json
