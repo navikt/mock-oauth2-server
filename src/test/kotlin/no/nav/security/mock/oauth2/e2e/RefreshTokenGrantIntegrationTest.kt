@@ -319,6 +319,39 @@ class RefreshTokenGrantIntegrationTest {
         }
     }
 
+    @Test
+    fun `refresh with owner Basic authentication should ignore a different form client_id`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(this.runAuthCodeFlow("idprovider", "subject").refreshToken)
+
+            client
+                .tokenRequest(
+                    this.tokenEndpointUrl("idprovider"),
+                    "id" to "secret",
+                    mapOf("grant_type" to GrantType.REFRESH_TOKEN.value, "refresh_token" to refreshToken, "client_id" to "other-client"),
+                ).use {
+                    it.code shouldBe 200
+                }
+        }
+    }
+
+    @Test
+    fun `refresh with a blank client_id should return invalid_client and preserve the refresh token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(this.runAuthCodeFlow("idprovider", "subject").refreshToken)
+
+            listOf("", " ").forEach { clientId ->
+                client.refreshWithClientParameters(this, "idprovider", refreshToken, mapOf("client_id" to clientId)).use {
+                    it.code shouldBe 401
+                    it.parse<Map<String, Any>>()["error"] shouldBe "invalid_client"
+                }
+            }
+            client.refreshTokenRequest(this, "idprovider", refreshToken).use {
+                it.code shouldBe 200
+            }
+        }
+    }
+
     private fun Response.shouldBeInvalidGrant() {
         code shouldBe 400
         header("Content-Type") shouldContain "application/json"

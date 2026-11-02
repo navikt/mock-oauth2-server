@@ -38,14 +38,8 @@ internal class RefreshTokenGrantHandler(
         val storedState =
             refreshTokenManager.state(refreshToken)
                 ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("unknown refresh_token"), "unknown refresh_token")
+        storedState.requireIssuedTo(issuerId, tokenRequest.clientIdAsString())
         val storedCallback = storedState.tokenCallback
-        if (storedCallback.issuerId() != issuerId) {
-            throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued by a different issuer"), "refresh_token issuer mismatch")
-        }
-        val requestingClientId = tokenRequest.clientIdAsString()
-        if (storedState.clientId != null && storedState.clientId != requestingClientId) {
-            throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was issued to a different client"), "refresh_token client mismatch")
-        }
         val scope: String? = tokenRequest.scope.withinGrantedScope(storedState.grantedScope)?.toString()
         if (rotateRefreshToken) {
             refreshToken = refreshTokenManager.rotate(refreshToken)
@@ -63,6 +57,23 @@ internal class RefreshTokenGrantHandler(
             scope = scope,
         )
     }
+
+    private fun RefreshTokenState.requireIssuedTo(
+        issuerId: String,
+        clientId: String,
+    ) {
+        if (tokenCallback.issuerId() != issuerId) {
+            refreshTokenMismatch("refresh_token was issued by a different issuer", "refresh_token issuer mismatch")
+        }
+        if (this.clientId != clientId) {
+            refreshTokenMismatch("refresh_token was issued to a different client", "refresh_token client mismatch")
+        }
+    }
+
+    private fun refreshTokenMismatch(
+        description: String,
+        message: String,
+    ): Nothing = throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(description), message)
 
     private fun Scope?.withinGrantedScope(grantedScope: Scope?): Scope? {
         if (this == null || grantedScope == null) {
