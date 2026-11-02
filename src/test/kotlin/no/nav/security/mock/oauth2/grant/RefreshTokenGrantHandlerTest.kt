@@ -17,7 +17,7 @@ internal class RefreshTokenGrantHandlerTest {
     @Test
     fun `refresh request that loses a concurrent rotation should not consume the enqueued callback`() {
         val refreshTokenManager = RefreshTokenManager(RotatedByConcurrentRequestCache())
-        val refreshToken = refreshTokenManager.refreshToken(DefaultOAuth2TokenCallback(issuerId = "default"))
+        val refreshToken = refreshTokenManager.refreshToken(RefreshTokenState(DefaultOAuth2TokenCallback(issuerId = "default"), "client1"))
         val enqueuedCallbacks = ArrayDeque<OAuth2TokenCallback>(listOf(DefaultOAuth2TokenCallback(issuerId = "default", subject = "enqueued")))
         val handler =
             RefreshTokenGrantHandler(OAuth2TokenProvider(), refreshTokenManager, rotateRefreshToken = true) { enqueuedCallbacks.removeFirstOrNull() }
