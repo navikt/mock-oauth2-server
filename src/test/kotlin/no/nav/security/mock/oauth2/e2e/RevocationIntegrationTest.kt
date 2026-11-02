@@ -14,6 +14,7 @@ import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.withMockOAuth2Server
+import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
@@ -164,6 +165,51 @@ class RevocationIntegrationTest {
                 ).use {
                     it.code shouldBe 401
                     it.body.string() shouldContain "invalid_client"
+                }
+            refresh(refreshToken).accessToken?.subject shouldBe initialSubject
+        }
+    }
+
+    @Test
+    fun `revocation request with a blank client_id or only client_secret should return 401 invalid_client and keep the token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            listOf(mapOf("client_id" to ""), mapOf("client_id" to " "), mapOf("client_secret" to "secret")).forEach { clientParameters ->
+                client
+                    .post(this.revocationEndpointUrl("default"), clientParameters + ("token" to refreshToken))
+                    .use {
+                        it.code shouldBe 401
+                        it.body.string() shouldContain "invalid_client"
+                    }
+            }
+            refresh(refreshToken).accessToken?.subject shouldBe initialSubject
+        }
+    }
+
+    @Test
+    fun `revocation request with malformed client authentication should return 400 invalid_request and keep the token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            client
+                .tokenRequest(
+                    this.revocationEndpointUrl("default"),
+                    Headers.headersOf("Authorization", "Basic bm9jb2xvbg=="),
+                    mapOf("client_id" to "id", "token" to refreshToken),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_request"
+                }
+            client
+                .post(
+                    this.revocationEndpointUrl("default"),
+                    mapOf(
+                        "client_assertion_type" to "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                        "client_assertion" to "not-a-jwt",
+                        "token" to refreshToken,
+                    ),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_request"
                 }
             refresh(refreshToken).accessToken?.subject shouldBe initialSubject
         }
