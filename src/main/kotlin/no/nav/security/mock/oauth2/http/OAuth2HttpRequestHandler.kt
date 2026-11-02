@@ -29,6 +29,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
+import no.nav.security.mock.oauth2.extensions.requestingClientId
 import no.nav.security.mock.oauth2.extensions.requireSupportedCodeChallengeMethod
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
@@ -41,6 +42,7 @@ import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
 import no.nav.security.mock.oauth2.introspect.introspect
+import no.nav.security.mock.oauth2.invalidClient
 import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
@@ -223,7 +225,7 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.revocation(refreshTokenManager: RefreshTokenManager) =
         post(REVOKE) {
             log.debug("handle revocation request $it")
-            it.requireClientIdentified()
+            it.identifiedClientIdOrFail()
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
                 null, "refresh_token", "access_token" -> {
@@ -240,14 +242,9 @@ class OAuth2HttpRequestHandler(
             OAuth2HttpResponse(status = 200)
         }
 
-    private fun OAuth2HttpRequest.requireClientIdentified() {
-        val hasClientAuthentication = ClientAuthentication.parse(asNimbusHTTPRequest()) != null
-        val hasPublicClientId = !formParameters.get("client_id").isNullOrBlank()
-        if (!hasClientAuthentication && !hasPublicClientId) {
-            val msg = "client authentication or client_id is required"
-            throw OAuth2Exception(OAuth2Error.INVALID_CLIENT.setDescription(msg), msg)
-        }
-    }
+    private fun OAuth2HttpRequest.identifiedClientIdOrFail(): String =
+        requestingClientId(ClientAuthentication.parse(asNimbusHTTPRequest()), formParameters.get("client_id"))
+            ?: invalidClient("client authentication or client_id is required")
 
     private fun Route.Builder.token() =
         apply {
