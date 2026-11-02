@@ -15,10 +15,10 @@ typealias Nonce = String
 
 internal data class RefreshTokenState(
     val tokenCallback: OAuth2TokenCallback,
+    val clientId: String,
     val idTokenSubject: String? = null,
     val authTime: Instant? = null,
     val grantedScope: Scope? = null,
-    val clientId: String? = null,
 )
 
 internal data class RefreshTokenManager(
@@ -30,15 +30,6 @@ internal data class RefreshTokenManager(
 
     fun remove(refreshToken: RefreshToken) = cache.remove(refreshToken)
 
-    fun refreshToken(
-        tokenCallback: OAuth2TokenCallback,
-        nonce: Nonce? = null,
-        idTokenSubject: String? = null,
-        authTime: Instant? = null,
-        grantedScope: Scope? = null,
-        clientId: String? = null,
-    ): RefreshToken = refreshToken(RefreshTokenState(tokenCallback, idTokenSubject, authTime, grantedScope, clientId), nonce)
-
     fun rotate(refreshToken: RefreshToken): RefreshToken {
         val state =
             cache.remove(refreshToken)
@@ -46,9 +37,9 @@ internal data class RefreshTokenManager(
         return refreshToken(state, null)
     }
 
-    private fun refreshToken(
+    fun refreshToken(
         state: RefreshTokenState,
-        nonce: Nonce?,
+        nonce: Nonce? = null,
     ): RefreshToken {
         val jti = UUID.randomUUID().toString()
         // added for compatibility with keycloak js client which expects a jwt with nonce

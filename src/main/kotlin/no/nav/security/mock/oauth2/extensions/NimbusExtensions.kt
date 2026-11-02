@@ -105,10 +105,8 @@ inline fun <reified T : AuthorizationGrant> TokenRequest.grant(type: Class<T>): 
         ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT, "expected grant of type $type")
 
 fun TokenRequest.clientIdAsString(): String =
-    requestingClientId()
+    this.clientAuthentication?.clientID?.value ?: this.clientID?.value
         ?: throw OAuth2Exception(OAuth2Error.INVALID_CLIENT, "client_id cannot be null")
-
-internal fun TokenRequest.requestingClientId(): String? = this.clientAuthentication?.clientID?.value ?: this.clientID?.value
 
 fun SignedJWT.expiresIn(): Int = expiresInInt(Instant.now())
 
