@@ -158,6 +158,9 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     constraints {
+        testImplementation("com.google.guava:guava:33.7.2-jre") {
+            because("GHSA-xxph-c9ww-hj94 affects the version pulled in by jwks-rsa")
+        }
         testImplementation("org.yaml:snakeyaml:2.7") {
             because("previous versions have security vulnerabilities")
         }
