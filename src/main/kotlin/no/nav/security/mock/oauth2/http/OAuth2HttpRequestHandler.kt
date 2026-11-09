@@ -12,6 +12,7 @@ import com.nimbusds.oauth2.sdk.GrantType.TOKEN_EXCHANGE
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.oauth2.sdk.ResponseMode
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.token.BearerTokenError
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import io.netty.handler.codec.http.HttpHeaderNames
@@ -28,6 +29,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
+import no.nav.security.mock.oauth2.extensions.requestingClientId
 import no.nav.security.mock.oauth2.extensions.requireSupportedCodeChallengeMethod
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
@@ -40,6 +42,7 @@ import no.nav.security.mock.oauth2.grant.RefreshTokenGrantHandler
 import no.nav.security.mock.oauth2.grant.RefreshTokenManager
 import no.nav.security.mock.oauth2.grant.TokenExchangeGrantHandler
 import no.nav.security.mock.oauth2.introspect.introspect
+import no.nav.security.mock.oauth2.invalidClient
 import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
@@ -222,10 +225,11 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.revocation(refreshTokenManager: RefreshTokenManager) =
         post(REVOKE) {
             log.debug("handle revocation request $it")
+            val clientId = it.identifiedClientIdOrFail()
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
                 null, "refresh_token", "access_token" -> {
-                    refreshTokenManager.remove(token)
+                    refreshTokenManager.revoke(token, clientId)
                 }
 
                 else -> {
@@ -237,6 +241,10 @@ class OAuth2HttpRequestHandler(
             }
             OAuth2HttpResponse(status = 200)
         }
+
+    private fun OAuth2HttpRequest.identifiedClientIdOrFail(): String =
+        requestingClientId(ClientAuthentication.parse(asNimbusHTTPRequest()), formParameters.get("client_id"))
+            ?: invalidClient("client authentication or client_id is required")
 
     private fun Route.Builder.token() =
         apply {

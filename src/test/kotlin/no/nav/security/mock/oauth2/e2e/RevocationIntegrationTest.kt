@@ -5,18 +5,23 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.grant.RefreshToken
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
+import no.nav.security.mock.oauth2.testutils.basicAuthHeaders
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.withMockOAuth2Server
+import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 class RevocationIntegrationTest {
     private val client: OkHttpClient = client()
@@ -102,6 +107,8 @@ class RevocationIntegrationTest {
         withMockOAuth2Server {
             revoke("unknown-token", tokenTypeHint = null).use {
                 it.code shouldBe 200
+                it.body.string() shouldBe ""
+                it.header("WWW-Authenticate") shouldBe null
             }
         }
     }
@@ -153,6 +160,98 @@ class RevocationIntegrationTest {
         }
     }
 
+    @Test
+    fun `revocation request without client authentication should return 401 invalid_client and keep the token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            client
+                .post(
+                    this.revocationEndpointUrl("default"),
+                    mapOf("token" to refreshToken),
+                ).use {
+                    it.code shouldBe 401
+                    it.body.string() shouldContain "invalid_client"
+                }
+            refresh(refreshToken).accessToken?.subject shouldBe initialSubject
+        }
+    }
+
+    @Test
+    fun `revocation request with a blank client_id or only client_secret should return 401 invalid_client and keep the token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            listOf(mapOf("client_id" to ""), mapOf("client_id" to " "), mapOf("client_secret" to "secret")).forEach { clientParameters ->
+                client
+                    .post(this.revocationEndpointUrl("default"), clientParameters + ("token" to refreshToken))
+                    .use {
+                        it.code shouldBe 401
+                        it.body.string() shouldContain "invalid_client"
+                    }
+            }
+            refresh(refreshToken).accessToken?.subject shouldBe initialSubject
+        }
+    }
+
+    @Test
+    fun `revocation request with malformed client authentication should return 400 invalid_request and keep the token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            client
+                .tokenRequest(
+                    this.revocationEndpointUrl("default"),
+                    Headers.headersOf("Authorization", "Basic bm9jb2xvbg=="),
+                    mapOf("client_id" to "id", "token" to refreshToken),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_request"
+                }
+            client
+                .post(
+                    this.revocationEndpointUrl("default"),
+                    mapOf(
+                        "client_assertion_type" to "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                        "client_assertion" to "not-a-jwt",
+                        "token" to refreshToken,
+                    ),
+                ).use {
+                    it.code shouldBe 400
+                    it.body.string() shouldContain "invalid_request"
+                }
+            refresh(refreshToken).accessToken?.subject shouldBe initialSubject
+        }
+    }
+
+    @Test
+    fun `revocation request with client_secret_basic should remove refresh token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            client
+                .tokenRequest(
+                    this.revocationEndpointUrl("default"),
+                    "id" to "secret",
+                    mapOf("token" to refreshToken),
+                ).use {
+                    it.code shouldBe 200
+                }
+            refreshShouldFail(refreshToken)
+        }
+    }
+
+    @Test
+    fun `revocation request from a public client with only client_id should remove refresh token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            client
+                .post(
+                    this.revocationEndpointUrl("default"),
+                    mapOf("client_id" to "id", "token" to refreshToken),
+                ).use {
+                    it.code shouldBe 200
+                }
+            refreshShouldFail(refreshToken)
+        }
+    }
+
     private fun MockOAuth2Server.revoke(
         token: String,
         tokenTypeHint: String?,
@@ -185,13 +284,91 @@ class RevocationIntegrationTest {
             }
     }
 
-    private fun MockOAuth2Server.login(): ParsedTokenResponse {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `revocation by another client should preserve the refresh token`(rotateRefreshToken: Boolean) {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = rotateRefreshToken)) {
+            var refreshToken = checkNotNull(login().refreshToken)
+            val requests =
+                listOf(
+                    Headers.headersOf() to "other-client",
+                    basicAuthHeaders("other-client", "secret") to "id",
+                )
+
+            requests.forEach { (headers, clientId) ->
+                client
+                    .tokenRequest(
+                        revocationEndpointUrl(issuerId),
+                        headers,
+                        mapOf("client_id" to clientId, "token" to refreshToken),
+                    ).use {
+                        it.code shouldBe 200
+                        it.body.string() shouldBe ""
+                        it.header("WWW-Authenticate") shouldBe null
+                    }
+
+                val response = refresh(refreshToken)
+                response.accessToken?.subject shouldBe initialSubject
+                refreshToken = checkNotNull(response.refreshToken)
+            }
+
+            revoke(refreshToken, tokenTypeHint = null).use {
+                it.code shouldBe 200
+                it.body.string() shouldBe ""
+            }
+            refreshShouldFail(refreshToken)
+        }
+    }
+
+    @Test
+    fun `revocation with owner Basic authentication should ignore a different form client_id`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login(ClientAuth.CLIENT_SECRET_BASIC).refreshToken)
+            client
+                .tokenRequest(
+                    revocationEndpointUrl(issuerId),
+                    "id" to "secret",
+                    mapOf("client_id" to "other-client", "token" to refreshToken),
+                ).use {
+                    it.code shouldBe 200
+                    it.body.string() shouldBe ""
+                }
+            refreshShouldFail(refreshToken)
+        }
+    }
+
+    @Test
+    fun `only the owning public client should revoke its refresh token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login(ClientAuth.PUBLIC).refreshToken)
+            client
+                .post(
+                    revocationEndpointUrl(issuerId),
+                    mapOf("client_id" to "other-client", "token" to refreshToken),
+                ).use {
+                    it.code shouldBe 200
+                    it.body.string() shouldBe ""
+                }
+            refresh(refreshToken).accessToken?.subject shouldBe initialSubject
+            client
+                .post(
+                    revocationEndpointUrl(issuerId),
+                    mapOf("client_id" to "id", "token" to refreshToken),
+                ).use {
+                    it.code shouldBe 200
+                    it.body.string() shouldBe ""
+                }
+            refreshShouldFail(refreshToken)
+        }
+    }
+
+    private fun MockOAuth2Server.login(clientAuth: ClientAuth = ClientAuth.CLIENT_SECRET_POST): ParsedTokenResponse {
         // Authenticate using Authorization Code Flow
         // simulate user interaction by doing the auth request as a post (instead of get with user punching username/pwd and submitting form)
         val authorizationCode =
             client
                 .post(
-                    this.authorizationEndpointUrl(issuerId).authenticationRequest(),
+                    this.authorizationEndpointUrl(issuerId).authenticationRequest(clientId = "id", redirectUri = "http://something"),
                     mapOf("username" to initialSubject),
                 ).let { authResponse ->
                     authResponse.headers["location"]?.toHttpUrl()?.queryParameter("code")
@@ -203,13 +380,12 @@ class RevocationIntegrationTest {
         return client
             .tokenRequest(
                 this.tokenEndpointUrl(issuerId),
+                clientAuth.headers,
                 mapOf(
                     "grant_type" to GrantType.AUTHORIZATION_CODE.value,
                     "code" to authorizationCode,
-                    "client_id" to "id",
-                    "client_secret" to "secret",
                     "redirect_uri" to "http://something",
-                ),
+                ) + clientAuth.parameters,
             ).toTokenResponse()
     }
 
@@ -226,5 +402,14 @@ class RevocationIntegrationTest {
                     "client_secret" to "secret",
                 ),
             ).toTokenResponse()
+    }
+
+    private enum class ClientAuth(
+        val headers: Headers,
+        val parameters: Map<String, String>,
+    ) {
+        CLIENT_SECRET_POST(Headers.headersOf(), mapOf("client_id" to "id", "client_secret" to "secret")),
+        CLIENT_SECRET_BASIC(basicAuthHeaders("id", "secret"), emptyMap()),
+        PUBLIC(Headers.headersOf(), mapOf("client_id" to "id")),
     }
 }

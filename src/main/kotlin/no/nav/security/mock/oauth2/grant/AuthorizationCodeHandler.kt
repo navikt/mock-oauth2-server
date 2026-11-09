@@ -9,6 +9,7 @@ import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
 import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.verifyPkce
@@ -117,7 +118,10 @@ internal class AuthorizationCodeHandler(
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val refreshToken: RefreshToken =
-            refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime, authenticationRequest.scope)
+            refreshTokenManager.refreshToken(
+                RefreshTokenState(loginTokenCallbackOrDefault, tokenRequest.clientIdAsString(), idTokenSubject, authTime, authenticationRequest.scope),
+                nonce,
+            )
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
