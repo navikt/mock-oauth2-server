@@ -1,5 +1,21 @@
 # Migration guide
 
+## Migrating to 7.0.0
+
+### Refresh tokens are bound to the client they were issued to
+
+Previously, any client could redeem a refresh token.
+
+**New behavior (7.0.0):** a refresh token stores the `client_id` of the token request that issued it, taken from client authentication or the `client_id` parameter. A refresh request from a different client returns `400 invalid_grant`. With `rotateRefreshToken`, the rotated token stays bound to the same client.
+
+**Affected pattern:** tests that get a refresh token with one client and refresh it with another.
+
+**Migration:** refresh with the same client that redeemed the authorization code:
+
+```kotlin
+mapOf("grant_type" to "refresh_token", "refresh_token" to refreshToken, "client_id" to "id", "client_secret" to "secret")
+```
+
 ## Migrating to 6.0.0
 
 ### `logback-classic` and `kotlinx-serialization-json` are no longer bundled
