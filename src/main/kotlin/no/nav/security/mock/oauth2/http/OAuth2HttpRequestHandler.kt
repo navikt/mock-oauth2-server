@@ -49,12 +49,8 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.unsupportedGrantType
 import no.nav.security.mock.oauth2.userinfo.userInfo
 import okhttp3.Headers
-import java.io.File
-import java.io.IOException
 import java.net.URLEncoder
 import java.nio.charset.Charset
-import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
@@ -62,13 +58,6 @@ import java.util.concurrent.LinkedBlockingQueue
 private val log = KotlinLogging.logger {}
 
 private val grantsThatTakeEnqueuedCallbackAfterValidation = setOf(AUTHORIZATION_CODE, REFRESH_TOKEN)
-
-private fun Path.realPathOrNull(): Path? =
-    try {
-        toRealPath()
-    } catch (e: IOException) {
-        null
-    }
 
 private fun AuthenticationRequest.requireHttpFormPostCallback() =
     apply {
@@ -259,20 +248,18 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.staticAssets() =
         apply {
             if (config.staticAssetsPath != null) {
-                require(config.staticAssetsPath.isNotBlank()) { "staticAssetsPath must not be blank" }
+                val staticAssets = ResourceLocation.of(config.staticAssetsPath)
+                require(staticAssets.isUsable) { "staticAssetsPath must not be blank, the classpath root or outside the classpath" }
                 get("/static/*") {
                     val path =
                         it.url.pathSegments
                             .drop(1)
                             .joinToString("/")
-                    val normalized = Paths.get(path).normalize().toString()
-                    val requestedFile = File(config.staticAssetsPath, normalized)
-                    val staticAssetsDirectory = Paths.get(config.staticAssetsPath).realPathOrNull()
-                    val file = requestedFile.toPath().realPathOrNull()
+                    val relativeAssetPath = Paths.get(path).normalize().joinToString("/")
+                    val asset = staticAssets.readAsset(relativeAssetPath)
 
-                    if (staticAssetsDirectory != null && file != null && file.startsWith(staticAssetsDirectory) && Files.isRegularFile(file)) {
-                        val contentType = Files.probeContentType(requestedFile.toPath()) ?: "application/octet-stream"
-                        OAuth2HttpResponse(status = 200, bytesBody = Files.readAllBytes(file), headers = Headers.headersOf("Content-Type", contentType))
+                    if (asset != null) {
+                        OAuth2HttpResponse(status = 200, bytesBody = asset.bytes, headers = Headers.headersOf("Content-Type", asset.contentType))
                     } else {
                         OAuth2HttpResponse(status = 404, body = "not found")
                     }
