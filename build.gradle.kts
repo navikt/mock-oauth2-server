@@ -158,7 +158,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     constraints {
-        testImplementation("com.google.guava:guava:33.7.2-jre") {
+        testImplementation("com.google.guava:guava:33.8.0-jre") {
             because("GHSA-xxph-c9ww-hj94 affects the version pulled in by jwks-rsa")
         }
         testImplementation("org.yaml:snakeyaml:2.7") {
@@ -317,7 +317,7 @@ buildscript {
         constraints {
             classpath("com.fasterxml.jackson.core:jackson-core:2.22.4")
             classpath("com.fasterxml.jackson.core:jackson-databind:2.22.4")
-            classpath("com.google.guava:guava:33.7.2-jre")
+            classpath("com.google.guava:guava:33.8.0-jre")
             classpath("org.apache.commons:commons-lang3:3.21.0")
         }
     }
