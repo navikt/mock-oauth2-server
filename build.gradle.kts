@@ -30,7 +30,7 @@ plugins {
     id("org.jmailen.kotlinter") version "5.7.0"
     id("com.google.cloud.tools.jib") version "3.5.4"
     id("com.vanniktech.maven.publish") version "0.37.0"
-    id("org.jetbrains.dokka") version "2.2.0"
+    id("org.jetbrains.dokka") version "2.3.0"
     id("io.github.usefulness.maven-sympathy") version "0.3.0"
     alias(libs.plugins.kotlin.serialization)
     `java-library`
