@@ -9,7 +9,7 @@ val logbackVersion = "1.6.6"
 val nimbusSdkVersion = "11.38.2"
 val mockWebServerVersion = "5.5.1"
 val jacksonVersion = "3.2.4"
-val jackson2TestVersion = "2.22.3"
+val jackson2TestVersion = "2.22.4"
 val nettyVersion = "4.2.20.Final"
 val junitJupiterVersion = "6.1.3"
 val freemarkerVersion = "2.3.35"
@@ -315,8 +315,8 @@ buildscript {
     dependencies {
         configurations.classpath.get().exclude("xerces", "xercesImpl")
         constraints {
-            classpath("com.fasterxml.jackson.core:jackson-core:2.22.3")
-            classpath("com.fasterxml.jackson.core:jackson-databind:2.22.3")
+            classpath("com.fasterxml.jackson.core:jackson-core:2.22.4")
+            classpath("com.fasterxml.jackson.core:jackson-databind:2.22.4")
             classpath("com.google.guava:guava:33.7.2-jre")
             classpath("org.apache.commons:commons-lang3:3.21.0")
         }
