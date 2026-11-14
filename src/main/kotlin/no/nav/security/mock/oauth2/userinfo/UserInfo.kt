@@ -3,7 +3,7 @@ package no.nav.security.mock.oauth2.userinfo
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.http.HTTPResponse
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.USER_INFO
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
@@ -19,7 +19,7 @@ private val log = KotlinLogging.logger { }
 
 internal fun Route.Builder.userInfo(tokenProvider: OAuth2TokenProvider): Route.Builder {
     val userInfoResponse: RequestHandler = {
-        log.debug("received request to userinfo endpoint, returning claims from token")
+        log.debug { "received request to userinfo endpoint, returning claims from token" }
         val claims = it.verifyBearerToken(tokenProvider)
         json(claims.toJSONObject())
     }

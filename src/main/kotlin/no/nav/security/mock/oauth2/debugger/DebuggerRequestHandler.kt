@@ -1,7 +1,7 @@
 package no.nav.security.mock.oauth2.debugger
 
 import com.nimbusds.oauth2.sdk.OAuth2Error
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER_CALLBACK
@@ -46,14 +46,14 @@ private fun handle(sessionManager: SessionManager): ExceptionHandler =
             headers = Headers.headersOf("Content-Type", "text/html", "Set-Cookie", sessionManager.session(request).asCookie()),
             body = templateMapper.debuggerErrorHtml(request.url.toDebuggerUrl(), error.stackTraceToString()),
         ).also {
-            log.error("received exception when handling url=${request.url}", error)
+            log.error(error) { "received exception when handling url=${request.url}" }
         }
     }
 
 private fun Route.Builder.debuggerForm(sessionManager: SessionManager) =
     apply {
         get(DEBUGGER) {
-            log.debug("handling GET request, return html form")
+            log.debug { "handling GET request, return html form" }
             val url =
                 it.url
                     .toAuthorizationEndpointUrl()
@@ -70,7 +70,7 @@ private fun Route.Builder.debuggerForm(sessionManager: SessionManager) =
             html(templateMapper.debuggerFormHtml(url, "CLIENT_SECRET_BASIC"))
         }
         post(DEBUGGER) {
-            log.debug("handling POST request, return redirect")
+            log.debug { "handling POST request, return redirect" }
             // the debugger only ever drives this server's own flow, so the endpoint comes from the request url
             // and not from the submitted form, which would make this an open redirect
             val callbackUrl = it.url.toDebuggerCallbackUrl().toString()
@@ -84,7 +84,7 @@ private fun Route.Builder.debuggerForm(sessionManager: SessionManager) =
                     .addQueryParameter("redirect_uri", callbackUrl)
                     .build()
 
-            log.debug("attempting to redirect to $httpUrl, setting received params in encrypted cookie")
+            log.debug { "attempting to redirect to $httpUrl, setting received params in encrypted cookie" }
             val session = sessionManager.session(it)
             session.putAll(it.formParameters.map + ("redirect_uri" to callbackUrl))
             redirect(httpUrl.toString(), Headers.headersOf("Set-Cookie", session.asCookie()))
@@ -96,7 +96,7 @@ private fun Route.Builder.debuggerCallback(
     serverUrl: (String) -> HttpUrl,
     ssl: Ssl? = null,
 ) = any(DEBUGGER_CALLBACK) {
-    log.debug("handling ${it.method} request to debugger callback")
+    log.debug { "handling ${it.method} request to debugger callback" }
     val session = sessionManager.session(it)
     // the request is sent to the server's own bound address, never to a url derived from the request itself:
     // request urls are proxy aware, so a client controlled Host header would otherwise pick the target

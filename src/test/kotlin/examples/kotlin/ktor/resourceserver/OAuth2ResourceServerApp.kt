@@ -4,6 +4,7 @@ import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwt.interfaces.Payload
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -23,7 +24,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.runBlocking
-import mu.KotlinLogging
 import tools.jackson.databind.DeserializationFeature
 import java.net.URI
 import java.util.concurrent.TimeUnit
@@ -68,7 +68,7 @@ fun Application.module(authConfig: AuthConfig) {
                     if (jwtCredential.containsAll(provider.requiredClaims)) {
                         JWTPrincipal(jwtCredential.payload)
                     } else {
-                        log.error("token does not contain all required claims: ${provider.requiredClaims}")
+                        log.error { "token does not contain all required claims: ${provider.requiredClaims}" }
                         null
                     }
                 }
@@ -152,6 +152,6 @@ internal fun Payload.contains(
             }
         } ?: (getClaim(name)?.`as`(type) == value)
     } catch (t: Throwable) {
-        log.error("received exception when checking for required claim $name=$value", t)
+        log.error(t) { "received exception when checking for required claim $name=$value" }
         false
     }

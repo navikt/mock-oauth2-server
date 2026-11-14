@@ -1,6 +1,6 @@
 package no.nav.security.mock.oauth2.http
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.endsWith
 
 private val log = KotlinLogging.logger { }
@@ -173,7 +173,7 @@ internal class PathRouter(
         }
 
     private fun noMatch(request: OAuth2HttpRequest): OAuth2HttpResponse {
-        log.debug("no route matching url=${request.url} with method=${request.method}")
+        log.debug { "no route matching url=${request.url} with method=${request.method}" }
         if (!matchPath(request)) {
             return notFound("no routes found")
         }

@@ -15,7 +15,7 @@ import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier
 import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import com.nimbusds.oauth2.sdk.id.Issuer
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -55,7 +55,7 @@ abstract class AbstractExampleApp(
                     }.fold(
                         onSuccess = { result -> result },
                         onFailure = { error ->
-                            log.error("received unhandled exception.", error)
+                            log.error(error) { "received unhandled exception." }
                             MockResponse()
                                 .setResponseCode(500)
                                 .setBody("unhandled exception with message ${error.message}")

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.util.DateUtils
 import com.nimbusds.oauth2.sdk.OAuth2Error
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.INTROSPECT
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
@@ -22,7 +22,7 @@ private val log = KotlinLogging.logger { }
 
 internal fun Route.Builder.introspect(tokenProvider: OAuth2TokenProvider) =
     post(INTROSPECT) { request ->
-        log.debug("received request to introspect endpoint, returning active and claims from token")
+        log.debug { "received request to introspect endpoint, returning active and claims from token" }
 
         if (!request.headers.authenticated()) {
             val msg = "The client authentication was invalid"
@@ -55,7 +55,7 @@ private fun OAuth2HttpRequest.verifyToken(tokenProvider: OAuth2TokenProvider): J
             tokenProvider.verify(url.toIssuerUrl(), it)
         }
     } catch (e: Exception) {
-        log.debug("token_introspection: failed signature validation")
+        log.debug { "token_introspection: failed signature validation" }
         return null
     }
 }
