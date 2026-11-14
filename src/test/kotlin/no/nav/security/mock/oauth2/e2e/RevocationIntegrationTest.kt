@@ -9,6 +9,7 @@ import no.nav.security.mock.oauth2.grant.RefreshToken
 import no.nav.security.mock.oauth2.testutils.ParsedTokenResponse
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.client
+import no.nav.security.mock.oauth2.testutils.clientAssertion
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.subject
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
@@ -226,6 +227,29 @@ class RevocationIntegrationTest {
                     mapOf("token" to refreshToken),
                 ).use {
                     it.code shouldBe 200
+                }
+            refreshShouldFail(refreshToken)
+        }
+    }
+
+    @Test
+    fun `revocation request with private_key_jwt and no client_id should remove refresh token`() {
+        withMockOAuth2Server {
+            val refreshToken = checkNotNull(login().refreshToken)
+            val revocationUrl = this.revocationEndpointUrl(issuerId)
+            val assertion = clientAssertion(clientId = "id", audience = revocationUrl.toString()).serialize()
+
+            client
+                .post(
+                    revocationUrl,
+                    mapOf(
+                        "client_assertion_type" to "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                        "client_assertion" to assertion,
+                        "token" to refreshToken,
+                    ),
+                ).use {
+                    it.code shouldBe 200
+                    it.body.string() shouldBe ""
                 }
             refreshShouldFail(refreshToken)
         }
