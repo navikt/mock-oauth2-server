@@ -1,5 +1,19 @@
 # Migration guide
 
+## Migrating to 7.0.0
+
+### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`
+
+The published dependency moved from `io.github.microutils:kotlin-logging` (`mu.*`) to `io.github.oshai:kotlin-logging-jvm` (`io.github.oshai.kotlinlogging.*`). `slf4j-api` still comes transitively.
+
+**Affected pattern:** importing `mu.*` (`mu.KotlinLogging`, `mu.KLogger`) transitively through `mock-oauth2-server` without declaring `io.github.microutils:kotlin-logging-jvm` yourself.
+
+**Migration:** migrate to `io.github.oshai:kotlin-logging-jvm` (`io.github.oshai.kotlinlogging.*`), or declare the legacy dependency explicitly:
+
+```kotlin
+testImplementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
+```
+
 ## Migrating to 6.0.0
 
 ### `logback-classic` and `kotlinx-serialization-json` are no longer bundled
