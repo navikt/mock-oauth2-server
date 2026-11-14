@@ -71,12 +71,12 @@ fun OkHttpClient.tokenRequest(
     url: HttpUrl,
     basicAuth: Pair<String, String>,
     parameters: Map<String, String>,
-): Response =
-    tokenRequest(
-        url,
-        Headers.headersOf("Authorization", Credentials.basic(basicAuth.first, basicAuth.second)),
-        parameters,
-    )
+): Response = tokenRequest(url, basicAuthHeaders(basicAuth.first, basicAuth.second), parameters)
+
+fun basicAuthHeaders(
+    clientId: String,
+    clientSecret: String,
+): Headers = Headers.headersOf("Authorization", Credentials.basic(clientId, clientSecret))
 
 fun OkHttpClient.post(
     url: HttpUrl,
