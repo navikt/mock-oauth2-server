@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.http
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFactory
 import io.netty.channel.ChannelFuture
@@ -27,7 +28,6 @@ import io.netty.handler.ssl.SslHandler
 import io.netty.handler.stream.ChunkedStream
 import io.netty.handler.stream.ChunkedWriteHandler
 import io.netty.util.CharsetUtil
-import mu.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -92,7 +92,7 @@ class MockWebServerWrapper
                     mockWebServer.useHttps(ssl.sslContext().socketFactory, false)
                 }
                 this.address = inetAddress
-                log.debug("started server on address=$inetAddress and port=${mockWebServer.port}, httpsEnabled=${ssl != null}")
+                log.debug { "started server on address=$inetAddress and port=${mockWebServer.port}, httpsEnabled=${ssl != null}" }
             }
 
         override fun stop(): OAuth2HttpServer =
@@ -178,7 +178,7 @@ class NettyWrapper
                 this.hostName = inetAddress.hostName
                 this.port = port
                 this.closeFuture = channel.closeFuture()
-                log.debug("started server on address=${this.address} and port=$port")
+                log.debug { "started server on address=${this.address} and port=$port" }
             }
 
         override fun stop() =
@@ -228,9 +228,9 @@ class NettyWrapper
 
                 // have not been able to determine why this error is thrown or how to fix it, but it does not seem to affect the server
                 if (throwable.cause is SSLHandshakeException && msg.contains(ignoreError)) {
-                    log.debug("received $ignoreError error from netty channel, ignoring")
+                    log.debug { "received $ignoreError error from netty channel, ignoring" }
                 } else {
-                    log.error("error in netty channel handler", throwable)
+                    log.error(throwable) { "error in netty channel handler" }
                     ctx.close()
                 }
             }

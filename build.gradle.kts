@@ -4,8 +4,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 val assertjVersion = "3.27.7"
-val kotlinLoggingVersion = "3.0.5"
+val kotlinLoggingVersion = "8.0.7"
 val logbackVersion = "1.6.6"
+val slf4jVersion = "2.0.20"
 val nimbusSdkVersion = "11.38.2"
 val mockWebServerVersion = "5.5.1"
 val jacksonVersion = "3.2.4"
@@ -140,7 +141,8 @@ dependencies {
     implementation("io.netty:netty-codec-http:$nettyVersion")
     implementation("io.netty:netty-codec-dns:$nettyVersion")
     implementation("io.netty:netty-codec-http3:$nettyVersion")
-    implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
+    implementation("io.github.oshai:kotlin-logging-jvm:$kotlinLoggingVersion")
+    implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")

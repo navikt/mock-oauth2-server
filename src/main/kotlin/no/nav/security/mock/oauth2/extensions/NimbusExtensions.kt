@@ -30,7 +30,7 @@ import com.nimbusds.oauth2.sdk.pkce.CodeVerifier
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue
 import com.nimbusds.openid.connect.sdk.Prompt
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.invalidRequest
 import java.time.Duration
@@ -79,7 +79,7 @@ fun AuthenticationRequest.verifyPkce(tokenRequest: TokenRequest) {
             throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(msg), msg)
         }
     } else {
-        log.debug("no code_verifier found in token request, nothing to compare")
+        log.debug { "no code_verifier found in token request, nothing to compare" }
     }
 }
 

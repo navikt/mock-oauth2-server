@@ -14,8 +14,8 @@ import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.oauth2.sdk.token.BearerTokenError
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.handler.codec.http.HttpHeaderNames
-import mu.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.debugger.DebuggerRequestHandler
@@ -95,7 +95,7 @@ class OAuth2HttpRequestHandler(
                 else -> null
             } ?: OAuth2Error.SERVER_ERROR.setDescription("unexpected exception with message: $msg")
         if (errorObject.code == OAuth2Error.SERVER_ERROR_CODE) {
-            log.error("received exception when handling ${request.method} ${request.url}", error)
+            log.error(error) { "received exception when handling ${request.method} ${request.url}" }
         } else {
             val details =
                 error.message
@@ -103,7 +103,7 @@ class OAuth2HttpRequestHandler(
                     ?.let { " ($it)" }
                     .orEmpty()
             val message = "${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}$details".escapeLineBreaks()
-            if (log.isDebugEnabled) log.info(message, error) else log.info(message)
+            if (log.isDebugEnabled()) log.info(error) { message } else log.info { message }
         }
         oauth2Error(errorObject)
             .let { response ->
@@ -160,7 +160,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.wellKnown() =
         get(OIDC_WELL_KNOWN, OAUTH2_WELL_KNOWN) {
-            log.debug("returning well-known json data for url=${it.url}")
+            log.debug { "returning well-known json data for url=${it.url}" }
             json(
                 it.toWellKnown().copy(
                     idTokenSigningAlgValuesSupported = listOf(config.tokenProvider.getAlgorithm().name),
@@ -170,7 +170,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.jwks() =
         get(JWKS) {
-            log.debug("handle jwks request on url=${it.url}")
+            log.debug { "handle jwks request on url=${it.url}" }
             val issuerId = it.url.issuerId()
             val jwkSet = config.tokenProvider.publicJwkSet(issuerId)
             json(jwkSet.toJSONObject())
@@ -198,7 +198,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.endSession() =
         any(END_SESSION) {
-            log.debug("handle end session request $it")
+            log.debug { "handle end session request $it" }
             it.url.queryParameter("post_logout_redirect_uri")?.let { postLogoutRedirectUri ->
                 it.url.queryParameter("state")?.let { state ->
                     val separator = if ("?" in postLogoutRedirectUri) "&" else "?"
@@ -210,7 +210,7 @@ class OAuth2HttpRequestHandler(
 
     private fun Route.Builder.revocation(refreshTokenManager: RefreshTokenManager) =
         post(REVOKE) {
-            log.debug("handle revocation request $it")
+            log.debug { "handle revocation request $it" }
             val token: RefreshToken = it.formParameters.get("token") ?: missingParameter("token")
             when (val hint = it.formParameters.get("token_type_hint")) {
                 null, "refresh_token", "access_token" -> {
@@ -230,7 +230,7 @@ class OAuth2HttpRequestHandler(
     private fun Route.Builder.token() =
         apply {
             post(TOKEN) {
-                log.debug("handle token request $it")
+                log.debug { "handle token request $it" }
                 val grantType = it.grantType()
                 val issuerId = it.url.issuerId()
                 val tokenCallback: OAuth2TokenCallback =

@@ -1,6 +1,6 @@
 package no.nav.security.mock.oauth2.http
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
@@ -21,7 +21,7 @@ class CorsInterceptor(
         response: OAuth2HttpResponse,
     ): OAuth2HttpResponse {
         val origin = request.headers[ORIGIN]
-        log.debug("intercept response if request origin header is set: $origin")
+        log.debug { "intercept response if request origin header is set: $origin" }
         return if (origin != null) {
             val headers = response.headers.newBuilder()
             if (request.method == "OPTIONS") {
@@ -33,7 +33,7 @@ class CorsInterceptor(
             }
             headers[ACCESS_CONTROL_ALLOW_ORIGIN] = origin
             headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] = "true"
-            log.debug("adding CORS response headers")
+            log.debug { "adding CORS response headers" }
             response.copy(headers = headers.build())
         } else {
             response

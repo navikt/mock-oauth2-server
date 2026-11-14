@@ -7,7 +7,7 @@ import com.nimbusds.jose.JWEObject
 import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.DirectDecrypter
 import com.nimbusds.jose.crypto.DirectEncrypter
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.objectMapper
 import tools.jackson.module.kotlin.readValue
@@ -67,7 +67,7 @@ class SessionManager {
             }.fold(
                 onSuccess = { result -> result },
                 onFailure = { error ->
-                    log.error("received exception when decrypting cookie", error)
+                    log.error(error) { "received exception when decrypting cookie" }
                     null
                 },
             )

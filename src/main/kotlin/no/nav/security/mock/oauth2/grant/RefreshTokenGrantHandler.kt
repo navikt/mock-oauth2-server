@@ -7,7 +7,7 @@ import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.RefreshTokenGrant
 import com.nimbusds.oauth2.sdk.Scope
 import com.nimbusds.oauth2.sdk.TokenRequest
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.issuerId
@@ -32,7 +32,7 @@ internal class RefreshTokenGrantHandler(
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         var refreshToken = tokenRequest.refreshTokenGrant().refreshToken.value
-        log.debug("issuing token for refreshToken=$refreshToken")
+        log.debug { "issuing token for refreshToken=$refreshToken" }
         val issuerId = issuerUrl.issuerId()
         val storedState =
             refreshTokenManager.state(refreshToken)
