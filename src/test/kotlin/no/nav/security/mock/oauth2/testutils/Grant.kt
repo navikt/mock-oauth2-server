@@ -6,8 +6,8 @@ import com.nimbusds.oauth2.sdk.pkce.CodeVerifier
 import okhttp3.HttpUrl
 
 fun HttpUrl.authenticationRequest(
-    clientId: String = "defautlClient",
-    redirectUri: String = "http://defaultRedirectUri",
+    clientId: String = "client1",
+    redirectUri: String = "http://mycallback",
     scope: List<String> = listOf("openid"),
     responseType: String = "code",
     responseMode: String = "query",

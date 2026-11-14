@@ -82,7 +82,7 @@ class ExampleAppWithOpenIdConnect(
         AuthenticationRequest.parse(
             metadata.authorizationEndpointURI,
             mutableMapOf(
-                "client_id" to listOf("client"),
+                "client_id" to listOf("client1"),
                 "response_type" to listOf("code"),
                 "redirect_uri" to listOf(exampleApp.url("/callback").toString()),
                 "response_mode" to listOf("query"),
