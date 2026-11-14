@@ -1,6 +1,6 @@
 package no.nav.security.mock.oauth2.http
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
