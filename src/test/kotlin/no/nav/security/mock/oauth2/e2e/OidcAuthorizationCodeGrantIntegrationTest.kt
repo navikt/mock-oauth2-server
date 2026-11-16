@@ -579,7 +579,7 @@ class OidcAuthorizationCodeGrantIntegrationTest {
     private fun Response.shouldRedirectInvalidRequest() {
         code shouldBe 302
         val location = checkNotNull(headers["location"]).toHttpUrl()
-        location.host shouldBe "defaultredirecturi"
+        location.host shouldBe "mycallback"
         location.queryParameter("error") shouldBe "invalid_request"
         location.queryParameter("state") shouldBe "1234"
         location.queryParameter("code") shouldBe null
