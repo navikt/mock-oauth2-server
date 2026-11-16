@@ -170,6 +170,8 @@ val token: SignedJWT = server.anyToken(
 
 ### Testing Authorization Code Flow (user login)
 
+The token request must use the same `client_id` and `redirect_uri` as the authorization request, otherwise the code is rejected with `400 invalid_grant`.
+
 Enqueue a callback to control what is returned when your app exchanges the code:
 
 ```kotlin
@@ -638,13 +640,27 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 | Property             | Description                                                                                                                                                                                                                                                                       |
 |----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `interactiveLogin`   | `true` or `false`. Enables a login screen on the `/authorize` endpoint. Defaults to `true` in standalone mode, `false` in library mode.                                                                                                                                           |
-| `loginPagePath`      | Path to a custom HTML login page. The page must contain a form that posts `username` and optionally `claims`. See `src/test/resources/login.example.html` for an example.                                                                                                         |
-| `staticAssetsPath`   | Optional path to a directory of static assets served under `/static`. Omit to disable `/static/*`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                                                                                 |
+| `loginPagePath`      | Path to a custom HTML login page, or a classpath resource prefixed with `classpath:`. The page must contain a form that posts `username` and optionally `claims`. See `src/test/resources/login.example.html` for an example.                                                     |
+| `staticAssetsPath`   | Optional path to a directory of static assets served under `/static`, or a classpath directory prefixed with `classpath:`. Omit to disable `/static/*`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                          |
 | `rotateRefreshToken` | `true` or `false`. When `true`, a new refresh token is issued on each refresh grant, invalidating the previous one.                                                                                                                                                               |
 | `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper`. Can also be a JSON object with HTTPS enabled, for either type: `{"type": "NettyWrapper", "ssl": {...}}`.                                                       |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
 
-`staticAssetsPath` must not be blank. Only regular files within the configured directory are served; symlinks pointing outside it are not followed.
+`staticAssetsPath` must not be blank, the classpath root or outside the classpath. Only regular files within the configured directory are served; symlinks pointing outside it are not followed. With `classpath:`, symlinks are not followed at all.
+
+To load the login page and assets from the classpath, for example from `src/test/resources` in your project or from a jar. Resources are looked up with the context class loader of the thread that creates the server:
+
+```kotlin
+MockOAuth2Server(
+    OAuth2Config(
+        interactiveLogin = true,
+        loginPagePath = "classpath:login.html",
+        staticAssetsPath = "classpath:static",
+    ),
+)
+```
+
+In Docker, mount the files and use a file path, for example `-v ./login:/login` with `"loginPagePath": "/login/login.html"`. The image's classpath is fixed, so `classpath:` only finds resources that are already in the image.
 
 Additional token provider options:
 
@@ -700,7 +716,7 @@ GET /{issuerId}/.well-known/oauth-authorization-server
 
 **Token** (`POST /{issuerId}/token`) does not validate the incoming token in the JWT Bearer Grant (`assertion`) or the Token Exchange Grant (`subject_token`). The signature, `exp` and `aud` are not checked, so a token from any issuer, or an expired one, is accepted. Its claims are copied to the new token, which gets a new `iss`, `aud`, `exp`, `iat`, `nbf` and `jti`. RFC 7523 section 3 and RFC 8693 section 2.1 require this validation from a real authorization server. The mock skips it so that tests can exchange tokens from other issuers. Validate these tokens in your own application, not by relying on the mock to reject them.
 
-**Revocation** (`POST /{issuerId}/revoke`) removes the token if it is a refresh token issued by the server. `token_type_hint` is optional and may be `refresh_token` or `access_token`; access tokens are self-contained JWTs and stay valid until they expire. Any other hint returns `400 unsupported_token_type`. An unknown token returns `200`, as RFC 7009 requires.
+**Revocation** (`POST /{issuerId}/revoke`) requires client authentication or, for public clients, a nonblank `client_id`; missing identification returns `401 invalid_client`. The mock identifies clients without validating credentials against a client registry. Client authentication takes precedence over a conflicting `client_id`. A refresh token is removed only for the client that obtained it. An unknown token or a token owned by another client returns `200` with an empty body without revoking anything. `token_type_hint` is optional and may be `refresh_token` or `access_token`; access tokens are self-contained JWTs and stay valid until they expire. Any other hint returns `400 unsupported_token_type`.
 
 ### Server URL methods (Kotlin/Java API)
 

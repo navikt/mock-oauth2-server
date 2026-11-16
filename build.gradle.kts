@@ -4,17 +4,18 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 val assertjVersion = "3.27.7"
-val kotlinLoggingVersion = "3.0.5"
+val kotlinLoggingVersion = "8.0.7"
 val logbackVersion = "1.6.6"
-val nimbusSdkVersion = "11.38.2"
+val slf4jVersion = "2.0.20"
+val nimbusSdkVersion = "11.39"
 val mockWebServerVersion = "5.5.1"
-val jacksonVersion = "3.2.4"
-val jackson2TestVersion = "2.22.3"
-val nettyVersion = "4.2.19.Final"
+val jacksonVersion = "3.3.0"
+val jackson2TestVersion = "2.22.4"
+val nettyVersion = "4.2.20.Final"
 val junitJupiterVersion = "6.1.3"
 val freemarkerVersion = "2.3.35"
 val kotestVersion = "6.2.6"
-val bouncyCastleVersion = "1.86"
+val bouncyCastleVersion = "1.87"
 val httpCore5Version = "5.4.4"
 val springBootVersion = "4.1.2"
 val reactorTestVersion = "3.8.8"
@@ -26,11 +27,11 @@ plugins {
     application
     alias(libs.plugins.kotlin.jvm) // refers to plugin declared in gradle/libs.versions.toml
     id("se.patrikerdes.use-latest-versions") version "0.2.19"
-    id("io.github.ben-manes.versions") version "0.66.0"
+    id("io.github.ben-manes.versions") version "0.67.0"
     id("org.jmailen.kotlinter") version "5.7.0"
     id("com.google.cloud.tools.jib") version "3.5.4"
     id("com.vanniktech.maven.publish") version "0.37.0"
-    id("org.jetbrains.dokka") version "2.2.0"
+    id("org.jetbrains.dokka") version "2.3.0"
     id("io.github.usefulness.maven-sympathy") version "0.3.0"
     alias(libs.plugins.kotlin.serialization)
     `java-library`
@@ -140,7 +141,8 @@ dependencies {
     implementation("io.netty:netty-codec-http:$nettyVersion")
     implementation("io.netty:netty-codec-dns:$nettyVersion")
     implementation("io.netty:netty-codec-http3:$nettyVersion")
-    implementation("io.github.microutils:kotlin-logging:$kotlinLoggingVersion")
+    implementation("io.github.oshai:kotlin-logging-jvm:$kotlinLoggingVersion")
+    implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
@@ -158,6 +160,9 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
     testImplementation("org.springframework.boot:spring-boot-test:$springBootVersion")
     constraints {
+        testImplementation("com.google.guava:guava:33.8.0-jre") {
+            because("GHSA-xxph-c9ww-hj94 affects the version pulled in by jwks-rsa")
+        }
         testImplementation("org.yaml:snakeyaml:2.7") {
             because("previous versions have security vulnerabilities")
         }
@@ -195,7 +200,7 @@ configurations {
                 "org.apache.httpcomponents.core5:httpcore5:5.4.4", // GHSA-hf6x-8p5f-cgmf
                 "org.apache.httpcomponents.core5:httpcore5-h2:5.4.4", // GHSA-v3jc-474w-2wm6
                 "org.apache.logging.log4j:log4j-api:2.26.1", // GHSA-qv9r-c865-cp47, via spring-boot-starter-logging
-                "org.jsoup:jsoup:1.23.2", // GHSA-pmhh-3w7g-xqp8, via spring-boot-starter-test
+                "org.jsoup:jsoup:1.24.1", // GHSA-pmhh-3w7g-xqp8, via spring-boot-starter-test
             )
             // Netty ships all modules in lockstep; transitive deps drag in older/mixed
             // versions (4.1.x/4.2.15) with CVEs in codec-http2/http3/dns. Align the whole
@@ -312,9 +317,9 @@ buildscript {
     dependencies {
         configurations.classpath.get().exclude("xerces", "xercesImpl")
         constraints {
-            classpath("com.fasterxml.jackson.core:jackson-core:2.22.3")
-            classpath("com.fasterxml.jackson.core:jackson-databind:2.22.3")
-            classpath("com.google.guava:guava:33.7.2-jre")
+            classpath("com.fasterxml.jackson.core:jackson-core:2.22.4")
+            classpath("com.fasterxml.jackson.core:jackson-databind:2.22.4")
+            classpath("com.google.guava:guava:33.8.0-jre")
             classpath("org.apache.commons:commons-lang3:3.21.0")
         }
     }

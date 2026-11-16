@@ -3,7 +3,7 @@ package no.nav.security.mock.oauth2.token
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.TokenRequest
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.grantType
 import no.nav.security.mock.oauth2.extensions.replaceValues
@@ -165,7 +165,7 @@ data class RequestMapping(
             null
         } else {
             runCatching { match.toRegex() }.getOrElse {
-                log.warn("RequestMapping match value '{}' is not a valid regex — only exact-string matching will apply", match)
+                log.warn { "RequestMapping match value '$match' is not a valid regex — only exact-string matching will apply" }
                 null
             }
         }

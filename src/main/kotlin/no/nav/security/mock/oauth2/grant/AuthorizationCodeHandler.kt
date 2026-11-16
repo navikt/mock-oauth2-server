@@ -2,13 +2,15 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.SignedJWT
 import com.nimbusds.oauth2.sdk.AuthorizationCode
+import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
+import no.nav.security.mock.oauth2.extensions.clientIdAsString
 import no.nav.security.mock.oauth2.extensions.expiresIn
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.verifyPkce
@@ -49,12 +51,12 @@ internal class AuthorizationCodeHandler(
         when {
             authenticationRequest.responseType.impliesCodeFlow() -> {
                 val code = AuthorizationCode()
-                log.debug("issuing authorization code $code")
+                log.debug { "issuing authorization code $code" }
                 codeToAuthRequestCache[code] = authenticationRequest
                 codeToAuthTimeCache[code] = tokenProvider.systemTime ?: Instant.now()
                 codeToIssuerIdCache[code] = issuerId
                 login?.also {
-                    log.debug("adding user with username ${it.username} to cache")
+                    log.debug { "adding user with username ${it.username} to cache" }
                     codeToLoginCache[code] = login
                 }
                 return AuthenticationSuccessResponse(
@@ -83,7 +85,7 @@ internal class AuthorizationCodeHandler(
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val code = tokenRequest.authorizationCode()
-        log.debug("issuing token for code=$code")
+        log.debug { "issuing token for code=$code" }
 
         val authenticationRequest =
             codeToAuthRequestCache.remove(code)
@@ -103,6 +105,7 @@ internal class AuthorizationCodeHandler(
         }
 
         try {
+            verifyClientAndRedirectUri(authenticationRequest, tokenRequest)
             authenticationRequest.verifyPkce(tokenRequest)
         } catch (e: OAuth2Exception) {
             codeToLoginCache.remove(code)
@@ -117,7 +120,10 @@ internal class AuthorizationCodeHandler(
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val refreshToken: RefreshToken =
-            refreshTokenManager.refreshToken(loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime, authenticationRequest.scope)
+            refreshTokenManager.refreshToken(
+                RefreshTokenState(loginTokenCallbackOrDefault, tokenRequest.clientIdAsString(), idTokenSubject, authTime, authenticationRequest.scope),
+                nonce,
+            )
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",
@@ -128,6 +134,25 @@ internal class AuthorizationCodeHandler(
             scope = scope,
         )
     }
+
+    private fun verifyClientAndRedirectUri(
+        authenticationRequest: AuthenticationRequest,
+        tokenRequest: TokenRequest,
+    ) {
+        val tokenClientId = tokenRequest.clientAuthentication?.clientID ?: tokenRequest.clientID
+        if (tokenClientId != authenticationRequest.clientID) {
+            invalidGrant("authorization code was issued to a different client")
+        }
+        val originalRedirectUri = authenticationRequest.redirectionURI
+        if (originalRedirectUri != null) {
+            val grant = tokenRequest.authorizationGrant as AuthorizationCodeGrant
+            if (grant.redirectionURI?.toString() != originalRedirectUri.toString()) {
+                invalidGrant("redirect_uri does not match the authorization request")
+            }
+        }
+    }
+
+    private fun invalidGrant(message: String): Nothing = throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(message), message)
 
     private fun getLoginTokenCallbackOrDefault(
         code: AuthorizationCode,
@@ -181,7 +206,7 @@ internal class AuthorizationCodeHandler(
                                 putIfAbsent(field.key, jsonMapper.readValue(field.value.toString()))
                             }
                     } catch (exception: JacksonException) {
-                        log.warn("claims value $it could not be processed as JSON, details: ${exception.message}")
+                        log.warn { "claims value $it could not be processed as JSON, details: ${exception.message}" }
                     }
                 }
             }

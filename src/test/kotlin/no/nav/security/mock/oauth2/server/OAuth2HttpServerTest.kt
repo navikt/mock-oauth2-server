@@ -1,7 +1,7 @@
 package no.nav.security.mock.oauth2.server
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.matchers.shouldBe
-import mu.KotlinLogging
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
@@ -28,7 +28,7 @@ internal class OAuth2HttpServerTest {
     val httpClient = OkHttpClient().newBuilder().followRedirects(false).build()
 
     val requestHandler: RequestHandler = {
-        log.debug("received request on url=${it.url}")
+        log.debug { "received request on url=${it.url}" }
         when {
             it.method == "HEAD" -> {
                 OAuth2HttpResponse(headers = Headers.headersOf("Content-Length", "9"), status = 200)

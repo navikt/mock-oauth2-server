@@ -11,7 +11,7 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic
 import com.nimbusds.oauth2.sdk.auth.Secret
 import com.nimbusds.oauth2.sdk.id.ClientID
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toEndSessionEndpointUrl
 import no.nav.security.mock.oauth2.extensions.toJwksUrl
@@ -83,7 +83,7 @@ open class MockOAuth2Server(
         inetAddress: InetAddress,
         port: Int,
     ) {
-        log.debug("attempt to start server on port=$port")
+        log.debug { "attempt to start server on port=$port" }
         httpServer.start(inetAddress, port, router)
     }
 

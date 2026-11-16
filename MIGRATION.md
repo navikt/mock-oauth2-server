@@ -19,6 +19,81 @@ val location = response.headers["location"]!!.toHttpUrl()
 location.queryParameter("error") shouldBe "invalid_request"
 ```
 
+### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`
+
+The published dependency moved from `io.github.microutils:kotlin-logging` (`mu.*`) to `io.github.oshai:kotlin-logging-jvm` (`io.github.oshai.kotlinlogging.*`). `slf4j-api` still comes transitively.
+
+**Affected pattern:** importing `mu.*` (`mu.KotlinLogging`, `mu.KLogger`) transitively through `mock-oauth2-server` without declaring `io.github.microutils:kotlin-logging-jvm` yourself.
+
+**Migration:** migrate to `io.github.oshai:kotlin-logging-jvm` (`io.github.oshai.kotlinlogging.*`), or declare the legacy dependency explicitly:
+
+```kotlin
+testImplementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
+```
+
+### Authorization codes are bound to the client and `redirect_uri`
+
+Previously, an authorization code could be redeemed with any `client_id` and any `redirect_uri`.
+
+**New behavior (7.0.0):** the token request must use the same `client_id` as the authorization request. If the authorization request included a `redirect_uri`, the token request must include the exact same value. Otherwise the server returns `400 invalid_grant`, and the code cannot be used again.
+
+**Affected pattern:** tests that authorize with one `client_id` or `redirect_uri` and redeem the code with another, for example a hardcoded `client_id` in the token request that differs from the one in the authorize URL. A client that builds `redirect_uri` from the current request URL can also be affected, because at the callback that URL still carries `code` and `state`.
+
+**Migration:** use the same `client_id` and `redirect_uri` in both requests:
+
+```kotlin
+// authorization request
+server.authorizationEndpointUrl("default").newBuilder()
+    .addQueryParameter("client_id", "client1")
+    .addQueryParameter("redirect_uri", "http://localhost:8080/callback")
+    // ...
+
+// token request
+"grant_type=authorization_code&code=$code&client_id=client1&client_secret=secret&redirect_uri=http://localhost:8080/callback"
+```
+
+### Refresh tokens are bound to the client they were issued to
+
+Previously, any client could redeem a refresh token.
+
+**New behavior (7.0.0):** a refresh token stores the `client_id` of the token request that issued it, taken from client authentication or the `client_id` parameter. A refresh request from a different client returns `400 invalid_grant`. With `rotateRefreshToken`, the rotated token stays bound to the same client.
+
+**Affected pattern:** tests that get a refresh token with one client and refresh it with another.
+
+**Migration:** refresh with the same client that redeemed the authorization code:
+
+```kotlin
+mapOf("grant_type" to "refresh_token", "refresh_token" to refreshToken, "client_id" to "id", "client_secret" to "secret")
+```
+
+### The revocation endpoint requires client authentication
+
+Previously, `POST /{issuerId}/revoke` revoked a token without any client authentication.
+
+**New behavior (7.0.0):** a revocation request needs client authentication (for example `client_secret_basic`, `client_secret_post` or `private_key_jwt`) or, for public clients, a `client_id` parameter. Without either, the endpoint returns `401 invalid_client` and the token is not revoked.
+
+**Affected pattern:** tests that revoke a token with only the `token` parameter.
+
+**Migration:** send the client credentials with the revocation request, as you do on the token endpoint:
+
+```kotlin
+client.post(server.revocationEndpointUrl("default"), mapOf("client_id" to "id", "token" to refreshToken))
+```
+
+### Only the owning client can revoke a refresh token
+
+Previously, any client could revoke another client's refresh token.
+
+**New behavior (7.0.0):** a revocation request removes a refresh token only when it comes from the client the token was issued to. Client authentication takes precedence over a conflicting `client_id` parameter. A request from another client returns `200` with an empty body without revoking the token, the same as for an unknown token. Rotated tokens keep their owner.
+
+**Affected pattern:** tests that revoke a refresh token with a different client than the one that obtained it.
+
+**Migration:** revoke with the same client that obtained the refresh token:
+
+```kotlin
+client.post(server.revocationEndpointUrl("default"), mapOf("client_id" to "id", "token" to refreshToken))
+```
+
 ## Migrating to 6.0.0
 
 ### `logback-classic` and `kotlinx-serialization-json` are no longer bundled

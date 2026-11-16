@@ -2,7 +2,7 @@ package no.nav.security.mock.oauth2.examples.openidconnect
 
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.examples.AbstractExampleApp
 import no.nav.security.mock.oauth2.http.OAuth2TokenResponse
 import okhttp3.FormBody
@@ -25,7 +25,7 @@ class ExampleAppWithOpenIdConnect(
             }
 
             "/callback" -> {
-                log.debug("got callback: $request")
+                log.debug { "got callback: $request" }
                 val code = request.requestUrl?.queryParameter("code")!!
                 val tokenResponse =
                     oauth2Client
@@ -82,7 +82,7 @@ class ExampleAppWithOpenIdConnect(
         AuthenticationRequest.parse(
             metadata.authorizationEndpointURI,
             mutableMapOf(
-                "client_id" to listOf("client"),
+                "client_id" to listOf("client1"),
                 "response_type" to listOf("code"),
                 "redirect_uri" to listOf(exampleApp.url("/callback").toString()),
                 "response_mode" to listOf("query"),
