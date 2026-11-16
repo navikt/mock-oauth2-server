@@ -16,6 +16,7 @@ import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.token.BearerTokenError
 import com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
+import com.nimbusds.openid.connect.sdk.OIDCError
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.handler.codec.http.HttpHeaderNames
 import no.nav.security.mock.oauth2.OAuth2Config
@@ -31,6 +32,7 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
 import no.nav.security.mock.oauth2.extensions.SUPPORTED_RESPONSE_MODES
 import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isPrompt
+import no.nav.security.mock.oauth2.extensions.isPromptNone
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.requestingClientId
 import no.nav.security.mock.oauth2.extensions.requireSupportedCodeChallengeMethod
@@ -72,6 +74,11 @@ private fun AuthenticationRequest.requireHttpFormPostCallback() =
             invalidRequest("form_post redirect_uri must be an HTTP(S) URL")
         }
     }
+
+private fun AuthenticationRequest.loginRequired(): AuthenticationErrorResponse {
+    if (!redirectionURI.isAbsolute) invalidRequest("redirect_uri must be an absolute URI")
+    return AuthenticationErrorResponse(redirectionURI, OIDCError.LOGIN_REQUIRED, state, impliedResponseMode())
+}
 
 class OAuth2HttpRequestHandler(
     private val config: OAuth2Config,
@@ -219,10 +226,18 @@ class OAuth2HttpRequestHandler(
                 val authRequest: AuthenticationRequest = it.asAuthenticationRequest().requireHttpFormPostCallback()
                 authRequest.requireSupportedResponseMode()
                 authRequest.requireSupportedCodeChallengeMethod()
-                if (config.interactiveLogin || authRequest.isPrompt()) {
-                    html(loginRequestHandler.loginHtml(it))
-                } else {
-                    authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it.url.issuerId(), authRequest))
+                when {
+                    config.interactiveLogin && authRequest.isPromptNone() -> {
+                        authenticationError(authRequest.loginRequired())
+                    }
+
+                    config.interactiveLogin || authRequest.isPrompt() -> {
+                        html(loginRequestHandler.loginHtml(it))
+                    }
+
+                    else -> {
+                        authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it.url.issuerId(), authRequest))
+                    }
                 }
             }
             post(AUTHORIZATION) {

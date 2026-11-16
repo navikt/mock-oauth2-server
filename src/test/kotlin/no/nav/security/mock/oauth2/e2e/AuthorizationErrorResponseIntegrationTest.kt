@@ -6,6 +6,7 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.parse
@@ -119,6 +120,21 @@ class AuthorizationErrorResponseIntegrationTest {
         withMockOAuth2Server {
             client
                 .post(authorizeUrl("redirect_uri" to "foo", "response_mode" to responseMode), emptyMap())
+                .use {
+                    it.code shouldBe 400
+                    it.header("Location") shouldBe null
+                    it.header("Content-Type") shouldContain "application/json"
+                    it.parse<Map<String, Any>>()["error"] shouldBe "invalid_request"
+                }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["query", "fragment"])
+    fun `prompt=none with interactive login and a relative redirect_uri should return a JSON error`(responseMode: String) {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = true)) {
+            client
+                .get(authorizeUrl("redirect_uri" to "foo", "response_mode" to responseMode, "prompt" to "none"))
                 .use {
                     it.code shouldBe 400
                     it.header("Location") shouldBe null
