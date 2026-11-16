@@ -2,9 +2,11 @@ package no.nav.security.mock.oauth2.e2e
 
 import io.kotest.assertions.asClue
 import io.kotest.matchers.maps.shouldContainAll
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
@@ -17,6 +19,7 @@ import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.token.RequestMapping
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -152,6 +155,47 @@ class InteractiveLoginIntegrationTest {
         }
     }
 
+    @Test
+    fun `prompt=none with interactive login redirects with login_required and state instead of showing the login page`() {
+        val authorizeUrl =
+            server
+                .authorizationEndpointUrl(issuerId)
+                .authenticationRequest(state = "silent-state")
+                .withPrompt("none")
+
+        client.get(authorizeUrl).asClue {
+            it.code shouldBe 302
+            it.body.string() shouldNotContain "<form"
+            val location = it.headers["location"].shouldNotBeNull().toHttpUrl()
+            location.queryParameter("error") shouldBe "login_required"
+            location.queryParameter("state") shouldBe "silent-state"
+            location.queryParameter("code").shouldBeNull()
+        }
+    }
+
+    @Test
+    fun `prompt=none without interactive login redirects with a code`() {
+        MockOAuth2Server(OAuth2Config(interactiveLogin = false)).apply { start() }.let { srv ->
+            try {
+                val authorizeUrl =
+                    srv
+                        .authorizationEndpointUrl(issuerId)
+                        .authenticationRequest(state = "silent-state")
+                        .withPrompt("none")
+
+                client.get(authorizeUrl).asClue {
+                    it.code shouldBe 302
+                    val location = it.headers["location"].shouldNotBeNull().toHttpUrl()
+                    location.queryParameter("code").shouldNotBeNull()
+                    location.queryParameter("state") shouldBe "silent-state"
+                    location.queryParameter("error").shouldBeNull()
+                }
+            } finally {
+                srv.shutdown()
+            }
+        }
+    }
+
     companion object {
         @JvmStatic
         fun testUsers(): Stream<Arguments> =
@@ -207,6 +251,8 @@ class InteractiveLoginIntegrationTest {
                 "code" to authCode,
             ),
         ).toTokenResponse()
+
+    private fun HttpUrl.withPrompt(prompt: String): HttpUrl = newBuilder().addQueryParameter("prompt", prompt).build()
 
     internal data class User(
         val username: String,
