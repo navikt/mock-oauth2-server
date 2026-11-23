@@ -145,7 +145,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
