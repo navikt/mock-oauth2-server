@@ -6,6 +6,7 @@ import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER_CALLBACK
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
+import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.removeAllEncodedQueryParams
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
@@ -45,7 +46,7 @@ private fun handle(sessionManager: SessionManager): ExceptionHandler =
         OAuth2HttpResponse(
             status = 500,
             headers = Headers.headersOf("Content-Type", "text/html", "Set-Cookie", sessionManager.session(request).asCookie()),
-            body = templateMapper.debuggerErrorHtml(request.url.toDebuggerUrl(), error.stackTraceToString()),
+            body = templateMapper.debuggerErrorHtml(request.url.toDebuggerUrl(), error.stackTraceToString(), request.authorizationErrorParameters()),
         ).also {
             log.error(error) { "received exception when handling url=${request.url}" }
         }
@@ -98,23 +99,14 @@ private fun Route.Builder.debuggerCallback(
     ssl: Ssl? = null,
 ) = any(DEBUGGER_CALLBACK) {
     log.debug { "handling ${it.method} request to debugger callback" }
-    it.callbackParameter("error")?.let { error ->
-        return@any html(
-            templateMapper.debuggerCallbackErrorHtml(
-                it.url.toDebuggerUrl(),
-                error,
-                it.callbackParameter("error_description"),
-                it.callbackParameter("error_uri"),
-            ),
-        )
-    }
     val session = sessionManager.session(it)
     // the request is sent to the server's own bound address, never to a url derived from the request itself:
     // request urls are proxy aware, so a client controlled Host header would otherwise pick the target
     val target = serverUrl(it.url.tokenEndpointPath()).viaLoopbackIfWildcard()
     val tokenUrl: HttpUrl = it.url.toTokenEndpointUrl()
     val code: String =
-        it.callbackParameter("code")
+        it.url.queryParameter("code")
+            ?: it.formParameters.get("code")
             ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "no code parameter present")
     val clientAuthentication = ClientAuthentication.fromMap(session.parameters)
     val request =
@@ -135,6 +127,13 @@ private fun Route.Builder.debuggerCallback(
             client.post(request, target)
         }
     html(templateMapper.debuggerCallbackHtml(request.toString(), response))
+}
+
+private val authorizationErrorParameterNames = listOf("error", "error_description", "error_uri", "state")
+
+private fun OAuth2HttpRequest.authorizationErrorParameters(): Map<String, String> {
+    if (!url.isDebuggerCallbackUrl() || callbackParameter("error") == null) return emptyMap()
+    return authorizationErrorParameterNames.mapNotNull { name -> callbackParameter(name)?.let { name to it } }.toMap()
 }
 
 private fun OAuth2HttpRequest.callbackParameter(name: String): String? = url.queryParameter(name) ?: formParameters.get(name)
