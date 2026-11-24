@@ -53,6 +53,9 @@ Auto-fix formatting:
 
 The build will fail if there are formatting violations.
 
+A descriptive name is better than a lot of comments. If code needs explaining, try a clearer name or a small extracted function first.
+
+
 ## Testing
 
 Tests are written using [JUnit 5](https://junit.org/junit5/) and [Kotest](https://kotest.io/). If you are adding a new feature or fixing a bug, please include tests that cover the change.
