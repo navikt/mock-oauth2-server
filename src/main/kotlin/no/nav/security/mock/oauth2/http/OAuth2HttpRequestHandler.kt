@@ -154,7 +154,6 @@ class OAuth2HttpRequestHandler(
             OAuth2Error.INVALID_SCOPE,
             OAuth2Error.SERVER_ERROR,
             OAuth2Error.TEMPORARILY_UNAVAILABLE,
-            OAuth2Error.INVALID_TARGET,
             OAuth2Error.REQUEST_NOT_SUPPORTED,
             OAuth2Error.REQUEST_URI_NOT_SUPPORTED,
         ).map { it.code }
