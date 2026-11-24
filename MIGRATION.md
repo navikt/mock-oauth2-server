@@ -12,7 +12,7 @@ Errors are still returned as JSON when:
 
 - `client_id` or `redirect_uri` is missing, or `redirect_uri` is not an absolute URI.
 - `response_mode` is `form_post` and `redirect_uri` is not an HTTP(S) URL.
-- The error is not one of the codes in RFC 6749 section 4.1.2.1, for example `invalid_target`, or `not_found` for a misconfigured login page.
+- The error is for example `invalid_target`, or `not_found` for a misconfigured login page.
 
 A `response_mode` other than `query`, `fragment` and `form_post` returns a JSON `400 invalid_request`. Previously, an otherwise valid request was redirected with a code for `query.jwt` and `fragment.jwt`, and returned a JSON `500` for other values, such as `form_post.jwt` and `jwt`. These modes were never supported or listed in `response_modes_supported`.
 
