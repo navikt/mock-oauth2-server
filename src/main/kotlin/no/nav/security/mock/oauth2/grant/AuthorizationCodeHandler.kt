@@ -20,6 +20,7 @@ import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.token.RequestMappingTokenCallback
+import no.nav.security.mock.oauth2.unsupportedResponseType
 import okhttp3.HttpUrl
 import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
@@ -71,9 +72,7 @@ internal class AuthorizationCodeHandler(
             }
 
             else -> {
-                "only response_type=code is supported".let {
-                    throw OAuth2Exception(OAuth2Error.UNSUPPORTED_RESPONSE_TYPE.setDescription(it), it)
-                }
+                unsupportedResponseType("only response_type=code is supported")
             }
         }
     }
