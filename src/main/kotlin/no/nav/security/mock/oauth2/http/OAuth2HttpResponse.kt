@@ -77,6 +77,8 @@ data class WellKnown(
     val idTokenSigningAlgValuesSupported: List<String> = (KeyGenerator.ecAlgorithmFamily + KeyGenerator.rsaAlgorithmFamily).map { it.name }.toList(),
     @JsonProperty("code_challenge_methods_supported")
     val codeChallengeMethodsSupported: List<String> = listOf("plain", "S256"),
+    @JsonProperty("request_uri_parameter_supported")
+    val requestUriParameterSupported: Boolean = false,
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

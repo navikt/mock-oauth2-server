@@ -45,8 +45,16 @@ class WellKnownIntegrationTest {
                         "subject_types_supported",
                         "id_token_signing_alg_values_supported",
                         "code_challenge_methods_supported",
+                        "request_uri_parameter_supported",
                     )
             }
+        }
+    }
+
+    @Test
+    fun `well-known should not advertise support for request_uri`() {
+        withMockOAuth2Server {
+            client.get(this.wellKnownUrl("default")).parse<Map<String, Any>>()["request_uri_parameter_supported"] shouldBe false
         }
     }
 

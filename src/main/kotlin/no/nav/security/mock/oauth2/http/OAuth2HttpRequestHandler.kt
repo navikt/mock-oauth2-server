@@ -36,6 +36,7 @@ import no.nav.security.mock.oauth2.extensions.isPromptNone
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.requestingClientId
 import no.nav.security.mock.oauth2.extensions.requireAbsoluteRedirectUri
+import no.nav.security.mock.oauth2.extensions.requireNoRequestUri
 import no.nav.security.mock.oauth2.extensions.requireSupportedCodeChallengeMethod
 import no.nav.security.mock.oauth2.extensions.requireSupportedResponseMode
 import no.nav.security.mock.oauth2.extensions.requireSupportedResponseType
@@ -81,6 +82,7 @@ private fun AuthenticationRequest.requireHttpFormPostCallback() {
 
 private fun OAuth2HttpRequest.asValidAuthenticationRequest(): AuthenticationRequest =
     asAuthenticationRequest().apply {
+        requireNoRequestUri()
         requireAbsoluteRedirectUri()
         requireSupportedResponseMode()
         requireHttpFormPostCallback()
@@ -146,6 +148,7 @@ class OAuth2HttpRequestHandler(
             OAuth2Error.SERVER_ERROR,
             OAuth2Error.TEMPORARILY_UNAVAILABLE,
             OAuth2Error.INVALID_TARGET,
+            OAuth2Error.REQUEST_URI_NOT_SUPPORTED,
         ).map { it.code }
 
     private fun OAuth2HttpRequest.authorizationErrorResponse(

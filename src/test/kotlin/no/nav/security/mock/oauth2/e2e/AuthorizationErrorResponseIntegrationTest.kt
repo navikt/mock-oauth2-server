@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.e2e
 
 import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.string.shouldStartWith
@@ -14,6 +15,7 @@ import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Response
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -172,17 +174,6 @@ class AuthorizationErrorResponseIntegrationTest {
     }
 
     @Test
-    fun `prompt=none with interactive login, request_uri and no redirect_uri should return a JSON error`() {
-        withMockOAuth2Server(OAuth2Config(interactiveLogin = true)) {
-            client.get(authorizeUrl("redirect_uri" to null, "request_uri" to "urn:example:request", "prompt" to "none")).use {
-                it.code shouldBe 400
-                it.header("Location") shouldBe null
-                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_request"
-            }
-        }
-    }
-
-    @Test
     fun `authorize error with form_post to a non-HTTP callback should return a JSON error`() {
         withMockOAuth2Server {
             client.get(authorizeUrl("response_type" to "token", "response_mode" to "form_post", "redirect_uri" to "myapp://callback")).use {
@@ -227,24 +218,71 @@ class AuthorizationErrorResponseIntegrationTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
-    fun `authorize request with request_uri and no redirect_uri should return a JSON error`(interactiveLogin: Boolean) {
+    fun `authorize request with request_uri should redirect request_uri_not_supported to the client`(interactiveLogin: Boolean) {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = interactiveLogin)) {
+            client.get(authorizeUrl("request_uri" to "urn:example:request")).use { it.shouldRedirectRequestUriNotSupported() }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["response_type", "scope"])
+    fun `authorize request with request_uri and a missing parameter should redirect request_uri_not_supported to the client`(missing: String) {
+        withMockOAuth2Server {
+            client.get(authorizeUrl("request_uri" to "urn:example:request", missing to null)).use { it.shouldRedirectRequestUriNotSupported() }
+        }
+    }
+
+    @Test
+    fun `login with request_uri should redirect request_uri_not_supported to the client`() {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = true)) {
+            client
+                .post(authorizeUrl("request_uri" to "urn:example:request"), mapOf("username" to "foo"))
+                .use { it.shouldRedirectRequestUriNotSupported() }
+        }
+    }
+
+    @Test
+    fun `prompt=none with interactive login and request_uri should redirect request_uri_not_supported to the client`() {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = true)) {
+            client
+                .get(authorizeUrl("request_uri" to "urn:example:request", "prompt" to "none"))
+                .use { it.shouldRedirectRequestUriNotSupported() }
+        }
+    }
+
+    @Test
+    fun `authorize request with request_uri and response_mode form_post should post request_uri_not_supported to the client`() {
+        withMockOAuth2Server {
+            client.get(authorizeUrl("request_uri" to "urn:example:request", "response_mode" to "form_post")).use {
+                it.code shouldBe 200
+                val body = it.body.string()
+                body shouldContain "name=\"error\" value=\"request_uri_not_supported\""
+                body shouldContain "name=\"state\" value=\"s1\""
+                body shouldNotContain "name=\"code\""
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `authorize request with request_uri and no redirect_uri should return request_uri_not_supported as JSON`(interactiveLogin: Boolean) {
         withMockOAuth2Server(OAuth2Config(interactiveLogin = interactiveLogin)) {
             client.get(authorizeUrl("redirect_uri" to null, "request_uri" to "urn:example:request")).use {
                 it.code shouldBe 400
                 it.header("Location") shouldBe null
-                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_request"
+                it.parse<Map<String, Any>>()["error"] shouldBe "request_uri_not_supported"
             }
         }
     }
 
     @Test
-    fun `authorize request with request_uri and no response_type should redirect invalid_request to the client`() {
+    fun `authorize request with an empty request_uri should redirect with a code`() {
         withMockOAuth2Server {
-            client.get(authorizeUrl("response_type" to null, "request_uri" to "urn:example:request")).use {
+            client.get(authorizeUrl("request_uri" to "")).use {
                 it.code shouldBe 302
                 val location = checkNotNull(it.header("Location")).toHttpUrl()
-                location.queryParameter("error") shouldBe "invalid_request"
-                location.queryParameter("state") shouldBe "s1"
+                location.queryParameter("code") shouldNotBe null
+                location.queryParameter("error") shouldBe null
             }
         }
     }
@@ -285,6 +323,15 @@ class AuthorizationErrorResponseIntegrationTest {
                 location.queryParameter("code") shouldBe null
             }
         }
+    }
+
+    private fun Response.shouldRedirectRequestUriNotSupported() {
+        code shouldBe 302
+        val location = checkNotNull(header("Location")).toHttpUrl()
+        location.host shouldBe "mycallback"
+        location.queryParameter("error") shouldBe "request_uri_not_supported"
+        location.queryParameter("state") shouldBe "s1"
+        location.queryParameter("code") shouldBe null
     }
 
     private fun MockOAuth2Server.authorizeUrl(vararg overrides: Pair<String, String?>): HttpUrl {
