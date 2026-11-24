@@ -11,13 +11,13 @@ val nimbusSdkVersion = "11.39"
 val mockWebServerVersion = "5.5.1"
 val jacksonVersion = "3.3.0"
 val jackson2TestVersion = "2.22.4"
-val nettyVersion = "4.2.20.Final"
+val nettyVersion = "4.2.21.Final"
 val junitJupiterVersion = "6.1.3"
 val freemarkerVersion = "2.3.35"
 val kotestVersion = "6.2.6"
 val bouncyCastleVersion = "1.87"
-val httpCore5Version = "5.4.4"
-val springBootVersion = "4.1.2"
+val httpCore5Version = "5.5"
+val springBootVersion = "4.2.0"
 val reactorTestVersion = "3.8.8"
 val ktorVersion = "3.6.1"
 
@@ -145,7 +145,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation("org.freemarker:freemarker:$freemarkerVersion")
     implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
@@ -197,8 +197,8 @@ configurations {
                 "com.fasterxml.jackson.core:jackson-databind:$jackson2TestVersion", // GHSA-5jmj-h7xm-6q6v et al
                 "com.fasterxml.jackson.core:jackson-core:$jackson2TestVersion", // GHSA-r7wm-3cxj-wff9
                 "org.apache.httpcomponents.client5:httpclient5:5.6.5", // GHSA-hjcp-jmpx-g3qm, via ktor-client-apache5
-                "org.apache.httpcomponents.core5:httpcore5:5.4.4", // GHSA-hf6x-8p5f-cgmf
-                "org.apache.httpcomponents.core5:httpcore5-h2:5.4.4", // GHSA-v3jc-474w-2wm6
+                "org.apache.httpcomponents.core5:httpcore5:5.5", // GHSA-hf6x-8p5f-cgmf
+                "org.apache.httpcomponents.core5:httpcore5-h2:5.5", // GHSA-v3jc-474w-2wm6
                 "org.apache.logging.log4j:log4j-api:2.26.1", // GHSA-qv9r-c865-cp47, via spring-boot-starter-logging
                 "org.jsoup:jsoup:1.24.1", // GHSA-pmhh-3w7g-xqp8, via spring-boot-starter-test
             )
