@@ -36,7 +36,6 @@ import no.nav.security.mock.oauth2.extensions.isPromptNone
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.requestingClientId
 import no.nav.security.mock.oauth2.extensions.requireAbsoluteRedirectUri
-import no.nav.security.mock.oauth2.extensions.requireNoRequestUri
 import no.nav.security.mock.oauth2.extensions.requireSupportedCodeChallengeMethod
 import no.nav.security.mock.oauth2.extensions.requireSupportedResponseMode
 import no.nav.security.mock.oauth2.extensions.requireSupportedResponseType
@@ -56,6 +55,8 @@ import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.login.LoginRequestHandler
 import no.nav.security.mock.oauth2.missingParameter
+import no.nav.security.mock.oauth2.requestNotSupported
+import no.nav.security.mock.oauth2.requestUriNotSupported
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.unsupportedGrantType
@@ -80,15 +81,21 @@ private fun AuthenticationRequest.requireHttpFormPostCallback() {
     }
 }
 
-private fun OAuth2HttpRequest.asValidAuthenticationRequest(): AuthenticationRequest =
-    asAuthenticationRequest().apply {
-        requireNoRequestUri()
+private fun OAuth2HttpRequest.requireNoRequestObject() {
+    if (!url.queryParameter("request").isNullOrBlank()) requestNotSupported()
+    if (!url.queryParameter("request_uri").isNullOrBlank()) requestUriNotSupported()
+}
+
+private fun OAuth2HttpRequest.asValidAuthenticationRequest(): AuthenticationRequest {
+    requireNoRequestObject()
+    return asAuthenticationRequest().apply {
         requireAbsoluteRedirectUri()
         requireSupportedResponseMode()
         requireHttpFormPostCallback()
         requireSupportedResponseType()
         requireSupportedCodeChallengeMethod()
     }
+}
 
 private fun AuthenticationRequest.loginRequired() = AuthenticationErrorResponse(redirectionURI, OIDCError.LOGIN_REQUIRED, state, impliedResponseMode())
 
@@ -131,7 +138,7 @@ class OAuth2HttpRequestHandler(
             val message = "${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}$details".escapeLineBreaks()
             if (log.isDebugEnabled()) log.info(error) { message } else log.info { message }
         }
-        request.authorizationErrorResponse(error, errorObject)
+        request.authorizationErrorResponse(errorObject)
             ?: oauth2Error(errorObject)
                 .let { response ->
                     request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
@@ -148,16 +155,15 @@ class OAuth2HttpRequestHandler(
             OAuth2Error.SERVER_ERROR,
             OAuth2Error.TEMPORARILY_UNAVAILABLE,
             OAuth2Error.INVALID_TARGET,
+            OAuth2Error.REQUEST_NOT_SUPPORTED,
             OAuth2Error.REQUEST_URI_NOT_SUPPORTED,
         ).map { it.code }
 
-    private fun OAuth2HttpRequest.authorizationErrorResponse(
-        error: Throwable,
-        errorObject: ErrorObject,
-    ): OAuth2HttpResponse? {
+    private fun OAuth2HttpRequest.authorizationErrorResponse(errorObject: ErrorObject): OAuth2HttpResponse? {
         if (!url.isAuthorizationEndpointUrl() || errorObject.code !in authorizationErrorCodes) return null
-        val parseException = error as? ParseException
-        val authRequest = runCatching { asAuthenticationRequest() }.getOrNull()
+        val parseResult = runCatching { asAuthenticationRequest() }
+        val authRequest = parseResult.getOrNull()
+        val parseException = parseResult.exceptionOrNull() as? ParseException
         (authRequest?.clientID ?: parseException?.clientID) ?: return null
         val redirectUri = authRequest?.redirectionURI ?: parseException?.redirectionURI ?: return null
         if (!redirectUri.isAbsolute) return null
