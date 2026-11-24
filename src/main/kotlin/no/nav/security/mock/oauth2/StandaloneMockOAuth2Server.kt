@@ -6,6 +6,8 @@ import no.nav.security.mock.oauth2.StandaloneConfig.port
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.route
+import tools.jackson.databind.node.ObjectNode
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.InetAddress
@@ -28,7 +30,7 @@ object StandaloneConfig {
     fun oauth2Config(): OAuth2Config =
         with(jsonFromEnv()) {
             if (this != null) {
-                OAuth2Config.fromJson(this)
+                fromJsonWithNettyDefault(this)
             } else {
                 OAuth2Config(
                     interactiveLogin = true,
@@ -36,6 +38,18 @@ object StandaloneConfig {
                 )
             }
         }
+
+    // The library default, MockWebServerWrapper, keeps every request for takeRequest(), which a
+    // standalone server never calls, so its heap would grow with each request.
+    // Anything but a JSON object goes to fromJson unchanged, so it fails with the same error as before.
+    private fun fromJsonWithNettyDefault(json: String): OAuth2Config {
+        val mapper = jacksonObjectMapper()
+        val node = runCatching { mapper.readTree(json) }.getOrNull() as? ObjectNode ?: return OAuth2Config.fromJson(json)
+        if (!node.has("httpServer")) {
+            node.put("httpServer", "NettyWrapper")
+        }
+        return mapper.treeToValue(node, OAuth2Config::class.java)
+    }
 
     private fun jsonFromEnv() = JSON_CONFIG.fromEnv() ?: JSON_CONFIG_PATH.fromEnv("config.json").readFile()
 

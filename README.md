@@ -293,6 +293,8 @@ docker run -p 8080:8080 $IMAGE_NAME
 
 Health check: `GET /isalive` returns `200` when the server is ready.
 
+The standalone server runs on Netty unless its JSON config (`JSON_CONFIG`, `JSON_CONFIG_PATH` or `config.json`) sets `httpServer` to `MockWebServerWrapper`. `MockWebServerWrapper` keeps every request in memory, health checks included, so its heap grows for as long as it runs.
+
 On Windows, specify the host explicitly: `docker run -p 8080:8080 -h localhost $IMAGE_NAME`
 
 ### Docker Compose
@@ -646,7 +648,7 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 | `refreshTokenExpiry` | Seconds a refresh token stays valid after it was issued or last used in a successful refresh, measured on the token provider's clock. A rotated token gets a full lifetime of its own. Default `86400` (24 hours); `0` disables expiry. Negative values are rejected. |
 | `refreshTokenLimit`  | Maximum number of refresh tokens kept in memory. Once exceeded, the least recently used is dropped and refreshing with it returns `invalid_grant`. Default `10000`; `0` disables the limit. Negative values are rejected. Each kept token takes about 1.1 KB of heap. |
 | `authorizationCodeLimit` | Maximum number of unredeemed authorization codes kept in memory. Once exceeded, the oldest is dropped and redeeming it returns `invalid_grant`. Default `10000`; `0` disables the limit. Negative values are rejected. Each kept code takes about 2.5 KB of heap. |
-| `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper`. Can also be a JSON object with HTTPS enabled, for either type: `{"type": "NettyWrapper", "ssl": {...}}`.                                                       |
+| `httpServer`         | The HTTP server implementation to use: `NettyWrapper` (default) or `MockWebServerWrapper`, which keeps every request in memory for `takeRequest()`. Can also be a JSON object with HTTPS enabled, for either type: `{"type": "NettyWrapper", "ssl": {...}}`. In a JVM test, `OAuth2Config` defaults to `MockWebServerWrapper`. |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
 
 `staticAssetsPath` must not be blank, the classpath root or outside the classpath. Only regular files within the configured directory are served; symlinks pointing outside it are not followed. With `classpath:`, symlinks are not followed at all.

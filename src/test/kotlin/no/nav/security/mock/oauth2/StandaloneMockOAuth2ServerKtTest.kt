@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.extensions.system.withEnvironment
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.should
@@ -11,11 +12,16 @@ import no.nav.security.mock.oauth2.StandaloneConfig.PORT
 import no.nav.security.mock.oauth2.StandaloneConfig.SERVER_PORT
 import no.nav.security.mock.oauth2.StandaloneConfig.oauth2Config
 import no.nav.security.mock.oauth2.StandaloneConfig.port
+import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import org.junit.jupiter.api.Test
+import tools.jackson.core.JacksonException
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import tools.jackson.module.kotlin.readValue
 import java.io.File
+import kotlin.io.path.createTempFile
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.writeText
 
 internal class StandaloneMockOAuth2ServerKtTest {
     private val configFile = "src/test/resources/config.json"
@@ -35,6 +41,47 @@ internal class StandaloneMockOAuth2ServerKtTest {
             config.tokenCallbacks.size shouldBe 0
             config.interactiveLogin shouldBe true
             config.httpServer should beInstanceOf<NettyWrapper>()
+        }
+    }
+
+    @Test
+    fun `use NettyWrapper when JSON_CONFIG has no httpServer`() {
+        withEnvironment(JSON_CONFIG to """{"interactiveLogin": true}""") {
+            val config = oauth2Config()
+            config.interactiveLogin shouldBe true
+            config.httpServer should beInstanceOf<NettyWrapper>()
+        }
+    }
+
+    @Test
+    fun `keep MockWebServerWrapper when JSON_CONFIG asks for it`() {
+        withEnvironment(JSON_CONFIG to """{"httpServer": "MockWebServerWrapper"}""") {
+            oauth2Config().httpServer should beInstanceOf<MockWebServerWrapper>()
+        }
+        withEnvironment(JSON_CONFIG to """{"httpServer": {"type": "MockWebServerWrapper"}}""") {
+            oauth2Config().httpServer should beInstanceOf<MockWebServerWrapper>()
+        }
+    }
+
+    @Test
+    fun `use NettyWrapper when the file in JSON_CONFIG_PATH has no httpServer`() {
+        val file = createTempFile(suffix = ".json").apply { writeText("""{"interactiveLogin": true}""") }
+        try {
+            withEnvironment(JSON_CONFIG_PATH to file.toString()) {
+                oauth2Config().httpServer should beInstanceOf<NettyWrapper>()
+            }
+        } finally {
+            file.deleteIfExists()
+        }
+    }
+
+    @Test
+    fun `fail like OAuth2Config fromJson when JSON_CONFIG is not a JSON object`() {
+        listOf("", "   ", "null", "[]", "{").forEach { json ->
+            val expected = shouldThrow<JacksonException> { OAuth2Config.fromJson(json) }
+            withEnvironment(JSON_CONFIG to json) {
+                shouldThrow<JacksonException> { oauth2Config() }.javaClass shouldBe expected.javaClass
+            }
         }
     }
 
