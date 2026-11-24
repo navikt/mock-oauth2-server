@@ -23,11 +23,11 @@ internal class LoginRequestHandlerTest {
     }
 
     @Test
-    fun `loginSubmit should fail with OAuth2Error invalid_request when missing required params`() {
+    fun `loginSubmit should fail with OAuth2Error access_denied when username is missing`() {
         shouldThrow<OAuth2Exception> {
             handler.loginSubmit(request("param=value"))
         }.asClue {
-            it.errorObject?.code shouldBe OAuth2Error.INVALID_REQUEST.code
+            it.errorObject?.code shouldBe OAuth2Error.ACCESS_DENIED.code
         }
     }
 

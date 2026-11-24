@@ -6,6 +6,7 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.string.shouldStartWith
 import no.nav.security.mock.oauth2.MockOAuth2Server
+import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.testutils.client
 import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.parse
@@ -156,6 +157,79 @@ class AuthorizationErrorResponseIntegrationTest {
                 it.code shouldBe 400
                 it.headers["location"] shouldBe null
                 it.body.string() shouldContain "invalid_request"
+            }
+        }
+    }
+
+    @Test
+    fun `authorize request with a relative redirect_uri should return a JSON error instead of a code`() {
+        withMockOAuth2Server {
+            client.get(authorizeUrl("redirect_uri" to "foo")).use {
+                it.code shouldBe 400
+                it.header("Location") shouldBe null
+                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_request"
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `authorize request with request_uri and no redirect_uri should return a JSON error`(interactiveLogin: Boolean) {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = interactiveLogin)) {
+            client.get(authorizeUrl("redirect_uri" to null, "request_uri" to "urn:example:request")).use {
+                it.code shouldBe 400
+                it.header("Location") shouldBe null
+                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_request"
+            }
+        }
+    }
+
+    @Test
+    fun `authorize request with request_uri and no response_type should redirect invalid_request to the client`() {
+        withMockOAuth2Server {
+            client.get(authorizeUrl("response_type" to null, "request_uri" to "urn:example:request")).use {
+                it.code shouldBe 302
+                val location = checkNotNull(it.header("Location")).toHttpUrl()
+                location.queryParameter("error") shouldBe "invalid_request"
+                location.queryParameter("state") shouldBe "s1"
+            }
+        }
+    }
+
+    @Test
+    fun `authorize request with invalid resource should redirect invalid_target to the client`() {
+        withMockOAuth2Server {
+            client.get(authorizeUrl("resource" to "relative")).use {
+                it.code shouldBe 302
+                val location = checkNotNull(it.header("Location")).toHttpUrl()
+                location.queryParameter("error") shouldBe "invalid_target"
+                location.queryParameter("state") shouldBe "s1"
+            }
+        }
+    }
+
+    @Test
+    fun `authorize request with unsupported response_type should redirect before showing the login page`() {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = true)) {
+            client.get(authorizeUrl("response_type" to "code id_token")).use {
+                it.code shouldBe 302
+                val location = checkNotNull(it.header("Location"))
+                location shouldStartWith "http://mycallback"
+                location shouldContain "#error=unsupported_response_type"
+                location shouldContain "state=s1"
+            }
+        }
+    }
+
+    @Test
+    fun `login without username should redirect access_denied to the client`() {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = true)) {
+            client.post(authorizeUrl(), emptyMap()).use {
+                it.code shouldBe 302
+                val location = checkNotNull(it.header("Location")).toHttpUrl()
+                location.queryParameter("error") shouldBe "access_denied"
+                location.queryParameter("state") shouldBe "s1"
+                location.queryParameter("code") shouldBe null
             }
         }
     }

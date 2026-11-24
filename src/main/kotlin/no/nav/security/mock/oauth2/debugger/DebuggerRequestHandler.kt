@@ -13,6 +13,7 @@ import no.nav.security.mock.oauth2.extensions.toDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.toDebuggerUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.http.ExceptionHandler
+import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.Route
@@ -97,14 +98,23 @@ private fun Route.Builder.debuggerCallback(
     ssl: Ssl? = null,
 ) = any(DEBUGGER_CALLBACK) {
     log.debug { "handling ${it.method} request to debugger callback" }
+    it.callbackParameter("error")?.let { error ->
+        return@any html(
+            templateMapper.debuggerCallbackErrorHtml(
+                it.url.toDebuggerUrl(),
+                error,
+                it.callbackParameter("error_description"),
+                it.callbackParameter("error_uri"),
+            ),
+        )
+    }
     val session = sessionManager.session(it)
     // the request is sent to the server's own bound address, never to a url derived from the request itself:
     // request urls are proxy aware, so a client controlled Host header would otherwise pick the target
     val target = serverUrl(it.url.tokenEndpointPath()).viaLoopbackIfWildcard()
     val tokenUrl: HttpUrl = it.url.toTokenEndpointUrl()
     val code: String =
-        it.url.queryParameter("code")
-            ?: it.formParameters.get("code")
+        it.callbackParameter("code")
             ?: throw OAuth2Exception(OAuth2Error.INVALID_REQUEST, "no code parameter present")
     val clientAuthentication = ClientAuthentication.fromMap(session.parameters)
     val request =
@@ -126,6 +136,8 @@ private fun Route.Builder.debuggerCallback(
         }
     html(templateMapper.debuggerCallbackHtml(request.toString(), response))
 }
+
+private fun OAuth2HttpRequest.callbackParameter(name: String): String? = url.queryParameter(name) ?: formParameters.get(name)
 
 private fun HttpUrl.tokenEndpointPath(): String = issuerId().let { if (it.isEmpty()) TOKEN else "/$it$TOKEN" }
 
