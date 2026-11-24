@@ -616,7 +616,7 @@ Browser based OAuth2 clients and SPAs can call the token, JWKS and other endpoin
 
 ### Debugger
 
-Point your browser to `http://localhost:8080/default/debugger` to open the OAuth2 client debugger. It implements the Authorization Code Flow and lets you inspect request parameters and token responses interactively.
+Point your browser to `http://localhost:8080/default/debugger` to open the OAuth2 client debugger. It implements the Authorization Code Flow and lets you inspect request parameters and token responses interactively. When the authorize endpoint sends an error to the debugger, the error page shows `error`, `error_description`, `error_uri` and `state`.
 
 ---
 
@@ -710,7 +710,7 @@ GET /{issuerId}/.well-known/oauth-authorization-server
 
 ### Endpoint notes
 
-**Authorize** (`GET /{issuerId}/authorize`) only supports `response_type=code`. Errors are sent to `redirect_uri` with `error` and `state`, using the requested `response_mode`. A JSON `400` is returned instead when `client_id` or `redirect_uri` is missing, when `redirect_uri` is not an absolute URI, or when `response_mode` is `form_post` and `redirect_uri` is not an HTTP(S) URL. Only the `query`, `fragment` and `form_post` response modes are supported; any other `response_mode` returns a JSON `400 invalid_request`. `request` and `request_uri` are not supported and return `request_not_supported` and `request_uri_not_supported`.
+**Authorize** (`GET /{issuerId}/authorize`) only supports `response_type=code`. Errors with a code from RFC 6749 section 4.1.2.1 are sent to `redirect_uri` with `error` and `state`, using the requested `response_mode`, or the default of the `response_type` (`fragment` for types such as `token` and `code id_token`). Other errors are returned as JSON. A JSON `400` is also returned when `client_id` or `redirect_uri` is missing, when `redirect_uri` is not an absolute URI, or when `response_mode` is `form_post` and `redirect_uri` is not an HTTP(S) URL. Only the `query`, `fragment` and `form_post` response modes are supported; any other `response_mode` returns a JSON `400 invalid_request`. `request_uri` is not supported and returns `request_uri_not_supported`. `request` and `request_uri` are not supported and return `request_not_supported` and `request_uri_not_supported`.
 
 **Introspect** (`POST /{issuerId}/introspect`) requires an `Authorization` header. Either `Authorization: Bearer <token>` or `Authorization: Basic <credentials>` is accepted. Requests without it will receive `401 invalid_client`.
 
