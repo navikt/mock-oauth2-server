@@ -141,7 +141,6 @@ class OAuth2HttpRequestHandler(
             OAuth2Error.INVALID_SCOPE,
             OAuth2Error.SERVER_ERROR,
             OAuth2Error.TEMPORARILY_UNAVAILABLE,
-            OAuth2Error.INVALID_TARGET,
         ).map { it.code }
 
     private fun OAuth2HttpRequest.authorizationErrorResponse(
