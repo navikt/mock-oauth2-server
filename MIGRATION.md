@@ -34,7 +34,7 @@ location.queryParameter("error") shouldBe "invalid_request"
 
 Previously, with `interactiveLogin` enabled, an authorization request with `prompt=none` showed the login page.
 
-**New behavior (7.0.0):** with `interactiveLogin` enabled, `prompt=none` sends the error `login_required` to `redirect_uri` with `state`, using the requested `response_mode`, as required by [OpenID Connect Core 1.0 section 3.1.2.1](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest). The server has no login session, so the user is never already authenticated. With `interactiveLogin` disabled, `prompt=none` still returns a code.
+**New behavior (8.0.0):** with `interactiveLogin` enabled, `prompt=none` sends the error `login_required` to `redirect_uri` with `state`, using the requested `response_mode`, as required by [OpenID Connect Core 1.0 section 3.1.2.1](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest). The server has no login session, so the user is never already authenticated. With `interactiveLogin` disabled, `prompt=none` still returns a code.
 
 **Affected pattern:** tests or clients that send `prompt=none` with `interactiveLogin` enabled and expect the login page.
 

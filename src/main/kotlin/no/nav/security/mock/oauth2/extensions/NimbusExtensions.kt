@@ -54,7 +54,7 @@ fun AuthenticationRequest.isPrompt(): Boolean =
         it == Prompt.Type.LOGIN || it == Prompt.Type.CONSENT || it == Prompt.Type.SELECT_ACCOUNT
     } ?: false
 
-fun AuthenticationRequest.isPromptNone(): Boolean = this.prompt?.contains(Prompt.Type.NONE) ?: false
+internal fun AuthenticationRequest.isPromptNone(): Boolean = this.prompt?.contains(Prompt.Type.NONE) ?: false
 
 private val SUPPORTED_CODE_CHALLENGE_METHODS: Set<CodeChallengeMethod> = setOf(CodeChallengeMethod.PLAIN, CodeChallengeMethod.S256)
 

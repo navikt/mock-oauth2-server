@@ -145,6 +145,44 @@ class AuthorizationErrorResponseIntegrationTest {
     }
 
     @Test
+    fun `prompt=none with interactive login and response_mode form_post should post login_required to the client`() {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = true)) {
+            client.get(authorizeUrl("response_mode" to "form_post", "prompt" to "none")).use {
+                it.code shouldBe 200
+                val body = it.body.string()
+                body shouldContain "action=\"http://mycallback\""
+                body shouldContain "name=\"error\" value=\"login_required\""
+                body shouldContain "name=\"state\" value=\"s1\""
+                body shouldNotContain "name=\"code\""
+                it.headers["Cache-Control"] shouldBe "no-store"
+            }
+        }
+    }
+
+    @Test
+    fun `prompt=none with interactive login and unsupported response_type should redirect unsupported_response_type to the client`() {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = true)) {
+            client.get(authorizeUrl("response_type" to "code id_token", "prompt" to "none")).use {
+                it.code shouldBe 302
+                val location = checkNotNull(it.header("Location"))
+                location shouldContain "#error=unsupported_response_type"
+                location shouldContain "state=s1"
+            }
+        }
+    }
+
+    @Test
+    fun `prompt=none with interactive login, request_uri and no redirect_uri should return a JSON error`() {
+        withMockOAuth2Server(OAuth2Config(interactiveLogin = true)) {
+            client.get(authorizeUrl("redirect_uri" to null, "request_uri" to "urn:example:request", "prompt" to "none")).use {
+                it.code shouldBe 400
+                it.header("Location") shouldBe null
+                it.parse<Map<String, Any>>()["error"] shouldBe "invalid_request"
+            }
+        }
+    }
+
+    @Test
     fun `authorize error with form_post to a non-HTTP callback should return a JSON error`() {
         withMockOAuth2Server {
             client.get(authorizeUrl("response_type" to "token", "response_mode" to "form_post", "redirect_uri" to "myapp://callback")).use {

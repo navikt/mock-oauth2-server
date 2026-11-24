@@ -88,10 +88,7 @@ private fun OAuth2HttpRequest.asValidAuthenticationRequest(): AuthenticationRequ
         requireSupportedCodeChallengeMethod()
     }
 
-private fun AuthenticationRequest.loginRequired(): AuthenticationErrorResponse {
-    if (!redirectionURI.isAbsolute) invalidRequest("redirect_uri must be an absolute URI")
-    return AuthenticationErrorResponse(redirectionURI, OIDCError.LOGIN_REQUIRED, state, impliedResponseMode())
-}
+private fun AuthenticationRequest.loginRequired() = AuthenticationErrorResponse(redirectionURI, OIDCError.LOGIN_REQUIRED, state, impliedResponseMode())
 
 class OAuth2HttpRequestHandler(
     private val config: OAuth2Config,
