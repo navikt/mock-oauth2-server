@@ -8,6 +8,7 @@ import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.authorizationCode
 import no.nav.security.mock.oauth2.extensions.clientIdAsString
@@ -26,23 +27,31 @@ import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.module.kotlin.jacksonObjectMapper
 import tools.jackson.module.kotlin.readValue
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 
 private val log = KotlinLogging.logger {}
 private val jsonMapper: ObjectMapper = jacksonObjectMapper()
 
+internal data class IssuedAuthorizationCode(
+    val authenticationRequest: AuthenticationRequest,
+    val issuerId: String,
+    val issuedAt: Instant,
+    val login: Login?,
+)
+
 internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
     private val enqueuedCallbackSupplier: ((issuerId: String) -> OAuth2TokenCallback?)? = null,
+    // Must keep insertion order: the first key is the oldest code.
+    private val codes: MutableMap<AuthorizationCode, IssuedAuthorizationCode> = LinkedHashMap(),
+    // Null disables the limit.
+    private val codeLimit: Int? = OAuth2Config.DEFAULT_AUTHORIZATION_CODE_LIMIT,
 ) : GrantHandler {
-    private val codeToAuthRequestCache: MutableMap<AuthorizationCode, AuthenticationRequest> = ConcurrentHashMap()
-    private val codeToLoginCache: MutableMap<AuthorizationCode, Login> = ConcurrentHashMap()
-    private val codeToAuthTimeCache: MutableMap<AuthorizationCode, Instant> = ConcurrentHashMap()
-    private val codeToIssuerIdCache: MutableMap<AuthorizationCode, String> = ConcurrentHashMap()
+    private var lastPurge: Instant = Instant.MIN
 
     fun authorizationCodeResponse(
         issuerId: String,
@@ -53,12 +62,12 @@ internal class AuthorizationCodeHandler(
             authenticationRequest.responseType.impliesCodeFlow() -> {
                 val code = AuthorizationCode()
                 log.debug { "issuing authorization code $code" }
-                codeToAuthRequestCache[code] = authenticationRequest
-                codeToAuthTimeCache[code] = tokenProvider.systemTime ?: Instant.now()
-                codeToIssuerIdCache[code] = issuerId
-                login?.also {
-                    log.debug { "adding user with username ${it.username} to cache" }
-                    codeToLoginCache[code] = login
+                val issuedAt = tokenProvider.now()
+                login?.also { log.debug { "adding user with username ${it.username} to cache" } }
+                synchronized(codes) {
+                    purgeExpired(issuedAt)
+                    codes[code] = IssuedAuthorizationCode(authenticationRequest, issuerId, issuedAt, login)
+                    evictOldest()
                 }
                 return AuthenticationSuccessResponse(
                     authenticationRequest.redirectionURI,
@@ -86,35 +95,34 @@ internal class AuthorizationCodeHandler(
         val code = tokenRequest.authorizationCode()
         log.debug { "issuing token for code=$code" }
 
-        val authenticationRequest =
-            codeToAuthRequestCache.remove(code)
+        // Removing the code first makes it single-use, also when the request below is rejected.
+        val issued =
+            synchronized(codes) { codes.remove(code) }
                 ?: throw OAuth2Exception(
                     OAuth2Error.INVALID_GRANT.setDescription("unknown or already-used authorization code"),
                     "unknown or already-used authorization code",
                 )
-        val authTime = codeToAuthTimeCache.remove(code)?.takeIf { authenticationRequest.maxAge >= 0 }
+        if (issued.isExpired(tokenProvider.now())) {
+            invalidGrant("authorization code has expired")
+        }
+        val authenticationRequest = issued.authenticationRequest
+        val authTime = issued.issuedAt.takeIf { authenticationRequest.maxAge >= 0 }
 
         val issuerId = request.url.issuerId()
-        if (codeToIssuerIdCache.remove(code) != issuerId) {
-            codeToLoginCache.remove(code)
+        if (issued.issuerId != issuerId) {
             throw OAuth2Exception(
                 OAuth2Error.INVALID_GRANT.setDescription("authorization code was issued by a different issuer"),
                 "authorization code issuer mismatch",
             )
         }
 
-        try {
-            verifyClientAndRedirectUri(authenticationRequest, tokenRequest)
-            authenticationRequest.verifyPkce(tokenRequest)
-        } catch (e: OAuth2Exception) {
-            codeToLoginCache.remove(code)
-            throw e
-        }
+        verifyClientAndRedirectUri(authenticationRequest, tokenRequest)
+        authenticationRequest.verifyPkce(tokenRequest)
 
         val scope: String? = tokenRequest.scope?.toString()
         val nonce: String? = authenticationRequest.nonce?.value
         val tokenCallback = enqueuedCallbackSupplier?.invoke(issuerId) ?: oAuth2TokenCallback
-        val loginTokenCallbackOrDefault = getLoginTokenCallbackOrDefault(code, tokenCallback)
+        val loginTokenCallbackOrDefault = issued.login?.let { LoginOAuth2TokenCallback(it, tokenCallback) } ?: tokenCallback
         val idTokenSubject = loginTokenCallbackOrDefault.subject(tokenRequest) ?: UUID.randomUUID().toString()
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce, idTokenSubject, authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
@@ -153,15 +161,32 @@ internal class AuthorizationCodeHandler(
 
     private fun invalidGrant(message: String): Nothing = throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(message), message)
 
-    private fun getLoginTokenCallbackOrDefault(
-        code: AuthorizationCode,
-        oAuth2TokenCallback: OAuth2TokenCallback,
-    ): OAuth2TokenCallback =
-        takeLoginFromCache(code)?.let {
-            LoginOAuth2TokenCallback(it, oAuth2TokenCallback)
-        } ?: oAuth2TokenCallback
+    private fun IssuedAuthorizationCode.isExpired(at: Instant): Boolean = Duration.between(issuedAt, at) >= CODE_LIFETIME
 
-    private fun takeLoginFromCache(code: AuthorizationCode): Login? = codeToLoginCache.remove(code)
+    // Runs at most once per PURGE_INTERVAL, so issuing a code stays cheap with many codes pending.
+    private fun purgeExpired(at: Instant) {
+        if (Duration.between(lastPurge, at) < PURGE_INTERVAL) {
+            return
+        }
+        lastPurge = at
+        codes.values.removeIf { it.isExpired(at) }
+    }
+
+    // Bounds memory also when the token provider's clock is frozen and no code ever expires.
+    private fun evictOldest() {
+        val codeLimit = codeLimit ?: return
+        val keys = codes.keys.iterator()
+        while (codes.size > codeLimit && keys.hasNext()) {
+            keys.next()
+            keys.remove()
+        }
+    }
+
+    internal companion object {
+        // RFC 6749 section 4.1.2: "A maximum authorization code lifetime of 10 minutes is RECOMMENDED."
+        val CODE_LIFETIME: Duration = Duration.ofMinutes(10)
+        private val PURGE_INTERVAL: Duration = Duration.ofMinutes(1)
+    }
 
     private class LoginOAuth2TokenCallback(
         val login: Login,

@@ -643,6 +643,9 @@ When neither `JSON_CONFIG` nor `JSON_CONFIG_PATH` is set, the server looks for a
 | `loginPagePath`      | Path to a custom HTML login page, or a classpath resource prefixed with `classpath:`. The page must contain a form that posts `username` and optionally `claims`. See `src/test/resources/login.example.html` for an example.                                                     |
 | `staticAssetsPath`   | Optional path to a directory of static assets served under `/static`, or a classpath directory prefixed with `classpath:`. Omit to disable `/static/*`. E.g. `http://localhost:8080/static/myimage.svg`.                                                                          |
 | `rotateRefreshToken` | `true` or `false`. When `true`, a new refresh token is issued on each refresh grant, invalidating the previous one.                                                                                                                                                               |
+| `refreshTokenExpiry` | Seconds a refresh token stays valid after it was issued, measured on the token provider's clock. A rotated token gets a full lifetime of its own. Default `86400` (24 hours); `0` disables expiry. Negative values are rejected. |
+| `refreshTokenLimit`  | Maximum number of refresh tokens kept in memory. Once exceeded, the oldest is dropped and refreshing with it returns `invalid_grant`. Default `1000000`; `0` disables the limit. Negative values are rejected. Each kept token takes about 1.1 KB of heap. |
+| `authorizationCodeLimit` | Maximum number of unredeemed authorization codes kept in memory. Once exceeded, the oldest is dropped and redeeming it returns `invalid_grant`. Default `1000000`; `0` disables the limit. Negative values are rejected. Each kept code takes about 2.5 KB of heap. |
 | `httpServer`         | The HTTP server implementation to use: `MockWebServerWrapper` (default, supports `takeRequest()`) or `NettyWrapper`. Can also be a JSON object with HTTPS enabled, for either type: `{"type": "NettyWrapper", "ssl": {...}}`.                                                       |
 | `tokenCallbacks`     | A list of [`RequestMappingTokenCallback`](src/main/kotlin/no/nav/security/mock/oauth2/token/OAuth2TokenCallback.kt) objects that define which claims to return based on request parameters.                                                                                       |
 
@@ -744,7 +747,9 @@ server.baseUrl()                                       // server root URL
 
 **The authorize endpoint shows a login page.** The standalone server and Docker image enable `interactiveLogin` by default. Set `JSON_CONFIG={"interactiveLogin": false}` to get a redirect with a code directly.
 
-**The code exchange returns `invalid_grant`.** Authorization codes can only be used once, so a retried or repeated token request fails.
+**The code exchange returns `invalid_grant`.** Authorization codes can only be used once, so a retried or repeated token request fails. A code also expires 10 minutes after it was issued, and at most `authorizationCodeLimit` unredeemed codes are kept (1,000,000 by default), so the oldest is dropped beyond that.
+
+**The refresh grant returns `invalid_grant`.** A refresh token expires `refreshTokenExpiry` seconds after it was issued (24 hours by default), and once more than `refreshTokenLimit` tokens are kept the oldest is dropped. Set either to `0` to turn it off.
 
 **Fetching the JWKS over HTTPS fails with `PKIX path building failed`.** Your app doesn't trust the server's certificate, see [Make your app trust the server's certificate](#make-your-app-trust-the-servers-certificate).
 

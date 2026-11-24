@@ -66,6 +66,7 @@ import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.file.Paths
+import java.time.Duration
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -105,11 +106,22 @@ class OAuth2HttpRequestHandler(
     private val loginRequestHandler = LoginRequestHandler(templateMapper, config)
     private val debuggerRequestHandler = DebuggerRequestHandler(config.httpServer)
     private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
-    private val refreshTokenManager = RefreshTokenManager()
+    private val refreshTokenManager =
+        RefreshTokenManager(
+            expiry = config.refreshTokenExpiry.takeIf { it != 0L }?.let(Duration::ofSeconds),
+            limit = config.refreshTokenLimit.takeIf { it != 0 },
+            now = config.tokenProvider::now,
+        )
 
     private val grantHandlers: Map<GrantType, GrantHandler> =
         mapOf(
-            AUTHORIZATION_CODE to AuthorizationCodeHandler(config.tokenProvider, refreshTokenManager, ::pollTokenCallback),
+            AUTHORIZATION_CODE to
+                AuthorizationCodeHandler(
+                    config.tokenProvider,
+                    refreshTokenManager,
+                    ::pollTokenCallback,
+                    codeLimit = config.authorizationCodeLimit.takeIf { it != 0 },
+                ),
             CLIENT_CREDENTIALS to ClientCredentialsGrantHandler(config.tokenProvider),
             JWT_BEARER to JwtBearerGrantHandler(config.tokenProvider),
             TOKEN_EXCHANGE to TokenExchangeGrantHandler(config.tokenProvider),

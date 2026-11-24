@@ -67,6 +67,42 @@ Previously, a valid JWT in the `request` parameter on the authorize endpoint was
 
 **Migration:** send the parameters in the query of the authorization request instead of `request`.
 
+### Refresh tokens expire after 24 hours
+
+Previously, a refresh token stayed valid for the life of the server, and the server kept every refresh token in memory.
+
+**New behavior (8.0.0):** a refresh token expires `refreshTokenExpiry` seconds after it was issued, 24 hours by default, measured on the token provider's clock. A rotated token gets a full lifetime of its own. The server also keeps at most `refreshTokenLimit` refresh tokens, 1,000,000 by default, and drops the oldest beyond that. A refresh with an expired or dropped token returns `400 invalid_grant`.
+
+**Affected pattern:** a long-running server, for example a local Docker Compose setup, whose client refreshes the same token for more than 24 hours. Also tests that move the token provider's clock forward by more than 24 hours and then refresh.
+
+**Migration:** set a longer lifetime, or turn expiry off:
+
+```json
+{
+  "refreshTokenExpiry": 0
+}
+```
+
+```kotlin
+OAuth2Config(refreshTokenExpiry = 0)
+```
+
+`refreshTokenLimit` can be turned off the same way, with `0`. Negative values for either option are rejected when the config is read.
+
+### Authorization codes expire after 10 minutes
+
+Previously, an authorization code stayed valid until it was redeemed, for the life of the server.
+
+**New behavior (8.0.0):** a code expires 10 minutes after it was issued, as RFC 6749 section 4.1.2 recommends, measured on the token provider's clock. Redeeming it later returns `400 invalid_grant`. At most `authorizationCodeLimit` unredeemed codes are kept, 1,000,000 by default, and the oldest is dropped beyond that. `0` disables the limit.
+
+**Affected pattern:** tests that move the token provider's clock forward by 10 minutes or more between the authorization request and the token request.
+
+**Migration:** redeem the code before moving the clock forward.
+
+### Recompile code that constructs or copies `OAuth2Config`
+
+`OAuth2Config` has three new constructor parameters, `refreshTokenExpiry`, `refreshTokenLimit` and `authorizationCodeLimit`. Source code keeps compiling. Kotlin code compiled against 7.x that calls the `OAuth2Config` constructor with named or default arguments, or calls `copy(...)`, fails at runtime with `NoSuchMethodError` until it is recompiled against 8.0.0. Java callers are not affected.
+
 ## Migrating to 7.0.0
 
 ### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`

@@ -2,11 +2,15 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.PlainJWT
 import com.nimbusds.jwt.SignedJWT
+import com.nimbusds.oauth2.sdk.AuthorizationCode
+import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import io.kotest.assertions.asClue
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.login.Login
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
@@ -23,6 +27,8 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import tools.jackson.module.kotlin.jacksonObjectMapper
+import java.time.Duration
+import java.time.Instant
 import java.util.stream.Stream
 
 internal class AuthorizationCodeHandlerTest {
@@ -110,6 +116,43 @@ internal class AuthorizationCodeHandlerTest {
             val claims = PlainJWT.parse(it.refreshToken).jwtClaimsSet.claims
             claims["nonce"] shouldBe "5678"
         }
+    }
+
+    @Test
+    fun `expired authorization codes should be removed when a new one is issued`() {
+        var now = Instant.parse("2026-01-01T00:00:00Z")
+        val codes = LinkedHashMap<AuthorizationCode, IssuedAuthorizationCode>()
+        val handler = AuthorizationCodeHandler(OAuth2TokenProvider(timeProvider = { now }), RefreshTokenManager(), codes = codes)
+        repeat(3) { handler.retrieveAuthorizationCode(Login("foo")) }
+
+        now = now.plus(Duration.ofMinutes(10))
+        val fresh = handler.retrieveAuthorizationCode(Login("foo"))
+
+        codes.keys.map { it.value } shouldBe listOf(fresh)
+    }
+
+    @Test
+    fun `oldest authorization code should be evicted beyond the limit, also with a frozen clock`() {
+        val codes = LinkedHashMap<AuthorizationCode, IssuedAuthorizationCode>()
+        val frozen = OAuth2TokenProvider(systemTime = Instant.parse("2026-01-01T00:00:00Z"))
+        val handler = AuthorizationCodeHandler(frozen, RefreshTokenManager(), codes = codes, codeLimit = 2)
+        val oldest = handler.retrieveAuthorizationCode(Login("foo"))
+        val kept = (1..2).map { handler.retrieveAuthorizationCode(Login("foo")) }
+
+        codes.keys.map { it.value } shouldBe kept
+        shouldThrow<OAuth2Exception> {
+            handler.tokenResponse(tokenRequest(code = oldest), "http://myissuer".toHttpUrl(), DefaultOAuth2TokenCallback())
+        }.errorObject?.code shouldBe OAuth2Error.INVALID_GRANT.code
+    }
+
+    @Test
+    fun `authorization codes should not be evicted when the limit is disabled`() {
+        val codes = LinkedHashMap<AuthorizationCode, IssuedAuthorizationCode>()
+        val frozen = OAuth2TokenProvider(systemTime = Instant.parse("2026-01-01T00:00:00Z"))
+        val handler = AuthorizationCodeHandler(frozen, RefreshTokenManager(), codes = codes, codeLimit = null)
+        repeat(1000) { handler.retrieveAuthorizationCode(Login("foo")) }
+
+        codes.size shouldBe 1000
     }
 
     private fun AuthorizationCodeHandler.retrieveAuthorizationCode(login: Login): String =
