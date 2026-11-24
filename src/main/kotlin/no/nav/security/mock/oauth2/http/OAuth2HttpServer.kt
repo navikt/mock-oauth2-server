@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.http
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.ServerBootstrap
+import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelFactory
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelHandlerContext
@@ -13,8 +14,9 @@ import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.channel.nio.NioIoHandler
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
-import io.netty.handler.codec.http.DefaultHttpResponse
+import io.netty.handler.codec.http.DefaultFullHttpResponse
 import io.netty.handler.codec.http.FullHttpRequest
+import io.netty.handler.codec.http.FullHttpResponse
 import io.netty.handler.codec.http.HttpHeaderNames
 import io.netty.handler.codec.http.HttpHeaderValues
 import io.netty.handler.codec.http.HttpHeaders
@@ -22,11 +24,9 @@ import io.netty.handler.codec.http.HttpObjectAggregator
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.codec.http.HttpServerKeepAliveHandler
+import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
-import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.ssl.SslHandler
-import io.netty.handler.stream.ChunkedStream
-import io.netty.handler.stream.ChunkedWriteHandler
 import io.netty.util.CharsetUtil
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
 import okhttp3.Headers
@@ -166,7 +166,6 @@ class NettyWrapper
                                 ch.pipeline().addLast("codec", HttpServerCodec())
                                 ch.pipeline().addLast("keepAlive", HttpServerKeepAliveHandler())
                                 ch.pipeline().addLast("aggregator", HttpObjectAggregator(MAX_CONTENT_LENGTH))
-                                ch.pipeline().addLast("streamer", ChunkedWriteHandler())
                                 ch.pipeline().addLast("routes", RouterChannelHandler(requestHandler))
                             }
                         },
@@ -239,49 +238,54 @@ class NettyWrapper
                 ctx: ChannelHandlerContext,
                 request: FullHttpRequest,
             ) {
-                val address = ctx.channel().remoteAddress() as InetSocketAddress
-                val port = (ctx.channel().localAddress() as InetSocketAddress).port
+                val localAddress = ctx.channel().localAddress() as InetSocketAddress
                 val scheme = if (ctx.pipeline().get(SslHandler::class.java) == null) "http" else "https"
-                val (response, stream) = requestHandler(request.asOAuth2HttpRequest(scheme, address, port)).asNettyResponse()
+                val response = requestHandler(request.asOAuth2HttpRequest(scheme, localAddress)).asNettyResponse()
                 response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
 
-                ctx.write(response)
-                ctx.write(stream)
-                ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT)
+                ctx.writeAndFlush(response)
             }
 
-            private fun OAuth2HttpResponse.asNettyResponse(): Pair<DefaultHttpResponse, ChunkedStream> =
-                DefaultHttpResponse(
+            // A Content-Length lets HttpServerKeepAliveHandler keep the connection open; without it the
+            // body can only end with the connection.
+            private fun OAuth2HttpResponse.asNettyResponse(): FullHttpResponse {
+                val content =
+                    when {
+                        this.body != null -> this.body.toByteArray()
+                        this.bytesBody != null -> this.bytesBody
+                        else -> ByteArray(0)
+                    }
+                return DefaultFullHttpResponse(
                     HttpVersion.HTTP_1_1,
-                    HttpResponseStatus(this.status, ""),
+                    HttpResponseStatus.valueOf(this.status),
+                    Unpooled.wrappedBuffer(content),
                 ).apply {
                     this@asNettyResponse.headers.forEach { (key, values) -> headers().set(key, values) }
-                } to
-                    ChunkedStream(
-                        when {
-                            this.body != null -> this.body.byteInputStream()
-                            this.bytesBody != null -> this.bytesBody.inputStream()
-                            else -> "".byteInputStream()
-                        },
-                    )
+                    if (!headers().contains(HttpHeaderNames.CONTENT_LENGTH) && !headers().contains(HttpHeaderNames.TRANSFER_ENCODING)) {
+                        HttpUtil.setContentLength(this, content.size.toLong())
+                    }
+                }
+            }
 
             private fun FullHttpRequest.asOAuth2HttpRequest(
                 scheme: String,
-                address: InetSocketAddress,
-                port: Int,
+                localAddress: InetSocketAddress,
             ) = OAuth2HttpRequest(
                 this.headers().toOkHttpHeaders(),
                 this.method().name(),
-                this.requestUrl(scheme, address, port),
+                this.requestUrl(scheme, localAddress),
                 content().toString(CharsetUtil.UTF_8),
             )
 
+            // The host comes from the Host header, or else from the server's own address. hostString does
+            // not do a reverse DNS lookup, unlike hostName.
             private fun FullHttpRequest.requestUrl(
                 scheme: String,
-                address: InetSocketAddress,
-                port: Int,
+                localAddress: InetSocketAddress,
             ): HttpUrl {
-                val (host, hostPort) = hostHeaderWithExplicitPort() ?: (address.hostName to port)
+                val hostHeader = hostAndPortFromHostHeader(this.headers()["Host"])
+                val host = hostHeader?.first ?: localAddress.hostString.substringBefore('%')
+                val hostPort = hostHeader?.second?.takeIf { it != -1 } ?: localAddress.port
                 return HttpUrl
                     .Builder()
                     .scheme(scheme)
@@ -290,9 +294,6 @@ class NettyWrapper
                     .build()
                     .resolve(this.uri())!!
             }
-
-            private fun FullHttpRequest.hostHeaderWithExplicitPort(): Pair<String, Int>? =
-                hostAndPortFromHostHeader(this.headers()["Host"])?.takeIf { (_, port) -> port != -1 }
 
             private fun HttpHeaders.toOkHttpHeaders(): Headers {
                 val headers = Headers.headersOf().newBuilder()
