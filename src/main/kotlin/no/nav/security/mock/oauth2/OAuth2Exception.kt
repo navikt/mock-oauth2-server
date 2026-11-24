@@ -38,8 +38,6 @@ fun invalidRequest(message: String): Nothing =
 
 internal fun unsupportedResponseType(message: String): Nothing = throw OAuth2Exception(OAuth2Error.UNSUPPORTED_RESPONSE_TYPE.setDescription(message), message)
 
-internal fun accessDenied(message: String): Nothing = throw OAuth2Exception(OAuth2Error.ACCESS_DENIED.setDescription(message), message)
-
 internal fun invalidClient(message: String): Nothing = throw OAuth2Exception(OAuth2Error.INVALID_CLIENT.setDescription(message), message)
 
 fun notFound(message: String): Nothing = throw OAuth2Exception(ErrorObject("not_found", "Resource not found", HTTPResponse.SC_NOT_FOUND), message)
