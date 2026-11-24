@@ -46,33 +46,17 @@ class TemplateMapper(
             ),
         )
 
-    fun debuggerCallbackErrorHtml(
-        debuggerUrl: HttpUrl,
-        error: String,
-        errorDescription: String?,
-        errorUri: String?,
-    ): String =
-        asString(
-            HtmlContent(
-                "debugger_callback_error.ftl",
-                mapOf(
-                    "debugger_url" to debuggerUrl.toString(),
-                    "error" to error,
-                    "error_description" to errorDescription,
-                    "error_uri" to errorUri,
-                ),
-            ),
-        )
-
     fun debuggerErrorHtml(
         debuggerUrl: HttpUrl,
         stacktrace: String,
+        errorParameters: Map<String, String> = emptyMap(),
     ) = asString(
         HtmlContent(
             "error.ftl",
             mapOf(
                 "debugger_url" to debuggerUrl,
                 "stacktrace" to stacktrace,
+                "error_parameters" to errorParameters,
             ),
         ),
     )

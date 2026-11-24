@@ -10,6 +10,13 @@
             <h3 class="docs-header">Something went wrong.</h3>
             <p>Could be expired session? Please try again using the debugger form - <a href='${debugger_url}'>${debugger_url}</a></p>
 
+            <#if error_parameters?has_content>
+            <div>
+                <label for="error_parameters">Authorization error response</label>
+                <pre id="error_parameters"><code><#list error_parameters as name, value>${name}=${value}
+</#list></code></pre>
+            </div>
+            </#if>
             <div>
                 <label for="stacktrace">Stacktrace</label>
                 <pre id="stacktrace"><code>${stacktrace}</code></pre>

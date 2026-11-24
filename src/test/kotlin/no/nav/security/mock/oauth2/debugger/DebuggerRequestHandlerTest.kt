@@ -193,9 +193,11 @@ internal class DebuggerRequestHandlerTest {
                         .build(),
                 ).execute()
                 .use {
-                    it.code shouldBe 200
+                    it.code shouldBe 500
                     it.request.url.encodedPath shouldBe "/default/debugger/callback"
-                    it.body.string() shouldContain "unsupported_response_type"
+                    val body = it.body.string()
+                    body shouldContain "error=unsupported_response_type"
+                    body shouldContain "Stacktrace"
                 }
         } finally {
             server.shutdown()
@@ -224,10 +226,10 @@ internal class DebuggerRequestHandlerTest {
                         .build(),
                 ).execute()
                 .use {
-                    it.code shouldBe 200
+                    it.code shouldBe 500
                     val body = it.body.string()
-                    body shouldContain "invalid_request"
-                    body shouldContain "some description"
+                    body shouldContain "error=invalid_request"
+                    body shouldContain "error_description=some description"
                 }
         } finally {
             server.shutdown()
