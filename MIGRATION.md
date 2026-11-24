@@ -6,7 +6,7 @@
 
 Previously, every error from the authorize endpoint returned a JSON `400` from the server.
 
-**New behavior (8.0.0):** when the request has a `client_id` and an absolute `redirect_uri`, errors such as `invalid_request`, `unsupported_response_type` and `invalid_target` are sent to `redirect_uri` with `error`, `error_description` and `state`, as required by [RFC 6749 section 4.1.2.1](https://www.rfc-editor.org/rfc/rfc6749#section-4.1.2.1). The requested `response_mode` is used: a `302` redirect for `query` and `fragment`, or an auto-submitted form for `form_post`. Without a `response_mode`, the default of the `response_type` is used, which is `fragment` for types such as `token` and `code id_token`.
+**New behavior (8.0.0):** when the request has a `client_id` and an absolute `redirect_uri`, errors such as `invalid_request` and `unsupported_response_type` are sent to `redirect_uri` with `error`, `error_description` and `state`, as required by [RFC 6749 section 4.1.2.1](https://www.rfc-editor.org/rfc/rfc6749#section-4.1.2.1). The requested `response_mode` is used: a `302` redirect for `query` and `fragment`, or an auto-submitted form for `form_post`. Without a `response_mode`, the default of the `response_type` is used, which is `fragment` for types such as `token` and `code id_token`.
 
 A JSON `400` is still returned when:
 
@@ -19,7 +19,7 @@ The request is validated before the user logs in:
 - A relative `redirect_uri` always returns a JSON `400 invalid_request`. Previously, an otherwise valid request was redirected with a code.
 - With `interactiveLogin` enabled, an unsupported `response_type` returns `unsupported_response_type` instead of the login page.
 
-A login without `username` sends `access_denied` to `redirect_uri` instead of a JSON `400 invalid_request`.
+A login without `username` sends `invalid_request` to `redirect_uri` instead of a JSON `400 invalid_request`.
 
 **Affected pattern:** tests that call the authorize endpoint with an invalid request and expect a JSON `400`, or that use a relative `redirect_uri`.
 
