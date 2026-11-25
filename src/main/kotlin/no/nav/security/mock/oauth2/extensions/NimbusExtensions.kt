@@ -35,6 +35,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.invalidRequest
 import no.nav.security.mock.oauth2.missingParameter
+import no.nav.security.mock.oauth2.requestUriNotSupported
 import no.nav.security.mock.oauth2.unsupportedResponseType
 import java.time.Duration
 import java.time.Instant
@@ -63,6 +64,10 @@ internal fun AuthenticationRequest.requireSupportedCodeChallengeMethod() {
     if (method !in SUPPORTED_CODE_CHALLENGE_METHODS) {
         invalidRequest(ErrorObject.removeIllegalChars("unsupported code_challenge_method: ${method.value}"))
     }
+}
+
+internal fun AuthenticationRequest.requireNoRequestUri() {
+    if (this.requestURI != null) requestUriNotSupported()
 }
 
 internal fun AuthenticationRequest.requireAbsoluteRedirectUri() {

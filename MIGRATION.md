@@ -47,6 +47,16 @@ val location = response.headers["location"]!!.toHttpUrl()
 location.queryParameter("error") shouldBe "login_required"
 ```
 
+### `request_uri` returns `request_uri_not_supported`
+
+Previously, the `request_uri` parameter on the authorize endpoint was ignored, and the discovery document did not include `request_uri_parameter_supported`, which defaults to `true`.
+
+**New behavior (8.0.0):** an authorization request with `request_uri` sends the error `request_uri_not_supported` to `redirect_uri` with `state`, as required by [OpenID Connect Core 1.0 section 6.2](https://openid.net/specs/openid-connect-core-1_0.html#RequestUriParameter). When the error cannot be sent to the client, for example without `redirect_uri`, it is returned as a JSON `400`. The discovery document has `"request_uri_parameter_supported": false`.
+
+**Affected pattern:** tests or clients that send `request_uri` and expect a code or the login page, or that compare the full discovery document.
+
+**Migration:** send the parameters in the query of the authorization request instead of `request_uri`.
+
 ## Migrating to 7.0.0
 
 ### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`
