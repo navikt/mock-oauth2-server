@@ -123,7 +123,7 @@ Request lines longer than 4 KiB, such as an `/authorize` URL with a long `state`
 
 Previously, an HTTP/1.1 request without a `Host` header, with more than one, or with a value that is not a host and optional port, was served as usual.
 
-**New behavior (8.0.0):** the server answers `400 Bad Request`, as RFC 9112 §3.2 requires. HTTP/1.0 requests without a `Host` header are still served. `MockWebServerWrapper` rejects a missing or repeated `Host` header; a value it cannot parse fails in OkHttp's `MockWebServer` before the request reaches the server, as before.
+**New behavior (8.0.0):** the server answers `400 Bad Request`, as RFC 9112 §3.2 requires. HTTP/1.0 requests without a `Host` header are still served. `NettyWrapper` also answers `400` and closes the connection when it cannot parse the request, for example a request line with trailing whitespace, instead of `404`. `MockWebServerWrapper` rejects a missing or repeated `Host` header; a value it cannot parse fails in OkHttp's `MockWebServer` before the request reaches the server, as before.
 
 **Affected pattern:** raw HTTP/1.1 clients or tests that leave out the `Host` header or send it twice. OkHttp, browsers and other standard clients always send one valid `Host` header.
 

@@ -283,11 +283,32 @@ internal class OAuth2HttpServerTest {
     }
 
     @Test
+    fun `Netty server should answer 400 and close the connection when the request line is malformed`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            listOf("GET /1/2 HTTP/1.1 \r\n\r\n", "GET /1/2 HTTP/1.1\t\r\n\r\n").forEach { request ->
+                request.asClue {
+                    server.socketWithReadTimeout().use { socket ->
+                        val (head, _) = socket.sendAndReadResponse(request)
+                        head.first() shouldBe "HTTP/1.1 400 Bad Request"
+                        head.map { it.lowercase() } shouldContain "connection: close"
+                        socket.getInputStream().read() shouldBe -1
+                    }
+                }
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
     fun `MockWebServer should answer 400 to an invalid Host header`() {
         val server = MockWebServerWrapper().start(requestHandler)
         try {
             listOf(
                 "GET /1/2 HTTP/1.1\r\nConnection: close\r\n\r\n",
+                "GET /1/2 HTTP/1.1 \r\nConnection: close\r\n\r\n",
+                "GET /1/2 HTTP/1.1\t\r\nConnection: close\r\n\r\n",
                 "GET /1/2 HTTP/1.1\r\nHost: localhost\r\nHost: localhost\r\nConnection: close\r\n\r\n",
             ).forEach { request ->
                 request.asClue {
