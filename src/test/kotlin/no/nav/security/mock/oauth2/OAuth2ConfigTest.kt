@@ -44,6 +44,32 @@ internal class OAuth2ConfigTest {
     }
 
     @Test
+    fun `limits should default to 24 hours and 10000 refresh tokens and codes`() {
+        val config = OAuth2Config.fromJson("{}")
+        config.refreshTokenExpiry shouldBe 86400
+        config.refreshTokenLimit shouldBe 10_000
+        config.authorizationCodeLimit shouldBe 10_000
+    }
+
+    @Test
+    fun `negative refresh token expiry or limit should be rejected`() {
+        shouldThrow<DatabindException> { OAuth2Config.fromJson("""{"refreshTokenExpiry": -1}""") }
+        shouldThrow<DatabindException> { OAuth2Config.fromJson("""{"refreshTokenLimit": -1}""") }
+        shouldThrow<IllegalArgumentException> { OAuth2Config(refreshTokenExpiry = -1) }
+        shouldThrow<IllegalArgumentException> { OAuth2Config(refreshTokenLimit = -1) }
+        shouldThrow<DatabindException> { OAuth2Config.fromJson("""{"authorizationCodeLimit": -1}""") }
+        shouldThrow<IllegalArgumentException> { OAuth2Config(authorizationCodeLimit = -1) }
+    }
+
+    @Test
+    fun `refresh token expiry and limit should be read from json`() {
+        val config = OAuth2Config.fromJson("""{"refreshTokenExpiry": 0, "refreshTokenLimit": 5, "authorizationCodeLimit": 0}""")
+        config.refreshTokenExpiry shouldBe 0
+        config.refreshTokenLimit shouldBe 5
+        config.authorizationCodeLimit shouldBe 0
+    }
+
+    @Test
     fun `create full config from json with multiple tokenCallbacks`() {
         val config = OAuth2Config.fromJson(configJson)
         config.interactiveLogin shouldBe true

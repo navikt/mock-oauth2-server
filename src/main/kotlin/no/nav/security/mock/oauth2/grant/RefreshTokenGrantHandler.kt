@@ -47,6 +47,9 @@ internal class RefreshTokenGrantHandler(
         val resolvedCallback = enqueuedCallbackSupplier?.invoke(issuerId) ?: storedCallback
         val idToken: SignedJWT = tokenProvider.idToken(tokenRequest, issuerUrl, resolvedCallback, null, storedState.idTokenSubject, storedState.authTime)
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, resolvedCallback)
+        if (!rotateRefreshToken) {
+            refreshTokenManager.markUsed(refreshToken)
+        }
 
         return OAuth2TokenResponse(
             tokenType = "Bearer",

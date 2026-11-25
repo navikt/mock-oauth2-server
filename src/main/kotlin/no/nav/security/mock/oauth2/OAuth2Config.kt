@@ -34,7 +34,18 @@ data class OAuth2Config
         val tokenCallbacks: Set<OAuth2TokenCallback> = emptySet(),
         @JsonDeserialize(using = OAuth2HttpServerDeserializer::class)
         val httpServer: OAuth2HttpServer = MockWebServerWrapper(),
+        val refreshTokenExpiry: Long = DEFAULT_REFRESH_TOKEN_EXPIRY,
+        val refreshTokenLimit: Int = DEFAULT_REFRESH_TOKEN_LIMIT,
+        val authorizationCodeLimit: Int = DEFAULT_AUTHORIZATION_CODE_LIMIT,
     ) {
+        init {
+            require(refreshTokenExpiry >= 0) { "refreshTokenExpiry must be 0 (no expiry) or a number of seconds, was $refreshTokenExpiry" }
+            require(refreshTokenLimit >= 0) { "refreshTokenLimit must be 0 (no limit) or a positive number, was $refreshTokenLimit" }
+            require(authorizationCodeLimit >= 0) {
+                "authorizationCodeLimit must be 0 (no limit) or a positive number, was $authorizationCodeLimit"
+            }
+        }
+
         internal class OAuth2TokenProviderDeserializer : ValueDeserializer<OAuth2TokenProvider>() {
             data class ProviderConfig(
                 val keyProvider: KeyProviderConfig?,
@@ -119,6 +130,10 @@ data class OAuth2Config
         }
 
         companion object {
+            const val DEFAULT_REFRESH_TOKEN_EXPIRY: Long = 24 * 60 * 60
+            const val DEFAULT_REFRESH_TOKEN_LIMIT: Int = 10_000
+            const val DEFAULT_AUTHORIZATION_CODE_LIMIT: Int = 10_000
+
             fun fromJson(json: String): OAuth2Config = jacksonObjectMapper().readValue(json)
         }
     }

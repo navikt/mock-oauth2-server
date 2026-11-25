@@ -67,6 +67,42 @@ Previously, a valid JWT in the `request` parameter on the authorize endpoint was
 
 **Migration:** send the parameters in the query of the authorization request instead of `request`.
 
+### Refresh tokens expire after 24 hours without use
+
+Previously, a refresh token stayed valid for the life of the server, and the server kept every refresh token in memory.
+
+**New behavior (8.0.0):** a refresh token expires `refreshTokenExpiry` seconds after it was issued or last used in a successful refresh, 24 hours by default, measured on the token provider's clock. A rotated token gets a full lifetime of its own. The server also keeps at most `refreshTokenLimit` refresh tokens, 10,000 by default, and drops the least recently used beyond that. A refresh with an expired or dropped token returns `400 invalid_grant`.
+
+**Affected pattern:** a long-running server, for example a local Docker Compose setup, whose client is idle for more than 24 hours and then refreshes, or that holds more than 10,000 refresh tokens. Also tests that move the token provider's clock forward by 24 hours or more and then refresh.
+
+**Migration:** set a longer lifetime or a higher limit, or turn either off:
+
+```json
+{
+  "refreshTokenExpiry": 0
+}
+```
+
+```kotlin
+OAuth2Config(refreshTokenExpiry = 0)
+```
+
+`refreshTokenLimit` can be turned off the same way, with `0`. Negative values for either option are rejected when the config is read.
+
+### Authorization codes expire after 10 minutes
+
+Previously, an authorization code stayed valid until it was redeemed, for the life of the server.
+
+**New behavior (8.0.0):** a code expires 10 minutes after it was issued, as RFC 6749 section 4.1.2 recommends, measured on the token provider's clock. Redeeming it later returns `400 invalid_grant`. At most `authorizationCodeLimit` unredeemed codes are kept, 10,000 by default, and the oldest is dropped beyond that. `0` disables the limit.
+
+**Affected pattern:** tests that move the token provider's clock forward by 10 minutes or more between the authorization request and the token request.
+
+**Migration:** redeem the code before moving the clock forward. A test suite that issues more than 10,000 codes without redeeming them can raise `authorizationCodeLimit`.
+
+### Recompile code that constructs or copies `OAuth2Config`
+
+`OAuth2Config` has three new constructor parameters, `refreshTokenExpiry`, `refreshTokenLimit` and `authorizationCodeLimit`. Calls to the constructor keep compiling, in Kotlin and Java. Code compiled against 7.x fails at runtime with `NoSuchMethodError` until it is recompiled against 8.0.0 when it calls `copy(...)`, or when it is Kotlin code that calls the constructor with named or default arguments. Java source that calls `copy(...)` passes every parameter, so it must also pass the three new ones, for example `OAuth2Config.DEFAULT_REFRESH_TOKEN_EXPIRY`, `OAuth2Config.DEFAULT_REFRESH_TOKEN_LIMIT` and `OAuth2Config.DEFAULT_AUTHORIZATION_CODE_LIMIT`.
+
 ## Migrating to 7.0.0
 
 ### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`

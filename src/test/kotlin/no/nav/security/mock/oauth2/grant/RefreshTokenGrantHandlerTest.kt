@@ -11,7 +11,6 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.jupiter.api.Test
-import java.util.concurrent.ConcurrentHashMap
 
 internal class RefreshTokenGrantHandlerTest {
     @Test
@@ -29,7 +28,7 @@ internal class RefreshTokenGrantHandlerTest {
         enqueuedCallbacks.size shouldBe 1
     }
 
-    private class RotatedByConcurrentRequestCache : ConcurrentHashMap<RefreshToken, RefreshTokenState>() {
+    private class RotatedByConcurrentRequestCache : LinkedHashMap<RefreshToken, RefreshTokenState>() {
         override fun remove(key: RefreshToken): RefreshTokenState? = null
     }
 
