@@ -38,6 +38,8 @@ fun invalidRequest(message: String): Nothing =
 
 internal fun unsupportedResponseType(message: String): Nothing = throw OAuth2Exception(OAuth2Error.UNSUPPORTED_RESPONSE_TYPE.setDescription(message), message)
 
+internal fun requestNotSupported(): Nothing = throw OAuth2Exception(OAuth2Error.REQUEST_NOT_SUPPORTED, "the request parameter is not supported")
+
 internal fun requestUriNotSupported(): Nothing = throw OAuth2Exception(OAuth2Error.REQUEST_URI_NOT_SUPPORTED, "the request_uri parameter is not supported")
 
 internal fun invalidClient(message: String): Nothing = throw OAuth2Exception(OAuth2Error.INVALID_CLIENT.setDescription(message), message)
