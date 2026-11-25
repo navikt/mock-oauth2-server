@@ -14,6 +14,8 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 
 object StandaloneConfig {
+    private val jsonMapper = jacksonObjectMapper()
+
     const val JSON_CONFIG = "JSON_CONFIG"
     const val JSON_CONFIG_PATH = "JSON_CONFIG_PATH"
     const val SERVER_HOSTNAME = "SERVER_HOSTNAME"
@@ -30,7 +32,7 @@ object StandaloneConfig {
     fun oauth2Config(): OAuth2Config =
         with(jsonFromEnv()) {
             if (this != null) {
-                fromJsonWithNettyDefault(this)
+                fromJsonWithNettyAsDefaultHttpServer(this)
             } else {
                 OAuth2Config(
                     interactiveLogin = true,
@@ -39,17 +41,15 @@ object StandaloneConfig {
             }
         }
 
-    // The library default, MockWebServerWrapper, keeps every request for takeRequest(), which a
-    // standalone server never calls, so its heap would grow with each request.
-    // Anything but a JSON object goes to fromJson unchanged, so it fails with the same error as before.
-    private fun fromJsonWithNettyDefault(json: String): OAuth2Config {
-        val mapper = jacksonObjectMapper()
-        val node = runCatching { mapper.readTree(json) }.getOrNull() as? ObjectNode ?: return OAuth2Config.fromJson(json)
-        if (!node.has("httpServer")) {
-            node.put("httpServer", "NettyWrapper")
+    private fun fromJsonWithNettyAsDefaultHttpServer(json: String): OAuth2Config {
+        val config = json.asJsonObjectOrNull() ?: return OAuth2Config.fromJson(json)
+        if (!config.has("httpServer")) {
+            config.put("httpServer", "NettyWrapper")
         }
-        return mapper.treeToValue(node, OAuth2Config::class.java)
+        return jsonMapper.treeToValue(config, OAuth2Config::class.java)
     }
+
+    private fun String.asJsonObjectOrNull(): ObjectNode? = runCatching { jsonMapper.readTree(this) }.getOrNull() as? ObjectNode
 
     private fun jsonFromEnv() = JSON_CONFIG.fromEnv() ?: JSON_CONFIG_PATH.fromEnv("config.json").readFile()
 
