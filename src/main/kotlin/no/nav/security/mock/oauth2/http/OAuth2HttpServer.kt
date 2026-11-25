@@ -246,8 +246,6 @@ class NettyWrapper
                 ctx.writeAndFlush(response)
             }
 
-            // A Content-Length lets HttpServerKeepAliveHandler keep the connection open; without it the
-            // body can only end with the connection.
             private fun OAuth2HttpResponse.asNettyResponse(): FullHttpResponse {
                 val content =
                     when {
@@ -261,9 +259,13 @@ class NettyWrapper
                     Unpooled.wrappedBuffer(content),
                 ).apply {
                     this@asNettyResponse.headers.forEach { (key, values) -> headers().set(key, values) }
-                    if (!headers().contains(HttpHeaderNames.CONTENT_LENGTH) && !headers().contains(HttpHeaderNames.TRANSFER_ENCODING)) {
-                        HttpUtil.setContentLength(this, content.size.toLong())
-                    }
+                    setContentLengthToKeepConnectionOpen(content.size)
+                }
+            }
+
+            private fun FullHttpResponse.setContentLengthToKeepConnectionOpen(contentLength: Int) {
+                if (!headers().contains(HttpHeaderNames.CONTENT_LENGTH) && !headers().contains(HttpHeaderNames.TRANSFER_ENCODING)) {
+                    HttpUtil.setContentLength(this, contentLength.toLong())
                 }
             }
 
@@ -277,14 +279,12 @@ class NettyWrapper
                 content().toString(CharsetUtil.UTF_8),
             )
 
-            // The host comes from the Host header, or else from the server's own address. hostString does
-            // not do a reverse DNS lookup, unlike hostName.
             private fun FullHttpRequest.requestUrl(
                 scheme: String,
                 localAddress: InetSocketAddress,
             ): HttpUrl {
                 val hostHeader = hostAndPortFromHostHeader(this.headers()["Host"])
-                val host = hostHeader?.first ?: localAddress.hostString.substringBefore('%')
+                val host = hostHeader?.first ?: localAddress.hostWithoutDnsLookup()
                 val hostPort = hostHeader?.second?.takeIf { it != -1 } ?: localAddress.port
                 return HttpUrl
                     .Builder()
@@ -294,6 +294,8 @@ class NettyWrapper
                     .build()
                     .resolve(this.uri())!!
             }
+
+            private fun InetSocketAddress.hostWithoutDnsLookup(): String = hostString.substringBefore('%')
 
             private fun HttpHeaders.toOkHttpHeaders(): Headers {
                 val headers = Headers.headersOf().newBuilder()

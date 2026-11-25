@@ -151,9 +151,9 @@ internal class OAuth2HttpServerTest {
     fun `Netty server should keep the connection open and send Content-Length and a reason phrase`() {
         val server = NettyWrapper().start(requestHandler)
         try {
-            server.socket().use { socket ->
+            server.socketWithReadTimeout().use { socket ->
                 repeat(2) {
-                    socket.exchange("GET /1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n").asClue { (head, body) ->
+                    socket.sendAndReadResponse("GET /1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n").asClue { (head, body) ->
                         head.first() shouldBe "HTTP/1.1 200 OK"
                         head.map { it.lowercase() } shouldContain "content-length: 9"
                         head.map { it.lowercase() } shouldNotContain "connection: close"
@@ -170,8 +170,8 @@ internal class OAuth2HttpServerTest {
     fun `Netty server should close the connection when the client asks for it`() {
         val server = NettyWrapper().start(requestHandler)
         try {
-            server.socket().use { socket ->
-                val (head, body) = socket.exchange("GET /1/2 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+            server.socketWithReadTimeout().use { socket ->
+                val (head, body) = socket.sendAndReadResponse("GET /1/2 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
                 head.map { it.lowercase() } shouldContain "connection: close"
                 body shouldBe "pathmatch"
                 socket.getInputStream().read() shouldBe -1
@@ -185,11 +185,11 @@ internal class OAuth2HttpServerTest {
     fun `Netty server should send no Content-Length with a 204 and keep the connection open`() {
         val server = NettyWrapper().start(requestHandler)
         try {
-            server.socket().use { socket ->
-                val (head, _) = socket.exchange("GET /nocontent HTTP/1.1\r\nHost: localhost\r\n\r\n", expectBody = false)
+            server.socketWithReadTimeout().use { socket ->
+                val (head, _) = socket.sendAndReadResponse("GET /nocontent HTTP/1.1\r\nHost: localhost\r\n\r\n", expectBody = false)
                 head.first() shouldBe "HTTP/1.1 204 No Content"
                 head.none { it.lowercase().startsWith("content-length:") } shouldBe true
-                socket.exchange("GET /1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n").second shouldBe "pathmatch"
+                socket.sendAndReadResponse("GET /1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n").second shouldBe "pathmatch"
             }
         } finally {
             server.stop()
@@ -212,7 +212,7 @@ internal class OAuth2HttpServerTest {
     fun `Netty server should use its own address, not the client's, when there is no Host header`() {
         val server = NettyWrapper().start(requestHandler)
         try {
-            server.socket().use { socket ->
+            server.socketWithReadTimeout().use { socket ->
                 val serverHost =
                     HttpUrl
                         .Builder()
@@ -220,7 +220,7 @@ internal class OAuth2HttpServerTest {
                         .host(socket.inetAddress.hostAddress)
                         .build()
                         .host
-                socket.exchange("GET /host HTTP/1.0\r\n\r\n").second shouldBe "$serverHost:${server.port()} $serverHost"
+                socket.sendAndReadResponse("GET /host HTTP/1.0\r\n\r\n").second shouldBe "$serverHost:${server.port()} $serverHost"
             }
         } finally {
             server.stop()
@@ -279,11 +279,9 @@ internal class OAuth2HttpServerTest {
             client.get(this.url("/1/2")).body.string() shouldBe "pathmatch"
         }
 
-    // A read timeout makes a server that neither frames nor closes the response fail the test instead of hanging it.
-    private fun OAuth2HttpServer.socket() = Socket(url("/").host, port()).apply { soTimeout = 5_000 }
+    private fun OAuth2HttpServer.socketWithReadTimeout() = Socket(url("/").host, port()).apply { soTimeout = 5_000 }
 
-    // Sends one raw request and reads one response framed by Content-Length, so the socket can be reused.
-    private fun Socket.exchange(
+    private fun Socket.sendAndReadResponse(
         request: String,
         expectBody: Boolean = true,
     ): Pair<List<String>, String> {
