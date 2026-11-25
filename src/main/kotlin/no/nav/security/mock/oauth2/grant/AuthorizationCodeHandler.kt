@@ -95,10 +95,7 @@ internal class AuthorizationCodeHandler(
 
         val issued =
             takeCodeSoItCanOnlyBeUsedOnce(code)
-                ?: throw OAuth2Exception(
-                    OAuth2Error.INVALID_GRANT.setDescription("unknown or already-used authorization code"),
-                    "unknown or already-used authorization code",
-                )
+                ?: revokeRefreshTokensAndRejectUnknownOrReused(code)
         if (issued.isExpired(tokenProvider.now())) {
             invalidGrant("authorization code has expired")
         }
@@ -125,7 +122,14 @@ internal class AuthorizationCodeHandler(
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val refreshToken: RefreshToken =
             refreshTokenManager.refreshToken(
-                RefreshTokenState(loginTokenCallbackOrDefault, tokenRequest.clientIdAsString(), idTokenSubject, authTime, authenticationRequest.scope),
+                RefreshTokenState(
+                    loginTokenCallbackOrDefault,
+                    tokenRequest.clientIdAsString(),
+                    idTokenSubject,
+                    authTime,
+                    authenticationRequest.scope,
+                    issuedFromCode = code,
+                ),
                 nonce,
             )
 
@@ -137,6 +141,11 @@ internal class AuthorizationCodeHandler(
             expiresIn = accessToken.expiresIn(tokenProvider.now()),
             scope = scope,
         )
+    }
+
+    private fun revokeRefreshTokensAndRejectUnknownOrReused(code: AuthorizationCode): Nothing {
+        refreshTokenManager.revokeIssuedFrom(code)
+        invalidGrant("unknown or already-used authorization code")
     }
 
     private fun verifyClientAndRedirectUri(
