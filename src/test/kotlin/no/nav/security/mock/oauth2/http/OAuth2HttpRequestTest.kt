@@ -1,5 +1,6 @@
 package no.nav.security.mock.oauth2.http
 
+import io.kotest.assertions.asClue
 import io.kotest.matchers.shouldBe
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -204,6 +205,14 @@ internal class OAuth2HttpRequestTest {
             .get("host", "[::1]:99999")
             .proxyAwareUrl()
             .toString() shouldBe "http://[::1]:8080/mypath?query=1"
+    }
+
+    @Test
+    fun `isValidHostHeader accepts only a host with an optional numeric port`() {
+        listOf("localhost", "localhost:8080", "localhost:", "fakedings.nais.io:666", "[::1]", "[::1]:8080", "[::1]:", "[::1]:99999")
+            .forEach { it.asClue { hostHeader -> isValidHostHeader(hostHeader) shouldBe true } }
+        listOf("", " ", "a b/c", "[::1", "[::1]:notaport", "oauth2:notaport", "oauth2:8080/path", "localhost:8080@evil.example", "localhost:80:90", ":8080")
+            .forEach { it.asClue { hostHeader -> isValidHostHeader(hostHeader) shouldBe false } }
     }
 
     @Test

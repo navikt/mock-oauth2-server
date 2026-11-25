@@ -119,6 +119,16 @@ Request lines longer than 4 KiB, such as an `/authorize` URL with a long `state`
 
 **New behavior (8.0.0):** request lines up to 16 KiB are served. Longer ones get `414` and the connection is closed. `MockWebServerWrapper` is unaffected.
 
+### Requests with an invalid `Host` header get `400`
+
+Previously, an HTTP/1.1 request without a `Host` header, with more than one, or with a value that is not a host and optional port, was served as usual.
+
+**New behavior (8.0.0):** the server answers `400 Bad Request`, as RFC 9112 §3.2 requires. HTTP/1.0 requests without a `Host` header are still served. `MockWebServerWrapper` rejects a missing or repeated `Host` header; a value it cannot parse fails in OkHttp's `MockWebServer` before the request reaches the server, as before.
+
+**Affected pattern:** raw HTTP/1.1 clients or tests that leave out the `Host` header or send it twice. OkHttp, browsers and other standard clients always send one valid `Host` header.
+
+**Migration:** send exactly one `Host` header, such as `Host: localhost:8080`.
+
 ## Migrating to 7.0.0
 
 ### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`

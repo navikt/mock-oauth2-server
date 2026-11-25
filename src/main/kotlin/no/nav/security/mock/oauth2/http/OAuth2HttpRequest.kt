@@ -169,6 +169,24 @@ internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? 
     return null
 }
 
+internal fun hasValidHostHeaders(
+    hostHeaders: List<String>,
+    hostHeaderRequired: Boolean,
+): Boolean =
+    when (hostHeaders.size) {
+        0 -> !hostHeaderRequired
+        1 -> isValidHostHeader(hostHeaders.single())
+        else -> false
+    }
+
+internal fun isValidHostHeader(hostHeader: String): Boolean {
+    if (hostAndPortFromHostHeader(hostHeader) == null) {
+        return false
+    }
+    val port = if (hostHeader.startsWith("[")) hostHeader.substringAfter("]").removePrefix(":") else hostHeader.substringAfter(":", "")
+    return port.all { it.isDigit() }
+}
+
 private fun Int.asHostHeaderPort(): Int = if (this in 1..65535) this else -1
 
 internal fun Headers.authorizationCredentials(scheme: String): String? {

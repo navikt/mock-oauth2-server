@@ -121,7 +121,14 @@ class MockWebServerWrapper
             override fun dispatch(request: RecordedRequest): MockResponse =
                 responseQueue.peek()?.let {
                     responseQueue.take()
-                } ?: requestHandler.invoke(request.asOAuth2HttpRequest()).toMockResponse()
+                } ?: if (request.hasValidHostHeader()) {
+                    requestHandler.invoke(request.asOAuth2HttpRequest()).toMockResponse()
+                } else {
+                    MockResponse().setResponseCode(HttpResponseStatus.BAD_REQUEST.code())
+                }
+
+            private fun RecordedRequest.hasValidHostHeader(): Boolean =
+                hasValidHostHeaders(headers.values(HttpHeaderNames.HOST.toString()), hostHeaderRequired = requestLine.endsWith(" HTTP/1.1"))
 
             private fun OAuth2HttpResponse.toMockResponse(): MockResponse =
                 MockResponse()
@@ -246,6 +253,10 @@ class NettyWrapper
                     respondUriTooLongAndClose(ctx)
                     return
                 }
+                if (!request.hasValidHostHeader()) {
+                    respondBadRequest(ctx)
+                    return
+                }
                 val localAddress = ctx.channel().localAddress() as InetSocketAddress
                 val scheme = if (ctx.pipeline().get(SslHandler::class.java) == null) "http" else "https"
                 val response = requestHandler(request.asOAuth2HttpRequest(scheme, localAddress)).asNettyResponse()
@@ -258,6 +269,15 @@ class NettyWrapper
                 val response = OAuth2HttpResponse(status = HttpResponseStatus.REQUEST_URI_TOO_LONG.code()).asNettyResponse()
                 response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE)
                 ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE)
+            }
+
+            private fun FullHttpRequest.hasValidHostHeader(): Boolean =
+                hasValidHostHeaders(headers().getAll(HttpHeaderNames.HOST), hostHeaderRequired = protocolVersion() == HttpVersion.HTTP_1_1)
+
+            private fun respondBadRequest(ctx: ChannelHandlerContext) {
+                val response = OAuth2HttpResponse(status = HttpResponseStatus.BAD_REQUEST.code()).asNettyResponse()
+                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
+                ctx.writeAndFlush(response)
             }
 
             private fun OAuth2HttpResponse.asNettyResponse(): FullHttpResponse {
