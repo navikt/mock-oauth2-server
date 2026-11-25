@@ -108,7 +108,7 @@ class OAuth2HttpRequestHandler(
     private val tokenCallbackQueue: BlockingQueue<OAuth2TokenCallback> = LinkedBlockingQueue()
     private val refreshTokenManager =
         RefreshTokenManager(
-            expiry = config.refreshTokenExpiry.takeIf { it != 0L }?.let(Duration::ofSeconds),
+            expiryAfterLastUse = config.refreshTokenExpiry.takeIf { it != 0L }?.let(Duration::ofSeconds),
             limit = config.refreshTokenLimit.takeIf { it != 0 },
             now = config.tokenProvider::now,
         )

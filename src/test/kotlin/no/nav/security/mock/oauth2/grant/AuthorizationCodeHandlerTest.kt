@@ -122,7 +122,7 @@ internal class AuthorizationCodeHandlerTest {
     fun `expired authorization codes should be removed when a new one is issued`() {
         var now = Instant.parse("2026-01-01T00:00:00Z")
         val codes = LinkedHashMap<AuthorizationCode, IssuedAuthorizationCode>()
-        val handler = AuthorizationCodeHandler(OAuth2TokenProvider(timeProvider = { now }), RefreshTokenManager(), codes = codes)
+        val handler = AuthorizationCodeHandler(OAuth2TokenProvider(timeProvider = { now }), RefreshTokenManager(), codesOldestFirst = codes)
         repeat(3) { handler.retrieveAuthorizationCode(Login("foo")) }
 
         now = now.plus(Duration.ofMinutes(10))
@@ -135,7 +135,7 @@ internal class AuthorizationCodeHandlerTest {
     fun `oldest authorization code should be evicted beyond the limit, also with a frozen clock`() {
         val codes = LinkedHashMap<AuthorizationCode, IssuedAuthorizationCode>()
         val frozen = OAuth2TokenProvider(systemTime = Instant.parse("2026-01-01T00:00:00Z"))
-        val handler = AuthorizationCodeHandler(frozen, RefreshTokenManager(), codes = codes, codeLimit = 2)
+        val handler = AuthorizationCodeHandler(frozen, RefreshTokenManager(), codesOldestFirst = codes, codeLimit = 2)
         val oldest = handler.retrieveAuthorizationCode(Login("foo"))
         val kept = (1..2).map { handler.retrieveAuthorizationCode(Login("foo")) }
 
@@ -149,7 +149,7 @@ internal class AuthorizationCodeHandlerTest {
     fun `authorization codes should not be evicted when the limit is disabled`() {
         val codes = LinkedHashMap<AuthorizationCode, IssuedAuthorizationCode>()
         val frozen = OAuth2TokenProvider(systemTime = Instant.parse("2026-01-01T00:00:00Z"))
-        val handler = AuthorizationCodeHandler(frozen, RefreshTokenManager(), codes = codes, codeLimit = null)
+        val handler = AuthorizationCodeHandler(frozen, RefreshTokenManager(), codesOldestFirst = codes, codeLimit = null)
         repeat(1000) { handler.retrieveAuthorizationCode(Login("foo")) }
 
         codes.size shouldBe 1000

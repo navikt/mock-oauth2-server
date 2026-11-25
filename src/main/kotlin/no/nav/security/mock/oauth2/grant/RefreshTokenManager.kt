@@ -20,17 +20,12 @@ internal data class RefreshTokenState(
     val idTokenSubject: String? = null,
     val authTime: Instant? = null,
     val grantedScope: Scope? = null,
-    val issuedAt: Instant? = null,
+    val lastUsedAt: Instant? = null,
 )
 
-/**
- * Keeps issued refresh tokens in insertion order. A token expires [expiry] after it was issued, and
- * once more than [limit] tokens are kept the oldest is evicted. A null [expiry] or [limit] disables
- * that bound. [now] is the token provider's clock. [cache] must keep insertion order.
- */
 internal class RefreshTokenManager(
-    private val cache: MutableMap<RefreshToken, RefreshTokenState> = LinkedHashMap(),
-    private val expiry: Duration? = Duration.ofSeconds(OAuth2Config.DEFAULT_REFRESH_TOKEN_EXPIRY),
+    private val leastRecentlyUsedFirst: LinkedHashMap<RefreshToken, RefreshTokenState> = LinkedHashMap(),
+    private val expiryAfterLastUse: Duration? = Duration.ofSeconds(OAuth2Config.DEFAULT_REFRESH_TOKEN_EXPIRY),
     private val limit: Int? = OAuth2Config.DEFAULT_REFRESH_TOKEN_LIMIT,
     private val now: () -> Instant = Instant::now,
 ) {
@@ -39,21 +34,28 @@ internal class RefreshTokenManager(
     operator fun get(refreshToken: RefreshToken) = state(refreshToken)?.tokenCallback
 
     fun state(refreshToken: RefreshToken): RefreshTokenState? =
-        synchronized(cache) {
-            cache[refreshToken]?.also {
+        synchronized(leastRecentlyUsedFirst) {
+            leastRecentlyUsedFirst[refreshToken]?.also {
                 if (it.isExpired(now())) {
-                    cache.remove(refreshToken)
+                    leastRecentlyUsedFirst.remove(refreshToken)
                     throw expired()
                 }
             }
         }
 
+    fun markUsed(refreshToken: RefreshToken) {
+        synchronized(leastRecentlyUsedFirst) {
+            val state = leastRecentlyUsedFirst.remove(refreshToken) ?: return
+            leastRecentlyUsedFirst[refreshToken] = state.copy(lastUsedAt = now())
+        }
+    }
+
     fun revoke(
         refreshToken: RefreshToken,
         clientId: String,
     ) {
-        synchronized(cache) {
-            cache.computeIfPresent(refreshToken) { _, state ->
+        synchronized(leastRecentlyUsedFirst) {
+            leastRecentlyUsedFirst.computeIfPresent(refreshToken) { _, state ->
                 state.takeUnless { it.clientId == clientId }
             }
         }
@@ -61,7 +63,7 @@ internal class RefreshTokenManager(
 
     fun rotate(refreshToken: RefreshToken): RefreshToken {
         val state =
-            synchronized(cache) { cache.remove(refreshToken) }
+            synchronized(leastRecentlyUsedFirst) { leastRecentlyUsedFirst.remove(refreshToken) }
                 ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was already used"), "refresh_token was already used")
         if (state.isExpired(now())) {
             throw expired()
@@ -77,32 +79,31 @@ internal class RefreshTokenManager(
         // added for compatibility with keycloak js client which expects a jwt with nonce
         val refreshToken = nonce?.let { plainJWT(jti, nonce) } ?: jti
         val issuedAt = now()
-        synchronized(cache) {
-            purgeExpired(issuedAt)
-            cache[refreshToken] = state.copy(issuedAt = issuedAt)
-            evictOldest()
+        synchronized(leastRecentlyUsedFirst) {
+            purgeExpiredOncePerInterval(issuedAt)
+            leastRecentlyUsedFirst[refreshToken] = state.copy(lastUsedAt = issuedAt)
+            evictLeastRecentlyUsedBeyondLimit()
         }
         return refreshToken
     }
 
     private fun RefreshTokenState.isExpired(at: Instant): Boolean {
-        val issuedAt = issuedAt ?: return false
-        return expiry != null && Duration.between(issuedAt, at) >= expiry
+        val lastUsedAt = lastUsedAt ?: return false
+        return expiryAfterLastUse != null && Duration.between(lastUsedAt, at) >= expiryAfterLastUse
     }
 
-    // Runs at most once per PURGE_INTERVAL, so issuing a token stays cheap with many tokens kept.
-    private fun purgeExpired(at: Instant) {
-        if (expiry == null || Duration.between(lastPurge, at) < PURGE_INTERVAL) {
+    private fun purgeExpiredOncePerInterval(at: Instant) {
+        if (expiryAfterLastUse == null || Duration.between(lastPurge, at) < PURGE_INTERVAL) {
             return
         }
-        cache.values.removeIf { it.isExpired(at) }
+        leastRecentlyUsedFirst.values.removeIf { it.isExpired(at) }
         lastPurge = at
     }
 
-    private fun evictOldest() {
+    private fun evictLeastRecentlyUsedBeyondLimit() {
         val limit = limit ?: return
-        val keys = cache.keys.iterator()
-        while (cache.size > limit && keys.hasNext()) {
+        val keys = leastRecentlyUsedFirst.keys.iterator()
+        while (leastRecentlyUsedFirst.size > limit && keys.hasNext()) {
             keys.next()
             keys.remove()
         }

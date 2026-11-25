@@ -46,9 +46,7 @@ internal class AuthorizationCodeHandler(
     private val tokenProvider: OAuth2TokenProvider,
     private val refreshTokenManager: RefreshTokenManager,
     private val enqueuedCallbackSupplier: ((issuerId: String) -> OAuth2TokenCallback?)? = null,
-    // Must keep insertion order: the first key is the oldest code.
-    private val codes: MutableMap<AuthorizationCode, IssuedAuthorizationCode> = LinkedHashMap(),
-    // Null disables the limit.
+    private val codesOldestFirst: LinkedHashMap<AuthorizationCode, IssuedAuthorizationCode> = LinkedHashMap(),
     private val codeLimit: Int? = OAuth2Config.DEFAULT_AUTHORIZATION_CODE_LIMIT,
 ) : GrantHandler {
     private var lastPurge: Instant = Instant.MIN
@@ -64,10 +62,10 @@ internal class AuthorizationCodeHandler(
                 log.debug { "issuing authorization code $code" }
                 val issuedAt = tokenProvider.now()
                 login?.also { log.debug { "adding user with username ${it.username} to cache" } }
-                synchronized(codes) {
-                    purgeExpired(issuedAt)
-                    codes[code] = IssuedAuthorizationCode(authenticationRequest, issuerId, issuedAt, login)
-                    evictOldest()
+                synchronized(codesOldestFirst) {
+                    purgeExpiredOncePerInterval(issuedAt)
+                    codesOldestFirst[code] = IssuedAuthorizationCode(authenticationRequest, issuerId, issuedAt, login)
+                    evictOldestBeyondLimit()
                 }
                 return AuthenticationSuccessResponse(
                     authenticationRequest.redirectionURI,
@@ -95,9 +93,8 @@ internal class AuthorizationCodeHandler(
         val code = tokenRequest.authorizationCode()
         log.debug { "issuing token for code=$code" }
 
-        // Removing the code first makes it single-use, also when the request below is rejected.
         val issued =
-            synchronized(codes) { codes.remove(code) }
+            takeCodeSoItCanOnlyBeUsedOnce(code)
                 ?: throw OAuth2Exception(
                     OAuth2Error.INVALID_GRANT.setDescription("unknown or already-used authorization code"),
                     "unknown or already-used authorization code",
@@ -161,30 +158,30 @@ internal class AuthorizationCodeHandler(
 
     private fun invalidGrant(message: String): Nothing = throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription(message), message)
 
-    private fun IssuedAuthorizationCode.isExpired(at: Instant): Boolean = Duration.between(issuedAt, at) >= CODE_LIFETIME
+    private fun IssuedAuthorizationCode.isExpired(at: Instant): Boolean = Duration.between(issuedAt, at) >= RFC_6749_RECOMMENDED_MAX_CODE_LIFETIME
 
-    // Runs at most once per PURGE_INTERVAL, so issuing a code stays cheap with many codes pending.
-    private fun purgeExpired(at: Instant) {
+    private fun takeCodeSoItCanOnlyBeUsedOnce(code: AuthorizationCode): IssuedAuthorizationCode? =
+        synchronized(codesOldestFirst) { codesOldestFirst.remove(code) }
+
+    private fun purgeExpiredOncePerInterval(at: Instant) {
         if (Duration.between(lastPurge, at) < PURGE_INTERVAL) {
             return
         }
         lastPurge = at
-        codes.values.removeIf { it.isExpired(at) }
+        codesOldestFirst.values.removeIf { it.isExpired(at) }
     }
 
-    // Bounds memory also when the token provider's clock is frozen and no code ever expires.
-    private fun evictOldest() {
+    private fun evictOldestBeyondLimit() {
         val codeLimit = codeLimit ?: return
-        val keys = codes.keys.iterator()
-        while (codes.size > codeLimit && keys.hasNext()) {
+        val keys = codesOldestFirst.keys.iterator()
+        while (codesOldestFirst.size > codeLimit && keys.hasNext()) {
             keys.next()
             keys.remove()
         }
     }
 
     internal companion object {
-        // RFC 6749 section 4.1.2: "A maximum authorization code lifetime of 10 minutes is RECOMMENDED."
-        val CODE_LIFETIME: Duration = Duration.ofMinutes(10)
+        val RFC_6749_RECOMMENDED_MAX_CODE_LIFETIME: Duration = Duration.ofMinutes(10)
         private val PURGE_INTERVAL: Duration = Duration.ofMinutes(1)
     }
 

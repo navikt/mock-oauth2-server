@@ -44,11 +44,11 @@ internal class OAuth2ConfigTest {
     }
 
     @Test
-    fun `limits should default to 24 hours and 1000000 refresh tokens and codes`() {
+    fun `limits should default to 24 hours and 10000 refresh tokens and codes`() {
         val config = OAuth2Config.fromJson("{}")
         config.refreshTokenExpiry shouldBe 86400
-        config.refreshTokenLimit shouldBe 1_000_000
-        config.authorizationCodeLimit shouldBe 1_000_000
+        config.refreshTokenLimit shouldBe 10_000
+        config.authorizationCodeLimit shouldBe 10_000
     }
 
     @Test

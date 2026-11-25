@@ -67,15 +67,15 @@ Previously, a valid JWT in the `request` parameter on the authorize endpoint was
 
 **Migration:** send the parameters in the query of the authorization request instead of `request`.
 
-### Refresh tokens expire after 24 hours
+### Refresh tokens expire after 24 hours without use
 
 Previously, a refresh token stayed valid for the life of the server, and the server kept every refresh token in memory.
 
-**New behavior (8.0.0):** a refresh token expires `refreshTokenExpiry` seconds after it was issued, 24 hours by default, measured on the token provider's clock. A rotated token gets a full lifetime of its own. The server also keeps at most `refreshTokenLimit` refresh tokens, 1,000,000 by default, and drops the oldest beyond that. A refresh with an expired or dropped token returns `400 invalid_grant`.
+**New behavior (8.0.0):** a refresh token expires `refreshTokenExpiry` seconds after it was issued or last used in a successful refresh, 24 hours by default, measured on the token provider's clock. A rotated token gets a full lifetime of its own. The server also keeps at most `refreshTokenLimit` refresh tokens, 10,000 by default, and drops the least recently used beyond that. A refresh with an expired or dropped token returns `400 invalid_grant`.
 
-**Affected pattern:** a long-running server, for example a local Docker Compose setup, whose client refreshes the same token for more than 24 hours. Also tests that move the token provider's clock forward by more than 24 hours and then refresh.
+**Affected pattern:** a long-running server, for example a local Docker Compose setup, whose client is idle for more than 24 hours and then refreshes, or that holds more than 10,000 refresh tokens. Also tests that move the token provider's clock forward by 24 hours or more and then refresh.
 
-**Migration:** set a longer lifetime, or turn expiry off:
+**Migration:** set a longer lifetime or a higher limit, or turn either off:
 
 ```json
 {
@@ -93,11 +93,11 @@ OAuth2Config(refreshTokenExpiry = 0)
 
 Previously, an authorization code stayed valid until it was redeemed, for the life of the server.
 
-**New behavior (8.0.0):** a code expires 10 minutes after it was issued, as RFC 6749 section 4.1.2 recommends, measured on the token provider's clock. Redeeming it later returns `400 invalid_grant`. At most `authorizationCodeLimit` unredeemed codes are kept, 1,000,000 by default, and the oldest is dropped beyond that. `0` disables the limit.
+**New behavior (8.0.0):** a code expires 10 minutes after it was issued, as RFC 6749 section 4.1.2 recommends, measured on the token provider's clock. Redeeming it later returns `400 invalid_grant`. At most `authorizationCodeLimit` unredeemed codes are kept, 10,000 by default, and the oldest is dropped beyond that. `0` disables the limit.
 
 **Affected pattern:** tests that move the token provider's clock forward by 10 minutes or more between the authorization request and the token request.
 
-**Migration:** redeem the code before moving the clock forward.
+**Migration:** redeem the code before moving the clock forward. A test suite that issues more than 10,000 codes without redeeming them can raise `authorizationCodeLimit`.
 
 ### Recompile code that constructs or copies `OAuth2Config`
 

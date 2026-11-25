@@ -34,11 +34,8 @@ data class OAuth2Config
         val tokenCallbacks: Set<OAuth2TokenCallback> = emptySet(),
         @JsonDeserialize(using = OAuth2HttpServerDeserializer::class)
         val httpServer: OAuth2HttpServer = MockWebServerWrapper(),
-        // Seconds a refresh token stays valid after it is issued; 0 disables expiry.
         val refreshTokenExpiry: Long = DEFAULT_REFRESH_TOKEN_EXPIRY,
-        // Refresh tokens kept before the oldest is evicted; 0 disables the limit.
         val refreshTokenLimit: Int = DEFAULT_REFRESH_TOKEN_LIMIT,
-        // Unredeemed authorization codes kept before the oldest is evicted; 0 disables the limit.
         val authorizationCodeLimit: Int = DEFAULT_AUTHORIZATION_CODE_LIMIT,
     ) {
         init {
@@ -134,8 +131,8 @@ data class OAuth2Config
 
         companion object {
             const val DEFAULT_REFRESH_TOKEN_EXPIRY: Long = 24 * 60 * 60
-            const val DEFAULT_REFRESH_TOKEN_LIMIT: Int = 1_000_000
-            const val DEFAULT_AUTHORIZATION_CODE_LIMIT: Int = 1_000_000
+            const val DEFAULT_REFRESH_TOKEN_LIMIT: Int = 10_000
+            const val DEFAULT_AUTHORIZATION_CODE_LIMIT: Int = 10_000
 
             fun fromJson(json: String): OAuth2Config = jacksonObjectMapper().readValue(json)
         }

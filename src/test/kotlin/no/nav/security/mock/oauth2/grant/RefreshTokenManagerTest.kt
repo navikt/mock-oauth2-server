@@ -93,7 +93,7 @@ internal class RefreshTokenManagerTest {
     @Test
     fun `refresh token should be rejected with invalid_grant once it has expired`() {
         var now = Instant.parse("2026-01-01T00:00:00Z")
-        val mgr = RefreshTokenManager(expiry = Duration.ofHours(24), now = { now })
+        val mgr = RefreshTokenManager(expiryAfterLastUse = Duration.ofHours(24), now = { now })
         val token = mgr.refreshToken(state())
 
         now = now.plus(Duration.ofHours(24)).minusSeconds(1)
@@ -107,7 +107,7 @@ internal class RefreshTokenManagerTest {
     @Test
     fun `rotated refresh token should get a full lifetime of its own`() {
         var now = Instant.parse("2026-01-01T00:00:00Z")
-        val mgr = RefreshTokenManager(expiry = Duration.ofHours(24), now = { now })
+        val mgr = RefreshTokenManager(expiryAfterLastUse = Duration.ofHours(24), now = { now })
         val token = mgr.refreshToken(state())
 
         now = now.plus(Duration.ofHours(23))
@@ -118,9 +118,33 @@ internal class RefreshTokenManagerTest {
     }
 
     @Test
+    fun `using a refresh token should restart its expiry`() {
+        var now = Instant.parse("2026-01-01T00:00:00Z")
+        val mgr = RefreshTokenManager(expiryAfterLastUse = Duration.ofHours(24), now = { now })
+        val token = mgr.refreshToken(state())
+
+        now = now.plus(Duration.ofHours(23))
+        mgr.markUsed(token)
+        now = now.plus(Duration.ofHours(24)).minusSeconds(1)
+        mgr.state(token) shouldNotBe null
+
+        now = now.plusSeconds(1)
+        shouldThrow<OAuth2Exception> { mgr.state(token) }.errorObject?.code shouldBe OAuth2Error.INVALID_GRANT.code
+    }
+
+    @Test
+    fun `marking an unknown refresh token as used should do nothing`() {
+        val mgr = RefreshTokenManager()
+
+        mgr.markUsed("unknown")
+
+        mgr.state("unknown") shouldBe null
+    }
+
+    @Test
     fun `a very long expiry should not overflow`() {
         var now = Instant.parse("2026-01-01T00:00:00Z")
-        val mgr = RefreshTokenManager(expiry = Duration.ofSeconds(Long.MAX_VALUE), now = { now })
+        val mgr = RefreshTokenManager(expiryAfterLastUse = Duration.ofSeconds(Long.MAX_VALUE), now = { now })
         val token = mgr.refreshToken(state())
 
         now = now.plus(Duration.ofDays(1000))
@@ -132,7 +156,7 @@ internal class RefreshTokenManagerTest {
     @Test
     fun `refresh token should not expire when expiry is disabled`() {
         var now = Instant.parse("2026-01-01T00:00:00Z")
-        val mgr = RefreshTokenManager(expiry = null, now = { now })
+        val mgr = RefreshTokenManager(expiryAfterLastUse = null, now = { now })
         val token = mgr.refreshToken(state())
 
         now = now.plus(Duration.ofDays(1000))
@@ -144,7 +168,7 @@ internal class RefreshTokenManagerTest {
     fun `expired refresh tokens should be removed when a new one is issued`() {
         var now = Instant.parse("2026-01-01T00:00:00Z")
         val cache = LinkedHashMap<RefreshToken, RefreshTokenState>()
-        val mgr = RefreshTokenManager(cache, expiry = Duration.ofHours(24), now = { now })
+        val mgr = RefreshTokenManager(cache, expiryAfterLastUse = Duration.ofHours(24), now = { now })
         repeat(3) { mgr.refreshToken(state()) }
 
         now = now.plus(Duration.ofHours(24))
@@ -163,6 +187,20 @@ internal class RefreshTokenManagerTest {
         mgr.state(first) shouldBe null
         mgr.state(second) shouldNotBe null
         mgr.state(third) shouldNotBe null
+    }
+
+    @Test
+    fun `least recently used refresh token should be evicted first when the limit is exceeded`() {
+        val mgr = RefreshTokenManager(limit = 2)
+        val inUse = mgr.refreshToken(state())
+        val idle = mgr.refreshToken(state())
+        mgr.markUsed(inUse)
+
+        val newest = mgr.refreshToken(state())
+
+        mgr.state(idle) shouldBe null
+        mgr.state(inUse) shouldNotBe null
+        mgr.state(newest) shouldNotBe null
     }
 
     @Test

@@ -141,6 +141,32 @@ class CodeAndRefreshTokenExpiryIntegrationTest {
     }
 
     @Test
+    fun `refresh token in use should stay valid past its original expiry`() {
+        withMockOAuth2Server(config(refreshTokenExpiry = 6)) {
+            val refreshToken = redeem(authorizationCode()).toTokenResponse().refreshToken.shouldNotBeNull()
+            repeat(5) {
+                now = now.plusSeconds(2)
+                refresh(refreshToken).status shouldBe 200
+            }
+
+            now = now.plusSeconds(6)
+            refresh(refreshToken).shouldBeInvalidGrant()
+        }
+    }
+
+    @Test
+    fun `refresh rejected for another client should not restart the expiry`() {
+        withMockOAuth2Server(config(refreshTokenExpiry = 6)) {
+            val refreshToken = redeem(authorizationCode()).toTokenResponse().refreshToken.shouldNotBeNull()
+            now = now.plusSeconds(4)
+            refresh(refreshToken, "client2" to "secret").shouldBeInvalidGrant()
+
+            now = now.plusSeconds(2)
+            refresh(refreshToken).shouldBeInvalidGrant()
+        }
+    }
+
+    @Test
     fun `refresh token should not expire when refreshTokenExpiry is 0`() {
         withMockOAuth2Server(config(refreshTokenExpiry = 0)) {
             val refreshToken = redeem(authorizationCode()).toTokenResponse().refreshToken.shouldNotBeNull()
@@ -180,11 +206,14 @@ class CodeAndRefreshTokenExpiryIntegrationTest {
                 ) + extra,
             )
 
-    private fun MockOAuth2Server.refresh(refreshToken: String): Response =
+    private fun MockOAuth2Server.refresh(
+        refreshToken: String,
+        clientCredentials: Pair<String, String> = "client1" to "secret",
+    ): Response =
         client
             .tokenRequest(
                 tokenEndpointUrl("default"),
-                "client1" to "secret",
+                clientCredentials,
                 mapOf("grant_type" to GrantType.REFRESH_TOKEN.value, "refresh_token" to refreshToken),
             )
 
