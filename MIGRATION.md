@@ -32,6 +32,21 @@ val location = response.headers["location"]!!.toHttpUrl()
 location.queryParameter("error") shouldBe "invalid_request"
 ```
 
+### `prompt=none` returns `login_required` when `interactiveLogin` is enabled
+
+Previously, with `interactiveLogin` enabled, an authorization request with `prompt=none` showed the login page.
+
+**New behavior (8.0.0):** with `interactiveLogin` enabled, `prompt=none` sends the error `login_required` to `redirect_uri` with `state`, using the requested `response_mode`, as required by [OpenID Connect Core 1.0 section 3.1.2.1](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest). The server has no login session, so the user is never already authenticated. With `interactiveLogin` disabled, `prompt=none` still returns a code.
+
+**Affected pattern:** tests or clients that send `prompt=none` with `interactiveLogin` enabled and expect the login page.
+
+**Migration:** drop `prompt=none` to get the login page, or handle the `login_required` error as a silent authentication failure:
+
+```kotlin
+val location = response.headers["location"]!!.toHttpUrl()
+location.queryParameter("error") shouldBe "login_required"
+```
+
 ## Migrating to 7.0.0
 
 ### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`
