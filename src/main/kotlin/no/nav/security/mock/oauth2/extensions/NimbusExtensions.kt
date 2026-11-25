@@ -19,6 +19,7 @@ import com.nimbusds.oauth2.sdk.AuthorizationGrant
 import com.nimbusds.oauth2.sdk.ErrorObject
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.OAuth2Error
+import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT
@@ -33,6 +34,8 @@ import com.nimbusds.openid.connect.sdk.Prompt
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.invalidRequest
+import no.nav.security.mock.oauth2.missingParameter
+import no.nav.security.mock.oauth2.unsupportedResponseType
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -57,6 +60,24 @@ internal fun AuthenticationRequest.requireSupportedCodeChallengeMethod() {
     val method = this.codeChallengeMethod ?: return
     if (method !in SUPPORTED_CODE_CHALLENGE_METHODS) {
         invalidRequest(ErrorObject.removeIllegalChars("unsupported code_challenge_method: ${method.value}"))
+    }
+}
+
+internal fun AuthenticationRequest.requireAbsoluteRedirectUri() {
+    if (this.redirectionURI?.isAbsolute != true) invalidRequest("redirect_uri must be an absolute URI")
+}
+
+internal fun AuthenticationRequest.requireSupportedResponseType() {
+    val type = this.responseType ?: missingParameter("response_type")
+    if (!type.impliesCodeFlow()) unsupportedResponseType("only response_type=code is supported")
+}
+
+internal val SUPPORTED_RESPONSE_MODES: Set<ResponseMode> = setOf(ResponseMode.QUERY, ResponseMode.FRAGMENT, ResponseMode.FORM_POST)
+
+internal fun AuthenticationRequest.requireSupportedResponseMode() {
+    val mode = this.responseMode ?: return
+    if (mode !in SUPPORTED_RESPONSE_MODES) {
+        invalidRequest(ErrorObject.removeIllegalChars("unsupported response_mode: ${mode.value}"))
     }
 }
 

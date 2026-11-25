@@ -6,6 +6,7 @@ import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.DEBUGGER_CALLBACK
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
+import no.nav.security.mock.oauth2.extensions.isDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.removeAllEncodedQueryParams
 import no.nav.security.mock.oauth2.extensions.toAuthorizationEndpointUrl
@@ -13,6 +14,7 @@ import no.nav.security.mock.oauth2.extensions.toDebuggerCallbackUrl
 import no.nav.security.mock.oauth2.extensions.toDebuggerUrl
 import no.nav.security.mock.oauth2.extensions.toTokenEndpointUrl
 import no.nav.security.mock.oauth2.http.ExceptionHandler
+import no.nav.security.mock.oauth2.http.OAuth2HttpRequest
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.OAuth2HttpServer
 import no.nav.security.mock.oauth2.http.Route
@@ -44,7 +46,7 @@ private fun handle(sessionManager: SessionManager): ExceptionHandler =
         OAuth2HttpResponse(
             status = 500,
             headers = Headers.headersOf("Content-Type", "text/html", "Set-Cookie", sessionManager.session(request).asCookie()),
-            body = templateMapper.debuggerErrorHtml(request.url.toDebuggerUrl(), error.stackTraceToString()),
+            body = templateMapper.debuggerErrorHtml(request.url.toDebuggerUrl(), error.stackTraceToString(), request.authorizationErrorParameters()),
         ).also {
             log.error(error) { "received exception when handling url=${request.url}" }
         }
@@ -126,6 +128,15 @@ private fun Route.Builder.debuggerCallback(
         }
     html(templateMapper.debuggerCallbackHtml(request.toString(), response))
 }
+
+private val authorizationErrorParameterNames = listOf("error", "error_description", "error_uri", "state")
+
+private fun OAuth2HttpRequest.authorizationErrorParameters(): Map<String, String> {
+    if (!url.isDebuggerCallbackUrl() || callbackParameter("error") == null) return emptyMap()
+    return authorizationErrorParameterNames.mapNotNull { name -> callbackParameter(name)?.let { name to it } }.toMap()
+}
+
+private fun OAuth2HttpRequest.callbackParameter(name: String): String? = url.queryParameter(name) ?: formParameters.get(name)
 
 private fun HttpUrl.tokenEndpointPath(): String = issuerId().let { if (it.isEmpty()) TOKEN else "/$it$TOKEN" }
 

@@ -14,6 +14,7 @@ import com.nimbusds.oauth2.sdk.ParseException
 import com.nimbusds.oauth2.sdk.ResponseMode
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication
 import com.nimbusds.oauth2.sdk.token.BearerTokenError
+import com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.handler.codec.http.HttpHeaderNames
@@ -27,10 +28,15 @@ import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OAUTH2_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.OIDC_WELL_KNOWN
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.REVOKE
 import no.nav.security.mock.oauth2.extensions.OAuth2Endpoints.TOKEN
+import no.nav.security.mock.oauth2.extensions.SUPPORTED_RESPONSE_MODES
+import no.nav.security.mock.oauth2.extensions.isAuthorizationEndpointUrl
 import no.nav.security.mock.oauth2.extensions.isPrompt
 import no.nav.security.mock.oauth2.extensions.issuerId
 import no.nav.security.mock.oauth2.extensions.requestingClientId
+import no.nav.security.mock.oauth2.extensions.requireAbsoluteRedirectUri
 import no.nav.security.mock.oauth2.extensions.requireSupportedCodeChallengeMethod
+import no.nav.security.mock.oauth2.extensions.requireSupportedResponseMode
+import no.nav.security.mock.oauth2.extensions.requireSupportedResponseType
 import no.nav.security.mock.oauth2.extensions.toIssuerUrl
 import no.nav.security.mock.oauth2.grant.AuthorizationCodeHandler
 import no.nav.security.mock.oauth2.grant.ClientCredentialsGrantHandler
@@ -52,6 +58,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import no.nav.security.mock.oauth2.unsupportedGrantType
 import no.nav.security.mock.oauth2.userinfo.userInfo
 import okhttp3.Headers
+import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.file.Paths
@@ -62,11 +69,21 @@ private val log = KotlinLogging.logger {}
 
 private val grantsThatTakeEnqueuedCallbackAfterValidation = setOf(AUTHORIZATION_CODE, REFRESH_TOKEN)
 
-private fun AuthenticationRequest.requireHttpFormPostCallback() =
-    apply {
-        if (responseMode == ResponseMode.FORM_POST && redirectionURI?.scheme?.lowercase() !in setOf("http", "https")) {
-            invalidRequest("form_post redirect_uri must be an HTTP(S) URL")
-        }
+private fun URI.isHttp() = scheme?.lowercase() in setOf("http", "https")
+
+private fun AuthenticationRequest.requireHttpFormPostCallback() {
+    if (responseMode == ResponseMode.FORM_POST && !redirectionURI.isHttp()) {
+        invalidRequest("form_post redirect_uri must be an HTTP(S) URL")
+    }
+}
+
+private fun OAuth2HttpRequest.asValidAuthenticationRequest(): AuthenticationRequest =
+    asAuthenticationRequest().apply {
+        requireAbsoluteRedirectUri()
+        requireSupportedResponseMode()
+        requireHttpFormPostCallback()
+        requireSupportedResponseType()
+        requireSupportedCodeChallengeMethod()
     }
 
 class OAuth2HttpRequestHandler(
@@ -108,10 +125,39 @@ class OAuth2HttpRequestHandler(
             val message = "${request.method} ${request.url} failed with ${errorObject.code}: ${errorObject.description}$details".escapeLineBreaks()
             if (log.isDebugEnabled()) log.info(error) { message } else log.info { message }
         }
-        oauth2Error(errorObject)
-            .let { response ->
-                request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
-            }
+        request.authorizationErrorResponse(error, errorObject)
+            ?: oauth2Error(errorObject)
+                .let { response ->
+                    request.wwwAuthenticate(errorObject)?.let { response.withHeader(HttpHeaderNames.WWW_AUTHENTICATE.toString(), it) } ?: response
+                }
+    }
+
+    private val authorizationErrorCodes =
+        setOf(
+            OAuth2Error.INVALID_REQUEST,
+            OAuth2Error.UNAUTHORIZED_CLIENT,
+            OAuth2Error.ACCESS_DENIED,
+            OAuth2Error.UNSUPPORTED_RESPONSE_TYPE,
+            OAuth2Error.INVALID_SCOPE,
+            OAuth2Error.SERVER_ERROR,
+            OAuth2Error.TEMPORARILY_UNAVAILABLE,
+        ).map { it.code }
+
+    private fun OAuth2HttpRequest.authorizationErrorResponse(
+        error: Throwable,
+        errorObject: ErrorObject,
+    ): OAuth2HttpResponse? {
+        if (!url.isAuthorizationEndpointUrl() || errorObject.code !in authorizationErrorCodes) return null
+        val parseException = error as? ParseException
+        val authRequest = runCatching { asAuthenticationRequest() }.getOrNull()
+        (authRequest?.clientID ?: parseException?.clientID) ?: return null
+        val redirectUri = authRequest?.redirectionURI ?: parseException?.redirectionURI ?: return null
+        if (!redirectUri.isAbsolute) return null
+        val responseMode = authRequest?.impliedResponseMode() ?: parseException?.responseMode ?: ResponseMode.QUERY
+        if (responseMode !in SUPPORTED_RESPONSE_MODES) return null
+        if (responseMode == ResponseMode.FORM_POST && !redirectUri.isHttp()) return null
+        val state = authRequest?.state ?: parseException?.state
+        return authenticationError(AuthenticationErrorResponse(redirectUri, errorObject, state, responseMode))
     }
 
     private fun String.escapeLineBreaks(): String = replace("\r", "\\r").replace("\n", "\\n")
@@ -183,8 +229,7 @@ class OAuth2HttpRequestHandler(
         apply {
             val authorizationCodeHandler = grantHandlers[AUTHORIZATION_CODE] as AuthorizationCodeHandler
             get(AUTHORIZATION) {
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest().requireHttpFormPostCallback()
-                authRequest.requireSupportedCodeChallengeMethod()
+                val authRequest = it.asValidAuthenticationRequest()
                 if (config.interactiveLogin || authRequest.isPrompt()) {
                     html(loginRequestHandler.loginHtml(it))
                 } else {
@@ -192,8 +237,7 @@ class OAuth2HttpRequestHandler(
                 }
             }
             post(AUTHORIZATION) {
-                val authRequest: AuthenticationRequest = it.asAuthenticationRequest().requireHttpFormPostCallback()
-                authRequest.requireSupportedCodeChallengeMethod()
+                val authRequest = it.asValidAuthenticationRequest()
                 val login: Login = loginRequestHandler.loginSubmit(it)
                 authenticationSuccess(authorizationCodeHandler.authorizationCodeResponse(it.url.issuerId(), authRequest, login))
             }

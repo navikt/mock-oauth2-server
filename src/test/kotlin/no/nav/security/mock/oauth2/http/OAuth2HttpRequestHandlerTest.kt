@@ -66,7 +66,7 @@ internal class OAuth2HttpRequestHandlerTest {
     companion object {
         private val tokenProvider = OAuth2TokenProvider()
         private val authServer = OAuth2HttpRequestHandler(OAuth2Config(tokenProvider = tokenProvider)).authorizationServer
-        private const val AUTHORIZATION_WITH_PARAMS = "$AUTHORIZATION?client_id=client&response_type=code&redirect_uri=foo&scope=openid"
+        private const val AUTHORIZATION_WITH_PARAMS = "$AUTHORIZATION?client_id=client&response_type=code&redirect_uri=http://foo&scope=openid"
 
         @JvmStatic
         fun testRequests(): Stream<Arguments> =

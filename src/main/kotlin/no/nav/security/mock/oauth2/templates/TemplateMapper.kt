@@ -49,12 +49,14 @@ class TemplateMapper(
     fun debuggerErrorHtml(
         debuggerUrl: HttpUrl,
         stacktrace: String,
+        errorParameters: Map<String, String> = emptyMap(),
     ) = asString(
         HtmlContent(
             "error.ftl",
             mapOf(
                 "debugger_url" to debuggerUrl,
                 "stacktrace" to stacktrace,
+                "error_parameters" to errorParameters,
             ),
         ),
     )
@@ -89,6 +91,20 @@ class TemplateMapper(
                     "redirect_uri" to redirectUri,
                     "code" to code,
                     "state" to state,
+                ),
+            ),
+        )
+
+    fun formPostResponseHtml(
+        redirectUri: String,
+        params: Map<String, String>,
+    ): String =
+        asString(
+            HtmlContent(
+                "form_post_response.ftl",
+                mapOf(
+                    "redirect_uri" to redirectUri,
+                    "params" to params,
                 ),
             ),
         )

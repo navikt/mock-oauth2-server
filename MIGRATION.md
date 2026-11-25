@@ -1,5 +1,37 @@
 # Migration guide
 
+## Migrating to 8.0.0
+
+### Authorize endpoint errors are sent to the client
+
+Previously, every error from the authorize endpoint returned a JSON `400` from the server.
+
+**New behavior (8.0.0):** when the request has a `client_id` and an absolute `redirect_uri`, errors such as `invalid_request` and `unsupported_response_type` are sent to `redirect_uri` with `error`, `error_description` and `state`, as required by [RFC 6749 section 4.1.2.1](https://www.rfc-editor.org/rfc/rfc6749#section-4.1.2.1). The requested `response_mode` is used: a `302` redirect for `query` and `fragment`, or an auto-submitted form for `form_post`. Without a `response_mode`, the default of the `response_type` is used, which is `fragment` for types such as `token` and `code id_token`.
+
+Errors are still returned as JSON when:
+
+- `client_id` or `redirect_uri` is missing, or `redirect_uri` is not an absolute URI.
+- `response_mode` is `form_post` and `redirect_uri` is not an HTTP(S) URL.
+- The error is for example `invalid_target`, or `not_found` for a misconfigured login page.
+
+A `response_mode` other than `query`, `fragment` and `form_post` returns a JSON `400 invalid_request`. Previously, an otherwise valid request was redirected with a code for `query.jwt` and `fragment.jwt`, and returned a JSON `500` for other values, such as `form_post.jwt` and `jwt`. These modes were never supported or listed in `response_modes_supported`.
+
+The request is validated before the user logs in:
+
+- A relative `redirect_uri` always returns a JSON `400 invalid_request`. Previously, an otherwise valid request was redirected with a code.
+- With `interactiveLogin` enabled, an unsupported `response_type` returns `unsupported_response_type` instead of the login page.
+
+A login without `username` sends `invalid_request` to `redirect_uri` instead of a JSON `400 invalid_request`.
+
+**Affected pattern:** tests that call the authorize endpoint with an invalid request and expect a JSON `400`, or that use a relative `redirect_uri` or an unsupported `response_mode`.
+
+**Migration:** use an absolute `redirect_uri`, and assert on the `error` parameter of the redirect (or the posted form) instead of the JSON body:
+
+```kotlin
+val location = response.headers["location"]!!.toHttpUrl()
+location.queryParameter("error") shouldBe "invalid_request"
+```
+
 ## Migrating to 7.0.0
 
 ### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`

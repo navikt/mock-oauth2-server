@@ -168,4 +168,96 @@ internal class DebuggerRequestHandlerTest {
             server.shutdown()
         }
     }
+
+    @Test
+    fun `debugger callback should show the error response from the authorize endpoint`() {
+        val server = MockOAuth2Server()
+        server.start()
+
+        try {
+            val form =
+                FormBody
+                    .Builder()
+                    .add("client_id", "debugger")
+                    .add("response_type", "token")
+                    .add("response_mode", "query")
+                    .add("scope", "openid")
+                    .build()
+
+            OkHttpClient()
+                .newCall(
+                    Request
+                        .Builder()
+                        .url(server.url("/default/debugger"))
+                        .post(form)
+                        .build(),
+                ).execute()
+                .use {
+                    it.code shouldBe 500
+                    it.request.url.encodedPath shouldBe "/default/debugger/callback"
+                    val body = it.body.string()
+                    body shouldContain "error=unsupported_response_type"
+                    body shouldContain "Stacktrace"
+                }
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
+    fun `debugger callback should show a posted error response`() {
+        val server = MockOAuth2Server()
+        server.start()
+
+        try {
+            val form =
+                FormBody
+                    .Builder()
+                    .add("error", "invalid_request")
+                    .add("error_description", "some description")
+                    .build()
+
+            client
+                .newCall(
+                    Request
+                        .Builder()
+                        .url(server.url("/default/debugger/callback"))
+                        .post(form)
+                        .build(),
+                ).execute()
+                .use {
+                    it.code shouldBe 500
+                    val body = it.body.string()
+                    body shouldContain "error=invalid_request"
+                    body shouldContain "error_description=some description"
+                }
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
+    fun `debugger callback should escape HTML in the error response`() {
+        val server = MockOAuth2Server()
+        server.start()
+
+        try {
+            val callbackUrl =
+                server
+                    .url("/default/debugger/callback")
+                    .newBuilder()
+                    .addQueryParameter("error", "<script>alert(1)</script>")
+                    .addQueryParameter("error_description", "<script>alert(2)</script>")
+                    .addQueryParameter("error_uri", "<script>alert(3)</script>")
+                    .build()
+
+            client.newCall(Request.Builder().url(callbackUrl).build()).execute().use {
+                val body = it.body.string()
+                body shouldNotContain "<script>alert"
+                body shouldContain "&lt;script&gt;alert(1)"
+            }
+        } finally {
+            server.shutdown()
+        }
+    }
 }
