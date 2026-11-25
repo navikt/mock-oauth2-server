@@ -38,7 +38,7 @@ Previously, with `interactiveLogin` enabled, an authorization request with `prom
 
 **New behavior (8.0.0):** with `interactiveLogin` enabled, `prompt=none` sends the error `login_required` to `redirect_uri` with `state`, using the requested `response_mode`, as required by [OpenID Connect Core 1.0 section 3.1.2.1](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest). The server has no login session, so the user is never already authenticated. With `interactiveLogin` disabled, `prompt=none` still returns a code.
 
-**Affected pattern:** tests or clients that send `prompt=none` with `interactiveLogin` enabled and expect the login page.
+**Affected pattern:** tests or clients that send `prompt=none` with `interactiveLogin` enabled and expect the login page. The standalone server and Docker image enable it by default when there is no JSON config.
 
 **Migration:** drop `prompt=none` to get the login page, or handle the `login_required` error as a silent authentication failure:
 
@@ -55,7 +55,7 @@ Previously, the `request_uri` parameter on the authorize endpoint was ignored, a
 
 **Affected pattern:** tests or clients that send `request_uri` and expect a code or the login page, or that compare the full discovery document.
 
-**Migration:** send the parameters in the query of the authorization request instead of `request_uri`.
+**Migration:** send the parameters in the query of the authorization request instead of `request_uri`. Kotlin code compiled against 7.x that calls the `WellKnown` constructor or `copy(...)` must be recompiled, because `WellKnown` has a new parameter.
 
 ### `request` returns `request_not_supported`
 
