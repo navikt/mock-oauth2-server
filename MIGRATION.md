@@ -101,7 +101,7 @@ Previously, an authorization code stayed valid until it was redeemed, for the li
 
 ### Recompile code that constructs or copies `OAuth2Config`
 
-`OAuth2Config` has three new constructor parameters, `refreshTokenExpiry`, `refreshTokenLimit` and `authorizationCodeLimit`. Source code keeps compiling. Kotlin code compiled against 7.x that calls the `OAuth2Config` constructor with named or default arguments, or calls `copy(...)`, fails at runtime with `NoSuchMethodError` until it is recompiled against 8.0.0. Java callers are not affected.
+`OAuth2Config` has three new constructor parameters, `refreshTokenExpiry`, `refreshTokenLimit` and `authorizationCodeLimit`. Calls to the constructor keep compiling, in Kotlin and Java. Code compiled against 7.x fails at runtime with `NoSuchMethodError` until it is recompiled against 8.0.0 when it calls `copy(...)`, or when it is Kotlin code that calls the constructor with named or default arguments. Java source that calls `copy(...)` passes every parameter, so it must also pass the three new ones, for example `OAuth2Config.DEFAULT_REFRESH_TOKEN_EXPIRY`, `OAuth2Config.DEFAULT_REFRESH_TOKEN_LIMIT` and `OAuth2Config.DEFAULT_AUTHORIZATION_CODE_LIMIT`.
 
 ## Migrating to 7.0.0
 

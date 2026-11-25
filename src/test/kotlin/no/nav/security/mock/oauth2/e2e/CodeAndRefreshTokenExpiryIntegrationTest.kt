@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.e2e
 
 import com.nimbusds.oauth2.sdk.GrantType
 import com.nimbusds.oauth2.sdk.OAuth2Error
+import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier
@@ -10,6 +11,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
+import no.nav.security.mock.oauth2.OAuth2Exception
 import no.nav.security.mock.oauth2.testutils.authenticationRequest
 import no.nav.security.mock.oauth2.testutils.authorizationCode
 import no.nav.security.mock.oauth2.testutils.client
@@ -17,6 +19,7 @@ import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.toTokenResponse
 import no.nav.security.mock.oauth2.testutils.tokenRequest
+import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.token.OAuth2TokenProvider
 import no.nav.security.mock.oauth2.withMockOAuth2Server
 import okhttp3.Response
@@ -167,6 +170,19 @@ class CodeAndRefreshTokenExpiryIntegrationTest {
     }
 
     @Test
+    fun `refresh that fails while issuing tokens should not restart the expiry`() {
+        withMockOAuth2Server(config(refreshTokenExpiry = 6)) {
+            val refreshToken = redeem(authorizationCode()).toTokenResponse().refreshToken.shouldNotBeNull()
+            now = now.plusSeconds(4)
+            enqueueCallback(FailingTokenCallback())
+            refresh(refreshToken).status shouldBe 400
+
+            now = now.plusSeconds(2)
+            refresh(refreshToken).shouldBeInvalidGrant()
+        }
+    }
+
+    @Test
     fun `refresh token should not expire when refreshTokenExpiry is 0`() {
         withMockOAuth2Server(config(refreshTokenExpiry = 0)) {
             val refreshToken = redeem(authorizationCode()).toTokenResponse().refreshToken.shouldNotBeNull()
@@ -185,6 +201,11 @@ class CodeAndRefreshTokenExpiryIntegrationTest {
             refresh(oldest).shouldBeInvalidGrant()
             refresh(newest).status shouldBe 200
         }
+    }
+
+    private class FailingTokenCallback : DefaultOAuth2TokenCallback() {
+        override fun addClaims(tokenRequest: TokenRequest): Map<String, Any> =
+            throw OAuth2Exception(OAuth2Error.INVALID_REQUEST.setDescription("failing callback"), "failing callback")
     }
 
     private fun MockOAuth2Server.authorizationCode(): String =
