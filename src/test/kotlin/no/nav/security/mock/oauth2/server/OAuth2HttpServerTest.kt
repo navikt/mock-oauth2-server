@@ -268,6 +268,7 @@ internal class OAuth2HttpServerTest {
                     "GET /1/2 HTTP/1.1\r\nHost: \r\n\r\n",
                     "GET /1/2 HTTP/1.1\r\nHost: [::1\r\n\r\n",
                     "GET /1/2 HTTP/1.1\r\nHost: localhost:notaport\r\n\r\n",
+                    "GET /1/2 HTTP/1.1\r\nHost: [fe80::1%25en0]\r\n\r\n",
                     "GET /1/2 HTTP/1.0\r\nHost: a b/c\r\nConnection: keep-alive\r\n\r\n",
                 ).forEach { request ->
                     socket.sendAndReadResponse(request).asClue { (head, _) ->
