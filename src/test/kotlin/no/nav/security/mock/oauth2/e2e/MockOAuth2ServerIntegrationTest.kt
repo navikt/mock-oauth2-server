@@ -14,6 +14,7 @@ import no.nav.security.mock.oauth2.MockOAuth2Server
 import no.nav.security.mock.oauth2.OAuth2Config
 import no.nav.security.mock.oauth2.extensions.verifySignatureAndIssuer
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
+import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.Ssl
 import no.nav.security.mock.oauth2.http.WellKnown
@@ -32,6 +33,7 @@ import no.nav.security.mock.oauth2.testutils.tokenRequest
 import no.nav.security.mock.oauth2.testutils.withTrustStore
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback
 import no.nav.security.mock.oauth2.withMockOAuth2Server
+import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
@@ -68,6 +70,24 @@ class MockOAuth2ServerIntegrationTest {
         }
 
         server.shutdown()
+    }
+
+    @Test
+    fun `Netty server should use the issuer URL from the Host header, with the default port when it has none`() {
+        val server = MockOAuth2Server(OAuth2Config(httpServer = NettyWrapper()))
+        server.start()
+        try {
+            mapOf(
+                "oauth.example.com" to "http://oauth.example.com/default",
+                "oauth.example.com:1234" to "http://oauth.example.com:1234/default",
+            ).forEach { (hostHeader, expectedIssuer) ->
+                client.get(server.wellKnownUrl("default"), Headers.headersOf("Host", hostHeader)).asClue {
+                    it.parse<WellKnown>().issuer shouldBe expectedIssuer
+                }
+            }
+        } finally {
+            server.shutdown()
+        }
     }
 
     @Test
