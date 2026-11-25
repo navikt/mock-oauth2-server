@@ -1,6 +1,9 @@
 package no.nav.security.mock.oauth2.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.kotest.assertions.asClue
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper
 import no.nav.security.mock.oauth2.http.NettyWrapper
@@ -14,6 +17,7 @@ import no.nav.security.mock.oauth2.testutils.get
 import no.nav.security.mock.oauth2.testutils.post
 import no.nav.security.mock.oauth2.testutils.withTrustStore
 import okhttp3.Headers
+import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -21,6 +25,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.jupiter.api.Test
 import java.io.File
 import java.net.InetAddress
+import java.net.Socket
 
 private val log = KotlinLogging.logger { }
 
@@ -52,6 +57,14 @@ internal class OAuth2HttpServerTest {
 
             it.url.pathSegments.contains("redirect") -> {
                 redirect("http://someredirect")
+            }
+
+            it.url.pathSegments == listOf("nocontent") -> {
+                OAuth2HttpResponse(status = 204)
+            }
+
+            it.url.pathSegments == listOf("host") -> {
+                ok("${it.originalUrl.host}:${it.originalUrl.port} ${it.url.host}")
             }
 
             else -> {
@@ -135,6 +148,86 @@ internal class OAuth2HttpServerTest {
     }
 
     @Test
+    fun `Netty server should keep the connection open and send Content-Length and a reason phrase`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            server.socketWithReadTimeout().use { socket ->
+                repeat(2) {
+                    socket.sendAndReadResponse("GET /1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n").asClue { (head, body) ->
+                        head.first() shouldBe "HTTP/1.1 200 OK"
+                        head.map { it.lowercase() } shouldContain "content-length: 9"
+                        head.map { it.lowercase() } shouldNotContain "connection: close"
+                        body shouldBe "pathmatch"
+                    }
+                }
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `Netty server should close the connection when the client asks for it`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            server.socketWithReadTimeout().use { socket ->
+                val (head, body) = socket.sendAndReadResponse("GET /1/2 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                head.map { it.lowercase() } shouldContain "connection: close"
+                body shouldBe "pathmatch"
+                socket.getInputStream().read() shouldBe -1
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `Netty server should send no Content-Length with a 204 and keep the connection open`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            server.socketWithReadTimeout().use { socket ->
+                val (head, _) = socket.sendAndReadResponse("GET /nocontent HTTP/1.1\r\nHost: localhost\r\n\r\n", expectBody = false)
+                head.first() shouldBe "HTTP/1.1 204 No Content"
+                head.none { it.lowercase().startsWith("content-length:") } shouldBe true
+                socket.sendAndReadResponse("GET /1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n").second shouldBe "pathmatch"
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `Netty server should take the request host from the Host header even without a port`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            httpClient.get(server.url("/host"), Headers.headersOf("Host", "oauth.example.com")).use {
+                it.body.string() shouldBe "oauth.example.com:${server.port()} oauth.example.com"
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `Netty server should use its own address, not the client's, when there is no Host header`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            server.socketWithReadTimeout().use { socket ->
+                val serverHost =
+                    HttpUrl
+                        .Builder()
+                        .scheme("http")
+                        .host(socket.inetAddress.hostAddress)
+                        .build()
+                        .host
+                socket.sendAndReadResponse("GET /host HTTP/1.0\r\n\r\n").second shouldBe "$serverHost:${server.port()} $serverHost"
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
     fun `MockWebServer should start and serve requests`() {
         MockWebServerWrapper().start(requestHandler).shouldServeRequests().stop()
         MockWebServerWrapper().start(port = 0, requestHandler).shouldServeRequests().stop()
@@ -185,6 +278,39 @@ internal class OAuth2HttpServerTest {
                 }
             client.get(this.url("/1/2")).body.string() shouldBe "pathmatch"
         }
+
+    private fun OAuth2HttpServer.socketWithReadTimeout() = Socket(url("/").host, port()).apply { soTimeout = 5_000 }
+
+    private fun Socket.sendAndReadResponse(
+        request: String,
+        expectBody: Boolean = true,
+    ): Pair<List<String>, String> {
+        getOutputStream().apply {
+            write(request.toByteArray())
+            flush()
+        }
+        val input = getInputStream()
+        val head = StringBuilder()
+        while (!head.endsWith("\r\n\r\n")) {
+            val next = input.read()
+            if (next == -1) break
+            head.append(next.toChar())
+        }
+        val lines = head.trim().lines().map { it.trimEnd('\r') }
+        val length =
+            lines
+                .firstOrNull { it.lowercase().startsWith("content-length:") }
+                ?.substringAfter(':')
+                ?.trim()
+                ?.toInt()
+        val body =
+            when {
+                length != null -> String(input.readNBytes(length))
+                expectBody -> String(input.readAllBytes())
+                else -> ""
+            }
+        return lines to body
+    }
 
     private fun ok(body: String) =
         OAuth2HttpResponse(
