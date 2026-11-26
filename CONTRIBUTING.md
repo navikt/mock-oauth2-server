@@ -68,10 +68,10 @@ Run the full test suite:
 
 ## Upgrading the Gradle wrapper
 
-Find the latest version at https://gradle.org/releases/ then run:
+Find the latest version and the SHA-256 checksum of its binary-only zip at https://gradle.org/release-checksums/ then run:
 
 ```shell
-./gradlew wrapper --gradle-version $gradleVersion
+./gradlew wrapper --gradle-version $gradleVersion --gradle-distribution-sha256-sum $checksum
 ```
 
 ## Pull Request Review
