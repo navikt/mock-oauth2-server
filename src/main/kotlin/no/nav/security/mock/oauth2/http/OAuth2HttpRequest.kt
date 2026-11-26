@@ -147,13 +147,13 @@ internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? 
     }
 
     if (hostHeader.startsWith("[")) {
-        val host = uri.host ?: return null
+        val host = uri.host?.takeIf { it.isValidUrlHost() } ?: return null
         return host to uri.port.asHostHeaderPort()
     }
 
     val parts = hostHeader.split(":", limit = 3)
     val host = parts[0]
-    if (runCatching { HttpUrl.Builder().host(host) }.isSuccess) {
+    if (host.isValidUrlHost()) {
         when (parts.size) {
             1 -> {
                 return host to -1
@@ -168,6 +168,26 @@ internal fun hostAndPortFromHostHeader(hostHeader: String?): Pair<String, Int>? 
 
     return null
 }
+
+internal fun hasValidHostHeaders(
+    hostHeaders: List<String>,
+    hostHeaderRequired: Boolean,
+): Boolean =
+    when (hostHeaders.size) {
+        0 -> !hostHeaderRequired
+        1 -> isValidHostHeader(hostHeaders.single())
+        else -> false
+    }
+
+internal fun isValidHostHeader(hostHeader: String): Boolean {
+    if (hostAndPortFromHostHeader(hostHeader) == null) {
+        return false
+    }
+    val port = if (hostHeader.startsWith("[")) hostHeader.substringAfter("]").removePrefix(":") else hostHeader.substringAfter(":", "")
+    return port.all { it.isDigit() }
+}
+
+private fun String.isValidUrlHost(): Boolean = runCatching { HttpUrl.Builder().host(this) }.isSuccess
 
 private fun Int.asHostHeaderPort(): Int = if (this in 1..65535) this else -1
 

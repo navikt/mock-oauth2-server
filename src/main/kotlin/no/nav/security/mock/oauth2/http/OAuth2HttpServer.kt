@@ -121,7 +121,20 @@ class MockWebServerWrapper
             override fun dispatch(request: RecordedRequest): MockResponse =
                 responseQueue.peek()?.let {
                     responseQueue.take()
-                } ?: requestHandler.invoke(request.asOAuth2HttpRequest()).toMockResponse()
+                } ?: if (request.hasValidHostHeader()) {
+                    requestHandler.invoke(request.asOAuth2HttpRequest()).toMockResponse()
+                } else {
+                    MockResponse().setResponseCode(HttpResponseStatus.BAD_REQUEST.code())
+                }
+
+            private fun RecordedRequest.hasValidHostHeader(): Boolean =
+                hasValidHostHeaders(headers.values(HttpHeaderNames.HOST.toString()), hostHeaderRequired = requestLine.httpVersion() == "HTTP/1.1")
+
+            private fun String.httpVersion(): String = trim().split(WHITESPACE).last()
+
+            private companion object {
+                val WHITESPACE = Regex("\\s+")
+            }
 
             private fun OAuth2HttpResponse.toMockResponse(): MockResponse =
                 MockResponse()
@@ -242,9 +255,11 @@ class NettyWrapper
                 ctx: ChannelHandlerContext,
                 request: FullHttpRequest,
             ) {
-                if (request.decoderResult().cause() is TooLongHttpLineException) {
-                    respondUriTooLongAndClose(ctx)
-                    return
+                val decoderFailure = request.decoderResult().cause()
+                when {
+                    decoderFailure is TooLongHttpLineException -> return respondAndClose(ctx, HttpResponseStatus.REQUEST_URI_TOO_LONG)
+                    decoderFailure != null -> return respondAndClose(ctx, HttpResponseStatus.BAD_REQUEST)
+                    !request.hasValidHostHeader() -> return respondBadRequest(ctx)
                 }
                 val localAddress = ctx.channel().localAddress() as InetSocketAddress
                 val scheme = if (ctx.pipeline().get(SslHandler::class.java) == null) "http" else "https"
@@ -254,10 +269,22 @@ class NettyWrapper
                 ctx.writeAndFlush(response)
             }
 
-            private fun respondUriTooLongAndClose(ctx: ChannelHandlerContext) {
-                val response = OAuth2HttpResponse(status = HttpResponseStatus.REQUEST_URI_TOO_LONG.code()).asNettyResponse()
+            private fun respondAndClose(
+                ctx: ChannelHandlerContext,
+                status: HttpResponseStatus,
+            ) {
+                val response = OAuth2HttpResponse(status = status.code()).asNettyResponse()
                 response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE)
                 ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE)
+            }
+
+            private fun FullHttpRequest.hasValidHostHeader(): Boolean =
+                hasValidHostHeaders(headers().getAll(HttpHeaderNames.HOST), hostHeaderRequired = protocolVersion() == HttpVersion.HTTP_1_1)
+
+            private fun respondBadRequest(ctx: ChannelHandlerContext) {
+                val response = OAuth2HttpResponse(status = HttpResponseStatus.BAD_REQUEST.code()).asNettyResponse()
+                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
+                ctx.writeAndFlush(response)
             }
 
             private fun OAuth2HttpResponse.asNettyResponse(): FullHttpResponse {

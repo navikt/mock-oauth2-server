@@ -115,7 +115,7 @@ internal class OAuth2HttpServerTest {
     fun `Netty server should serve requests with an IPv6 Host header instead of dropping the connection`() {
         val server = NettyWrapper().start(requestHandler)
         try {
-            listOf("[::1]:8080", "[::1]", "[::1", "[::1]:99999").forEach { hostHeader ->
+            listOf("[::1]:8080", "[::1]", "[::1]:99999").forEach { hostHeader ->
                 httpClient
                     .get(server.url("/1/2"), Headers.headersOf("Host", hostHeader))
                     .use {
@@ -250,6 +250,75 @@ internal class OAuth2HttpServerTest {
                 head.first() shouldBe "HTTP/1.1 414 Request-URI Too Long"
                 head.map { it.lowercase() } shouldContain "connection: close"
                 socket.getInputStream().read() shouldBe -1
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `Netty server should answer 400 to an invalid Host header and keep the connection open`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            server.socketWithReadTimeout().use { socket ->
+                listOf(
+                    "GET /1/2 HTTP/1.1\r\n\r\n",
+                    "GET /1/2 HTTP/1.1\r\nHost: localhost\r\nHost: localhost\r\n\r\n",
+                    "GET /1/2 HTTP/1.1\r\nHost: a b/c\r\n\r\n",
+                    "GET /1/2 HTTP/1.1\r\nHost: \r\n\r\n",
+                    "GET /1/2 HTTP/1.1\r\nHost: [::1\r\n\r\n",
+                    "GET /1/2 HTTP/1.1\r\nHost: localhost:notaport\r\n\r\n",
+                    "GET /1/2 HTTP/1.1\r\nHost: [fe80::1%25en0]\r\n\r\n",
+                    "GET /1/2 HTTP/1.0\r\nHost: a b/c\r\nConnection: keep-alive\r\n\r\n",
+                ).forEach { request ->
+                    socket.sendAndReadResponse(request).asClue { (head, _) ->
+                        head.first() shouldBe "HTTP/1.1 400 Bad Request"
+                    }
+                }
+                socket.sendAndReadResponse("GET /1/2 HTTP/1.1\r\nHost: localhost\r\n\r\n").second shouldBe "pathmatch"
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `Netty server should answer 400 and close the connection when the request line is malformed`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            listOf("GET /1/2 HTTP/1.1 \r\n\r\n", "GET /1/2 HTTP/1.1\t\r\n\r\n").forEach { request ->
+                request.asClue {
+                    server.socketWithReadTimeout().use { socket ->
+                        val (head, _) = socket.sendAndReadResponse(request)
+                        head.first() shouldBe "HTTP/1.1 400 Bad Request"
+                        head.map { it.lowercase() } shouldContain "connection: close"
+                        socket.getInputStream().read() shouldBe -1
+                    }
+                }
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `MockWebServer should answer 400 to an invalid Host header`() {
+        val server = MockWebServerWrapper().start(requestHandler)
+        try {
+            listOf(
+                "GET /1/2 HTTP/1.1\r\nConnection: close\r\n\r\n",
+                "GET /1/2 HTTP/1.1 \r\nConnection: close\r\n\r\n",
+                "GET /1/2 HTTP/1.1\t\r\nConnection: close\r\n\r\n",
+                "GET /1/2 HTTP/1.1\r\nHost: localhost\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+            ).forEach { request ->
+                request.asClue {
+                    server.socketWithReadTimeout().use { socket ->
+                        socket.sendAndReadResponse(request).first.first() shouldBe "HTTP/1.1 400 Client Error"
+                    }
+                }
+            }
+            server.socketWithReadTimeout().use { socket ->
+                socket.sendAndReadResponse("GET /1/2 HTTP/1.0\r\n\r\n").second shouldBe "pathmatch"
             }
         } finally {
             server.stop()
