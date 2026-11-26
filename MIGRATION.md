@@ -103,6 +103,22 @@ Previously, an authorization code stayed valid until it was redeemed, for the li
 
 `OAuth2Config` has three new constructor parameters, `refreshTokenExpiry`, `refreshTokenLimit` and `authorizationCodeLimit`. Calls to the constructor keep compiling, in Kotlin and Java. Code compiled against 7.x fails at runtime with `NoSuchMethodError` until it is recompiled against 8.0.0 when it calls `copy(...)`, or when it is Kotlin code that calls the constructor with named or default arguments. Java source that calls `copy(...)` passes every parameter, so it must also pass the three new ones, for example `OAuth2Config.DEFAULT_REFRESH_TOKEN_EXPIRY`, `OAuth2Config.DEFAULT_REFRESH_TOKEN_LIMIT` and `OAuth2Config.DEFAULT_AUTHORIZATION_CODE_LIMIT`.
 
+### `NettyWrapper` uses the default port in the issuer when the `Host` header has none
+
+Previously, when the `Host` header had no port and there was no `X-Forwarded-Proto` or `X-Forwarded-Port` header, `NettyWrapper` put the server's own port in the issuer: `Host: oauth.example.com` on a server listening on 8080 gave `http://oauth.example.com:8080/default`. That is not the URL the client fetched the configuration from, so OpenID Connect Discovery and RFC 8414 clients must reject it.
+
+**New behavior (8.0.0):** the issuer uses the scheme's default port, `http://oauth.example.com/default`, as `MockWebServerWrapper` already does. A `Host` header with a port, the `X-Forwarded-*` headers and a request without a `Host` header work as before.
+
+**Affected pattern:** clients of `NettyWrapper`, including the standalone server and Docker image, that reach it through a proxy or port mapping that sends a `Host` header without a port, and that expect the server's own port in the issuer or in tokens.
+
+**Migration:** expect the issuer without the port, or send the port in the `Host` header or as `X-Forwarded-Port`.
+
+### `NettyWrapper` accepts request lines up to 16 KiB
+
+Request lines longer than 4 KiB, such as an `/authorize` URL with a long `state`, returned `404`.
+
+**New behavior (8.0.0):** request lines up to 16 KiB are served. Longer ones get `414` and the connection is closed. `MockWebServerWrapper` is unaffected.
+
 ## Migrating to 7.0.0
 
 ### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`

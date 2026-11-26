@@ -197,11 +197,11 @@ internal class OAuth2HttpServerTest {
     }
 
     @Test
-    fun `Netty server should take the request host from the Host header even without a port`() {
+    fun `Netty server should take the request host from the Host header and the default port when it has none`() {
         val server = NettyWrapper().start(requestHandler)
         try {
             httpClient.get(server.url("/host"), Headers.headersOf("Host", "oauth.example.com")).use {
-                it.body.string() shouldBe "oauth.example.com:${server.port()} oauth.example.com"
+                it.body.string() shouldBe "oauth.example.com:80 oauth.example.com"
             }
         } finally {
             server.stop()
@@ -221,6 +221,35 @@ internal class OAuth2HttpServerTest {
                         .build()
                         .host
                 socket.sendAndReadResponse("GET /host HTTP/1.0\r\n\r\n").second shouldBe "$serverHost:${server.port()} $serverHost"
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `Netty server should serve request lines of at least 8000 octets`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            httpClient.get(server.url("/1/2?state=${"a".repeat(12_000)}")).use {
+                it.code shouldBe 200
+                it.body.string() shouldBe "pathmatch"
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `Netty server should answer 414 and close the connection when the request line is too long`() {
+        val server = NettyWrapper().start(requestHandler)
+        try {
+            server.socketWithReadTimeout().use { socket ->
+                val (head, _) =
+                    socket.sendAndReadResponse("GET /1/2?state=${"a".repeat(20_000)} HTTP/1.1\r\nHost: localhost\r\n\r\n")
+                head.first() shouldBe "HTTP/1.1 414 Request-URI Too Long"
+                head.map { it.lowercase() } shouldContain "connection: close"
+                socket.getInputStream().read() shouldBe -1
             }
         } finally {
             server.stop()

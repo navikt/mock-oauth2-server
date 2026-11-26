@@ -5,6 +5,7 @@ import io.netty.bootstrap.ServerBootstrap
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelFactory
 import io.netty.channel.ChannelFuture
+import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.ChannelOption
@@ -17,6 +18,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.DefaultFullHttpResponse
 import io.netty.handler.codec.http.FullHttpRequest
 import io.netty.handler.codec.http.FullHttpResponse
+import io.netty.handler.codec.http.HttpDecoderConfig
 import io.netty.handler.codec.http.HttpHeaderNames
 import io.netty.handler.codec.http.HttpHeaderValues
 import io.netty.handler.codec.http.HttpHeaders
@@ -26,6 +28,7 @@ import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.codec.http.HttpServerKeepAliveHandler
 import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
+import io.netty.handler.codec.http.TooLongHttpLineException
 import io.netty.handler.ssl.SslHandler
 import io.netty.util.CharsetUtil
 import no.nav.security.mock.oauth2.extensions.asOAuth2HttpRequest
@@ -163,7 +166,7 @@ class NettyWrapper
                                 if (ssl != null) {
                                     ch.pipeline().addFirst("ssl", ssl.nettySslHandler())
                                 }
-                                ch.pipeline().addLast("codec", HttpServerCodec())
+                                ch.pipeline().addLast("codec", HttpServerCodec(HttpDecoderConfig().setMaxInitialLineLength(MAX_INITIAL_LINE_LENGTH)))
                                 ch.pipeline().addLast("keepAlive", HttpServerKeepAliveHandler())
                                 ch.pipeline().addLast("aggregator", HttpObjectAggregator(MAX_CONTENT_LENGTH))
                                 ch.pipeline().addLast("routes", RouterChannelHandler(requestHandler))
@@ -212,6 +215,7 @@ class NettyWrapper
         companion object {
             // OAuth2 request bodies are a few KB at most; cap aggregation so a large body cannot exhaust memory
             private const val MAX_CONTENT_LENGTH = 1024 * 1024
+            private const val MAX_INITIAL_LINE_LENGTH = 16 * 1024
         }
 
         internal class RouterChannelHandler(
@@ -238,12 +242,22 @@ class NettyWrapper
                 ctx: ChannelHandlerContext,
                 request: FullHttpRequest,
             ) {
+                if (request.decoderResult().cause() is TooLongHttpLineException) {
+                    respondUriTooLongAndClose(ctx)
+                    return
+                }
                 val localAddress = ctx.channel().localAddress() as InetSocketAddress
                 val scheme = if (ctx.pipeline().get(SslHandler::class.java) == null) "http" else "https"
                 val response = requestHandler(request.asOAuth2HttpRequest(scheme, localAddress)).asNettyResponse()
                 response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
 
                 ctx.writeAndFlush(response)
+            }
+
+            private fun respondUriTooLongAndClose(ctx: ChannelHandlerContext) {
+                val response = OAuth2HttpResponse(status = HttpResponseStatus.REQUEST_URI_TOO_LONG.code()).asNettyResponse()
+                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE)
+                ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE)
             }
 
             private fun OAuth2HttpResponse.asNettyResponse(): FullHttpResponse {
@@ -285,7 +299,12 @@ class NettyWrapper
             ): HttpUrl {
                 val hostHeader = hostAndPortFromHostHeader(this.headers()["Host"])
                 val host = hostHeader?.first ?: localAddress.hostWithoutDnsLookup()
-                val hostPort = hostHeader?.second?.takeIf { it != -1 } ?: localAddress.port
+                val hostPort =
+                    when {
+                        hostHeader == null -> localAddress.port
+                        hostHeader.second == -1 -> HttpUrl.defaultPort(scheme)
+                        else -> hostHeader.second
+                    }
                 return HttpUrl
                     .Builder()
                     .scheme(scheme)
