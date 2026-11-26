@@ -6,12 +6,16 @@ import no.nav.security.mock.oauth2.StandaloneConfig.port
 import no.nav.security.mock.oauth2.http.NettyWrapper
 import no.nav.security.mock.oauth2.http.OAuth2HttpResponse
 import no.nav.security.mock.oauth2.http.route
+import tools.jackson.databind.node.ObjectNode
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
 object StandaloneConfig {
+    private val jsonMapper = jacksonObjectMapper()
+
     const val JSON_CONFIG = "JSON_CONFIG"
     const val JSON_CONFIG_PATH = "JSON_CONFIG_PATH"
     const val SERVER_HOSTNAME = "SERVER_HOSTNAME"
@@ -28,7 +32,7 @@ object StandaloneConfig {
     fun oauth2Config(): OAuth2Config =
         with(jsonFromEnv()) {
             if (this != null) {
-                OAuth2Config.fromJson(this)
+                fromJsonWithNettyAsDefaultHttpServer(this)
             } else {
                 OAuth2Config(
                     interactiveLogin = true,
@@ -36,6 +40,16 @@ object StandaloneConfig {
                 )
             }
         }
+
+    private fun fromJsonWithNettyAsDefaultHttpServer(json: String): OAuth2Config {
+        val config = json.asJsonObjectOrNull() ?: return OAuth2Config.fromJson(json)
+        if (!config.has("httpServer")) {
+            config.put("httpServer", "NettyWrapper")
+        }
+        return jsonMapper.treeToValue(config, OAuth2Config::class.java)
+    }
+
+    private fun String.asJsonObjectOrNull(): ObjectNode? = runCatching { jsonMapper.readTree(this) }.getOrNull() as? ObjectNode
 
     private fun jsonFromEnv() = JSON_CONFIG.fromEnv() ?: JSON_CONFIG_PATH.fromEnv("config.json").readFile()
 

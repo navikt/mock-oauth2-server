@@ -129,6 +129,22 @@ Previously, an HTTP/1.1 request without a `Host` header, with more than one, or 
 
 **Migration:** send exactly one `Host` header, such as `Host: localhost:8080`.
 
+### The standalone server uses `NettyWrapper` when `JSON_CONFIG` has no `httpServer`
+
+Previously, the standalone server and the Docker image used `NettyWrapper` only when no JSON config was given. Any `JSON_CONFIG`, `JSON_CONFIG_PATH` or `config.json` without `httpServer` selected `MockWebServerWrapper`. It keeps every request in memory until `takeRequest()`, which the standalone server never calls.
+
+**New behavior (8.0.0):** the standalone server uses `NettyWrapper` unless the JSON config sets `httpServer`. The library default for `OAuth2Config` in JVM tests is still `MockWebServerWrapper`.
+
+**Affected pattern:** a standalone JSON config without `httpServer` that relied on how `MockWebServerWrapper` handles requests. `NettyWrapper` rejects a request body larger than 1 MiB.
+
+**Migration:** set the server explicitly:
+
+```json
+{
+  "httpServer": "MockWebServerWrapper"
+}
+```
+
 ## Migrating to 7.0.0
 
 ### `io.github.microutils:kotlin-logging` replaced by `io.github.oshai:kotlin-logging-jvm`
