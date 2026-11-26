@@ -135,13 +135,7 @@ Previously, the standalone server and the Docker image used `NettyWrapper` only 
 
 **New behavior (8.0.0):** the standalone server uses `NettyWrapper` unless the JSON config sets `httpServer`. The library default for `OAuth2Config` in JVM tests is still `MockWebServerWrapper`.
 
-**Affected pattern:** a standalone JSON config without `httpServer` that relied on how `MockWebServerWrapper` handles requests. `NettyWrapper` differs in these ways:
-
-- When the `Host` header has no port and there is no `X-Forwarded-Proto` or `X-Forwarded-Port` header, the issuer gets the server's own port, for example `http://oauth.example.com:8080/default` instead of `http://oauth.example.com/default`. This can happen behind a Kubernetes Service on port 80 that targets port 8080. The `iss` claim and the discovery URLs change with it.
-- A request line longer than 4 KiB, such as an `/authorize` URL with a long `state`, returns `404`.
-- A request body larger than 1 MiB is rejected.
-- Without a `Host` header (HTTP/1.0), the issuer uses the client's IP address.
-- The connection is closed after each response, see #1188.
+**Affected pattern:** a standalone JSON config without `httpServer` that relied on how `MockWebServerWrapper` handles requests. `NettyWrapper` rejects a request body larger than 1 MiB.
 
 **Migration:** set the server explicitly:
 
