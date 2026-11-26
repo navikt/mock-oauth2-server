@@ -63,9 +63,12 @@ internal class RefreshTokenManager(
         }
     }
 
-    fun revokeIssuedFrom(code: AuthorizationCode) {
+    fun revokeIssuedFrom(
+        code: AuthorizationCode,
+        issuerId: String,
+    ) {
         synchronized(leastRecentlyUsedFirst) {
-            leastRecentlyUsedFirst.values.removeIf { it.issuedFromCode == code }
+            leastRecentlyUsedFirst.values.removeIf { it.issuedFromCode == code && it.tokenCallback.issuerId() == issuerId }
         }
     }
 

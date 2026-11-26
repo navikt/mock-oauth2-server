@@ -99,16 +99,6 @@ Previously, an authorization code stayed valid until it was redeemed, for the li
 
 **Migration:** redeem the code before moving the clock forward. A test suite that issues more than 10,000 codes without redeeming them can raise `authorizationCodeLimit`.
 
-### Reusing an authorization code revokes the refresh token issued from it
-
-Previously, a second use of an authorization code was rejected, but the refresh token from the first use stayed valid.
-
-**New behavior (8.0.0):** a second use of a code also revokes the refresh token issued from it, as RFC 6749 section 4.1.2 recommends, including tokens rotated from that one. Refreshing with it returns `400 invalid_grant`. Access tokens are not affected.
-
-**Affected pattern:** a client that redeems the same code twice, for example by retrying the token request, and then refreshes with the token from the first response.
-
-**Migration:** redeem each code once. Start a new authorization request if the token response is lost.
-
 ### Recompile code that constructs or copies `OAuth2Config`
 
 `OAuth2Config` has three new constructor parameters, `refreshTokenExpiry`, `refreshTokenLimit` and `authorizationCodeLimit`. Calls to the constructor keep compiling, in Kotlin and Java. Code compiled against 7.x fails at runtime with `NoSuchMethodError` until it is recompiled against 8.0.0 when it calls `copy(...)`, or when it is Kotlin code that calls the constructor with named or default arguments. Java source that calls `copy(...)` passes every parameter, so it must also pass the three new ones, for example `OAuth2Config.DEFAULT_REFRESH_TOKEN_EXPIRY`, `OAuth2Config.DEFAULT_REFRESH_TOKEN_LIMIT` and `OAuth2Config.DEFAULT_AUTHORIZATION_CODE_LIMIT`.

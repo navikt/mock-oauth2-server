@@ -751,7 +751,7 @@ server.baseUrl()                                       // server root URL
 
 **The code exchange returns `invalid_grant`.** Authorization codes can only be used once, so a retried or repeated token request fails. A code also expires 10 minutes after it was issued, and at most `authorizationCodeLimit` unredeemed codes are kept (10,000 by default), so the oldest is dropped beyond that.
 
-**The refresh grant returns `invalid_grant`.** A refresh token expires `refreshTokenExpiry` seconds after it was issued or last used (24 hours by default), and once more than `refreshTokenLimit` tokens are kept the least recently used is dropped. Set either to `0` to turn it off. Using an authorization code a second time revokes the refresh token issued from it.
+**The refresh grant returns `invalid_grant`.** A refresh token expires `refreshTokenExpiry` seconds after it was issued or last used (24 hours by default), and once more than `refreshTokenLimit` tokens are kept the least recently used is dropped. Set either to `0` to turn it off. Using an authorization code a second time at the issuer that issued it revokes the refresh token issued from it, including rotated tokens. Reusing it at another issuer returns `400 invalid_grant` without revoking those refresh tokens.
 
 **Fetching the JWKS over HTTPS fails with `PKIX path building failed`.** Your app doesn't trust the server's certificate, see [Make your app trust the server's certificate](#make-your-app-trust-the-servers-certificate).
 

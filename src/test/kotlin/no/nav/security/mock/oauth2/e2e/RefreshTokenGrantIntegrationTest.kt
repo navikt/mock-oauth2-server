@@ -327,6 +327,33 @@ class RefreshTokenGrantIntegrationTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `reusing an authorization code at a different issuer should preserve its refresh_token`(rotateRefreshToken: Boolean) {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = rotateRefreshToken)) {
+            val issuerId = "issuer1"
+            val code = authorizationCode(issuerId, listOf("openid"))
+            val issuedRefreshToken = redeem(issuerId, code).use { it.toTokenResponse().refreshToken.shouldNotBeNull() }
+            val refreshToken =
+                client.refreshTokenRequest(this, issuerId, issuedRefreshToken).use {
+                    it.code shouldBe 200
+                    it.toTokenResponse().refreshToken.shouldNotBeNull()
+                }
+
+            redeem("issuer2", code).use { it.shouldBeInvalidGrant() }
+
+            val preservedRefreshToken =
+                client.refreshTokenRequest(this, issuerId, refreshToken).use {
+                    it.code shouldBe 200
+                    it.toTokenResponse().refreshToken.shouldNotBeNull()
+                }
+
+            redeem(issuerId, code).use { it.shouldBeInvalidGrant() }
+
+            client.refreshTokenRequest(this, issuerId, preservedRefreshToken).use { it.shouldBeInvalidGrant() }
+        }
+    }
+
     @Test
     fun `rotated refresh_token should stay bound to the client it was issued to`() {
         withMockOAuth2Server(OAuth2Config(rotateRefreshToken = true)) {

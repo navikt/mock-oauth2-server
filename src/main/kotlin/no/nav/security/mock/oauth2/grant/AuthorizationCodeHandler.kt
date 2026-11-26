@@ -91,18 +91,18 @@ internal class AuthorizationCodeHandler(
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val code = tokenRequest.authorizationCode()
+        val issuerId = request.url.issuerId()
         log.debug { "issuing token for code=$code" }
 
         val issued =
             takeCodeSoItCanOnlyBeUsedOnce(code)
-                ?: revokeRefreshTokensAndRejectUnknownOrReused(code)
+                ?: revokeRefreshTokensAndRejectUnknownOrReused(code, issuerId)
         if (issued.isExpired(tokenProvider.now())) {
             invalidGrant("authorization code has expired")
         }
         val authenticationRequest = issued.authenticationRequest
         val authTime = issued.issuedAt.takeIf { authenticationRequest.maxAge >= 0 }
 
-        val issuerId = request.url.issuerId()
         if (issued.issuerId != issuerId) {
             throw OAuth2Exception(
                 OAuth2Error.INVALID_GRANT.setDescription("authorization code was issued by a different issuer"),
@@ -143,8 +143,11 @@ internal class AuthorizationCodeHandler(
         )
     }
 
-    private fun revokeRefreshTokensAndRejectUnknownOrReused(code: AuthorizationCode): Nothing {
-        refreshTokenManager.revokeIssuedFrom(code)
+    private fun revokeRefreshTokensAndRejectUnknownOrReused(
+        code: AuthorizationCode,
+        issuerId: String,
+    ): Nothing {
+        refreshTokenManager.revokeIssuedFrom(code, issuerId)
         invalidGrant("unknown or already-used authorization code")
     }
 

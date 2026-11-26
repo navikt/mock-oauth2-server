@@ -103,7 +103,7 @@ internal class RefreshTokenManagerTest {
             RefreshTokenManager(
                 now = {
                     if (rotating && revocationDuringRotation == null) {
-                        revocationDuringRotation = thread { mgr.revokeIssuedFrom(code) }.also { it.awaitBlockedOrTerminated() }
+                        revocationDuringRotation = thread { mgr.revokeIssuedFrom(code, "default") }.also { it.awaitBlockedOrTerminated() }
                     }
                     Instant.now()
                 },
