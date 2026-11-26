@@ -2,6 +2,7 @@ package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.PlainJWT
+import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.Scope
 import no.nav.security.mock.oauth2.OAuth2Config
@@ -21,6 +22,7 @@ internal data class RefreshTokenState(
     val authTime: Instant? = null,
     val grantedScope: Scope? = null,
     val lastUsedAt: Instant? = null,
+    val issuedFromCode: AuthorizationCode? = null,
 )
 
 internal class RefreshTokenManager(
@@ -61,15 +63,25 @@ internal class RefreshTokenManager(
         }
     }
 
-    fun rotate(refreshToken: RefreshToken): RefreshToken {
-        val state =
-            synchronized(leastRecentlyUsedFirst) { leastRecentlyUsedFirst.remove(refreshToken) }
-                ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was already used"), "refresh_token was already used")
-        if (state.isExpired(now())) {
-            throw expired()
+    fun revokeIssuedFrom(
+        code: AuthorizationCode,
+        issuerId: String,
+    ) {
+        synchronized(leastRecentlyUsedFirst) {
+            leastRecentlyUsedFirst.values.removeIf { it.issuedFromCode == code && it.tokenCallback.issuerId() == issuerId }
         }
-        return refreshToken(state, null)
     }
+
+    fun rotate(refreshToken: RefreshToken): RefreshToken =
+        synchronized(leastRecentlyUsedFirst) {
+            val state =
+                leastRecentlyUsedFirst.remove(refreshToken)
+                    ?: throw OAuth2Exception(OAuth2Error.INVALID_GRANT.setDescription("refresh_token was already used"), "refresh_token was already used")
+            if (state.isExpired(now())) {
+                throw expired()
+            }
+            refreshToken(state, null)
+        }
 
     fun refreshToken(
         state: RefreshTokenState,

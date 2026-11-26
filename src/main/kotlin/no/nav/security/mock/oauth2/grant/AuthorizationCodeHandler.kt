@@ -91,21 +91,18 @@ internal class AuthorizationCodeHandler(
     ): OAuth2TokenResponse {
         val tokenRequest = request.asNimbusTokenRequest()
         val code = tokenRequest.authorizationCode()
+        val issuerId = request.url.issuerId()
         log.debug { "issuing token for code=$code" }
 
         val issued =
             takeCodeSoItCanOnlyBeUsedOnce(code)
-                ?: throw OAuth2Exception(
-                    OAuth2Error.INVALID_GRANT.setDescription("unknown or already-used authorization code"),
-                    "unknown or already-used authorization code",
-                )
+                ?: revokeRefreshTokensAndRejectUnknownOrReused(code, issuerId)
         if (issued.isExpired(tokenProvider.now())) {
             invalidGrant("authorization code has expired")
         }
         val authenticationRequest = issued.authenticationRequest
         val authTime = issued.issuedAt.takeIf { authenticationRequest.maxAge >= 0 }
 
-        val issuerId = request.url.issuerId()
         if (issued.issuerId != issuerId) {
             throw OAuth2Exception(
                 OAuth2Error.INVALID_GRANT.setDescription("authorization code was issued by a different issuer"),
@@ -125,7 +122,14 @@ internal class AuthorizationCodeHandler(
         val accessToken: SignedJWT = tokenProvider.accessToken(tokenRequest, issuerUrl, loginTokenCallbackOrDefault, nonce)
         val refreshToken: RefreshToken =
             refreshTokenManager.refreshToken(
-                RefreshTokenState(loginTokenCallbackOrDefault, tokenRequest.clientIdAsString(), idTokenSubject, authTime, authenticationRequest.scope),
+                RefreshTokenState(
+                    loginTokenCallbackOrDefault,
+                    tokenRequest.clientIdAsString(),
+                    idTokenSubject,
+                    authTime,
+                    authenticationRequest.scope,
+                    issuedFromCode = code,
+                ),
                 nonce,
             )
 
@@ -137,6 +141,14 @@ internal class AuthorizationCodeHandler(
             expiresIn = accessToken.expiresIn(tokenProvider.now()),
             scope = scope,
         )
+    }
+
+    private fun revokeRefreshTokensAndRejectUnknownOrReused(
+        code: AuthorizationCode,
+        issuerId: String,
+    ): Nothing {
+        refreshTokenManager.revokeIssuedFrom(code, issuerId)
+        invalidGrant("unknown or already-used authorization code")
     }
 
     private fun verifyClientAndRedirectUri(

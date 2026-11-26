@@ -1,10 +1,12 @@
 package no.nav.security.mock.oauth2.grant
 
 import com.nimbusds.jwt.PlainJWT
+import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.OAuth2Error
 import com.nimbusds.oauth2.sdk.Scope
 import io.kotest.assertions.asClue
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import no.nav.security.mock.oauth2.OAuth2Exception
@@ -13,6 +15,7 @@ import no.nav.security.mock.oauth2.token.OAuth2TokenCallback
 import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.time.Instant
+import kotlin.concurrent.thread
 
 internal class RefreshTokenManagerTest {
     @Test
@@ -88,6 +91,39 @@ internal class RefreshTokenManagerTest {
         mgr.rotate(refreshToken)
 
         shouldThrow<OAuth2Exception> { mgr.rotate(refreshToken) }.errorObject?.code shouldBe OAuth2Error.INVALID_GRANT.code
+    }
+
+    @Test
+    fun `refresh token should not escape revocation while it is being rotated`() {
+        val code = AuthorizationCode()
+        var revocationDuringRotation: Thread? = null
+        var rotating = false
+        lateinit var mgr: RefreshTokenManager
+        mgr =
+            RefreshTokenManager(
+                now = {
+                    if (rotating && revocationDuringRotation == null) {
+                        revocationDuringRotation = thread { mgr.revokeIssuedFrom(code, "default") }.also { it.awaitBlockedOrTerminated() }
+                    }
+                    Instant.now()
+                },
+            )
+        val token = mgr.refreshToken(state(issuedFromCode = code))
+        val tokenFromOtherCode = mgr.refreshToken(state(issuedFromCode = AuthorizationCode()))
+
+        rotating = true
+        val rotated = mgr.rotate(token)
+        revocationDuringRotation.shouldNotBeNull().join()
+
+        mgr.state(token) shouldBe null
+        mgr.state(rotated) shouldBe null
+        mgr.state(tokenFromOtherCode) shouldNotBe null
+    }
+
+    private fun Thread.awaitBlockedOrTerminated() {
+        while (state != Thread.State.BLOCKED && state != Thread.State.TERMINATED) {
+            Thread.onSpinWait()
+        }
     }
 
     @Test
@@ -215,5 +251,6 @@ internal class RefreshTokenManagerTest {
         tokenCallback: OAuth2TokenCallback = DefaultOAuth2TokenCallback(),
         clientId: String = "client",
         grantedScope: Scope? = null,
-    ) = RefreshTokenState(tokenCallback, clientId, grantedScope = grantedScope)
+        issuedFromCode: AuthorizationCode? = null,
+    ) = RefreshTokenState(tokenCallback, clientId, grantedScope = grantedScope, issuedFromCode = issuedFromCode)
 }

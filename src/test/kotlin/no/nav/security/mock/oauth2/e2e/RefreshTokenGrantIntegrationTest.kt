@@ -304,6 +304,56 @@ class RefreshTokenGrantIntegrationTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `reusing an authorization code should revoke only the refresh_token issued from it`(rotateRefreshToken: Boolean) {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = rotateRefreshToken)) {
+            val issuerId = "idprovider"
+            val scope = listOf("openid")
+            val refreshTokenFromOtherCode = authCodeFlowRefreshToken(issuerId, scope)
+            val code = authorizationCode(issuerId, scope)
+            val issuedRefreshToken = redeem(issuerId, code).toTokenResponse().refreshToken.shouldNotBeNull()
+            val refreshToken =
+                client
+                    .refreshTokenRequest(this, issuerId, issuedRefreshToken)
+                    .toTokenResponse()
+                    .refreshToken
+                    .shouldNotBeNull()
+
+            redeem(issuerId, code).use { it.shouldBeInvalidGrant() }
+
+            client.refreshTokenRequest(this, issuerId, refreshToken).use { it.shouldBeInvalidGrant() }
+            client.refreshTokenRequest(this, issuerId, refreshTokenFromOtherCode).use { it.code shouldBe 200 }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `reusing an authorization code at a different issuer should preserve its refresh_token`(rotateRefreshToken: Boolean) {
+        withMockOAuth2Server(OAuth2Config(rotateRefreshToken = rotateRefreshToken)) {
+            val issuerId = "issuer1"
+            val code = authorizationCode(issuerId, listOf("openid"))
+            val issuedRefreshToken = redeem(issuerId, code).use { it.toTokenResponse().refreshToken.shouldNotBeNull() }
+            val refreshToken =
+                client.refreshTokenRequest(this, issuerId, issuedRefreshToken).use {
+                    it.code shouldBe 200
+                    it.toTokenResponse().refreshToken.shouldNotBeNull()
+                }
+
+            redeem("issuer2", code).use { it.shouldBeInvalidGrant() }
+
+            val preservedRefreshToken =
+                client.refreshTokenRequest(this, issuerId, refreshToken).use {
+                    it.code shouldBe 200
+                    it.toTokenResponse().refreshToken.shouldNotBeNull()
+                }
+
+            redeem(issuerId, code).use { it.shouldBeInvalidGrant() }
+
+            client.refreshTokenRequest(this, issuerId, preservedRefreshToken).use { it.shouldBeInvalidGrant() }
+        }
+    }
+
     @Test
     fun `rotated refresh_token should stay bound to the client it was issued to`() {
         withMockOAuth2Server(OAuth2Config(rotateRefreshToken = true)) {
@@ -430,28 +480,33 @@ class RefreshTokenGrantIntegrationTest {
     private fun MockOAuth2Server.authCodeFlowRefreshToken(
         issuerId: String,
         scope: List<String>,
-    ): String {
-        val code =
-            client
-                .post(
-                    this.authorizationEndpointUrl(issuerId).authenticationRequest(clientId = "id", redirectUri = "http://something", scope = scope),
-                    mapOf("username" to "foo"),
-                ).let { it.headers["location"]?.toHttpUrl()?.queryParameter("code") }
-                .shouldNotBeNull()
-        return client
-            .tokenRequest(
-                this.tokenEndpointUrl(issuerId),
-                mapOf(
-                    "grant_type" to GrantType.AUTHORIZATION_CODE.value,
-                    "code" to code,
-                    "client_id" to "id",
-                    "client_secret" to "secret",
-                    "redirect_uri" to "http://something",
-                ),
-            ).toTokenResponse()
-            .refreshToken
+    ): String = redeem(issuerId, authorizationCode(issuerId, scope)).toTokenResponse().refreshToken.shouldNotBeNull()
+
+    private fun MockOAuth2Server.authorizationCode(
+        issuerId: String,
+        scope: List<String>,
+    ): String =
+        client
+            .post(
+                this.authorizationEndpointUrl(issuerId).authenticationRequest(clientId = "id", redirectUri = "http://something", scope = scope),
+                mapOf("username" to "foo"),
+            ).let { it.headers["location"]?.toHttpUrl()?.queryParameter("code") }
             .shouldNotBeNull()
-    }
+
+    private fun MockOAuth2Server.redeem(
+        issuerId: String,
+        code: String,
+    ): Response =
+        client.tokenRequest(
+            this.tokenEndpointUrl(issuerId),
+            mapOf(
+                "grant_type" to GrantType.AUTHORIZATION_CODE.value,
+                "code" to code,
+                "client_id" to "id",
+                "client_secret" to "secret",
+                "redirect_uri" to "http://something",
+            ),
+        )
 
     private fun MockOAuth2Server.runAuthCodeFlow(
         issuerId: String,
